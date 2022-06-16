@@ -1,0 +1,13 @@
+---
+
+SDL_settings:
+  window_name: "SURGE Window"
+  
+  window_width: 800
+  window_height: 600
+
+  renderer_color: [0x00, 0x00, 0x00, 0xFF]
+
+squirrel_settings:
+  initial_stack_size: 1024
+
