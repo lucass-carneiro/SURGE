@@ -2,6 +2,7 @@ set(SURGE_TESTS_SOURCE_LIST ${SURGE_SOURCE_LIST})
 set(SURGE_TESTS_HEADER_LIST ${SURGE_HEADER_LIST})
 
 list(REMOVE_ITEM SURGE_TESTS_SOURCE_LIST ${Surge_SOURCE_DIR}/source/main.cpp)
+
 list(APPEND SURGE_TESTS_SOURCE_LIST "${Surge_SOURCE_DIR}/test/tests.cpp")
 list(APPEND SURGE_TESTS_SOURCE_LIST "${Surge_SOURCE_DIR}/test/test_template.cpp")
 
@@ -30,6 +31,7 @@ target_link_libraries(tests PRIVATE
   CONAN_PKG::squirrel
   CONAN_PKG::glfw
   CONAN_PKG::glm
+  CONAN_PKG::gsl-lite
 )
 
 include(GoogleTest)

@@ -114,6 +114,7 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::squirrel
   CONAN_PKG::glfw
   CONAN_PKG::glm
+  CONAN_PKG::gsl-lite
 )
 
 target_include_directories(

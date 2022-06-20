@@ -1,14 +1,15 @@
 #include "window.hpp"
+#include "log.hpp"
 
 #include <GLFW/glfw3.h>
-#include <log.hpp>
 #include <tl/expected.hpp>
 
-void surge::glfw_error_callback(int code, const char *description) {
+void surge::glfw_error_callback(int code, const char *description) noexcept {
   log_all<log_event::error>("GLFW error code {}: {}", code, description);
 }
 
-auto surge::querry_available_monitors() -> std::optional<std::pair<GLFWmonitor **, std::size_t>> {
+auto surge::querry_available_monitors() noexcept
+    -> std::optional<std::pair<GLFWmonitor **, std::size_t>> {
   using tl::unexpected;
 
   int count = 0;

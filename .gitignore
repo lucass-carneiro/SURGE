@@ -1,2 +1,3 @@
+.cache/*
 Debug/*
 compile_commands.json

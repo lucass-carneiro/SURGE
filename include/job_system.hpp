@@ -17,10 +17,12 @@ template <typename allocator_type = EASTLAllocatorType> class job_system {
 public:
   job_system(const allocator_type &allocator,
              unsigned int threads = (std::thread::hardware_concurrency() - 1))
-      : num_threads(threads), thread_vector(num_threads, allocator), is_running(true) {
+      : num_threads(threads), thread_vector(num_threads, allocator),
+        is_running(true) {
 
     const auto thread_task = [](unsigned int index) {
-      global_file_log::instance().log<log_event::message>("Starting worker thread index {}", index);
+      global_stdout_log_manager.log<log_event::message>(
+          "Starting worker thread index {}", index);
     };
 
     for (unsigned int i = 0; auto &thread : thread_vector) {

@@ -30,7 +30,8 @@ enum class docopt_error_type : int {
 enum class config_file_error_type : int {
   file_does_not_exist,
   file_is_not_regular,
-  file_is_not_nut
+  file_is_not_nut,
+  unknow_exception
 };
 
 /**
@@ -49,7 +50,7 @@ auto parse_arguments(int argc, char **argv) noexcept
  * @param opts Command line options passed from docopt.
  * @return True for a valid path, false for an invalid path.
  */
-auto validate_config_script_path(const docopt::Options &opts)
+auto validate_config_script_path(const docopt::Options &opts) noexcept
     -> tl::expected<std::filesystem::path, config_file_error_type>;
 
 } // namespace surge

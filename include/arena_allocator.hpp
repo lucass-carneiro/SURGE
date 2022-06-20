@@ -6,7 +6,7 @@
 //clang-format off
 
 #ifdef SURGE_DEBUG_MEMORY
-#  define EASTL_NAME_ENABLED 1 // NOLINT(cppcoreguidelines-macro-usage)
+#define EASTL_NAME_ENABLED 1 // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 #include <EASTL/allocator.h>
@@ -31,15 +31,13 @@ public:
  * @param capacity The total size of the arena.
  */
 #ifdef SURGE_DEBUG_MEMORY
-  arena_allocator(const char *name, std::size_t capacity)
-      : debug_name{name},
-        arena_capacity{capacity},
-        free_index{0},
-        allocs{0},
+  arena_allocator(const char *name, std::size_t capacity) noexcept
+      : debug_name{name}, arena_capacity{capacity}, free_index{0}, allocs{0},
         data_buffer{capacity} {}
 #else
-  arena_allocator(const char *name, std::size_t capacity)
-      : arena_capacity{capacity}, free_index{0}, allocs{0}, data_buffer{capacity} {}
+  arena_allocator(const char *name, std::size_t capacity) noexcept
+      : arena_capacity{capacity}, free_index{0}, allocs{0}, data_buffer{
+                                                                capacity} {}
 #endif
 
   /**
@@ -50,8 +48,9 @@ public:
    * @param other Const reference to an arena to copy.
    *
    */
-  arena_allocator(const arena_allocator &other)
-      : arena_allocator(other, std::lock_guard<std::mutex>(other.arena_mutex)) {}
+  arena_allocator(const arena_allocator &other) noexcept
+      : arena_allocator(other, std::lock_guard<std::mutex>(other.arena_mutex)) {
+  }
 
   // Move constructor and assignment are deleted because they are not necessary
   arena_allocator(arena_allocator &&) noexcept = delete;
@@ -60,8 +59,8 @@ public:
   /**
    * Swaps two arena objects data members.
    *
-   * This function does not lock any of the object's mutexes since both mutexes will be locked befor
-   * it is called.
+   * This function does not lock any of the object's mutexes since both mutexes
+   * will be locked befor it is called.
    */
   friend inline void swap(arena_allocator &first, arena_allocator &second) {
     using std::swap;
@@ -91,9 +90,10 @@ public:
   /**
    * Destroy the arena and free it's buffer memory
    *
-   * Because SURGE_DEBUG_MEMORY is enabled, this destructor checks if all allocate calls were paired
-   * with their respective deallocate calls. If there is an alloc/free inbalence, the destructor
-   * warns the user of possible dangling pointe errors.
+   * Because SURGE_DEBUG_MEMORY is enabled, this destructor checks if all
+   * allocate calls were paired with their respective deallocate calls. If there
+   * is an alloc/free inbalence, the destructor warns the user of possible
+   * dangling pointe errors.
    */
   ~arena_allocator();
 #else
@@ -106,11 +106,12 @@ public:
   /**
    * Allocates memory from the arena.
    *
-   * This overload allocates memory with sizeof(void*) bytes of alignment and 0 offset. Increases
-   * the allocation counter by 1.
+   * This overload allocates memory with sizeof(void*) bytes of alignment and 0
+   * offset. Increases the allocation counter by 1.
    *
    * @param n The ammount of memory (in bytes) to allocate.
-   * @param flags User defined allocator flags. Currently unused and defaults to 0.
+   * @param flags User defined allocator flags. Currently unused and defaults to
+   * 0.
    * @return Pointer to allocated memory address or nullptr in case of failure;
    */
   auto allocate(std::size_t n, int flags = 0) -> void *;
@@ -121,18 +122,21 @@ public:
    * Increases the allocation counter by 1.
    *
    * @param n The ammount of memory (in bytes) to allocate.
-   * @param alignment The alignment to use for the newly allocated memory. Powers of 2 prefered.
+   * @param alignment The alignment to use for the newly allocated memory.
+   * Powers of 2 prefered.
    * @param offeset The ofset to add to the aligned address.
-   * @param flags User defined allocator flags. Currently unused and defaults to 0.
+   * @param flags User defined allocator flags. Currently unused and defaults to
+   * 0.
    * @return Pointer to allocated memory address or nullptr in case of failure;
    */
-  auto allocate(std::size_t n, std::size_t alignment, std::size_t offset, int flags = 0) -> void *;
+  auto allocate(std::size_t n, std::size_t alignment, std::size_t offset,
+                int flags = 0) -> void *;
 
   /**
    * Free allocated memory.
    *
-   * Simply decreases the memory counter by 1 but does not drop the arena (this is only done when
-   * the destructor is called)
+   * Simply decreases the memory counter by 1 but does not drop the arena (this
+   * is only done when the destructor is called)
    *
    * @param p Pointer to the begining of the memory block to free.
    * @param n Size of the memory block to be freed.
@@ -168,9 +172,9 @@ public:
 #endif
 
   /**
-   * Resets the arena to it's initial configuration. This allows it to be reused for new
-   * allocations. This also means that any previously existing memory pointers are invalidated after
-   * this call.
+   * Resets the arena to it's initial configuration. This allows it to be reused
+   * for new allocations. This also means that any previously existing memory
+   * pointers are invalidated after this call.
    */
   void reset();
 
@@ -222,11 +226,10 @@ private:
    *
    * @param other The source arena.
    */
-  arena_allocator(const arena_allocator &other, const std::lock_guard<std::mutex> &)
-      : debug_name{other.debug_name},
-        arena_capacity{other.arena_capacity},
-        free_index{other.free_index},
-        allocs{other.allocs},
+  arena_allocator(const arena_allocator &other,
+                  const std::lock_guard<std::mutex> &)
+      : debug_name{other.debug_name}, arena_capacity{other.arena_capacity},
+        free_index{other.free_index}, allocs{other.allocs},
         data_buffer{other.data_buffer} {}
 };
 
@@ -238,7 +241,10 @@ private:
  * @param lhs The left hand side of the equality operator.
  * @param rhs The right hand side of the equality operator.
  */
-inline auto operator==(const eastl::allocator &, const eastl::allocator &) -> bool { return false; }
+inline auto operator==(const eastl::allocator &, const eastl::allocator &)
+    -> bool {
+  return false;
+}
 
 /**
  * Tests if two arena allocators are different.
@@ -248,7 +254,10 @@ inline auto operator==(const eastl::allocator &, const eastl::allocator &) -> bo
  * @param lhs The left hand side of the equality operator.
  * @param rhs The right hand side of the equality operator.
  */
-inline auto operator!=(const eastl::allocator &, const eastl::allocator &) -> bool { return true; }
+inline auto operator!=(const eastl::allocator &, const eastl::allocator &)
+    -> bool {
+  return true;
+}
 
 } // namespace surge
 

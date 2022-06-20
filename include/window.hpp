@@ -13,14 +13,15 @@
 
 namespace surge {
 
-void glfw_error_callback(int code, const char *description);
+void glfw_error_callback(int code, const char *description) noexcept;
 
 /**
  * Querry the existing available monitors.
  *
  * @return The monitor array if the monitors could or false.
  */
-auto querry_available_monitors() -> std::optional<std::pair<GLFWmonitor **, std::size_t>>;
+auto querry_available_monitors() noexcept
+    -> std::optional<std::pair<GLFWmonitor **, std::size_t>>;
 
 } // namespace surge
 
