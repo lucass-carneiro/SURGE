@@ -47,13 +47,8 @@ concept retrivable_vm_type =
  */
 class squirrel_vm {
 public:
-  squirrel_vm() = default;
-  ~squirrel_vm() = default;
-
-  void startup(SQInteger) noexcept;
-  void startup() noexcept;
-
-  void shutdown() noexcept;
+  squirrel_vm(SQInteger stack_size) noexcept;
+  ~squirrel_vm() noexcept;
 
   /**
    * Calls a VM defined function inside the "surge" table, that is, a VM
@@ -184,9 +179,6 @@ private:
   std::mutex vm_mutex;
 };
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-extern squirrel_vm global_squirrel_vm;
-
 /**
  * The function invoked by the VM to print.
  *
@@ -202,6 +194,30 @@ void squirrel_print_function(HSQUIRRELVM v, const SQChar *s, ...) noexcept;
  * @param s The string formater.
  */
 void squirrel_error_function(HSQUIRRELVM v, const SQChar *s, ...) noexcept;
+
+class global_squirrel_vm {
+public:
+  static auto get() -> squirrel_vm & {
+    static squirrel_vm vm(stack_size);
+    return vm;
+  }
+
+  static const SQInteger stack_size;
+
+  global_squirrel_vm(const global_squirrel_vm &) = delete;
+  global_squirrel_vm(global_squirrel_vm &&) = delete;
+
+  auto operator=(global_squirrel_vm) -> global_squirrel_vm & = delete;
+
+  auto operator=(const global_squirrel_vm &) -> global_squirrel_vm & = delete;
+
+  auto operator=(global_squirrel_vm &&) -> global_squirrel_vm & = delete;
+
+  ~global_squirrel_vm() = default;
+
+private:
+  global_squirrel_vm() = default;
+};
 
 } // namespace surge
 

@@ -21,7 +21,7 @@ public:
         is_running(true) {
 
     const auto thread_task = [](unsigned int index) {
-      global_stdout_log_manager.log<log_event::message>(
+      global_stdout_log_manager::get().log<log_event::message>(
           "Starting worker thread index {}", index);
     };
 

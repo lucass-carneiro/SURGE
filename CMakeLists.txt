@@ -52,6 +52,7 @@ set(
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
+  "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 

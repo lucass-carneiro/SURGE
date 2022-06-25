@@ -8,19 +8,9 @@
 #include <squirrel.h>
 #include <type_traits>
 
-void surge::squirrel_vm::startup(SQInteger size) noexcept {
-  initial_stack_size = size;
-
-  virtual_machine = sq_open(initial_stack_size);
-
-  sqstd_seterrorhandlers(virtual_machine);
-
-  sq_setprintfunc(virtual_machine, squirrel_print_function,
-                  squirrel_error_function);
-}
-
-void surge::squirrel_vm::startup() noexcept {
-  virtual_machine = sq_open(initial_stack_size);
+surge::squirrel_vm::squirrel_vm(SQInteger stack_size) noexcept
+    : initial_stack_size(stack_size),
+      virtual_machine(sq_open(initial_stack_size)) {
 
   sqstd_seterrorhandlers(virtual_machine);
 
@@ -28,7 +18,7 @@ void surge::squirrel_vm::startup() noexcept {
                   squirrel_error_function);
 }
 
-void surge::squirrel_vm::shutdown() noexcept { sq_close(virtual_machine); }
+surge::squirrel_vm::~squirrel_vm() noexcept { sq_close(virtual_machine); }
 
 void surge::squirrel_print_function(HSQUIRRELVM, const SQChar *s,
                                     ...) noexcept {

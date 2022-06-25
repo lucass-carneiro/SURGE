@@ -14,30 +14,19 @@
 #include <cstdlib>
 #include <exception>
 
-surge::log_manager surge::global_stdout_log_manager{};
-surge::log_manager surge::global_file_log_manager{};
-surge::squirrel_vm surge::global_squirrel_vm{};
-surge::arena_allocator global_arena_allocator("Global arena allocator", 1024);
+const std::filesystem::path surge::global_file_log_manager::file_path =
+    std::filesystem::path{"log.txt"};
+
+const SQInteger surge::global_squirrel_vm::stack_size = 1024;
+
+const std::size_t surge::global_arena_allocator::arena_size = 1024;
 
 inline auto init_all_subsystems() noexcept {
   using namespace surge;
-  // global_arena_allocator, initialized by constructor call
-  global_stdout_log_manager.startup();
-  global_file_log_manager.startup("log.txt");
-  global_squirrel_vm.startup();
-}
-
-inline auto shutdown_all_subsystems() noexcept {
-  using namespace surge;
-  global_squirrel_vm.shutdown();
-  global_file_log_manager.shutdown();
-  global_stdout_log_manager.shutdown();
-  global_arena_allocator.reset();
-}
-
-inline auto shutdown_all_subsystems(int status) noexcept -> int {
-  shutdown_all_subsystems();
-  return status;
+  global_stdout_log_manager::get();
+  global_file_log_manager::get();
+  global_squirrel_vm::get();
+  global_arena_allocator::get();
 }
 
 auto main(int argc, char **argv) noexcept -> int {
@@ -48,58 +37,63 @@ auto main(int argc, char **argv) noexcept -> int {
   // Job system
   // TODO: Bug: when the things get destroyed, it tries to print to a file
   // but the log system is already gone and no file is there, only a nullptr
-  job_system system(global_arena_allocator);
+  job_system system(global_arena_allocator::get());
   system.join_all();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
   if (!cmd_line_args) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   // Config script validation and engine context loading
   const auto valid_config_script =
       validate_config_script_path(*(cmd_line_args));
   if (!valid_config_script) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   const auto engine_context_pushed =
-      global_squirrel_vm.load_context(*(valid_config_script));
+      global_squirrel_vm::get().load_context(*(valid_config_script));
   if (!engine_context_pushed) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   // Retrieve configuration values
   const auto window_width =
-      global_squirrel_vm.surge_retrieve<SQInteger, int>(_SC("window_width"));
+      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
+          _SC("window_width"));
   if (!window_width.has_value()) {
     log_all<log_event::error>("Invalid window width.");
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   const auto window_height =
-      global_squirrel_vm.surge_retrieve<SQInteger, int>(_SC("window_height"));
+      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
+          _SC("window_height"));
   if (!window_width.has_value()) {
     log_all<log_event::error>("Invalid window height.");
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   const auto window_name =
-      global_squirrel_vm.surge_retrieve<const SQChar *>(_SC("window_name"));
+      global_squirrel_vm::get().surge_retrieve<const SQChar *>(
+          _SC("window_name"));
   if (!window_name.has_value()) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
-  auto windowed = global_squirrel_vm.surge_retrieve<SQBool>(_SC("windowed"));
+  auto windowed =
+      global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
   if (!windowed.has_value()) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   auto window_monitor_index =
-      global_squirrel_vm.surge_retrieve<SQInteger>(_SC("window_monitor_index"));
+      global_squirrel_vm::get().surge_retrieve<SQInteger>(
+          _SC("window_monitor_index"));
   if (!window_monitor_index.has_value()) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   // GLFW callbacks
@@ -107,13 +101,13 @@ auto main(int argc, char **argv) noexcept -> int {
 
   // GLFW initialization
   if (glfwInit() != GLFW_TRUE) {
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   auto monitors = querry_available_monitors();
   if (!monitors.has_value()) {
     glfwTerminate();
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   if (window_monitor_index >= monitors.value().second) {
@@ -144,7 +138,7 @@ auto main(int argc, char **argv) noexcept -> int {
 
   if (window == nullptr) {
     glfwTerminate();
-    return shutdown_all_subsystems(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   // Main loop
@@ -155,7 +149,6 @@ auto main(int argc, char **argv) noexcept -> int {
   // Normal shutdown
   glfwDestroyWindow(window);
   glfwTerminate();
-  shutdown_all_subsystems();
 
   return EXIT_SUCCESS;
 }

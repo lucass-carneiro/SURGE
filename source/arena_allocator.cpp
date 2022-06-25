@@ -12,7 +12,7 @@ surge::arena_allocator::~arena_allocator() {
   std::lock_guard lock(arena_mutex);
 
   if (allocs != 0) {
-    global_stdout_log_manager.log<log_event::warning>(
+    global_stdout_log_manager::get().log<log_event::warning>(
         "Dangling pointer risk ahead! Not all allocations in {} were freed "
         "and complete arena deallocation is about to take place. Procead with "
         "cauton");
@@ -22,7 +22,7 @@ surge::arena_allocator::~arena_allocator() {
 void surge::arena_allocator::deallocate(void *p, std::size_t n) {
   std::lock_guard lock(arena_mutex);
 
-  global_stdout_log_manager.log<log_event::message>(
+  global_stdout_log_manager::get().log<log_event::message>(
       "{} deallocated {} bytes starting at RAM address {:#x}", debug_name, n,
       reinterpret_cast<uintptr_t>(
           p) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -54,7 +54,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   if (alignment == 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager.log<log_event::error>(
+    global_stdout_log_manager::get().log<log_event::error>(
         "Unable to allocate {} bytes in {} with zero alignment.", n,
         debug_name);
 #endif
@@ -66,7 +66,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   if (!is_pow_2(alignment)) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager.log<log_event::warning>(
+    global_stdout_log_manager::get().log<log_event::warning>(
         "{} bytes allocation in {} requested an alignment of {}, which is "
         "not a power of 2.",
         n, debug_name, alignment);
@@ -83,7 +83,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   if (intended_alloc_idx > arena_capacity) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager.log<log_event::error>(
+    global_stdout_log_manager::get().log<log_event::error>(
         "Unable to allocate {} bytes in {} since tis would result in an "
         "actual allocation of {} bytes and there are only {} bytes left.",
         n, debug_name, intended_alloc_idx - free_index,
@@ -98,7 +98,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
   auto start_ptr = &(data_buffer[start_index]);
 
 #ifdef SURGE_DEBUG_MEMORY
-  global_stdout_log_manager.log<log_event::message>(
+  global_stdout_log_manager::get().log<log_event::message>(
       // log_all<log_event::message>(
       "{} allocation summary:\n"
       "  Requested size {}\n"

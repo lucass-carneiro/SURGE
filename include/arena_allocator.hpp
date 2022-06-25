@@ -259,6 +259,32 @@ inline auto operator!=(const eastl::allocator &, const eastl::allocator &)
   return true;
 }
 
+class global_arena_allocator {
+public:
+  static auto get() noexcept -> arena_allocator & {
+    static arena_allocator allocator("Global arena allocator", arena_size);
+    return allocator;
+  }
+
+  static const std::size_t arena_size;
+
+  global_arena_allocator(const global_arena_allocator &) = delete;
+  global_arena_allocator(global_arena_allocator &&) = delete;
+
+  auto operator=(global_arena_allocator) -> global_arena_allocator & = delete;
+
+  auto operator=(const global_arena_allocator &)
+      -> global_arena_allocator & = delete;
+
+  auto operator=(global_arena_allocator &&)
+      -> global_arena_allocator & = delete;
+
+  ~global_arena_allocator() = default;
+
+private:
+  global_arena_allocator() = default;
+};
+
 } // namespace surge
 
 #endif // SURGE_ARENA_ALLOCATOR_HPP
