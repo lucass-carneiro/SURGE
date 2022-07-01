@@ -3,6 +3,7 @@
 #include "log.hpp"
 
 #include <cstddef>
+#include <iostream>
 #include <mutex>
 #include <vulkan/vulkan_core.h>
 
@@ -12,17 +13,22 @@ surge::arena_allocator::~arena_allocator() {
   std::lock_guard lock(arena_mutex);
 
   if (allocs != 0) {
-    global_stdout_log_manager::get().log<log_event::warning>(
-        "Dangling pointer risk ahead! Not all allocations in {} were freed "
-        "and complete arena deallocation is about to take place. Procead with "
-        "cauton");
+    // TODO: This should be output by the logger, but the datetime string causes
+    // a segfault
+    std::cout << "Dangling pointer risk ahead! Not all allocations in \""
+              << debug_name
+              << "\" were freed "
+                 "and complete arena deallocation is about to take place. "
+                 "Procead with "
+                 "caution"
+              << std::endl;
   }
 }
 
 void surge::arena_allocator::deallocate(void *p, std::size_t n) {
   std::lock_guard lock(arena_mutex);
 
-  global_stdout_log_manager::get().log<log_event::message>(
+  log_all<log_event::message>(
       "{} deallocated {} bytes starting at RAM address {:#x}", debug_name, n,
       reinterpret_cast<uintptr_t>(
           p) // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -54,7 +60,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   if (alignment == 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager::get().log<log_event::error>(
+    log_all<log_event::error>(
         "Unable to allocate {} bytes in {} with zero alignment.", n,
         debug_name);
 #endif
@@ -66,7 +72,7 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   if (!is_pow_2(alignment)) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager::get().log<log_event::warning>(
+    log_all<log_event::warning>(
         "{} bytes allocation in {} requested an alignment of {}, which is "
         "not a power of 2.",
         n, debug_name, alignment);
@@ -78,28 +84,27 @@ auto surge::arena_allocator::allocate(std::size_t n, std::size_t alignment,
 
   // TODO: Is it possible that (alignment - modulo) < 0? If so, this must be
   // prevented.
-  const std::size_t intended_alloc_idx =
-      free_index + (alignment - modulo) + offset;
+  const std::size_t end_index = free_index + n + (alignment - modulo) + offset;
+  const std::size_t actual_alloc_size = n + (alignment - modulo) + offset;
+  const std::size_t bytes_left = arena_capacity - free_index;
 
-  if (intended_alloc_idx > arena_capacity) {
+  if (end_index > arena_capacity) {
 #ifdef SURGE_DEBUG_MEMORY
-    global_stdout_log_manager::get().log<log_event::error>(
+    log_all<log_event::error>(
         "Unable to allocate {} bytes in {} since tis would result in an "
         "actual allocation of {} bytes and there are only {} bytes left.",
-        n, debug_name, intended_alloc_idx - free_index,
-        arena_capacity - free_index);
+        n, debug_name, actual_alloc_size, bytes_left);
 #endif
     return nullptr;
   }
 
   const auto start_index = free_index;
-  free_index = intended_alloc_idx;
+  free_index += actual_alloc_size;
   allocs++;
   auto start_ptr = &(data_buffer[start_index]);
 
 #ifdef SURGE_DEBUG_MEMORY
-  global_stdout_log_manager::get().log<log_event::message>(
-      // log_all<log_event::message>(
+  log_all<log_event::message>(
       "{} allocation summary:\n"
       "  Requested size {}\n"
       "  Allocated size {}\n"
@@ -119,4 +124,27 @@ void surge::arena_allocator::reset() {
   free_index = 0;
   allocs = 0;
   data_buffer.clear();
+}
+
+auto operator new[](size_t size, const char *pName, int flags,
+                    unsigned debugFlags, const char *file, int line) -> void * {
+  // TODO: What to do with those flags?
+  (void)pName;
+  (void)debugFlags;
+  (void)file;
+  (void)line;
+  return surge::global_arena_allocator::get().allocate(size, flags);
+}
+
+auto operator new[](size_t size, size_t alignment, size_t alignmentOffset,
+                    const char *pName, int flags, unsigned debugFlags,
+                    const char *file, int line) -> void * {
+
+  // TODO: What to do with those flags?
+  (void)pName;
+  (void)debugFlags;
+  (void)file;
+  (void)line;
+  return surge::global_arena_allocator::get().allocate(size, alignment,
+                                                       alignmentOffset, flags);
 }

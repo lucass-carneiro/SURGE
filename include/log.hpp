@@ -12,9 +12,10 @@
 
 // clang-format off
 #include <bits/types/FILE.h>
+#include <date/date.h>
 #include <fmt/color.h>
 #include <fmt/core.h>
-#include <gsl/gsl-lite.hpp>
+#include <date/tz.h>
 // clang-format on
 
 #include <array>
@@ -35,25 +36,12 @@ namespace surge {
 /**
  * Returns a formatted string containing the current (local) date and time
  *
- * This function uses ctime instead of the chrono machinary, but it is
- * thread safe. It uses a local stack allocated buffer to store the
- * date string, which can be adjusted at compile time.
- *
- * @param n The size of the internal buffer used to store the date and time.
  * @return A C++ string containing the current local date and time.
  */
-template <std::size_t max_datetimestring_size = 20>
-[[nodiscard]] auto get_datetime_string() -> std::string {
-  std::time_t t =
-      std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  std::array<char, max_datetimestring_size> mbstr{};
-  auto bytes_written = std::strftime(mbstr.data(), max_datetimestring_size,
-                                     "%F %T", std::localtime(&t));
-
-  if (bytes_written != 0)
-    return std::string(mbstr.data());
-  else
-    return std::string{"YYYY-MM-DD HH:MM:SS"};
+[[nodiscard]] inline auto get_datetime_string() noexcept -> std::string {
+  return date::format(
+      "%F %T %Z",
+      date::make_zoned(date::current_zone(), std::chrono::system_clock::now()));
 }
 
 /**

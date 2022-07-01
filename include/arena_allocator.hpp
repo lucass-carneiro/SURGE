@@ -287,4 +287,35 @@ private:
 
 } // namespace surge
 
+/**
+ * Global memory allocator used by EASTL. Wrapps the global_arena_allocator.
+ *
+ * @param size The number of bytes to allocate.
+ * @param pName The allocator name. (TODO: Is this correct?)
+ * @param flags Allocator control flags. (TODO: Is this correct?)
+ * @param debugFlags Allocator debug flags. (TODO: Is this correct?)
+ * @param file Name of the file calling the new(). (TODO: Is this correct?)
+ * @param line Number of the line calling new(). (TODO: Is this correct?)
+ * @return Pointer to new memory or null.
+ */
+auto operator new[](size_t size, const char *pName, int flags,
+                    unsigned debugFlags, const char *file, int line) -> void *;
+
+/**
+ * Global memory allocator used by EASTL. Wrapps the global_arena_allocator.
+ *
+ * @param size The number of bytes to allocate.
+ * @param alignment Allocation alignment.
+ * @param alignmentOffset Allocation offset.
+ * @param pName The allocator name. (TODO: Is this correct?)
+ * @param flags Allocator control flags. (TODO: Is this correct?)
+ * @param debugFlags Allocator debug flags. (TODO: Is this correct?)
+ * @param file Name of the file calling the new(). (TODO: Is this correct?)
+ * @param line Number of the line calling new(). (TODO: Is this correct?)
+ * @return Pointer to new memory or null.
+ */
+auto operator new[](size_t size, size_t alignment, size_t alignmentOffset,
+                    const char *pName, int flags, unsigned debugFlags,
+                    const char *file, int line) -> void *;
+
 #endif // SURGE_ARENA_ALLOCATOR_HPP

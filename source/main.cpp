@@ -1,7 +1,7 @@
 #include "arena_allocator.hpp"
 #include "cli.hpp"
-#include "job_system.hpp"
 #include "log.hpp"
+#include "pool_allocator.hpp"
 #include "safe_ops.hpp"
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
@@ -33,12 +33,6 @@ auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
   init_all_subsystems();
-
-  // Job system
-  // TODO: Bug: when the things get destroyed, it tries to print to a file
-  // but the log system is already gone and no file is there, only a nullptr
-  job_system system(global_arena_allocator::get());
-  system.join_all();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
@@ -140,6 +134,10 @@ auto main(int argc, char **argv) noexcept -> int {
     glfwTerminate();
     return EXIT_FAILURE;
   }
+
+  // TODO: Temp area
+  pool_allocator a("Pool allocator", 10, 10);
+  global_arena_allocator::get().allocate(10);
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {

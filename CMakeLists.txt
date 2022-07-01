@@ -51,6 +51,8 @@ set(
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
+  "${Surge_SOURCE_DIR}/include/pool_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
@@ -77,7 +79,7 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=undefined,thread)
+    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=undefined,thread)
     target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=undefined,thread)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # TODO:
@@ -116,6 +118,7 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::glfw
   CONAN_PKG::glm
   CONAN_PKG::gsl-lite
+  CONAN_PKG::date
 )
 
 target_include_directories(
