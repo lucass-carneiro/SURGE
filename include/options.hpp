@@ -15,5 +15,11 @@
 #define SURGE_USE_LOG
 #define SURGE_USE_LOG_COLOR
 #define SURGE_DEBUG_MEMORY
+#define SURGE_VULKAN_VALIDATION
+
+#ifdef SURGE_VULKAN_VALIDATION
+#include <array>
+constexpr const std::array<const char* const, 1> required_vulkan_validation_layers = {"VK_LAYER_KHRONOS_validation"};
+#endif
 
 #endif // SURGE_OPTIONS_HPP

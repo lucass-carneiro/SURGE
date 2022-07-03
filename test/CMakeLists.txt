@@ -1,4 +1,4 @@
-set(SURGE_TESTS_SOURCE_LIST ${SURGE_SOURCE_LIST})
+ set(SURGE_TESTS_SOURCE_LIST ${SURGE_SOURCE_LIST})
 set(SURGE_TESTS_HEADER_LIST ${SURGE_HEADER_LIST})
 
 list(REMOVE_ITEM SURGE_TESTS_SOURCE_LIST ${Surge_SOURCE_DIR}/source/main.cpp)
@@ -22,7 +22,8 @@ target_include_directories(
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
-target_link_libraries(tests PRIVATE 
+target_link_libraries(tests PRIVATE
+  Vulkan::Vulkan
   CONAN_PKG::eastl
   CONAN_PKG::fmt
   CONAN_PKG::docopt.cpp

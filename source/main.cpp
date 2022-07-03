@@ -6,27 +6,37 @@
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
 
-// clang-format off
-#include <GLFW/glfw3.h>
-#include <EASTL/vector.h>
-// clang-format on
-
+#include <cstddef>
 #include <cstdlib>
 #include <exception>
 
 const std::filesystem::path surge::global_file_log_manager::file_path =
     std::filesystem::path{"log.txt"};
 
-const SQInteger surge::global_squirrel_vm::stack_size = 1024;
+const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 
-const std::size_t surge::global_arena_allocator::arena_size = 1024;
+const std::size_t surge::global_arena_allocator::arena_size =
+    1024 * std::size_t{10};
 
-inline auto init_all_subsystems() noexcept {
+// TODO: Get from config file
+const char *const surge::global_vulkan_instance::application_name =
+    "SURGE game";
+
+inline void init_all_subsystems() noexcept {
   using namespace surge;
   global_stdout_log_manager::get();
   global_file_log_manager::get();
   global_squirrel_vm::get();
   global_arena_allocator::get();
+}
+
+inline auto init_vulkan() noexcept -> bool {
+  using namespace surge;
+  global_vulkan_instance::get();
+  bool result = global_vulkan_instance::get().check_extensions();
+  result = result && global_vulkan_instance::get().check_validation_layers();
+  result = result && global_vulkan_instance::get().create_instance();
+  return result;
 }
 
 auto main(int argc, char **argv) noexcept -> int {
@@ -113,6 +123,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // GLFW window creation
+  log_all<log_event::message>("Initializing engine window");
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   GLFWwindow *window = nullptr;
@@ -135,9 +146,11 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // TODO: Temp area
-  pool_allocator a("Pool allocator", 10, 10);
-  global_arena_allocator::get().allocate(10);
+  // Vulkan initialization
+  if (!init_vulkan()) {
+    glfwTerminate();
+    return EXIT_FAILURE;
+  }
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {

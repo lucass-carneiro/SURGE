@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 # -----------------------------------------
-# 1) Project
+# Project
 # -----------------------------------------
 
 project(
@@ -14,7 +14,7 @@ project(
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 # -----------------------------------------
-# 2) In-source build guard
+# In-source build guard
 # -----------------------------------------
 
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
@@ -25,24 +25,37 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 
 # -----------------------------------------
-# 3) External dependencies
+# External dependencies
 # -----------------------------------------
 
+#find_package(Vulkan REQUIRED FATAL_ERROR)
+include(FindVulkan)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 # -----------------------------------------
-# 4) Source files
+# Options
 # -----------------------------------------
 
-# Available options
-option(SURGE_USE_LOG "Enable log messages" ON)
-option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
-option(SURGE_BUILD_TESTING "Build tests" ON)
-option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  option(SURGE_USE_LOG "Enable log messages" ON)
+  option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
+  option(SURGE_BUILD_TESTING "Build tests" ON)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
+  option(SURGE_VULKAN_VALIDATION "Enable Vulkan validation layers" ON)
+else()
+  option(SURGE_USE_LOG "Enable log messages" OFF)
+  option(SURGE_USE_LOG_COLOR "Use colors on log outputs" OFF)
+  option(SURGE_BUILD_TESTING "Build tests" OFF)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+  option(SURGE_VULKAN_VALIDATION "Enable Vulkan validation layers" OFF)
+endif()
 
-# Option file
 configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}/include/options.hpp")
+
+# -----------------------------------------
+# Source files
+# -----------------------------------------
 
 # Core source files
 set(
@@ -73,7 +86,7 @@ target_compile_features(Surge PRIVATE cxx_std_20)
 set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 
 # -----------------------------------------
-# 5) Compilers flags and options
+# Compilers flags and options
 # -----------------------------------------
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -106,10 +119,11 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Profile")
 endif()
 
 # -----------------------------------------
-# 7) Link dependencies
+# Link dependencies
 # -----------------------------------------
 
 target_link_libraries(Surge PRIVATE
+  Vulkan::Vulkan
   CONAN_PKG::eastl
   CONAN_PKG::fmt
   CONAN_PKG::docopt.cpp
@@ -127,7 +141,7 @@ target_include_directories(
 )
 
 # -----------------------------------------
-# 8) Compile tests
+# Compile tests
 # -----------------------------------------
 
 if(SURGE_BUILD_TESTING)

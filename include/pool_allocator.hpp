@@ -22,7 +22,9 @@
 namespace surge {
 
 /**
+ * TODO: Finish this allocator/acess if it is really necessary
  * Pool allocator compatible with EASTL
+ * https://eastl.docsforge.com/master/faq/#cont27-how-do-i-make-two-containers-share-a-memory-pool
  */
 class pool_allocator {
 public:

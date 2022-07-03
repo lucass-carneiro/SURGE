@@ -1,6 +1,7 @@
 #include "arena_allocator.hpp"
 #include "log.hpp"
 #include "squirrel_bindings.hpp"
+#include "window.hpp"
 
 #include <gtest/gtest.h>
 
@@ -10,6 +11,10 @@ const std::filesystem::path surge::global_file_log_manager::file_path =
 const SQInteger surge::global_squirrel_vm::stack_size = 1024;
 
 const std::size_t surge::global_arena_allocator::arena_size = 1024;
+
+// TODO: Get from config file
+const char *const surge::global_vulkan_instance::application_name =
+    "SURGE game";
 
 inline auto init_all_subsystems() noexcept {
   using namespace surge;

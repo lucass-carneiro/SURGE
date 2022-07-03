@@ -20,7 +20,9 @@
 namespace surge {
 
 /**
- * Arena allocator compatible with EASTL
+ * TODO: This is the default global allocator. Maybe something that can actually
+ * release memory on a per allocation basis better? Arena allocator compatible
+ * with EASTL
  */
 class arena_allocator {
 public:
