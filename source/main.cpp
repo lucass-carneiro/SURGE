@@ -16,7 +16,7 @@ const std::filesystem::path surge::global_file_log_manager::file_path =
 const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 
 const std::size_t surge::global_arena_allocator::arena_size =
-    1024 * std::size_t{10};
+    1024 * std::size_t{100};
 
 // TODO: Get from config file
 const char *const surge::global_vulkan_instance::application_name =
@@ -41,6 +41,8 @@ inline auto init_vulkan() noexcept -> bool {
 
   result = result && global_vulkan_instance::get().create_instance();
   result = result && global_vulkan_instance::get().pick_physical_device();
+  result = result && global_vulkan_instance::get().create_logical_device();
+
   return result;
 }
 

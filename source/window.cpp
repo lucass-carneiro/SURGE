@@ -78,7 +78,8 @@ auto surge::querry_available_monitors() noexcept
 }
 
 surge::global_vulkan_instance::global_vulkan_instance() noexcept
-    : instance_created{false}, app_info{}, create_info{} {
+    : instance_created{false}, logical_device_created{false}, app_info{},
+      create_info{} {
 
   log_all<log_event::message>("Initializing Vulkan application info");
 
@@ -99,9 +100,14 @@ surge::global_vulkan_instance::global_vulkan_instance() noexcept
 }
 
 surge::global_vulkan_instance::~global_vulkan_instance() noexcept {
+  // TODO: Replace nullptr with allocator callbacks
+
+  if (logical_device_created) {
+    vkDestroyDevice(logical_device, nullptr);
+  }
+
   log_all<log_event::message>("Destroying Vulkan instance");
   if (instance_created) {
-    // TODO: Replace nullptr with allocator callbacks
     vkDestroyInstance(instance, nullptr);
   }
 }
@@ -352,8 +358,8 @@ auto surge::global_vulkan_instance::pick_physical_device() noexcept -> bool {
   return true;
 }
 
-void surge::global_vulkan_instance::get_available_queue_families(
-    VkPhysicalDevice device) noexcept {
+auto surge::global_vulkan_instance::find_queue_families(
+    VkPhysicalDevice device) noexcept -> queue_family_indices {
 
   log_all<log_event::message>("Querying available Vulkan queue families");
 
@@ -361,21 +367,13 @@ void surge::global_vulkan_instance::get_available_queue_families(
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
                                            nullptr);
 
-  eastl::vector<VkQueueFamilyProperties> available_queue_families_tmp(
+  eastl::vector<VkQueueFamilyProperties> available_queue_families(
       queue_family_count);
   vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
-                                           available_queue_families_tmp.data());
-
-  available_queue_families = std::move(available_queue_families_tmp);
+                                           available_queue_families.data());
 
   log_all<log_event::message>("{} Vulkan queue families found",
                               available_queue_families.size());
-}
-
-auto surge::global_vulkan_instance::find_queue_families(
-    VkPhysicalDevice device) noexcept -> queue_family_indices {
-
-  get_available_queue_families(device);
 
   log_all<log_event::message>(
       "Searching for Vulkan queue families with the required capabilities.");
@@ -397,4 +395,59 @@ auto surge::global_vulkan_instance::find_queue_families(
   }
 
   return indices;
+}
+
+auto surge::global_vulkan_instance::create_logical_device() noexcept -> bool {
+  log_all<log_event::message>("Creating Vulkan logical device");
+
+  const auto indices = find_queue_families(selected_physical_device);
+
+  VkDeviceQueueCreateInfo queue_create_info{};
+  queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+  queue_create_info.queueFamilyIndex = indices.graphics_family.value();
+  queue_create_info.queueCount = 1;
+
+  float queue_priority{1};
+  queue_create_info.pQueuePriorities = &queue_priority;
+
+  VkPhysicalDeviceFeatures device_features{};
+
+  VkDeviceCreateInfo device_create_info{};
+  device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+  device_create_info.pQueueCreateInfos = &queue_create_info;
+  device_create_info.queueCreateInfoCount = 1;
+
+  device_create_info.pEnabledFeatures = &device_features;
+
+  device_create_info.enabledExtensionCount = 0;
+
+#ifdef SURGE_VULKAN_VALIDATION
+  device_create_info.enabledLayerCount =
+      static_cast<std::uint32_t>(required_vulkan_validation_layers.size());
+  device_create_info.ppEnabledLayerNames =
+      required_vulkan_validation_layers.data();
+#else
+  device_create_info.enabledLayerCount = 0;
+#endif
+
+  // TODO: Replace nullptr with allocator
+  const auto status = vkCreateDevice(
+      selected_physical_device, &device_create_info, nullptr, &logical_device);
+
+  if (status != VK_SUCCESS) {
+    log_all<log_event::message>(
+        "Unable to initialize Vulkan logical device. Vulkan error code {}",
+        status);
+    return false;
+  }
+
+  log_all<log_event::message>("Vulkan logical device created.");
+  logical_device_created = true;
+
+  log_all<log_event::message>("Retrieving Vulkan graphics queue.");
+  vkGetDeviceQueue(logical_device, indices.graphics_family.value(), 0,
+                   &graphics_queue);
+
+  return true;
 }

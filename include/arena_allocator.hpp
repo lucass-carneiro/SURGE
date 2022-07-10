@@ -221,6 +221,7 @@ private:
     return (x & (x - 1)) == 0;
   }
 
+#if EASTL_NAME_ENABLED
   /**
    * Copy initialize an arena in a thread safe maner by locking the source mutex
    *
@@ -231,6 +232,17 @@ private:
       : debug_name{other.debug_name}, arena_capacity{other.arena_capacity},
         free_index{other.free_index}, allocs{other.allocs},
         data_buffer{other.data_buffer} {}
+#else
+  /**
+   * Copy initialize an arena in a thread safe maner by locking the source mutex
+   *
+   * @param other The source arena.
+   */
+  arena_allocator(const arena_allocator &other,
+                  const std::lock_guard<std::mutex> &)
+      : arena_capacity{other.arena_capacity}, free_index{other.free_index},
+        allocs{other.allocs}, data_buffer{other.data_buffer} {}
+#endif
 };
 
 /**

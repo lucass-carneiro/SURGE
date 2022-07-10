@@ -100,6 +100,7 @@ public:
 
   log_manager() : output_file(stdout, [](std::FILE *) -> int { return 0; }) {}
 
+#ifdef SURGE_USE_LOG
   /**
    * Log an event.
    *
@@ -113,13 +114,26 @@ public:
    */
   template <log_event e, typename... Args>
   inline void log(fmt::string_view str, Args &&...args) noexcept {
-#ifdef SURGE_USE_LOG
     const std::lock_guard lock(log_mutex);
     vlog<e>(str, fmt::make_format_args(args...));
-#else
-    return;
-#endif
   }
+#else
+  /**
+   * Log an event.
+   *
+   * This function logs an event using fmt print syntax. @see vlog()
+   *
+   * @param e The type of event to log.
+   * @param Args The types of the format arguments. This is automatically
+   * deduced by the compiler. and should not be specified.
+   * @param str A fmt-like format string.
+   * @param args The arguments of the fmt-like format string.
+   */
+  template <log_event e, typename... Args>
+  inline void log(fmt::string_view, Args &&...) noexcept {
+    return;
+  }
+#endif
 
 private:
   // The file pointer is released explicitly using the shutdown function

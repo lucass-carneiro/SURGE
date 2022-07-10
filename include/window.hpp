@@ -51,6 +51,8 @@ public:
 
   auto pick_physical_device() noexcept -> bool;
 
+  auto create_logical_device() noexcept -> bool;
+
   ~global_vulkan_instance() noexcept;
 
 private:
@@ -62,7 +64,7 @@ private:
                  const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
                  void *user_data) -> VkBool32;
 
-  bool instance_created;
+  bool instance_created, logical_device_created;
 
   VkApplicationInfo app_info;
   VkInstanceCreateInfo create_info;
@@ -75,7 +77,8 @@ private:
   eastl::vector<VkPhysicalDevice> available_physical_devices;
   VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
 
-  eastl::vector<VkQueueFamilyProperties> available_queue_families;
+  VkDevice logical_device = VK_NULL_HANDLE;
+  VkQueue graphics_queue = VK_NULL_HANDLE;
 
 #ifdef SURGE_VULKAN_VALIDATION
   eastl::vector<VkLayerProperties> available_layers;
@@ -104,8 +107,6 @@ private:
       return graphics_family.has_value();
     }
   };
-
-  void get_available_queue_families(VkPhysicalDevice device) noexcept;
 
   auto find_queue_families(VkPhysicalDevice device) noexcept
       -> queue_family_indices;
