@@ -133,7 +133,7 @@ auto operator new[](size_t size, const char *pName, int flags,
   (void)debugFlags;
   (void)file;
   (void)line;
-  return surge::global_arena_allocator::get().allocate(size, flags);
+  return EASTLAllocFlags("dummy", size, flags);
 }
 
 auto operator new[](size_t size, size_t alignment, size_t alignmentOffset,
@@ -145,6 +145,6 @@ auto operator new[](size_t size, size_t alignment, size_t alignmentOffset,
   (void)debugFlags;
   (void)file;
   (void)line;
-  return surge::global_arena_allocator::get().allocate(size, alignment,
-                                                       alignmentOffset, flags);
+  return EASTLAllocAlignedFlags("dummy", size, alignment, alignmentOffset,
+                                flags);
 }

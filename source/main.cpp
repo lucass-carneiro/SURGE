@@ -34,8 +34,13 @@ inline auto init_vulkan() noexcept -> bool {
   using namespace surge;
   global_vulkan_instance::get();
   bool result = global_vulkan_instance::get().check_extensions();
+
+#ifdef SURGE_VULKAN_VALIDATION
   result = result && global_vulkan_instance::get().check_validation_layers();
+#endif
+
   result = result && global_vulkan_instance::get().create_instance();
+  result = result && global_vulkan_instance::get().pick_physical_device();
   return result;
 }
 

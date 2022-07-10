@@ -4,14 +4,12 @@
 #include "options.hpp"
 
 //clang-format off
-
 #ifdef SURGE_DEBUG_MEMORY
 #define EASTL_NAME_ENABLED 1 // NOLINT(cppcoreguidelines-macro-usage)
 #endif
 
 #include <EASTL/allocator.h>
-
-//clang-format on
+// clang-format on
 
 #include <cstddef>
 #include <mutex>
@@ -288,6 +286,43 @@ private:
 };
 
 } // namespace surge
+
+#ifdef EASTLAlloc
+#undef EASTLAlloc
+#endif
+
+#ifdef EASTLAllocFlags
+#undef EASTLAllocFlags
+#endif
+
+#ifdef EASTLAllocAligned
+#undef EASTLAllocAligned
+#endif
+
+#ifdef EASTLAllocAlignedFlags
+#undef EASTLAllocAlignedFlags
+#endif
+
+#ifdef EASTLFree
+#undef EASTLFree
+#endif
+
+#define EASTLAlloc(allocator, n)                                               \
+  surge::global_arena_allocator::get().allocate((n));
+
+#define EASTLAllocFlags(allocator, n, flags)                                   \
+  surge::global_arena_allocator::get().allocate(n, flags);
+
+#define EASTLAllocAligned(allocator, n, alignment, offset)                     \
+  surge::global_arena_allocator::get().allocate((n), (alignment), (offset))
+
+#define EASTLAllocAlignedFlags(allocator, n, alignment, offset, flags)         \
+  surge::global_arena_allocator::get().allocate((n), (alignment), (offset),    \
+                                                (flags))
+
+#define EASTLFree(allocator, p, size)                                          \
+  surge::global_arena_allocator::get().deallocate(static_cast<void *>((p)),    \
+                                                  (size));
 
 /**
  * Global memory allocator used by EASTL. Wrapps the global_arena_allocator.

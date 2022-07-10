@@ -1,7 +1,9 @@
 #ifndef SURGE_WINDOW_HPP
 #define SURGE_WINDOW_HPP
 
+#include "arena_allocator.hpp"
 #include "options.hpp"
+#include <vulkan/vulkan_core.h>
 
 // clang-format off
 #define GLFW_INCLUDE_VULKAN
@@ -39,11 +41,6 @@ public:
 
   static const char *const application_name;
 
-#ifdef SURGE_VULKAN_VALIDATION
-  static constexpr const std::uint32_t required_validation_layer_count =
-      std::uint32_t{required_vulkan_validation_layers.size()};
-#endif
-
   auto create_instance() noexcept -> bool;
 
   auto check_extensions() noexcept -> bool;
@@ -52,18 +49,52 @@ public:
   auto check_validation_layers() noexcept -> bool;
 #endif
 
+  auto pick_physical_device() noexcept -> bool;
+
   ~global_vulkan_instance() noexcept;
 
 private:
   global_vulkan_instance() noexcept;
+
+  VKAPI_ATTR auto VKAPI_CALL
+  debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                 VkDebugUtilsMessageTypeFlagsEXT message_type,
+                 const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
+                 void *user_data) -> VkBool32;
 
   bool instance_created;
 
   VkApplicationInfo app_info;
   VkInstanceCreateInfo create_info;
 
-  VkInstance instance;
+  eastl::vector<VkExtensionProperties> available_extensions;
+  eastl::vector<const char *> required_extensions;
+
+  VkInstance instance = VK_NULL_HANDLE;
+
+  eastl::vector<VkPhysicalDevice> available_physical_devices;
+  VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
+
+#ifdef SURGE_VULKAN_VALIDATION
+  eastl::vector<VkLayerProperties> available_layers;
+#endif
+
+  void get_required_extensions() noexcept;
+  void get_available_extensions() noexcept;
+
+#ifdef SURGE_VULKAN_VALIDATION
+  void get_available_validation_layers() noexcept;
+#endif
+
+  void get_available_physical_devices() noexcept;
+
+  auto is_suitable(VkPhysicalDevice device) noexcept -> bool;
+
+  void print_device_summary(VkPhysicalDevice device) noexcept;
+
+  auto device_type_string(std::uint8_t id) -> const char *;
 };
+
 } // namespace surge
 
 #endif // SURGE_WINDOW_HPP

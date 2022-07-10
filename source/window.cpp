@@ -2,11 +2,12 @@
 #include "log.hpp"
 #include "options.hpp"
 
-#include <EASTL/vector.h>
 #include <cstddef>
-#include <tl/expected.hpp>
-
+#include <cstdint>
+#include <cstring>
 #include <iostream>
+#include <tl/expected.hpp>
+#include <vulkan/vulkan_core.h>
 
 void surge::glfw_error_callback(int code, const char *description) noexcept {
   log_all<log_event::error>("GLFW error code {}: {}", code, description);
@@ -116,71 +117,234 @@ auto surge::global_vulkan_instance::create_instance() noexcept -> bool {
                               result);
   } else {
     instance_created = true;
+    log_all<log_event::message>("Vulkan instance created");
   }
 
   return instance_created;
 }
 
-auto surge::global_vulkan_instance::check_extensions() noexcept -> bool {
-  // TODO: Check if required and available are compatible
-
+void surge::global_vulkan_instance::get_required_extensions() noexcept {
   log_all<log_event::message>("Querying required Vulkan extensions");
-  std::uint32_t required_extension_count = 0;
-  const auto required_extensions =
-      glfwGetRequiredInstanceExtensions(&required_extension_count);
 
-  for (std::uint32_t i = 0; i < required_extension_count; i++) {
-    log_all<log_event::message>("Extension {} required",
-                                required_extensions[i]);
+  std::uint32_t glfw_required_extension_count = 0;
+  auto glfw_required_extensions =
+      glfwGetRequiredInstanceExtensions(&glfw_required_extension_count);
+
+#ifdef SURGE_VULKAN_VALIDATION
+  eastl::vector<const char *> required_extensions_tmp(
+      glfw_required_extension_count + 1);
+#else
+  eastl::vector<const char *> required_extensions_tmp(
+      glfw_required_extension_count);
+#endif
+
+  for (std::uint32_t i = 0; i < glfw_required_extension_count; i++) {
+    required_extensions_tmp[i] = glfw_required_extensions[i];
   }
 
+#ifdef SURGE_VULKAN_VALIDATION
+  required_extensions_tmp[glfw_required_extension_count] =
+      VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+#endif
+
+  required_extensions = std::move(required_extensions_tmp);
+}
+
+void surge::global_vulkan_instance::get_available_extensions() noexcept {
   log_all<log_event::message>("Querrying available Vulkan extensions");
+
   std::uint32_t available_extension_count{0};
   vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count,
                                          nullptr);
 
-  eastl::vector<VkExtensionProperties> available_extensions(
+  eastl::vector<VkExtensionProperties> available_extensions_tmp(
       available_extension_count);
   vkEnumerateInstanceExtensionProperties(nullptr, &available_extension_count,
-                                         available_extensions.data());
+                                         available_extensions_tmp.data());
 
-  for (const auto &available_extension : available_extensions) {
-    log_all<log_event::message>("Extension {} available",
-                                available_extension.extensionName);
+  available_extensions = std::move(available_extensions_tmp);
+}
+
+#ifdef SURGE_VULKAN_VALIDATION
+void surge::global_vulkan_instance::get_available_validation_layers() noexcept {
+  log_all<log_event::message>("Querrying available Vulkan validation layers");
+
+  std::uint32_t available_layer_count{0};
+  vkEnumerateInstanceLayerProperties(&available_layer_count, nullptr);
+
+  eastl::vector<VkLayerProperties> available_layers_tmp(available_layer_count);
+  vkEnumerateInstanceLayerProperties(&available_layer_count,
+                                     available_layers_tmp.data());
+
+  available_layers = std::move(available_layers_tmp);
+}
+#endif
+
+auto surge::global_vulkan_instance::check_extensions() noexcept -> bool {
+  get_required_extensions();
+  get_available_extensions();
+
+  log_all<log_event::message>(
+      "Cheking if required Vulkan extensions are available");
+
+  bool extension_found = false;
+
+  for (std::size_t i = 0; i < required_extensions.size(); i++) {
+    for (std::size_t j = 0; j < available_extensions.size(); j++) {
+      if (std::strcmp(required_extensions[i],
+                      available_extensions[j].extensionName) == 0) {
+        extension_found = true;
+        break;
+      }
+    }
+
+    if (!extension_found) {
+      log_all<log_event::error>("Not all required Vulkan extensions are "
+                                "available. First missing extension: {}",
+                                required_extensions[i]);
+      return false;
+    }
   }
 
-  create_info.enabledExtensionCount = required_extension_count;
-  create_info.ppEnabledExtensionNames = required_extensions;
+  log_all<log_event::message>("All required Vulkan extension(s) were "
+                              "found. Enabling {} extension(s).",
+                              required_extensions.size());
+
+  create_info.enabledExtensionCount =
+      static_cast<std::uint32_t>(required_extensions.size());
+  create_info.ppEnabledExtensionNames = required_extensions.data();
 
   return true;
 }
 
 #ifdef SURGE_VULKAN_VALIDATION
 auto surge::global_vulkan_instance::check_validation_layers() noexcept -> bool {
-  // TODO: Check if required and available are compatible
+  get_available_validation_layers();
 
-  std::uint32_t available_layer_count{0};
-  vkEnumerateInstanceLayerProperties(&available_layer_count, nullptr);
-
-  eastl::vector<VkLayerProperties> available_layers(available_layer_count);
-  vkEnumerateInstanceLayerProperties(&available_layer_count,
-                                     available_layers.data());
-
-  if (required_validation_layer_count > available_layer_count) {
+  if (required_vulkan_validation_layers.size() > available_layers.size()) {
     log_all<log_event::error>("There are {} available vulkan validation "
                               "layer(s) but {} layer(s) is(are) required",
-                              available_layer_count,
-                              required_validation_layer_count);
+                              available_layers.size(),
+                              required_vulkan_validation_layers.size());
     return false;
   }
 
-  for (const auto &layer : required_vulkan_validation_layers) {
-    log_all<log_event::message>("Validation layer {} enabled", layer);
+  log_all<log_event::message>(
+      "Cheking if required validation layers are available");
+
+  bool layer_found = false;
+
+  for (const char *layer_name : required_vulkan_validation_layers) {
+    for (const auto &layer_property : available_layers) {
+      if (std::strcmp(layer_name, layer_property.layerName) == 0) {
+        layer_found = true;
+        break;
+      }
+    }
+
+    if (!layer_found) {
+      log_all<log_event::error>("Not all required Vulkan validation layers are "
+                                "available. First missing layer: {}",
+                                layer_name);
+      return false;
+    }
   }
 
-  create_info.enabledLayerCount = required_validation_layer_count;
+  log_all<log_event::message>("All required Vulkan validation layer(s) were "
+                              "found. Enabling {} layer(s).",
+                              required_vulkan_validation_layers.size());
+
+  create_info.enabledLayerCount = required_vulkan_validation_layers.size();
   create_info.ppEnabledLayerNames = required_vulkan_validation_layers.data();
 
   return true;
 }
 #endif
+
+void surge::global_vulkan_instance::get_available_physical_devices() noexcept {
+  log_all<log_event::message>(
+      "Querying available Vulkan physical devices (GPUs)");
+
+  std::uint32_t device_count{0};
+  vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+
+  eastl::vector<VkPhysicalDevice> available_physical_devices_tmp(device_count);
+  vkEnumeratePhysicalDevices(instance, &device_count,
+                             available_physical_devices_tmp.data());
+
+  available_physical_devices = std::move(available_physical_devices_tmp);
+}
+
+auto surge::global_vulkan_instance::device_type_string(std::uint8_t id) -> const
+    char * {
+  switch (id) {
+  case 0:
+    return "other";
+  case 1:
+    return "integrated GPU";
+  case 2:
+    return "discrete GPU";
+  case 3:
+    return "virtual GPU";
+  case 4:
+    return "CPU";
+  default:
+    return "unknow";
+  }
+}
+
+auto device_type_string(std::uint8_t id) -> const char *;
+
+void surge::global_vulkan_instance::print_device_summary(
+    VkPhysicalDevice device) noexcept {
+
+  VkPhysicalDeviceProperties device_properties;
+  vkGetPhysicalDeviceProperties(device, &device_properties);
+
+  log_all<log_event::message>(
+      "Selected GPU properties summary:\n"
+      "  Name: {}\n"
+      "  Type: {} ({})\n"
+      "  ID: {}\n"
+      "  Vendor ID: {}\n"
+      "  API version: {}\n"
+      "  Driver version: {}",
+      device_properties.deviceName, device_properties.deviceType,
+      device_type_string(
+          static_cast<std::uint8_t>(device_properties.deviceType)),
+      device_properties.deviceID, device_properties.vendorID,
+      device_properties.apiVersion, device_properties.driverVersion);
+}
+
+auto surge::global_vulkan_instance::is_suitable(VkPhysicalDevice) noexcept
+    -> bool {
+  return true;
+}
+
+auto surge::global_vulkan_instance::pick_physical_device() noexcept -> bool {
+  get_available_physical_devices();
+
+  if (available_physical_devices.size() == 0) {
+    log_all<log_event::error>(
+        "Unable to detect a Vulkan capable GPU in the system.");
+    return false;
+  }
+
+  log_all<log_event::message>("Cheking GPUs suitabilities");
+  for (const auto &device : available_physical_devices) {
+    if (is_suitable(device)) {
+      selected_physical_device = device;
+      break;
+    }
+  }
+
+  if (selected_physical_device == VK_NULL_HANDLE) {
+    log_all<log_event::error>("No suitable GPU found");
+    return false;
+  }
+
+  log_all<log_event::message>("Suitable GPU found.");
+  print_device_summary(selected_physical_device);
+
+  return true;
+}

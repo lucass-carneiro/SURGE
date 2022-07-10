@@ -1,6 +1,7 @@
 #ifndef SURGE_JOB_SYSTEM
 #define SURGE_JOB_SYSTEM
 
+#include "arena_allocator.hpp"
 #include "log.hpp"
 
 // clang-format off
