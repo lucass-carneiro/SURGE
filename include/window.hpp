@@ -53,6 +53,8 @@ public:
 
   auto create_logical_device() noexcept -> bool;
 
+  auto create_surface(GLFWwindow *window) noexcept -> bool;
+
   ~global_vulkan_instance() noexcept;
 
 private:
@@ -64,7 +66,7 @@ private:
                  const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
                  void *user_data) -> VkBool32;
 
-  bool instance_created, logical_device_created;
+  bool instance_created, logical_device_created, surface_created;
 
   VkApplicationInfo app_info;
   VkInstanceCreateInfo create_info;
@@ -73,6 +75,8 @@ private:
   eastl::vector<const char *> required_extensions;
 
   VkInstance instance = VK_NULL_HANDLE;
+
+  VkSurfaceKHR window_surface = VK_NULL_HANDLE;
 
   eastl::vector<VkPhysicalDevice> available_physical_devices;
   VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;

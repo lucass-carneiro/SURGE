@@ -2,6 +2,7 @@
 #include "log.hpp"
 #include "options.hpp"
 
+#include <GLFW/glfw3.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -78,8 +79,8 @@ auto surge::querry_available_monitors() noexcept
 }
 
 surge::global_vulkan_instance::global_vulkan_instance() noexcept
-    : instance_created{false}, logical_device_created{false}, app_info{},
-      create_info{} {
+    : instance_created{false}, logical_device_created{false},
+      surface_created{false}, app_info{}, create_info{} {
 
   log_all<log_event::message>("Initializing Vulkan application info");
 
@@ -101,12 +102,16 @@ surge::global_vulkan_instance::global_vulkan_instance() noexcept
 
 surge::global_vulkan_instance::~global_vulkan_instance() noexcept {
   // TODO: Replace nullptr with allocator callbacks
+  log_all<log_event::message>("Destroying Vulkan objects");
 
   if (logical_device_created) {
     vkDestroyDevice(logical_device, nullptr);
   }
 
-  log_all<log_event::message>("Destroying Vulkan instance");
+  if (surface_created) {
+    vkDestroySurfaceKHR(instance, window_surface, nullptr);
+  }
+
   if (instance_created) {
     vkDestroyInstance(instance, nullptr);
   }
@@ -448,6 +453,28 @@ auto surge::global_vulkan_instance::create_logical_device() noexcept -> bool {
   log_all<log_event::message>("Retrieving Vulkan graphics queue.");
   vkGetDeviceQueue(logical_device, indices.graphics_family.value(), 0,
                    &graphics_queue);
+
+  return true;
+}
+
+auto surge::global_vulkan_instance::create_surface(GLFWwindow *window) noexcept
+    -> bool {
+
+  log_all<log_event::message>("Creating Vulkan window surface");
+
+  // TODO: Replace nullptr with allocators
+  const auto status =
+      glfwCreateWindowSurface(instance, window, nullptr, &window_surface);
+
+  if (status != VK_SUCCESS) {
+    log_all<log_event::message>(
+        "Unable to initialize Vulkan window surface. Vulkan error code {}",
+        status);
+    return false;
+  }
+
+  log_all<log_event::message>("Vulkan window surface created.");
+  surface_created = true;
 
   return true;
 }

@@ -30,9 +30,11 @@ inline void init_all_subsystems() noexcept {
   global_arena_allocator::get();
 }
 
-inline auto init_vulkan() noexcept -> bool {
+inline auto init_vulkan(GLFWwindow *window) noexcept -> bool {
   using namespace surge;
+
   global_vulkan_instance::get();
+
   bool result = global_vulkan_instance::get().check_extensions();
 
 #ifdef SURGE_VULKAN_VALIDATION
@@ -40,6 +42,8 @@ inline auto init_vulkan() noexcept -> bool {
 #endif
 
   result = result && global_vulkan_instance::get().create_instance();
+  // TODO: A debug messager would go here
+  result = result && global_vulkan_instance::get().create_surface(window);
   result = result && global_vulkan_instance::get().pick_physical_device();
   result = result && global_vulkan_instance::get().create_logical_device();
 
@@ -154,7 +158,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Vulkan initialization
-  if (!init_vulkan()) {
+  if (!init_vulkan(window)) {
     glfwTerminate();
     return EXIT_FAILURE;
   }
