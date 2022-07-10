@@ -2,13 +2,16 @@
 #include "log.hpp"
 #include "options.hpp"
 
+//clang-format off
+#include <EASTL/set.h>
 #include <GLFW/glfw3.h>
+//clang-format on
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <tl/expected.hpp>
-#include <vulkan/vulkan_core.h>
 
 void surge::glfw_error_callback(int code, const char *description) noexcept {
   log_all<log_event::error>("GLFW error code {}: {}", code, description);
@@ -392,6 +395,13 @@ auto surge::global_vulkan_instance::find_queue_families(
       indices.graphics_family = i;
     }
 
+    VkBool32 present_support{false};
+    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, window_surface,
+                                         &present_support);
+    if (present_support) {
+      indices.present_family = i;
+    }
+
     if (indices.is_complete()) {
       break;
     }
@@ -403,25 +413,32 @@ auto surge::global_vulkan_instance::find_queue_families(
 }
 
 auto surge::global_vulkan_instance::create_logical_device() noexcept -> bool {
-  log_all<log_event::message>("Creating Vulkan logical device");
-
+  log_all<log_event::message>("Creating Vulkan queue families");
   const auto indices = find_queue_families(selected_physical_device);
 
-  VkDeviceQueueCreateInfo queue_create_info{};
-  queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queue_create_info.queueFamilyIndex = indices.graphics_family.value();
-  queue_create_info.queueCount = 1;
+  eastl::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+  eastl::set<std::uint32_t> unique_queue_families = {
+      indices.graphics_family.value(), indices.present_family.value()};
 
   float queue_priority{1};
-  queue_create_info.pQueuePriorities = &queue_priority;
+  for (std::uint32_t queue_family : unique_queue_families) {
+    VkDeviceQueueCreateInfo queue_create_info{};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = queue_family;
+    queue_create_info.queueCount = 1;
+    queue_create_info.pQueuePriorities = &queue_priority;
+    queue_create_infos.push_back(queue_create_info);
+  }
 
+  log_all<log_event::message>("Creating Vulkan logical device");
   VkPhysicalDeviceFeatures device_features{};
 
   VkDeviceCreateInfo device_create_info{};
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-  device_create_info.pQueueCreateInfos = &queue_create_info;
-  device_create_info.queueCreateInfoCount = 1;
+  device_create_info.queueCreateInfoCount =
+      static_cast<std::uint32_t>(queue_create_infos.size());
+  device_create_info.pQueueCreateInfos = queue_create_infos.data();
 
   device_create_info.pEnabledFeatures = &device_features;
 
@@ -453,6 +470,10 @@ auto surge::global_vulkan_instance::create_logical_device() noexcept -> bool {
   log_all<log_event::message>("Retrieving Vulkan graphics queue.");
   vkGetDeviceQueue(logical_device, indices.graphics_family.value(), 0,
                    &graphics_queue);
+
+  log_all<log_event::message>("Retrieving Vulkan present queue.");
+  vkGetDeviceQueue(logical_device, indices.present_family.value(), 0,
+                   &present_queue);
 
   return true;
 }

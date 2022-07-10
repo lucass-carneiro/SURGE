@@ -60,11 +60,11 @@ public:
 private:
   global_vulkan_instance() noexcept;
 
-  VKAPI_ATTR auto VKAPI_CALL
+  /*VKAPI_ATTR auto VKAPI_CALL
   debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                  VkDebugUtilsMessageTypeFlagsEXT message_type,
                  const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
-                 void *user_data) -> VkBool32;
+                 void *user_data) -> VkBool32;*/
 
   bool instance_created, logical_device_created, surface_created;
 
@@ -82,7 +82,9 @@ private:
   VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
 
   VkDevice logical_device = VK_NULL_HANDLE;
+
   VkQueue graphics_queue = VK_NULL_HANDLE;
+  VkQueue present_queue = VK_NULL_HANDLE;
 
 #ifdef SURGE_VULKAN_VALIDATION
   eastl::vector<VkLayerProperties> available_layers;
@@ -106,9 +108,10 @@ private:
 
   struct queue_family_indices {
     std::optional<std::uint32_t> graphics_family;
+    std::optional<std::uint32_t> present_family;
 
     [[nodiscard]] inline auto is_complete() const noexcept -> bool {
-      return graphics_family.has_value();
+      return graphics_family.has_value() && present_family.has_value();
     }
   };
 
