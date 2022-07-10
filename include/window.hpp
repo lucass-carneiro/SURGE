@@ -75,6 +75,8 @@ private:
   eastl::vector<VkPhysicalDevice> available_physical_devices;
   VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
 
+  eastl::vector<VkQueueFamilyProperties> available_queue_families;
+
 #ifdef SURGE_VULKAN_VALIDATION
   eastl::vector<VkLayerProperties> available_layers;
 #endif
@@ -92,7 +94,21 @@ private:
 
   void print_device_summary(VkPhysicalDevice device) noexcept;
 
-  auto device_type_string(std::uint8_t id) -> const char *;
+  [[nodiscard]] auto device_type_string(std::uint8_t id) const noexcept -> const
+      char *;
+
+  struct queue_family_indices {
+    std::optional<std::uint32_t> graphics_family;
+
+    [[nodiscard]] inline auto is_complete() const noexcept -> bool {
+      return graphics_family.has_value();
+    }
+  };
+
+  void get_available_queue_families(VkPhysicalDevice device) noexcept;
+
+  auto find_queue_families(VkPhysicalDevice device) noexcept
+      -> queue_family_indices;
 };
 
 } // namespace surge

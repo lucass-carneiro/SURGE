@@ -275,8 +275,8 @@ void surge::global_vulkan_instance::get_available_physical_devices() noexcept {
   available_physical_devices = std::move(available_physical_devices_tmp);
 }
 
-auto surge::global_vulkan_instance::device_type_string(std::uint8_t id) -> const
-    char * {
+auto surge::global_vulkan_instance::device_type_string(
+    std::uint8_t id) const noexcept -> const char * {
   switch (id) {
   case 0:
     return "other";
@@ -316,9 +316,12 @@ void surge::global_vulkan_instance::print_device_summary(
       device_properties.apiVersion, device_properties.driverVersion);
 }
 
-auto surge::global_vulkan_instance::is_suitable(VkPhysicalDevice) noexcept
-    -> bool {
-  return true;
+auto surge::global_vulkan_instance::is_suitable(
+    VkPhysicalDevice device) noexcept -> bool {
+
+  const auto indices = find_queue_families(device);
+
+  return indices.is_complete();
 }
 
 auto surge::global_vulkan_instance::pick_physical_device() noexcept -> bool {
@@ -347,4 +350,51 @@ auto surge::global_vulkan_instance::pick_physical_device() noexcept -> bool {
   print_device_summary(selected_physical_device);
 
   return true;
+}
+
+void surge::global_vulkan_instance::get_available_queue_families(
+    VkPhysicalDevice device) noexcept {
+
+  log_all<log_event::message>("Querying available Vulkan queue families");
+
+  uint32_t queue_family_count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                           nullptr);
+
+  eastl::vector<VkQueueFamilyProperties> available_queue_families_tmp(
+      queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count,
+                                           available_queue_families_tmp.data());
+
+  available_queue_families = std::move(available_queue_families_tmp);
+
+  log_all<log_event::message>("{} Vulkan queue families found",
+                              available_queue_families.size());
+}
+
+auto surge::global_vulkan_instance::find_queue_families(
+    VkPhysicalDevice device) noexcept -> queue_family_indices {
+
+  get_available_queue_families(device);
+
+  log_all<log_event::message>(
+      "Searching for Vulkan queue families with the required capabilities.");
+
+  queue_family_indices indices;
+
+  std::uint32_t i{0};
+  for (const auto &family : available_queue_families) {
+    if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      log_all<log_event::message>("VK_QUEUE_GRAPHICS_BIT queue found");
+      indices.graphics_family = i;
+    }
+
+    if (indices.is_complete()) {
+      break;
+    }
+
+    i++;
+  }
+
+  return indices;
 }
