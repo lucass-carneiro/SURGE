@@ -28,8 +28,7 @@ endif()
 # External dependencies
 # -----------------------------------------
 
-#find_package(Vulkan REQUIRED FATAL_ERROR)
-include(FindVulkan)
+include(FindOpenGL)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
@@ -48,7 +47,6 @@ else()
   option(SURGE_USE_LOG_COLOR "Use colors on log outputs" OFF)
   option(SURGE_BUILD_TESTING "Build tests" OFF)
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
-  option(SURGE_VULKAN_VALIDATION "Enable Vulkan validation layers" OFF)
 endif()
 
 configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}/include/options.hpp")
@@ -92,8 +90,8 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined -fno-sanitize=leak)
-    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined -fno-sanitize=leak)
+    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined -fno-sanitize=leak)
+    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined -fno-sanitize=leak)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # TODO:
     target_compile_options(Surge PUBLIC /Wall /Wextra /permissive- /O2)
@@ -123,7 +121,8 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(Surge PRIVATE
-  Vulkan::Vulkan
+  OpenGL::GL
+  CONAN_PKG::glad
   CONAN_PKG::eastl
   CONAN_PKG::fmt
   CONAN_PKG::docopt.cpp

@@ -111,6 +111,22 @@ auto surge::squirrel_vm::load_context(
   sq_pushinteger(virtual_machine, 0);
   sq_newslot(virtual_machine, -3, SQBool{false});
 
+  sq_pushstring(virtual_machine, _SC("clear_color_r"), -1);
+  sq_pushfloat(virtual_machine, 0.0);
+  sq_newslot(virtual_machine, -3, SQBool{false});
+
+  sq_pushstring(virtual_machine, _SC("clear_color_g"), -1);
+  sq_pushfloat(virtual_machine, 0.0);
+  sq_newslot(virtual_machine, -3, SQBool{false});
+
+  sq_pushstring(virtual_machine, _SC("clear_color_b"), -1);
+  sq_pushfloat(virtual_machine, 0.0);
+  sq_newslot(virtual_machine, -3, SQBool{false});
+
+  sq_pushstring(virtual_machine, _SC("clear_color_a"), -1);
+  sq_pushfloat(virtual_machine, 0.0);
+  sq_newslot(virtual_machine, -3, SQBool{false});
+
   // end "surge" table
   sq_newslot(virtual_machine, -3, SQFalse);
 

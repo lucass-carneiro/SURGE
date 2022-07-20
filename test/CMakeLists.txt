@@ -23,7 +23,8 @@ target_include_directories(
 )
 
 target_link_libraries(tests PRIVATE
-  Vulkan::Vulkan
+  OpenGL::GL
+  CONAN_PKG::glad
   CONAN_PKG::eastl
   CONAN_PKG::fmt
   CONAN_PKG::docopt.cpp

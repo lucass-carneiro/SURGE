@@ -12,10 +12,6 @@ const SQInteger surge::global_squirrel_vm::stack_size = 1024;
 
 const std::size_t surge::global_arena_allocator::arena_size = 1024;
 
-// TODO: Get from config file
-const char *const surge::global_vulkan_instance::application_name =
-    "SURGE game";
-
 inline auto init_all_subsystems() noexcept {
   using namespace surge;
   global_stdout_log_manager::get();

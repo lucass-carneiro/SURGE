@@ -6,6 +6,7 @@
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
 
+#include <GL/gl.h>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -18,36 +19,12 @@ const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 const std::size_t surge::global_arena_allocator::arena_size =
     1024 * std::size_t{100};
 
-// TODO: Get from config file
-const char *const surge::global_vulkan_instance::application_name =
-    "SURGE game";
-
 inline void init_all_subsystems() noexcept {
   using namespace surge;
   global_stdout_log_manager::get();
   global_file_log_manager::get();
   global_squirrel_vm::get();
   global_arena_allocator::get();
-}
-
-inline auto init_vulkan(GLFWwindow *window) noexcept -> bool {
-  using namespace surge;
-
-  global_vulkan_instance::get();
-
-  bool result = global_vulkan_instance::get().check_extensions();
-
-#ifdef SURGE_VULKAN_VALIDATION
-  result = result && global_vulkan_instance::get().check_validation_layers();
-#endif
-
-  result = result && global_vulkan_instance::get().create_instance();
-  // TODO: A debug messager would go here
-  result = result && global_vulkan_instance::get().create_surface(window);
-  result = result && global_vulkan_instance::get().pick_physical_device();
-  result = result && global_vulkan_instance::get().create_logical_device();
-
-  return result;
 }
 
 auto main(int argc, char **argv) noexcept -> int {
@@ -111,6 +88,30 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  auto clear_color_r =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
+  if (!clear_color_r.has_value()) {
+    return EXIT_FAILURE;
+  }
+
+  auto clear_color_g =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
+  if (!clear_color_g.has_value()) {
+    return EXIT_FAILURE;
+  }
+
+  auto clear_color_b =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
+  if (!clear_color_b.has_value()) {
+    return EXIT_FAILURE;
+  }
+
+  auto clear_color_a =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
+  if (!clear_color_a.has_value()) {
+    return EXIT_FAILURE;
+  }
+
   // GLFW callbacks
   glfwSetErrorCallback(surge::glfw_error_callback);
 
@@ -135,7 +136,12 @@ auto main(int argc, char **argv) noexcept -> int {
 
   // GLFW window creation
   log_all<log_event::message>("Initializing engine window");
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef SURGE_SYSTEM_MacOSX
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   GLFWwindow *window = nullptr;
 
@@ -157,15 +163,36 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Vulkan initialization
-  if (!init_vulkan(window)) {
+  // OpenGL context creation
+  glfwMakeContextCurrent(window);
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    log_all<log_event::error>("Failed to initialize GLAD");
     glfwTerminate();
     return EXIT_FAILURE;
   }
 
+  // Resize callback
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
   // Main loop
   while (!glfwWindowShouldClose(window)) {
+    // Handle events
+
+    // Update states
+
+    // Render calls
+    glClearColor(GLfloat{clear_color_r.value()}, GLfloat{clear_color_g.value()},
+                 GLfloat{clear_color_b.value()},
+                 GLfloat{clear_color_a.value()});
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Get events
     glfwPollEvents();
+
+    // Present rendering
+    glfwSwapBuffers(window);
   }
 
   // Normal shutdown

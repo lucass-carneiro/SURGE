@@ -9,9 +9,19 @@ glfw/3.3.7
 glm/0.9.9.8
 gsl-lite/0.40.0
 date/3.0.1
+glad/0.1.36
 
 [options]
 gtest:no_main=True
+glad:spec=gl
+glad:extensions=''
+glad:gl_profile=core
+glad:gl_version=4.0
+glad:gles1_version=None
+glad:gles2_version=None
+glad:glsc2_version=None
+glad:no_loader=False
+glad:shared=True
 
 [generators]
 cmake
