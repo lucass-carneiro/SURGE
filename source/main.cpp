@@ -6,6 +6,9 @@
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
 
+#include "../shaders/default_frag.hpp"
+#include "../shaders/default_vert.hpp"
+
 #include <GL/gl.h>
 #include <cstddef>
 #include <cstdlib>
@@ -173,8 +176,62 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Resize callback
+  // Resize callback and viewport creation.
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+  // Compile and link shaders
+  shader default_vertex_shader("default_vertex_shader", GL_VERTEX_SHADER,
+                               shader_default_vert_src);
+  shader default_fragment_shader("default_fragment_shader", GL_FRAGMENT_SHADER,
+                                 shader_default_frag_src);
+
+  default_vertex_shader.compile();
+  default_fragment_shader.compile();
+
+  if (!default_vertex_shader.is_valid() ||
+      !default_fragment_shader.is_valid()) {
+    glfwTerminate();
+    return EXIT_FAILURE;
+  }
+
+  auto shader_program =
+      link_shaders(default_vertex_shader, default_fragment_shader);
+  if (!shader_program.has_value()) {
+    glDeleteShader(default_vertex_shader.get_handle().value());
+    glDeleteShader(default_fragment_shader.get_handle().value());
+    glfwTerminate();
+    return EXIT_FAILURE;
+  }
+
+  // triangle vertices
+  std::array<float, 9> vertices{-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
+                                0.0f,  0.0f,  0.5f, 0.0f};
+
+  GLuint VBO{0}, VAO{0};
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+
+  // bind the Vertex Array Object first, then bind and set vertex buffer(s), and
+  // then configure vertex attributes(s).
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), vertices.data(),
+               GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+
+  // note that this is allowed, the call to glVertexAttribPointer registered VBO
+  // as the vertex attribute's bound vertex buffer object so afterwards we can
+  // safely unbind
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  // You can unbind the VAO afterwards so other VAO calls won't accidentally
+  // modify this VAO, but this rarely happens. Modifying other VAOs requires a
+  // call to glBindVertexArray anyways so we generally don't unbind VAOs (nor
+  // VBOs) when it's not directly necessary.
+  glBindVertexArray(0);
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {
@@ -188,14 +245,27 @@ auto main(int argc, char **argv) noexcept -> int {
                  GLfloat{clear_color_a.value()});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Get events
-    glfwPollEvents();
+    glUseProgram(shader_program.value());
+    glBindVertexArray(VAO); // seeing as we only have a single VAO there's
+                            // no need to bind it every time, but we'll do
+                            // so to keep things a bit more organized
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(0); // no need to unbind it every time
 
     // Present rendering
     glfwSwapBuffers(window);
+
+    // Get events
+    glfwPollEvents();
   }
 
   // Normal shutdown
+  log_all<log_event::message>("Deleating shaders.");
+  glDeleteShader(default_vertex_shader.get_handle().value());
+  glDeleteShader(default_fragment_shader.get_handle().value());
+  glDeleteProgram(shader_program.value());
+
+  log_all<log_event::message>("Deleating window.");
   glfwDestroyWindow(window);
   glfwTerminate();
 
