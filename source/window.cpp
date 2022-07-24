@@ -2,6 +2,8 @@
 #include "arena_allocator.hpp"
 #include "log.hpp"
 #include "options.hpp"
+#include "safe_ops.hpp"
+#include "squirrel_bindings.hpp"
 
 //clang-format off
 #include <EASTL/set.h>
@@ -15,20 +17,149 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <tl/expected.hpp>
 
-void surge::glfw_error_callback(int code, const char *description) noexcept {
-  log_all<log_event::error>("GLFW error code {}: {}", code, description);
+surge::global_engine_window::~global_engine_window() {
+  global_stdout_log_manager::get().log<log_event::message>("Deleating window.");
+
+  // Calling reset on the window* guarantees that it will be destroyed before
+  // glfwTerminate
+  window.reset();
+
+  if (glfw_init_success) {
+    glfwTerminate();
+  }
 }
 
-void surge::framebuffer_size_callback(GLFWwindow *, int width,
-                                      int height) noexcept {
-  glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
+auto surge::global_engine_window::init() noexcept -> bool {
+
+  // Retrieve, parse and cast configuration values from config script
+  const auto window_width_optional =
+      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
+          _SC("window_width"));
+
+  const auto window_height_optional =
+      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
+          _SC("window_height"));
+
+  const auto window_name_optional =
+      global_squirrel_vm::get().surge_retrieve<const SQChar *>(
+          _SC("window_name"));
+
+  auto windowed_optional =
+      global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
+
+  auto window_monitor_index_optional =
+      global_squirrel_vm::get().surge_retrieve<SQInteger>(
+          _SC("window_monitor_index"));
+
+  auto clear_color_r_optional =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
+
+  auto clear_color_g_optional =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
+
+  auto clear_color_b_optional =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
+
+  auto clear_color_a_optional =
+      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
+
+  bool parsed =
+      window_width_optional.has_value() && window_height_optional.has_value() &&
+      window_name_optional.has_value() && windowed_optional.has_value() &&
+      window_monitor_index_optional.has_value() &&
+      clear_color_r_optional.has_value() &&
+      clear_color_g_optional.has_value() &&
+      clear_color_b_optional.has_value() && clear_color_a_optional.has_value();
+
+  if (!parsed) {
+    glfw_init_success = false;
+    return glfw_init_success;
+  }
+
+  window_width = window_width_optional.value();
+  window_height = window_height_optional.value();
+  window_name = window_name_optional.value();
+  windowed = windowed_optional.value();
+  window_monitor_index = window_monitor_index_optional.value();
+  clear_color_r = clear_color_r_optional.value();
+  clear_color_g = clear_color_g_optional.value();
+  clear_color_b = clear_color_b_optional.value();
+  clear_color_a = clear_color_a_optional.value();
+
+  // Register GLFW callbacks
+  glfwSetErrorCallback(surge::glfw_error_callback);
+
+  // Initialize glfw
+  if (glfwInit() != GLFW_TRUE) {
+    glfw_init_success = false;
+    return glfw_init_success;
+  }
+
+  // Validate monitor index
+  auto monitors = querry_available_monitors();
+  if (!monitors.has_value()) {
+    glfwTerminate();
+    glfw_init_success = false;
+    return glfw_init_success;
+  }
+
+  if (window_monitor_index >= monitors.value().second) {
+    log_all<log_event::warning>(
+        "Unable to set window monitor to {} because there are only {} "
+        "monitors. Using default monitor index 0",
+        window_monitor_index, monitors.value().second);
+    window_monitor_index = 0;
+  }
+
+  // GLFW window creation
+  log_all<log_event::message>("Initializing engine window");
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef SURGE_SYSTEM_MacOSX // TODO: Is this macro name correct?
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+  if (windowed == SQBool{true}) {
+    (void)window.release();
+    window.reset(glfwCreateWindow(window_width, window_height, window_name,
+                                  nullptr, nullptr));
+  } else {
+    (void)window.release();
+    window.reset(glfwCreateWindow(
+        window_width, window_height, window_name,
+        (monitors.value().first)[window_monitor_index], nullptr));
+  }
+
+  if (window == nullptr) {
+    glfwTerminate();
+    glfw_init_success = false;
+    return glfw_init_success;
+  }
+
+  // OpenGL context creation
+  glfwMakeContextCurrent(window.get());
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    log_all<log_event::error>("Failed to initialize GLAD");
+    window.reset();
+    glfwTerminate();
+    glfw_init_success = false;
+    return glfw_init_success;
+  }
+
+  // Resize callback and viewport creation.
+  glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
+
+  glfw_init_success = true;
+  return glfw_init_success;
 }
 
-auto surge::querry_available_monitors() noexcept
-    -> std::optional<std::pair<GLFWmonitor **, std::size_t>> {
-  using tl::unexpected;
+auto surge::global_engine_window::querry_available_monitors() noexcept
+    -> std::optional<std::pair<GLFWmonitor **, int>> {
 
   int count = 0;
   GLFWmonitor **monitors = glfwGetMonitors(&count);
@@ -88,6 +219,23 @@ auto surge::querry_available_monitors() noexcept
   }
 
   return std::make_pair(monitors, count);
+}
+
+auto surge::global_engine_window::should_close() noexcept -> bool {
+  return static_cast<bool>(glfwWindowShouldClose(window.get()));
+}
+
+void surge::global_engine_window::swap_buffers() noexcept {
+  glfwSwapBuffers(window.get());
+}
+
+void surge::glfw_error_callback(int code, const char *description) noexcept {
+  log_all<log_event::error>("GLFW error code {}: {}", code, description);
+}
+
+void surge::framebuffer_size_callback(GLFWwindow *, int width,
+                                      int height) noexcept {
+  glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
 
 void surge::shader::compile() noexcept {

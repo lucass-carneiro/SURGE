@@ -34,17 +34,6 @@
 namespace surge {
 
 /**
- * Returns a formatted string containing the current (local) date and time
- *
- * @return A C++ string containing the current local date and time.
- */
-[[nodiscard]] inline auto get_datetime_string() noexcept -> std::string {
-  return date::format(
-      "%F %T %Z",
-      date::make_zoned(date::current_zone(), std::chrono::system_clock::now()));
-}
-
-/**
  * The type of event to be logged.
  *
  * These types serve as tags that are passed to the general log function.
@@ -179,8 +168,7 @@ private:
                 #ifdef SURGE_USE_LOG_COLOR
                  style,
                 #endif
-                "{:s} - SURGE {}: ",
-                get_datetime_string(),
+                "SURGE {}: ",
                 banner
       );
       // clang-format on

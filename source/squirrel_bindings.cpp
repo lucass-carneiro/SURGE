@@ -24,8 +24,7 @@ void surge::squirrel_print_function(HSQUIRRELVM, const SQChar *s,
                                     ...) noexcept {
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-  std::printf("\033[38;2;96;57;19m%s - SURGE Squirrel VM message:\033[0m ",
-              get_datetime_string().c_str());
+  std::printf("\033[38;2;96;57;19m - SURGE Squirrel VM message:\033[0m ");
 
   std::va_list arglist; // NOLINT(cppcoreguidelines-pro-type-vararg)
   va_start(arglist,
@@ -130,6 +129,7 @@ auto surge::squirrel_vm::load_context(
   // end "surge" table
   sq_newslot(virtual_machine, -3, SQFalse);
 
+  // Process the main config script
   if (SQ_FAILED(
           sqstd_dofile(virtual_machine, config_script.c_str(), false, true))) {
     log_all<log_event::error>("An error ocurred while processing {}",

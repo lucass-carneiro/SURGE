@@ -5,11 +5,13 @@
 ```
 mkdir Debug && cd Debug
 
-conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-clang-13-release
 conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-gcc-12-release
-
-cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON
+
+OR
+
+conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-clang-13-release
+cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 
 cmake --build . -j20
 

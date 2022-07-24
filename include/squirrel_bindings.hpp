@@ -101,7 +101,7 @@ public:
         } else {
           log_all<log_event::error>(
               "Unable to retrieve integer value surge.{}.", param_name);
-          result = std::optional<T>{};
+          result = {};
         }
 
       } else if constexpr (std::is_same<T, SQFloat>::value) {
@@ -111,7 +111,7 @@ public:
         } else {
           log_all<log_event::error>("Unable to retrieve float value surge.{}.",
                                     param_name);
-          result = std::optional<T>{};
+          result = {};
         }
 
       } else if constexpr (std::is_same<T, SQBool>::value) {
@@ -121,7 +121,7 @@ public:
         } else {
           log_all<log_event::error>(
               "Unable to retrieve boolean value surge.{}.", param_name);
-          result = std::optional<T>{};
+          result = {};
         }
 
       } else if constexpr (std::is_same<T, const SQChar *>::value) {
@@ -131,13 +131,13 @@ public:
         } else {
           log_all<log_event::error>("Unable to retrieve string value surge.{}.",
                                     param_name);
-          result = std::optional<T>{};
+          result = {};
         }
       }
     } else {
       log_all<log_event::error>("Unable to find {} in the surge root table.",
                                 param_name);
-      result = std::optional<T>{};
+      result = {};
     }
 
     // restores the original stack size

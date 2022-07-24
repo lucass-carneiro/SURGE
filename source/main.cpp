@@ -28,6 +28,7 @@ inline void init_all_subsystems() noexcept {
   global_file_log_manager::get();
   global_squirrel_vm::get();
   global_arena_allocator::get();
+  global_engine_window::get();
 }
 
 auto main(int argc, char **argv) noexcept -> int {
@@ -54,130 +55,10 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Retrieve configuration values
-  const auto window_width =
-      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
-          _SC("window_width"));
-  if (!window_width.has_value()) {
-    log_all<log_event::error>("Invalid window width.");
+  // Initialize GLFW
+  if (!global_engine_window::get().init()) {
     return EXIT_FAILURE;
   }
-
-  const auto window_height =
-      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
-          _SC("window_height"));
-  if (!window_width.has_value()) {
-    log_all<log_event::error>("Invalid window height.");
-    return EXIT_FAILURE;
-  }
-
-  const auto window_name =
-      global_squirrel_vm::get().surge_retrieve<const SQChar *>(
-          _SC("window_name"));
-  if (!window_name.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto windowed =
-      global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
-  if (!windowed.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto window_monitor_index =
-      global_squirrel_vm::get().surge_retrieve<SQInteger>(
-          _SC("window_monitor_index"));
-  if (!window_monitor_index.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto clear_color_r =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
-  if (!clear_color_r.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto clear_color_g =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
-  if (!clear_color_g.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto clear_color_b =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
-  if (!clear_color_b.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  auto clear_color_a =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
-  if (!clear_color_a.has_value()) {
-    return EXIT_FAILURE;
-  }
-
-  // GLFW callbacks
-  glfwSetErrorCallback(surge::glfw_error_callback);
-
-  // GLFW initialization
-  if (glfwInit() != GLFW_TRUE) {
-    return EXIT_FAILURE;
-  }
-
-  auto monitors = querry_available_monitors();
-  if (!monitors.has_value()) {
-    glfwTerminate();
-    return EXIT_FAILURE;
-  }
-
-  if (window_monitor_index >= monitors.value().second) {
-    log_all<log_event::warning>(
-        "Unable to set window monitor to {} because there are only {} "
-        "monitors. Using default monitor index 0",
-        window_monitor_index.value(), monitors.value().second);
-    window_monitor_index = std::make_optional(SQInteger{0});
-  }
-
-  // GLFW window creation
-  log_all<log_event::message>("Initializing engine window");
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef SURGE_SYSTEM_MacOSX
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  GLFWwindow *window = nullptr;
-
-  // TODO: Isolate this code
-  try {
-    if (windowed.value() == SQBool{true}) {
-      window = glfwCreateWindow(window_width.value(), window_height.value(),
-                                window_name.value(), nullptr, nullptr);
-    } else if (windowed.value() == SQBool{false}) {
-      window = glfwCreateWindow(
-          window_width.value(), window_height.value(), window_name.value(),
-          (monitors.value().first)[window_monitor_index.value()], nullptr);
-    }
-  } catch (const std::exception &) {
-  }
-
-  if (window == nullptr) {
-    glfwTerminate();
-    return EXIT_FAILURE;
-  }
-
-  // OpenGL context creation
-  glfwMakeContextCurrent(window);
-
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    log_all<log_event::error>("Failed to initialize GLAD");
-    glfwTerminate();
-    return EXIT_FAILURE;
-  }
-
-  // Resize callback and viewport creation.
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   // Compile and link shaders
   shader default_vertex_shader("default_vertex_shader", GL_VERTEX_SHADER,
@@ -234,15 +115,16 @@ auto main(int argc, char **argv) noexcept -> int {
   glBindVertexArray(0);
 
   // Main loop
-  while (!glfwWindowShouldClose(window)) {
+  while (!global_engine_window::get().should_close()) {
     // Handle events
 
     // Update states
 
     // Render calls
-    glClearColor(GLfloat{clear_color_r.value()}, GLfloat{clear_color_g.value()},
-                 GLfloat{clear_color_b.value()},
-                 GLfloat{clear_color_a.value()});
+    glClearColor(GLfloat{global_engine_window::get().get_clear_color_r()},
+                 GLfloat{global_engine_window::get().get_clear_color_g()},
+                 GLfloat{global_engine_window::get().get_clear_color_b()},
+                 GLfloat{global_engine_window::get().get_clear_color_a()});
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(shader_program.value());
@@ -253,7 +135,7 @@ auto main(int argc, char **argv) noexcept -> int {
     glBindVertexArray(0); // no need to unbind it every time
 
     // Present rendering
-    glfwSwapBuffers(window);
+    global_engine_window::get().swap_buffers();
 
     // Get events
     glfwPollEvents();
@@ -264,10 +146,6 @@ auto main(int argc, char **argv) noexcept -> int {
   glDeleteShader(default_vertex_shader.get_handle().value());
   glDeleteShader(default_fragment_shader.get_handle().value());
   glDeleteProgram(shader_program.value());
-
-  log_all<log_event::message>("Deleating window.");
-  glfwDestroyWindow(window);
-  glfwTerminate();
 
   return EXIT_SUCCESS;
 }

@@ -31,13 +31,16 @@ constexpr inline auto safe_cast(original_type value) noexcept
       return static_cast<target_type>(value);
 
     } else {
-      log_all<log_event::error>("Attempt to cast to a target type to small to "
-                                "hold the original value;");
+      log_all<log_event::error>(
+          "Attempt to cast {} to a target type to small to "
+          "hold the original value.",
+          value);
       return unexpected(cast_error::target_type_too_small);
     }
   } else {
     log_all<log_event::error>(
-        "Casting a negative number to a unsigned type is undefined.");
+        "Casting a negative number ({}) to a unsigned type is undefined.",
+        value);
     return unexpected(cast_error::negative_to_unsigned_undefined);
   }
 }
