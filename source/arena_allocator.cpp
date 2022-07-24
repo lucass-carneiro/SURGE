@@ -10,6 +10,8 @@
 #ifdef SURGE_DEBUG_MEMORY
 
 surge::arena_allocator::~arena_allocator() {
+  log_all<log_event::message>("Deleting arena allocator");
+
   std::lock_guard lock(arena_mutex);
 
   if (allocs != 0) {

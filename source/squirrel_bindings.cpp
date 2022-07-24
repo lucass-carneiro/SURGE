@@ -18,7 +18,10 @@ surge::squirrel_vm::squirrel_vm(SQInteger stack_size) noexcept
                   squirrel_error_function);
 }
 
-surge::squirrel_vm::~squirrel_vm() noexcept { sq_close(virtual_machine); }
+surge::squirrel_vm::~squirrel_vm() noexcept {
+  log_all<log_event::message>("Closing squirrel VM");
+  sq_close(virtual_machine);
+}
 
 void surge::squirrel_print_function(HSQUIRRELVM, const SQChar *s,
                                     ...) noexcept {
