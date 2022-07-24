@@ -3,6 +3,7 @@
 #include "log.hpp"
 #include "pool_allocator.hpp"
 #include "safe_ops.hpp"
+#include "shader.hpp"
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
 

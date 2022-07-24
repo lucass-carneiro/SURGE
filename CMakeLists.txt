@@ -64,6 +64,7 @@ set(
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/pool_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
+  "${Surge_SOURCE_DIR}/include/shader.hpp"
   "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
@@ -74,6 +75,7 @@ set(
   "${Surge_SOURCE_DIR}/source/arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
+  "${Surge_SOURCE_DIR}/source/shader.cpp"
   "${Surge_SOURCE_DIR}/source/squirrel_bindings.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"
 )
