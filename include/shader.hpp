@@ -188,6 +188,30 @@ public:
     program_handle = program_handle_tmp;
   }
 
+  template <opengl_uniform_type uniform_type>
+  void set_uniform(const char *uniform_name, uniform_type value) {
+
+    if (!is_linked()) {
+      log_all<log_event::warning>("Cannot set uniform {} with value {} in {} "
+                                  "because the program is not linked",
+                                  uniform_name, value, program_name);
+      return;
+    }
+
+    if constexpr (std::is_same<uniform_type, bool>::value) {
+      glUniform1i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  static_cast<bool>(value));
+
+    } else if constexpr (std::is_same<uniform_type, int>::value) {
+      glUniform1i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value);
+
+    } else if constexpr (std::is_same<uniform_type, float>::value) {
+      glUniform1f(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value);
+    }
+  }
+
   [[nodiscard]] auto get_name() const noexcept -> const char * {
     return program_name;
   }
