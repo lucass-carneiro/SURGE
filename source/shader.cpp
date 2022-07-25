@@ -1,97 +1,161 @@
 #include "shader.hpp"
+#include "options.hpp"
+#include "safe_ops.hpp"
+#include <filesystem>
 
-void surge::shader::compile() noexcept {
+#ifdef SURGE_SYSTEM_IS_POSIX
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/mman.h>
+#endif
 
-  log_all<log_event::message>("Compiling shader \"{}\"", name);
+#ifdef SURGE_SYSTEM_IS_POSIX
+auto surge::dynamic_shader::mmap_file() noexcept -> char * {
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  const auto fd = open(shader_path.c_str(), O_RDONLY);
+
+  if (fd == -1) {
+    log_all<log_event::message>("Unable to open {}: {}", shader_path.c_str(),
+                                std::strerror(errno));
+    return nullptr;
+  }
+
+  auto memory_map = mmap(nullptr, std::filesystem::file_size(shader_path),
+                         PROT_READ, MAP_SHARED, fd, 0);
+
+  close(fd);
+
+  if (memory_map == MAP_FAILED) {
+    log_all<log_event::error>("Error while memory mapping {}: {}",
+                              shader_path.c_str(), std::strerror(errno));
+    return nullptr;
+  }
+
+  return static_cast<char *>(memory_map);
+}
+
+void surge::dynamic_shader::munmap_file(char *file) noexcept {
+  munmap(static_cast<void *>(file), std::filesystem::file_size(shader_path));
+}
+#endif
+
+auto surge::dynamic_shader::load() noexcept -> char * {
+  log_all<log_event::message>("Loading shader file {}", shader_path.c_str());
+
+  // Validate the shader file paths
+  switch (shader_type) {
+
+  case GL_VERTEX_SHADER:
+    if (validate_path(shader_path, ".vert").has_value()) {
+      return nullptr;
+    }
+    break;
+
+  case GL_FRAGMENT_SHADER:
+    if (validate_path(shader_path, ".frag").has_value()) {
+      return nullptr;
+    }
+    break;
+
+  default:
+    log_all<log_event::error>("Unrecognized shader type {}", shader_type);
+    return nullptr;
+  }
+
+  return mmap_file();
+}
+
+void surge::dynamic_shader::compile() noexcept {
+  log_all<log_event::message>("Compiling shader \"{}\"", shader_name);
+
+  // Load the shader
+  const auto shader_src = load();
+
+  if (shader_src == nullptr) {
+    shader_handle = {};
+    return;
+  }
 
   // Create an empty shader handle
-  GLuint shader_handle = glCreateShader(type);
+  GLuint shader_handle_tmp = glCreateShader(shader_type);
 
   // Send the shader source code to GL
-  glShaderSource(shader_handle, 1, &source, nullptr);
+  glShaderSource(shader_handle_tmp, 1, &shader_src, nullptr);
 
   // Compile the shader
-  glCompileShader(shader_handle);
+  glCompileShader(shader_handle_tmp);
+
+  munmap_file(shader_src);
 
   GLint is_compiled{0};
-  glGetShaderiv(shader_handle, GL_COMPILE_STATUS, &is_compiled);
+  glGetShaderiv(shader_handle_tmp, GL_COMPILE_STATUS, &is_compiled);
 
   if (is_compiled == GL_FALSE) {
     GLint max_length{0};
-    glGetShaderiv(shader_handle, GL_INFO_LOG_LENGTH, &max_length);
+    glGetShaderiv(shader_handle_tmp, GL_INFO_LOG_LENGTH, &max_length);
 
     // The maxLength includes the NULL character
     constexpr const GLsizei info_buffer_size{512};
     GLsizei returnd_info_size{0};
     std::array<GLchar, info_buffer_size> info_log{};
 
-    glGetShaderInfoLog(shader_handle, info_buffer_size, &returnd_info_size,
+    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size,
                        info_log.data());
 
     // We don't need the shader anymore.
-    glDeleteShader(shader_handle);
+    glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}", name,
-                              info_log.data());
+    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}",
+                              shader_name, info_log.data());
 
-    handle = {};
-
+    shader_handle = {};
     return;
   }
 
-  log_all<log_event::message>("Shader \"{}\" compiled succesfully", name);
-  handle = shader_handle;
+  log_all<log_event::message>("Shader \"{}\" compiled succesfully",
+                              shader_name);
+  shader_handle = shader_handle_tmp;
 }
 
-auto surge::link_shaders(shader &vertex_shader,
-                         shader &fragment_shader) noexcept
-    -> std::optional<GLuint> {
+void surge::static_shader::compile() noexcept {
+  log_all<log_event::message>("Compiling shader \"{}\"", shader_name);
 
-  log_all<log_event::message>("Linking shaders \"{}\" and \"{}\"",
-                              vertex_shader.get_name(),
-                              fragment_shader.get_name());
+  // Create an empty shader handle
+  GLuint shader_handle_tmp = glCreateShader(shader_type);
 
-  // Get a program object.
-  GLuint program{glCreateProgram()};
+  // Send the shader source code to GL
+  glShaderSource(shader_handle_tmp, 1, &shader_source, nullptr);
 
-  // Attach our shaders to our program
-  glAttachShader(program, vertex_shader.get_handle().value());
-  glAttachShader(program, fragment_shader.get_handle().value());
+  // Compile the shader
+  glCompileShader(shader_handle_tmp);
 
-  // Link our program
-  glLinkProgram(program);
+  GLint is_compiled{0};
+  glGetShaderiv(shader_handle_tmp, GL_COMPILE_STATUS, &is_compiled);
 
-  GLint is_linked{0};
-  glGetProgramiv(program, GL_LINK_STATUS, &is_linked);
+  if (is_compiled == GL_FALSE) {
+    GLint max_length{0};
+    glGetShaderiv(shader_handle_tmp, GL_INFO_LOG_LENGTH, &max_length);
 
-  if (is_linked == GL_FALSE) {
-
-    GLint max_length = 0;
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &max_length);
-
-    // The max_length includes the NULL character
+    // The maxLength includes the NULL character
     constexpr const GLsizei info_buffer_size{512};
     GLsizei returnd_info_size{0};
     std::array<GLchar, info_buffer_size> info_log{};
 
-    glGetProgramInfoLog(program, info_buffer_size, &returnd_info_size,
-                        info_log.data());
+    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size,
+                       info_log.data());
 
-    // Cleanup
-    glDeleteProgram(program);
+    // We don't need the shader anymore.
+    glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::message>("Failed to link \"{}\" and \"{}\":\n  {}",
-                                vertex_shader.get_name(),
-                                fragment_shader.get_name(), info_log.data());
-    return {};
+    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}",
+                              shader_name, info_log.data());
+
+    shader_handle = {};
   }
 
-  glDetachShader(program, vertex_shader.get_handle().value());
-  glDetachShader(program, fragment_shader.get_handle().value());
-
-  log_all<log_event::message>("Shaders \"{}\" and \"{}\" linked succesfully",
-                              vertex_shader.get_name(),
-                              fragment_shader.get_name());
-
-  return program;
+  log_all<log_event::message>("Shader \"{}\" compiled succesfully",
+                              shader_name);
+  shader_handle = shader_handle_tmp;
 }

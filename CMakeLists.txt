@@ -49,6 +49,12 @@ else()
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
 endif()
 
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(SURGE_SYSTEM_IS_POSIX "IS_POSIX")
+else()
+  set(SURGE_SYSTEM_IS_POSIX "NOT_POSIX")
+endif()
+
 configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}/include/options.hpp")
 
 # -----------------------------------------
@@ -75,6 +81,7 @@ set(
   "${Surge_SOURCE_DIR}/source/arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
+  "${Surge_SOURCE_DIR}/source/safe_ops.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"
   "${Surge_SOURCE_DIR}/source/squirrel_bindings.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"
@@ -92,8 +99,8 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined -fno-sanitize=leak)
-    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined -fno-sanitize=leak)
+    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined)
+    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # TODO:
     target_compile_options(Surge PUBLIC /Wall /Wextra /permissive- /O2)

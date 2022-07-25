@@ -10,7 +10,6 @@
 #include "../shaders/default_frag.hpp"
 #include "../shaders/default_vert.hpp"
 
-#include <GL/gl.h>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -62,26 +61,23 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Compile and link shaders
-  shader default_vertex_shader("default_vertex_shader", GL_VERTEX_SHADER,
-                               shader_default_vert_src);
-  shader default_fragment_shader("default_fragment_shader", GL_FRAGMENT_SHADER,
-                                 shader_default_frag_src);
+  /*static_shader default_vertex_shader(GL_VERTEX_SHADER,
+  shader_default_vert_src, "default_vertex_shader"); static_shader
+  default_fragment_shader( GL_FRAGMENT_SHADER, shader_default_frag_src,
+  "default_fragment_shader");*/
+  dynamic_shader default_vertex_shader(
+      "../shaders/default.vert", GL_VERTEX_SHADER, "defualt_vertex_shader");
+  dynamic_shader default_fragment_shader(
+      "../shaders/default.frag", GL_FRAGMENT_SHADER, "defualt_fragment_shader");
 
-  default_vertex_shader.compile();
-  default_fragment_shader.compile();
-
-  if (!default_vertex_shader.is_valid() ||
-      !default_fragment_shader.is_valid()) {
-    glfwTerminate();
+  if (!default_vertex_shader.is_compiled() ||
+      !default_fragment_shader.is_compiled()) {
     return EXIT_FAILURE;
   }
 
-  auto shader_program =
-      link_shaders(default_vertex_shader, default_fragment_shader);
-  if (!shader_program.has_value()) {
-    glDeleteShader(default_vertex_shader.get_handle().value());
-    glDeleteShader(default_fragment_shader.get_handle().value());
-    glfwTerminate();
+  shader_program default_program(default_vertex_shader, default_fragment_shader,
+                                 "default_shader_program");
+  if (!default_program.is_linked()) {
     return EXIT_FAILURE;
   }
 
@@ -128,7 +124,7 @@ auto main(int argc, char **argv) noexcept -> int {
                  GLfloat{global_engine_window::get().get_clear_color_a()});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(shader_program.value());
+    default_program.use();
     glBindVertexArray(VAO); // seeing as we only have a single VAO there's
                             // no need to bind it every time, but we'll do
                             // so to keep things a bit more organized
@@ -143,10 +139,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Normal shutdown
-  log_all<log_event::message>("Deleating shaders.");
-  glDeleteShader(default_vertex_shader.get_handle().value());
-  glDeleteShader(default_fragment_shader.get_handle().value());
-  glDeleteProgram(shader_program.value());
+  default_program.destroy();
 
   return EXIT_SUCCESS;
 }

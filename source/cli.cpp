@@ -2,6 +2,7 @@
 
 #include "log.hpp"
 #include "options.hpp"
+#include "safe_ops.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -88,40 +89,16 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
 }
 
 auto surge::validate_config_script_path(const docopt::Options &opts) noexcept
-    -> tl::expected<std::filesystem::path, config_file_error_type> {
+    -> tl::expected<std::filesystem::path, path_error_type> {
 
   using tl::unexpected;
 
-  try {
-    std::filesystem::path candidate_path(opts.at("<config-script>").asString());
+  std::filesystem::path candidate_path(opts.at("<config-script>").asString());
+  const auto validate_result = validate_path(candidate_path, ".nut");
 
-    if (!std::filesystem::exists(candidate_path)) {
-      log_all<log_event::error>(
-          "The configuration script path {} does not exist.",
-          candidate_path.string());
-      return unexpected(surge::config_file_error_type::file_does_not_exist);
-    }
-
-    if (!std::filesystem::is_regular_file(candidate_path)) {
-      log_all<log_event::error>(
-          "The configuration script path {} does not point to a regular file.",
-          candidate_path.string());
-      return unexpected(surge::config_file_error_type::file_is_not_regular);
-    }
-
-    if (candidate_path.extension() != ".nut") {
-      log_all<log_event::error>(
-          "The configuration script path {} does not point to a .nut file. {}",
-          candidate_path.string());
-      return unexpected(surge::config_file_error_type::file_is_not_nut);
-    }
-
+  if (validate_result.has_value()) {
+    return unexpected(validate_result.value());
+  } else {
     return candidate_path;
-
-  } catch (const std::exception &e) {
-    std::cout << "Error while validating configuration file path : " << e.what()
-              << std::endl;
-
-    return unexpected(surge::config_file_error_type::unknow_exception);
   }
 }

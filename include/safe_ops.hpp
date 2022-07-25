@@ -1,9 +1,13 @@
 #ifndef SURGE_SAFE_OPS_HPP
 #define SURGE_SAFE_OPS_HPP
 
+#include "log.hpp"
+
 #include <concepts>
+#include <filesystem>
 #include <limits>
-#include <log.hpp>
+#include <optional>
+#include <string>
 #include <tl/expected.hpp>
 #include <type_traits>
 
@@ -44,6 +48,23 @@ constexpr inline auto safe_cast(original_type value) noexcept
     return unexpected(cast_error::negative_to_unsigned_undefined);
   }
 }
+
+enum class path_error_type : int {
+  file_does_not_exist,
+  file_is_not_regular,
+  file_is_not_nut,
+  unknow_exception
+};
+
+/**
+ * Validates a path.
+ *
+ * @param path The path to validate.
+ * @return Nothing if the path is valid, an error code otherwise.
+ */
+auto validate_path(const std::filesystem::path &path,
+                   const char *expected_extension) noexcept
+    -> std::optional<path_error_type>;
 
 } // namespace surge
 
