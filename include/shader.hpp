@@ -111,8 +111,37 @@ private:
   void compile() noexcept;
 };
 
+template <typename T> struct opengl_vec2 {
+  T x;
+  T y;
+
+  opengl_vec2(T _x, T _y) : x{_x}, y{_y} {}
+};
+
+template <typename T> struct opengl_vec3 {
+  T x;
+  T y;
+  T z;
+
+  opengl_vec3(T _x, T _y, T _z) : x{_x}, y{_y}, z{_z} {}
+  opengl_vec3(const opengl_vec2<T> &v2, T _z) : x{v2.x}, y{v2.y}, z{_z} {}
+};
+
+template <typename T> struct opengl_vec4 {
+  T x;
+  T y;
+  T z;
+  T w;
+
+  opengl_vec4(T _x, T _y, T _z, T _w) : x{_x}, y{_y}, z{_z}, w{_w} {}
+  opengl_vec4(const opengl_vec3<T> &v3, T _w)
+      : x{v3.x}, y{v3.y}, z{v3.z}, w{_w} {}
+  opengl_vec4(const opengl_vec2<T> &v2, T _z, T _w)
+      : x{v2.x}, y{v2.y}, z{_z}, w{_w} {}
+};
+
 template <typename T>
-concept opengl_uniform_type = std::is_same<T, bool>::value ||
+concept opengl_uniform_type_single = std::is_same<T, bool>::value ||
     std::is_same<T, int>::value || std::is_same<T, float>::value;
 
 template <typename T>
@@ -188,7 +217,7 @@ public:
     program_handle = program_handle_tmp;
   }
 
-  template <opengl_uniform_type uniform_type>
+  template <opengl_uniform_type_single uniform_type>
   void set_uniform(const char *uniform_name, uniform_type value) {
 
     if (!is_linked()) {
@@ -209,6 +238,81 @@ public:
     } else if constexpr (std::is_same<uniform_type, float>::value) {
       glUniform1f(glGetUniformLocation(program_handle.value(), uniform_name),
                   value);
+    }
+  }
+
+  template <opengl_uniform_type_single uniform_type>
+  void set_uniform(const char *uniform_name,
+                   const opengl_vec2<uniform_type> &value) {
+    if (!is_linked()) {
+      log_all<log_event::warning>("Cannot set uniform {} with value {} in {} "
+                                  "because the program is not linked",
+                                  uniform_name, value, program_name);
+      return;
+    }
+
+    if constexpr (std::is_same<uniform_type, bool>::value) {
+      glUniform2i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  static_cast<bool>(value.x), static_cast<bool>(value.y));
+
+    } else if constexpr (std::is_same<uniform_type, int>::value) {
+      glUniform2i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y);
+
+    } else if constexpr (std::is_same<uniform_type, float>::value) {
+      glUniform2f(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y);
+    }
+  }
+
+  template <opengl_uniform_type_single uniform_type>
+  void set_uniform(const char *uniform_name,
+                   const opengl_vec3<uniform_type> &value) {
+    if (!is_linked()) {
+      log_all<log_event::warning>("Cannot set uniform {} with value {} in {} "
+                                  "because the program is not linked",
+                                  uniform_name, value, program_name);
+      return;
+    }
+
+    if constexpr (std::is_same<uniform_type, bool>::value) {
+      glUniform3i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  static_cast<bool>(value.x), static_cast<bool>(value.y),
+                  static_cast<bool>(value.z));
+
+    } else if constexpr (std::is_same<uniform_type, int>::value) {
+      glUniform3i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y, value.z);
+
+    } else if constexpr (std::is_same<uniform_type, float>::value) {
+      glUniform3f(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y, value.z);
+    }
+  }
+
+  template <opengl_uniform_type_single uniform_type>
+  void set_uniform(const char *uniform_name,
+                   const opengl_vec4<uniform_type> &value) {
+    if (!is_linked()) {
+      log_all<log_event::warning>("Cannot set uniform {} with value {} in {} "
+                                  "because the program is not linked",
+                                  uniform_name, value, program_name);
+      return;
+    }
+
+    if constexpr (std::is_same<uniform_type, bool>::value) {
+      glUniform4i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  static_cast<bool>(value.x), static_cast<bool>(value.y),
+                  static_cast<bool>(value.z), static_cast<bool>(value.w));
+
+    } else if constexpr (std::is_same<uniform_type, int>::value) {
+      glUniform4i(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y, value.z, value.w);
+
+    } else if constexpr (std::is_same<uniform_type, float>::value) {
+      glUniform4f(glGetUniformLocation(program_handle.value(), uniform_name),
+                  value.x, value.y, value.z),
+          value.w;
     }
   }
 

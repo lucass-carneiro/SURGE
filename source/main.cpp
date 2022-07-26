@@ -112,7 +112,12 @@ auto main(int argc, char **argv) noexcept -> int {
   glBindVertexArray(0);
 
   // Main loop
+  double dt{1};
+
   while (!global_engine_window::get().should_close()) {
+    glfwSetTime(0.0);
+    (void)dt;
+
     // Handle events
 
     // Update states
@@ -136,6 +141,9 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Get events
     glfwPollEvents();
+
+    // Get frame time
+    dt = glfwGetTime();
   }
 
   // Normal shutdown
