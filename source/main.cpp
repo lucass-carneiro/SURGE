@@ -10,6 +10,7 @@
 #include "../shaders/default_frag.hpp"
 #include "../shaders/default_vert.hpp"
 
+#include <GL/gl.h>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -112,11 +113,9 @@ auto main(int argc, char **argv) noexcept -> int {
   glBindVertexArray(0);
 
   // Main loop
-  double dt{1};
 
-  while (!global_engine_window::get().should_close()) {
-    glfwSetTime(0.0);
-    (void)dt;
+  while ((global_engine_window::get().frame_timer_reset_and_start(),
+          !global_engine_window::get().should_close())) {
 
     // Handle events
 
@@ -142,8 +141,8 @@ auto main(int argc, char **argv) noexcept -> int {
     // Get events
     glfwPollEvents();
 
-    // Get frame time
-    dt = glfwGetTime();
+    // Compute elapsed time
+    global_engine_window::get().frame_timmer_compute_dt();
   }
 
   // Normal shutdown

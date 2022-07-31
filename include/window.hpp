@@ -6,6 +6,7 @@
 #include "squirrel_bindings.hpp"
 
 // clang-format off
+#include <fmt/format.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -33,24 +34,38 @@ public:
 
   auto init() noexcept -> bool;
 
-  [[nodiscard]] auto should_close() noexcept -> bool;
+  [[nodiscard]] inline auto should_close() noexcept -> bool {
+    return static_cast<bool>(glfwWindowShouldClose(window.get()));
+  }
 
-  void swap_buffers() noexcept;
+  inline void swap_buffers() noexcept { glfwSwapBuffers(window.get()); }
 
-  [[nodiscard]] auto get_clear_color_r() const noexcept -> SQFloat {
+  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> SQFloat {
     return clear_color_r;
   }
 
-  [[nodiscard]] auto get_clear_color_g() const noexcept -> SQFloat {
+  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> SQFloat {
     return clear_color_g;
   }
 
-  [[nodiscard]] auto get_clear_color_b() const noexcept -> SQFloat {
+  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> SQFloat {
     return clear_color_b;
   }
 
-  [[nodiscard]] auto get_clear_color_a() const noexcept -> SQFloat {
+  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> SQFloat {
     return clear_color_a;
+  }
+
+  [[nodiscard]] inline auto get_frame_dt() const noexcept -> double {
+    return previous_frame_dt;
+  }
+
+  inline void frame_timer_reset_and_start() const noexcept {
+    glfwSetTime(double{0});
+  }
+
+  inline void frame_timmer_compute_dt() noexcept {
+    previous_frame_dt = glfwGetTime();
   }
 
   ~global_engine_window();
@@ -80,6 +95,8 @@ private:
 
   bool glfw_init_success = false;
   std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)> window;
+
+  double previous_frame_dt{0};
 
   /**
    * Querry the existing available monitors.

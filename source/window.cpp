@@ -221,14 +221,6 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
   return std::make_pair(monitors, count);
 }
 
-auto surge::global_engine_window::should_close() noexcept -> bool {
-  return static_cast<bool>(glfwWindowShouldClose(window.get()));
-}
-
-void surge::global_engine_window::swap_buffers() noexcept {
-  glfwSwapBuffers(window.get());
-}
-
 void surge::glfw_error_callback(int code, const char *description) noexcept {
   log_all<log_event::error>("GLFW error code {}: {}", code, description);
 }
