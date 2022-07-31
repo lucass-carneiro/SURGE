@@ -1,16 +1,13 @@
 #include "arena_allocator.hpp"
 #include "cli.hpp"
 #include "log.hpp"
+#include "opengl_buffer_pools.hpp"
 #include "pool_allocator.hpp"
 #include "safe_ops.hpp"
 #include "shader.hpp"
 #include "squirrel_bindings.hpp"
 #include "window.hpp"
 
-#include "../shaders/default_frag.hpp"
-#include "../shaders/default_vert.hpp"
-
-#include <GL/gl.h>
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
@@ -62,10 +59,6 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Compile and link shaders
-  /*static_shader default_vertex_shader(GL_VERTEX_SHADER,
-  shader_default_vert_src, "default_vertex_shader"); static_shader
-  default_fragment_shader( GL_FRAGMENT_SHADER, shader_default_frag_src,
-  "default_fragment_shader");*/
   dynamic_shader default_vertex_shader(
       "../shaders/default.vert", GL_VERTEX_SHADER, "defualt_vertex_shader");
   dynamic_shader default_fragment_shader(
@@ -82,35 +75,61 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // triangle vertices
-  std::array<float, 9> vertices{-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
-                                0.0f,  0.0f,  0.5f, 0.0f};
+  /*
+  // Load triangle in memory
+  std::array<float, 9> triangle_vertices{-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
+                                         0.0f,  0.0f,  0.5f, 0.0f};
+  static_vao_buffer_pool<1> VAOs;
+  static_buffer_pool<1> BOs;
 
-  GLuint VBO{0}, VAO{0};
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
+  VAOs.bind<0>();
+  BOs.bind<0>(GL_ARRAY_BUFFER);
 
-  // bind the Vertex Array Object first, then bind and set vertex buffer(s), and
-  // then configure vertex attributes(s).
-  glBindVertexArray(VAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), vertices.data(),
-               GL_STATIC_DRAW);
+  BOs.transfer_data(GL_ARRAY_BUFFER, triangle_vertices.size() * sizeof(float),
+                    triangle_vertices.data(), GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(0);
+  VAOs.enable(0);
+  BOs.unbind(GL_ARRAY_BUFFER);
+  VAOs.unbind();*/
 
-  // note that this is allowed, the call to glVertexAttribPointer registered VBO
-  // as the vertex attribute's bound vertex buffer object so afterwards we can
-  // safely unbind
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  // Load quad in memory
+  std::array<float, 12> quad_verticies{
+      0.5f,  0.5f,  0.0f, // top right
+      0.5f,  -0.5f, 0.0f, // bottom right
+      -0.5f, -0.5f, 0.0f, // bottom left
+      -0.5f, 0.5f,  0.0f  // top left
+  };
 
-  // You can unbind the VAO afterwards so other VAO calls won't accidentally
-  // modify this VAO, but this rarely happens. Modifying other VAOs requires a
-  // call to glBindVertexArray anyways so we generally don't unbind VAOs (nor
-  // VBOs) when it's not directly necessary.
-  glBindVertexArray(0);
+  std::array<unsigned int, 6> quad_indices{
+      // note that we start from 0!
+      0, 1, 3, // first triangle
+      1, 2, 3  // second triangle
+  };
+
+  static_vao_buffer_pool<1> VAOs;
+  static_buffer_pool<2> BOs;
+
+  VAOs.bind<0>();
+
+  BOs.bind<0>(GL_ARRAY_BUFFER);
+  BOs.transfer_data(GL_ARRAY_BUFFER, quad_verticies.size() * sizeof(float),
+                    quad_verticies.data(), GL_STATIC_DRAW);
+
+  BOs.bind<1>(GL_ELEMENT_ARRAY_BUFFER);
+  BOs.transfer_data(GL_ELEMENT_ARRAY_BUFFER,
+                    quad_indices.size() * sizeof(unsigned int),
+                    quad_indices.data(), GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+  VAOs.enable(0);
+
+  BOs.unbind(GL_ARRAY_BUFFER);
+  // remember: do NOT unbind the EBO while a VAO is active as the bound element
+  // buffer object IS stored in the VAO; keep the EBO bound.
+  // BOs.unbind(GL_ELEMENT_ARRAY_BUFFER);
+
+  VAOs.unbind();
 
   // Main loop
 
@@ -129,11 +148,12 @@ auto main(int argc, char **argv) noexcept -> int {
     glClear(GL_COLOR_BUFFER_BIT);
 
     default_program.use();
-    glBindVertexArray(VAO); // seeing as we only have a single VAO there's
-                            // no need to bind it every time, but we'll do
-                            // so to keep things a bit more organized
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0); // no need to unbind it every time
+    VAOs.bind<0>(); // seeing as we only have a single VAO there's
+                    // no need to bind it every time, but we'll do
+                    // so to keep things a bit more organized
+    // glDrawArrays(GL_TRIANGLES, 0, 3); // draw triangle
+    glDrawElements(GL_TRIANGLES, quad_indices.size(), GL_UNSIGNED_INT, nullptr);
+    VAOs.unbind(); // no need to unbind it every time
 
     // Present rendering
     global_engine_window::get().swap_buffers();

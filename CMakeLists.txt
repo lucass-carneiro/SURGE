@@ -68,11 +68,13 @@ set(
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
   "${Surge_SOURCE_DIR}/include/pool_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/shader.hpp"
   "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
+  "${Surge_SOURCE_DIR}/include/vertex_renderer.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -99,8 +101,8 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined)
-    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=null,unreachable,undefined)
+    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined)
+    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # TODO:
     target_compile_options(Surge PUBLIC /Wall /Wextra /permissive- /O2)
