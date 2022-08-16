@@ -1,5 +1,4 @@
 #include "window.hpp"
-#include "arena_allocator.hpp"
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"

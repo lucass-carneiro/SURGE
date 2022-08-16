@@ -1,8 +1,8 @@
-#include "arena_allocator.hpp"
+#include "allocators.hpp"
 #include "cli.hpp"
+#include "linear_arena_allocator.hpp"
 #include "log.hpp"
 #include "opengl_buffer_pools.hpp"
-#include "pool_allocator.hpp"
 #include "safe_ops.hpp"
 #include "shader.hpp"
 #include "squirrel_bindings.hpp"
@@ -17,22 +17,21 @@ const std::filesystem::path surge::global_file_log_manager::file_path =
 
 const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 
-const std::size_t surge::global_arena_allocator::arena_size =
-    1024 * std::size_t{100};
-
-inline void init_all_subsystems() noexcept {
-  using namespace surge;
-  global_stdout_log_manager::get();
-  global_file_log_manager::get();
-  global_squirrel_vm::get();
-  global_arena_allocator::get();
-  global_engine_window::get();
-}
-
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
-  init_all_subsystems();
+  // Init subsystems
+  global_stdout_log_manager::get();
+  global_file_log_manager::get();
+
+  default_allocator system_allocator;
+  linear_arena_allocator main_linear_arena(system_allocator, 1024,
+                                           "Main arena");
+  linear_arena_allocator window_system_arena(main_linear_arena, 256,
+                                             "Window system arena");
+
+  global_squirrel_vm::get();
+  global_engine_window::get();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);

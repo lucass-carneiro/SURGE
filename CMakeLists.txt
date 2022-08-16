@@ -64,12 +64,12 @@ configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}
 # Core source files
 set(
   SURGE_HEADER_LIST
-  "${Surge_SOURCE_DIR}/include/arena_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators.hpp"
+  "${Surge_SOURCE_DIR}/include/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
-  "${Surge_SOURCE_DIR}/include/pool_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/shader.hpp"
   "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
@@ -80,7 +80,6 @@ set(
 
 set(
   SURGE_SOURCE_LIST
-  "${Surge_SOURCE_DIR}/source/arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/safe_ops.cpp"

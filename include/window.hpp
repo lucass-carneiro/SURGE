@@ -1,7 +1,6 @@
 #ifndef SURGE_WINDOW_HPP
 #define SURGE_WINDOW_HPP
 
-#include "arena_allocator.hpp"
 #include "options.hpp"
 #include "squirrel_bindings.hpp"
 
