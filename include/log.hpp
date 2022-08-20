@@ -39,13 +39,11 @@ namespace surge {
  * These types serve as tags that are passed to the general log function.
  */
 enum class log_event : std::uint8_t {
-  warning,         // yellow
-  error,           // bold red
-  message,         // steel blue
-  missing_feature, // bold yellow
-  logo,            // bold crimson
-  pre_engine_init, // gold
-  rendering,       // aquamarine
+  logo,    // bold crimson
+  warning, // yellow
+  error,   // bold red
+  message, // steel blue
+  memory,  // aquamarine
   count
 };
 
@@ -60,13 +58,11 @@ using log_banner_map_t =
  * Static map of event-color assossiations
  */
 constexpr const log_color_map_t log_color_map{
-    {{{log_event::warning, fmt::fg(fmt::color::yellow)},
+    {{{log_event::logo, fmt::emphasis::bold | fg(fmt::color::crimson)},
+      {log_event::warning, fmt::fg(fmt::color::yellow)},
       {log_event::error, fmt::emphasis::bold | fg(fmt::color::red)},
       {log_event::message, fg(fmt::color::steel_blue)},
-      {log_event::missing_feature, fg(fmt::color::yellow)},
-      {log_event::logo, fmt::emphasis::bold | fg(fmt::color::crimson)},
-      {log_event::pre_engine_init, fg(fmt::color::gold)},
-      {log_event::rendering, fg(fmt::color::aquamarine)}}}};
+      {log_event::memory, fg(fmt::color::aquamarine)}}}};
 
 /**
  * Static map of event-baner assossiations
@@ -75,9 +71,7 @@ constexpr const log_banner_map_t log_banner_map{
     {{{log_event::warning, "warning"},
       {log_event::error, "error"},
       {log_event::message, "message"},
-      {log_event::missing_feature, "missing feature"},
-      {log_event::pre_engine_init, "pre engine init"},
-      {log_event::rendering, "rendering"}}}};
+      {log_event::memory, "memory event"}}}};
 
 /**
  * Handles logging output to files and stdout.

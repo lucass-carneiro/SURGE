@@ -1,6 +1,7 @@
 #ifndef SURGE_WINDOW_HPP
 #define SURGE_WINDOW_HPP
 
+#include "allocators.hpp"
 #include "options.hpp"
 #include "squirrel_bindings.hpp"
 
@@ -8,8 +9,6 @@
 #include <fmt/format.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
-#include <EASTL/vector.h>
 // clang-format on
 
 #include <cstddef>
@@ -24,6 +23,13 @@ void glfw_error_callback(int code, const char *description) noexcept;
 
 void framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept;
 
+auto glfw_allocate(std::size_t size, void *user) noexcept -> void *;
+
+auto glfw_reallocate(void *block, std::size_t size, void *user) noexcept
+    -> void *;
+
+auto glfw_free(void *block, void *user) noexcept;
+
 class global_engine_window {
 public:
   static auto get() noexcept -> global_engine_window & {
@@ -31,7 +37,7 @@ public:
     return gew;
   }
 
-  auto init() noexcept -> bool;
+  auto init(surge_allocator &allocator) noexcept -> bool;
 
   [[nodiscard]] inline auto should_close() noexcept -> bool {
     return static_cast<bool>(glfwWindowShouldClose(window.get()));

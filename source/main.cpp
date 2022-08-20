@@ -1,5 +1,6 @@
 #include "allocators.hpp"
 #include "cli.hpp"
+#include "default_allocator.hpp"
 #include "linear_arena_allocator.hpp"
 #include "log.hpp"
 #include "opengl_buffer_pools.hpp"
@@ -24,10 +25,10 @@ auto main(int argc, char **argv) noexcept -> int {
   global_stdout_log_manager::get();
   global_file_log_manager::get();
 
-  default_allocator system_allocator;
-  linear_arena_allocator main_linear_arena(system_allocator, 1024,
-                                           "Main arena");
-  linear_arena_allocator window_system_arena(main_linear_arena, 256,
+  default_allocator main_system_allocator;
+  linear_arena_allocator main_arena_allocator(main_system_allocator, 1024,
+                                              "Main arena");
+  linear_arena_allocator window_system_arena(main_arena_allocator, 256,
                                              "Window system arena");
 
   global_squirrel_vm::get();
@@ -53,7 +54,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Initialize GLFW
-  if (!global_engine_window::get().init()) {
+  if (!global_engine_window::get().init(window_system_arena)) {
     return EXIT_FAILURE;
   }
 

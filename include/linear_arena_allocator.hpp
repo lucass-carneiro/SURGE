@@ -7,7 +7,6 @@
 
 #include <gsl/gsl-lite.hpp>
 
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -29,8 +28,7 @@ namespace surge {
  * @tparam parent_allocator_t The parent allocator for the arena, responsible
  * for allocating it's internal memory block.
  */
-template <surge_allocator parent_allocator_t = default_allocator>
-class linear_arena_allocator {
+class linear_arena_allocator final : public surge_allocator {
 public:
 #ifdef SURGE_DEBUG_MEMORY
   /**
@@ -42,37 +40,28 @@ public:
    *
    * @param debug_name The debug name of this instance of the arena
    */
-  linear_arena_allocator(parent_allocator_t &pa, std::size_t capacity,
-                         const char *debug_name)
-      : parent_allocator{pa}, requested_arena_capacity{capacity},
-        actual_arena_capacity{
-            align_alloc_size(requested_arena_capacity, default_alignment)},
-        allocator_debug_name{debug_name},
-        arena_buffer{static_cast<std::byte *>(
-            pa.aligned_alloc(default_alignment, actual_arena_capacity))} {}
+  linear_arena_allocator(surge_allocator &pa, std::size_t capacity,
+                         const char *debug_name);
+#else
+  /**
+   * @brief Construct a new linear arena allocator object
+   *
+   * @param pa The parent allocator to use while allocating memory blocks.
+   *
+   * @param capacity The total size (in Bytes) that the arena can allocate.
+   */
+  linear_arena_allocator(surge_allocator &pa, std::size_t capacity);
+#endif
 
   /**
    * @brief Destroy the linear arena allocator object.
    *
    */
-  ~linear_arena_allocator() {
-    parent_allocator.free(arena_buffer);
-
-#ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::message>(
-        "Allocator \"{}\"  was destroyed with {} remaining allocations.",
-        allocator_debug_name, allocation_counter);
-#endif
-  }
-
-#else
-// TODO
-#endif
+  ~linear_arena_allocator() final;
 
   linear_arena_allocator(const linear_arena_allocator &) = delete;
   linear_arena_allocator(linear_arena_allocator &&) = delete;
 
-  auto operator=(linear_arena_allocator) -> linear_arena_allocator & = delete;
   auto operator=(const linear_arena_allocator &)
       -> linear_arena_allocator & = delete;
   auto operator=(linear_arena_allocator &&)
@@ -98,74 +87,7 @@ public:
    * @return On failure, returns a null pointer.
    */
   [[nodiscard]] auto aligned_alloc(std::size_t alignment,
-                                   std::size_t size) noexcept -> void * {
-
-#ifdef SURGE_DEBUG_MEMORY
-    // Precondition 1: alignment must be a power of 2
-    if (!is_pow_2(alignment)) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
-          "requested, which is not a power of 2",
-          allocator_debug_name, alignment);
-
-      return nullptr;
-    }
-
-    // Precondition 2: alignment is a multiple of sizeof(void*)
-    if ((alignment % sizeof(void *)) != 0) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
-          "requested, which is not a multiple of sizeof(void*), which is {}",
-          allocator_debug_name, alignment, sizeof(void *));
-
-      return nullptr;
-    }
-
-    // Precondition 3: size is a non zero integral multiple of alignment
-    if (size == 0 || (size % alignment != 0)) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(aligned_alloc): Allocation of size {} "
-          "requested, "
-          "which is not a non zero integral muliple of the alignment {}",
-          allocator_debug_name, size, alignment);
-
-      return nullptr;
-    }
-#endif
-
-    const auto current_index = free_index;
-    const auto bumped_index = current_index + size;
-
-    if (bumped_index >= actual_arena_capacity) {
-#ifdef SURGE_DEBUG_MEMORY
-      log_all<log_event::error>(
-          "In allocator \"{}\"(aligned_alloc): Allocation of size {} requested "
-          "exceeds the arena capacity of (requested, actual) ({}, {})",
-          allocator_debug_name, size, requested_arena_capacity,
-          actual_arena_capacity);
-#endif
-      return nullptr;
-    }
-
-    // Allocation succesfull
-    free_index = bumped_index;
-    std::byte *start_ptr = &(arena_buffer[current_index]);
-
-#ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::message>(
-        "Allocator \"{}\" allocation summary:\n"
-        "  Allocated size {}\n"
-        "  Internal range ({},{})\n"
-        "  RAM address {:#x}",
-        allocator_debug_name, size, current_index, free_index - 1,
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        reinterpret_cast<std::uintptr_t>(start_ptr));
-
-    allocation_counter++;
-#endif
-
-    return static_cast<void *>(start_ptr);
-  }
+                                   std::size_t size) noexcept -> void * final;
 
   /**
    * @brief Allocates bytes of uninitialized storage within the arena.
@@ -178,23 +100,7 @@ public:
    *
    * @return nullptr if the size is zero or if the function fails to allocate.
    */
-  [[nodiscard]] inline auto malloc(std::size_t size) noexcept -> void * {
-
-#ifdef SURGE_DEBUG_MEMORY
-    // Precondition 1: size must be non null
-    if (size == 0) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(malloc): Allocation of size 0 is ill defined",
-          allocator_debug_name);
-
-      return nullptr;
-    }
-#endif
-
-    const auto actual_alloc_size = align_alloc_size(size, default_alignment);
-
-    return this->aligned_alloc(default_alignment, actual_alloc_size);
-  }
+  [[nodiscard]] auto malloc(std::size_t size) noexcept -> void * final;
 
   /**
    * @brief Allocates memory for an array of objects and initializes it to all
@@ -212,41 +118,8 @@ public:
    *
    * @return On failure, returns a null pointer
    */
-  [[nodiscard]] inline auto calloc(std::size_t num,
-                                   std::size_t size) const noexcept -> void * {
-#ifdef SURGE_DEBUG_MEMORY
-    // Precondition 1: num must be non null
-    if (num == 0) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(calloc): Allocation of 0 elements ill defined",
-          allocator_debug_name);
-
-      return nullptr;
-    }
-
-    // Precondition 2: size must be non null
-    if (size == 0) {
-      log_all<log_event::error>(
-          "In allocator \"{}\"(calloc): Allocation of size "
-          "0 elements ill defined",
-          allocator_debug_name);
-
-      return nullptr;
-    }
-#endif
-
-    const auto intended_alloc_size{num * size};
-    const auto actual_alloc_size =
-        align_alloc_size(intended_alloc_size, default_alignment);
-
-    auto memory = this->aligned_alloc(default_alignment, actual_alloc_size);
-
-    if (memory != nullptr) {
-      std::memset(memory, 0, actual_alloc_size);
-    }
-
-    return memory;
-  }
+  [[nodiscard]] auto calloc(std::size_t num, std::size_t size) noexcept
+      -> void * final;
 
   /**
    * @brief Reallocates the given area of memory. Given that the arena is
@@ -262,11 +135,8 @@ public:
    *
    * @return On failure, returns a null pointer.
    */
-  [[nodiscard]] auto realloc(void *ptr, std::size_t new_size) const noexcept
-      -> void * {
-    this->free(ptr);
-    return malloc(new_size);
-  }
+  [[nodiscard]] auto realloc(void *ptr, std::size_t new_size) noexcept
+      -> void * final;
 
   /**
    * @brief Releases previoslly allocated memory. Since the arena allocator
@@ -276,23 +146,14 @@ public:
    *
    * @param ptr Pointer to the memory to deallocate.
    */
-  void free(void *ptr) noexcept {
-#ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::message>(
-        "Allocator \"{}\" released address {:#x}", allocator_debug_name,
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        reinterpret_cast<std::uintptr_t>(ptr));
-
-    allocation_counter--;
-#endif
-  }
+  void free(void *ptr) noexcept final;
 
   /**
    * @brief Resets the arena to it's initial configuration. This allows it to
    * be reused for new allocations. This also means that any previously
    * existing pointers are invalidated after this call.
    */
-  void reset() {
+  void inline reset() noexcept {
     free_index = 0;
     allocation_counter = 0;
   }
@@ -331,7 +192,7 @@ private:
   /**
    * The parent allocator to use for this arena.
    */
-  parent_allocator_t &parent_allocator;
+  surge_allocator &parent_allocator;
 
   /**
    * @brief The user requested total memory the arena can provide.
@@ -374,20 +235,16 @@ private:
     return (x & (x - 1)) == 0;
   }
 
-  [[nodiscard]] constexpr inline auto
-  align_alloc_size(std::size_t intended_size, std::size_t alignment)
-      -> std::size_t {
-
-    std::size_t modulo{0};
-
-    if (is_pow_2(alignment)) {
-      modulo = intended_size & (alignment - 1);
-    } else {
-      modulo = intended_size % alignment;
-    }
-
-    return intended_size + (alignment - modulo);
-  }
+  /**
+   * @brief Modifies an allocation size to be aligned with the specified
+   * alignment
+   *
+   * @param intended_size The size one wishes to allocate.
+   * @param alignment The alignment of the allocation.
+   * @return std::size_t The aligned allocation size.
+   */
+  [[nodiscard]] auto align_alloc_size(std::size_t intended_size,
+                                      std::size_t alignment) -> std::size_t;
 };
 
 } // namespace surge

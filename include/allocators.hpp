@@ -1,61 +1,33 @@
 #ifndef SURGE_ALLOCATORS_HPP
 #define SURGE_ALLOCATORS_HPP
 
-#include <concepts>
 #include <cstddef>
-#include <cstdlib>
 
 namespace surge {
 
-template <typename T>
-concept surge_allocator = requires(T a) {
-  { a.malloc(std::size_t{0}) } -> std::same_as<void *>;
-  { a.aligned_alloc(std::size_t{0}, std::size_t{0}) } -> std::same_as<void *>;
-  { a.calloc(std::size_t{0}, std::size_t{0}) } -> std::same_as<void *>;
-  { a.realloc(nullptr, std::size_t{0}) } -> std::same_as<void *>;
-  { a.free(nullptr) } -> std::same_as<void>;
-};
-
-class default_allocator {
+class surge_allocator {
 public:
-  default_allocator() = default;
-  default_allocator(const default_allocator &) = delete;
-  default_allocator(default_allocator &&) = delete;
+  [[nodiscard]] virtual auto malloc(std::size_t) noexcept -> void * = 0;
 
-  auto operator=(default_allocator) -> default_allocator & = delete;
-  auto operator=(const default_allocator &) -> default_allocator & = delete;
-  auto operator=(default_allocator &&) -> default_allocator & = delete;
+  [[nodiscard]] virtual auto aligned_alloc(std::size_t, std::size_t) noexcept
+      -> void * = 0;
 
-  ~default_allocator() = default;
+  [[nodiscard]] virtual auto calloc(std::size_t, std::size_t) noexcept
+      -> void * = 0;
 
-  [[nodiscard]] inline auto malloc(std::size_t size) const noexcept -> void * {
-    // NOLINTNEXTLINE
-    return std::malloc(size);
-  }
+  [[nodiscard]] virtual auto realloc(void *ptr, std::size_t new_size) noexcept
+      -> void * = 0;
 
-  [[nodiscard]] inline auto aligned_alloc(std::size_t alignment,
-                                          std::size_t size) const noexcept
-      -> void * {
-    // NOLINTNEXTLINE
-    return std::aligned_alloc(alignment, size);
-  }
+  virtual void free(void *ptr) noexcept = 0;
 
-  [[nodiscard]] inline auto calloc(std::size_t num,
-                                   std::size_t size) const noexcept {
-    // NOLINTNEXTLINE
-    return std::calloc(num, size);
-  }
+  surge_allocator() = default;
+  surge_allocator(const surge_allocator &) = delete;
+  surge_allocator(surge_allocator &&) = delete;
 
-  [[nodiscard]] inline auto realloc(void *ptr,
-                                    std::size_t new_size) const noexcept {
-    // NOLINTNEXTLINE
-    return std::realloc(ptr, new_size);
-  }
+  auto operator=(const surge_allocator &) -> surge_allocator & = delete;
+  auto operator=(surge_allocator &&) -> surge_allocator & = delete;
 
-  inline void free(void *ptr) const noexcept {
-    // NOLINTNEXTLINE
-    std::free(ptr);
-  }
+  virtual ~surge_allocator() = default;
 };
 
 } // namespace surge

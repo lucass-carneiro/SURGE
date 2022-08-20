@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "allocators.hpp"
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"
@@ -29,7 +30,7 @@ surge::global_engine_window::~global_engine_window() {
   }
 }
 
-auto surge::global_engine_window::init() noexcept -> bool {
+auto surge::global_engine_window::init(surge_allocator &) noexcept -> bool {
 
   // Retrieve, parse and cast configuration values from config script
   const auto window_width_optional =
@@ -88,6 +89,14 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // Register GLFW callbacks
   glfwSetErrorCallback(surge::glfw_error_callback);
+
+  // Initialize GLFW memory allocator structure;
+  /* TODO: This is only available in conan 3.4, which conan does not support yet
+  GLFWallocator glfw_allocator;
+  glfw_allocator.allocate = glfw_allocate;
+  glfw_allocator.reallocate = glfw_reallocate;
+  glfw_allocator.deallocate = glfw_free;
+  */
 
   // Initialize glfw
   if (glfwInit() != GLFW_TRUE) {
@@ -227,4 +236,21 @@ void surge::glfw_error_callback(int code, const char *description) noexcept {
 void surge::framebuffer_size_callback(GLFWwindow *, int width,
                                       int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
+}
+
+// TODO: This is not available in conan yer. Also, revise the casts
+auto surge::glfw_allocate(std::size_t size, void *user) noexcept -> void * {
+  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  return allocator->malloc(size);
+}
+
+auto surge::glfw_reallocate(void *block, std::size_t size, void *user) noexcept
+    -> void * {
+  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  return allocator->realloc(block, size);
+}
+
+auto surge::glfw_free(void *block, void *user) noexcept {
+  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  allocator->free(block);
 }
