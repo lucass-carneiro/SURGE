@@ -12,10 +12,8 @@
 
 // clang-format off
 #include <bits/types/FILE.h>
-#include <date/date.h>
 #include <fmt/color.h>
 #include <fmt/core.h>
-#include <date/tz.h>
 // clang-format on
 
 #include <array>

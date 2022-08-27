@@ -143,7 +143,7 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::glfw
   CONAN_PKG::glm
   CONAN_PKG::gsl-lite
-  CONAN_PKG::date
+  CONAN_PKG::stb
 )
 
 target_include_directories(
