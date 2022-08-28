@@ -1,9 +1,7 @@
 #ifndef SURGE_WINDOW_HPP
 #define SURGE_WINDOW_HPP
 
-#include "allocators.hpp"
-#include "global_allocators.hpp"
-#include "linear_arena_allocator.hpp"
+#include "allocators/global_allocators.hpp"
 #include "options.hpp"
 #include "squirrel_bindings.hpp"
 
@@ -27,8 +25,7 @@ void framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept;
 
 auto glfw_allocate(std::size_t size, void *user) noexcept -> void *;
 
-auto glfw_reallocate(void *block, std::size_t size, void *user) noexcept
-    -> void *;
+auto glfw_reallocate(void *block, std::size_t size, void *user) noexcept -> void *;
 
 auto glfw_free(void *block, void *user) noexcept;
 
@@ -47,33 +44,19 @@ public:
 
   inline void swap_buffers() noexcept { glfwSwapBuffers(window.get()); }
 
-  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> SQFloat {
-    return clear_color_r;
-  }
+  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> SQFloat { return clear_color_r; }
 
-  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> SQFloat {
-    return clear_color_g;
-  }
+  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> SQFloat { return clear_color_g; }
 
-  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> SQFloat {
-    return clear_color_b;
-  }
+  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> SQFloat { return clear_color_b; }
 
-  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> SQFloat {
-    return clear_color_a;
-  }
+  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> SQFloat { return clear_color_a; }
 
-  [[nodiscard]] inline auto get_frame_dt() const noexcept -> double {
-    return previous_frame_dt;
-  }
+  [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return previous_frame_dt; }
 
-  inline void frame_timer_reset_and_start() const noexcept {
-    glfwSetTime(double{0});
-  }
+  inline void frame_timer_reset_and_start() const noexcept { glfwSetTime(double{0}); }
 
-  inline void frame_timmer_compute_dt() noexcept {
-    previous_frame_dt = glfwGetTime();
-  }
+  inline void frame_timmer_compute_dt() noexcept { previous_frame_dt = glfwGetTime(); }
 
   ~global_engine_window();
 
@@ -82,8 +65,7 @@ public:
 
   auto operator=(global_engine_window) -> global_engine_window & = delete;
 
-  auto operator=(const global_engine_window &)
-      -> global_engine_window & = delete;
+  auto operator=(const global_engine_window &) -> global_engine_window & = delete;
 
   auto operator=(global_engine_window &&) -> global_engine_window & = delete;
 
@@ -91,8 +73,7 @@ public:
 
 private:
   global_engine_window()
-      : subsystem_allocator(global_linear_arena_allocator::get(),
-                            subsystem_allocator_capacity,
+      : subsystem_allocator(global_linear_arena_allocator::get(), subsystem_allocator_capacity,
                             "Window subsystem allocator"),
         window{nullptr, glfwDestroyWindow} {}
 
@@ -118,8 +99,7 @@ private:
    *
    * @return The monitor array if the monitors could or false.
    */
-  auto querry_available_monitors() noexcept
-      -> std::optional<std::pair<GLFWmonitor **, int>>;
+  auto querry_available_monitors() noexcept -> std::optional<std::pair<GLFWmonitor **, int>>;
 };
 
 } // namespace surge

@@ -65,14 +65,16 @@ configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}
 # Core source files
 set(
   SURGE_HEADER_LIST
+  "${Surge_SOURCE_DIR}/include/allocators/allocators.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/default_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
+  
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators.hpp"
+  
   "${Surge_SOURCE_DIR}/include/cli.hpp"
-  "${Surge_SOURCE_DIR}/include/default_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/global_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
-  "${Surge_SOURCE_DIR}/include/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
@@ -85,11 +87,13 @@ set(
 
 set(
   SURGE_SOURCE_LIST
+  "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
+  "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
+  
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
+  
   "${Surge_SOURCE_DIR}/source/cli.cpp"
-  "${Surge_SOURCE_DIR}/source/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
-  "${Surge_SOURCE_DIR}/source/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/safe_ops.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"

@@ -1,4 +1,4 @@
-#include "global_allocators.hpp"
+#include "allocators/global_allocators.hpp"
 #include "stb/stb_image.hpp"
 
 #define STBI_MALLOC(sz) surge::global_default_allocator::get().malloc(sz)

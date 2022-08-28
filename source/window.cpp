@@ -1,5 +1,5 @@
 #include "window.hpp"
-#include "allocators.hpp"
+
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"
@@ -33,44 +33,37 @@ surge::global_engine_window::~global_engine_window() {
 auto surge::global_engine_window::init() noexcept -> bool {
 
   // Retrieve, parse and cast configuration values from config script
-  const auto window_width_optional =
-      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
-          _SC("window_width"));
+  const auto window_width_optional
+      = global_squirrel_vm::get().surge_retrieve<SQInteger, int>(_SC("window_width"));
 
-  const auto window_height_optional =
-      global_squirrel_vm::get().surge_retrieve<SQInteger, int>(
-          _SC("window_height"));
+  const auto window_height_optional
+      = global_squirrel_vm::get().surge_retrieve<SQInteger, int>(_SC("window_height"));
 
-  const auto window_name_optional =
-      global_squirrel_vm::get().surge_retrieve<const SQChar *>(
-          _SC("window_name"));
+  const auto window_name_optional
+      = global_squirrel_vm::get().surge_retrieve<const SQChar *>(_SC("window_name"));
 
-  auto windowed_optional =
-      global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
+  auto windowed_optional = global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
 
-  auto window_monitor_index_optional =
-      global_squirrel_vm::get().surge_retrieve<SQInteger>(
-          _SC("window_monitor_index"));
+  auto window_monitor_index_optional
+      = global_squirrel_vm::get().surge_retrieve<SQInteger>(_SC("window_monitor_index"));
 
-  auto clear_color_r_optional =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
+  auto clear_color_r_optional
+      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
 
-  auto clear_color_g_optional =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
+  auto clear_color_g_optional
+      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
 
-  auto clear_color_b_optional =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
+  auto clear_color_b_optional
+      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
 
-  auto clear_color_a_optional =
-      global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
+  auto clear_color_a_optional
+      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
 
-  bool parsed =
-      window_width_optional.has_value() && window_height_optional.has_value() &&
-      window_name_optional.has_value() && windowed_optional.has_value() &&
-      window_monitor_index_optional.has_value() &&
-      clear_color_r_optional.has_value() &&
-      clear_color_g_optional.has_value() &&
-      clear_color_b_optional.has_value() && clear_color_a_optional.has_value();
+  bool parsed = window_width_optional.has_value() && window_height_optional.has_value()
+                && window_name_optional.has_value() && windowed_optional.has_value()
+                && window_monitor_index_optional.has_value() && clear_color_r_optional.has_value()
+                && clear_color_g_optional.has_value() && clear_color_b_optional.has_value()
+                && clear_color_a_optional.has_value();
 
   if (!parsed) {
     glfw_init_success = false;
@@ -113,10 +106,9 @@ auto surge::global_engine_window::init() noexcept -> bool {
   }
 
   if (window_monitor_index >= monitors.value().second) {
-    log_all<log_event::warning>(
-        "Unable to set window monitor to {} because there are only {} "
-        "monitors. Using default monitor index 0",
-        window_monitor_index, monitors.value().second);
+    log_all<log_event::warning>("Unable to set window monitor to {} because there are only {} "
+                                "monitors. Using default monitor index 0",
+                                window_monitor_index, monitors.value().second);
     window_monitor_index = 0;
   }
 
@@ -132,13 +124,11 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   if (windowed == SQBool{true}) {
     (void)window.release();
-    window.reset(glfwCreateWindow(window_width, window_height, window_name,
-                                  nullptr, nullptr));
+    window.reset(glfwCreateWindow(window_width, window_height, window_name, nullptr, nullptr));
   } else {
     (void)window.release();
-    window.reset(glfwCreateWindow(
-        window_width, window_height, window_name,
-        (monitors.value().first)[window_monitor_index], nullptr));
+    window.reset(glfwCreateWindow(window_width, window_height, window_name,
+                                  (monitors.value().first)[window_monitor_index], nullptr));
   }
 
   if (window == nullptr) {
@@ -233,8 +223,7 @@ void surge::glfw_error_callback(int code, const char *description) noexcept {
   log_all<log_event::error>("GLFW error code {}: {}", code, description);
 }
 
-void surge::framebuffer_size_callback(GLFWwindow *, int width,
-                                      int height) noexcept {
+void surge::framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
 
@@ -244,8 +233,7 @@ auto surge::glfw_allocate(std::size_t size, void *user) noexcept -> void * {
   return allocator->malloc(size);
 }
 
-auto surge::glfw_reallocate(void *block, std::size_t size, void *user) noexcept
-    -> void * {
+auto surge::glfw_reallocate(void *block, std::size_t size, void *user) noexcept -> void * {
   surge_allocator *allocator{static_cast<surge_allocator *>(user)};
   return allocator->realloc(block, size);
 }

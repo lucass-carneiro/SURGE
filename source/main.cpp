@@ -1,6 +1,5 @@
-#include "allocators.hpp"
+#include "allocators/global_allocators.hpp"
 #include "cli.hpp"
-#include "global_allocators.hpp"
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "opengl_buffer_pools.hpp"
@@ -13,20 +12,17 @@
 #include <cstdlib>
 #include <exception>
 
-const std::filesystem::path surge::global_file_log_manager::file_path =
-    std::filesystem::path{"log.txt"};
+const std::filesystem::path surge::global_file_log_manager::file_path
+    = std::filesystem::path{"log.txt"};
 
 const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 
 const std::size_t surge::global_linear_arena_allocator::capacity = 16384;
 
-const std::size_t surge::global_engine_window::subsystem_allocator_capacity =
-    100;
+const std::size_t surge::global_engine_window::subsystem_allocator_capacity = 100;
 
-const std::size_t surge::global_image_loader::subsystem_allocator_capacity =
-    16084;
-const std::size_t surge::global_image_loader::persistent_allocator_capacity =
-    8042;
+const std::size_t surge::global_image_loader::subsystem_allocator_capacity = 16084;
+const std::size_t surge::global_image_loader::persistent_allocator_capacity = 8042;
 const std::size_t surge::global_image_loader::volatile_allocator_capacity = 100;
 
 auto main(int argc, char **argv) noexcept -> int {
@@ -53,20 +49,17 @@ auto main(int argc, char **argv) noexcept -> int {
   global_image_loader::get();
 
   // Config script validation and engine context loading
-  const auto valid_config_script =
-      validate_config_script_path(*(cmd_line_args));
+  const auto valid_config_script = validate_config_script_path(*(cmd_line_args));
   if (!valid_config_script) {
     return EXIT_FAILURE;
   }
 
-  const auto engine_context_pushed =
-      global_squirrel_vm::get().load_context(*(valid_config_script));
+  const auto engine_context_pushed = global_squirrel_vm::get().load_context(*(valid_config_script));
   if (!engine_context_pushed) {
     return EXIT_FAILURE;
   }
 
-  global_image_loader::get().load_persistent(
-      "../resources/images/awesomeface.png");
+  global_image_loader::get().load_persistent("../resources/images/awesomeface.png");
   return EXIT_SUCCESS;
 
   // Initialize GLFW
@@ -75,13 +68,12 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Compile and link shaders
-  dynamic_shader default_vertex_shader(
-      "../shaders/default.vert", GL_VERTEX_SHADER, "defualt_vertex_shader");
-  dynamic_shader default_fragment_shader(
-      "../shaders/default.frag", GL_FRAGMENT_SHADER, "defualt_fragment_shader");
+  dynamic_shader default_vertex_shader("../shaders/default.vert", GL_VERTEX_SHADER,
+                                       "defualt_vertex_shader");
+  dynamic_shader default_fragment_shader("../shaders/default.frag", GL_FRAGMENT_SHADER,
+                                         "defualt_fragment_shader");
 
-  if (!default_vertex_shader.is_compiled() ||
-      !default_fragment_shader.is_compiled()) {
+  if (!default_vertex_shader.is_compiled() || !default_fragment_shader.is_compiled()) {
     return EXIT_FAILURE;
   }
 
@@ -129,12 +121,11 @@ auto main(int argc, char **argv) noexcept -> int {
   VAOs.bind<0>();
 
   BOs.bind<0>(GL_ARRAY_BUFFER);
-  BOs.transfer_data(GL_ARRAY_BUFFER, quad_verticies.size() * sizeof(float),
-                    quad_verticies.data(), GL_STATIC_DRAW);
+  BOs.transfer_data(GL_ARRAY_BUFFER, quad_verticies.size() * sizeof(float), quad_verticies.data(),
+                    GL_STATIC_DRAW);
 
   BOs.bind<1>(GL_ELEMENT_ARRAY_BUFFER);
-  BOs.transfer_data(GL_ELEMENT_ARRAY_BUFFER,
-                    quad_indices.size() * sizeof(unsigned int),
+  BOs.transfer_data(GL_ELEMENT_ARRAY_BUFFER, quad_indices.size() * sizeof(unsigned int),
                     quad_indices.data(), GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);

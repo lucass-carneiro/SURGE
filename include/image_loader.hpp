@@ -1,8 +1,7 @@
 #ifndef SURGE_IMAGE_LOADER_HPP
 #define SURGE_IMAGE_LOADER_HPP
 
-#include "global_allocators.hpp"
-#include "linear_arena_allocator.hpp"
+#include "allocators/global_allocators.hpp"
 
 #include <filesystem>
 #include <vector>
