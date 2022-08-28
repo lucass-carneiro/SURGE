@@ -1,4 +1,9 @@
+#include "global_allocators.hpp"
 #include "stb/stb_image.hpp"
+
+#define STBI_MALLOC(sz) surge::global_default_allocator::get().malloc(sz)
+#define STBI_REALLOC(p, newsz) surge::global_default_allocator::get().realloc(p, newsz)
+#define STBI_FREE(p) surge::global_default_allocator::get().free(p)
 
 #if defined(STBI_ONLY_JPEG) || defined(STBI_ONLY_PNG) || defined(STBI_ONLY_BMP)                    \
     || defined(STBI_ONLY_TGA) || defined(STBI_ONLY_GIF) || defined(STBI_ONLY_PSD)                  \

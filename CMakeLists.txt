@@ -87,6 +87,7 @@ set(
   SURGE_SOURCE_LIST
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
+  "${Surge_SOURCE_DIR}/source/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
   "${Surge_SOURCE_DIR}/source/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
