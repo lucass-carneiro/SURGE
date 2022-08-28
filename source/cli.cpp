@@ -46,6 +46,8 @@ static constexpr const char *LOGO =
   " `Y8888P ,88P'    `Y88888P'   8 8888     `88.      `8888888P'    8 888888888888\n";
 // clang-format on
 
+void surge::draw_logo() noexcept { log_all<log_event::logo>(LOGO); }
+
 auto surge::parse_arguments(int argc, char **argv) noexcept
     -> tl::expected<docopt::Options, docopt_error_type> {
   using tl::unexpected;
@@ -56,8 +58,6 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
         = docopt::docopt_parse(USAGE, {argv + 1, argv + argc}, true, true,
                                false);
 
-    log_all<log_event::logo>(LOGO);
-
     return cmd_line_args;
 
   } catch (const docopt::DocoptExitHelp &) {
@@ -65,7 +65,6 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
     return unexpected(docopt_error_type::docopt_exit_help);
 
   } catch (const docopt::DocoptExitVersion &) {
-    log_all<log_event::logo>(LOGO);
     std::cout << VERSION_STRING << std::endl;
     return unexpected(docopt_error_type::docopt_exit_version);
 

@@ -1,6 +1,10 @@
 #include "linear_arena_allocator.hpp"
+#include "allocators.hpp"
+#include <cstddef>
 
 #ifdef SURGE_DEBUG_MEMORY
+
+const std::size_t default_alignment = alignof(std::max_align_t);
 
 surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa,
                                                       std::size_t capacity,
@@ -9,8 +13,10 @@ surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa,
       actual_arena_capacity{
           align_alloc_size(requested_arena_capacity, default_alignment)},
       allocator_debug_name{debug_name},
-      arena_buffer{static_cast<std::byte *>(
-          pa.aligned_alloc(default_alignment, actual_arena_capacity))} {}
+      arena_buffer{
+          static_cast<std::byte *>(parent_allocator.aligned_alloc(
+              default_alignment, actual_arena_capacity)),
+          [this](void *p) -> void { this->parent_allocator.free(p); }} {}
 #else
 surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa,
                                                       std::size_t capacity)
@@ -22,7 +28,7 @@ surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa,
 #endif
 
 surge::linear_arena_allocator::~linear_arena_allocator() {
-  parent_allocator.free(arena_buffer);
+  arena_buffer.reset();
 
 #ifdef SURGE_DEBUG_MEMORY
   log_all<log_event::memory>(
@@ -74,16 +80,17 @@ surge::linear_arena_allocator::~linear_arena_allocator() {
 #ifdef SURGE_DEBUG_MEMORY
     log_all<log_event::error>(
         "In allocator \"{}\"(aligned_alloc): Allocation of size {} requested "
-        "exceeds the arena capacity of (requested, actual) ({}, {})",
+        "exceeds the arena capacity of (requested, actual, remaining) ({}, {}, "
+        "{}) Bytes",
         allocator_debug_name, size, requested_arena_capacity,
-        actual_arena_capacity);
+        actual_arena_capacity, actual_arena_capacity - free_index);
 #endif
     return nullptr;
   }
 
   // Allocation succesfull
   free_index = bumped_index;
-  std::byte *start_ptr = &(arena_buffer[current_index]);
+  std::byte *start_ptr = &(arena_buffer.get()[current_index]);
 
 #ifdef SURGE_DEBUG_MEMORY
   log_all<log_event::memory>(
@@ -172,18 +179,4 @@ void surge::linear_arena_allocator::free(void *ptr) noexcept {
 
   allocation_counter--;
 #endif
-}
-
-[[nodiscard]] auto surge::linear_arena_allocator::align_alloc_size(
-    std::size_t intended_size, std::size_t alignment) -> std::size_t {
-
-  std::size_t modulo{0};
-
-  if (is_pow_2(alignment)) {
-    modulo = intended_size & (alignment - 1);
-  } else {
-    modulo = intended_size % alignment;
-  }
-
-  return intended_size + (alignment - modulo);
 }

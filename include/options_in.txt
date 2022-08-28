@@ -16,6 +16,7 @@
 #cmakedefine SURGE_USE_LOG
 #cmakedefine SURGE_USE_LOG_COLOR
 #cmakedefine SURGE_DEBUG_MEMORY
+#cmakedefine SURGE_STBIMAGE_ERRORS
 
 
 #endif // SURGE_OPTIONS_HPP

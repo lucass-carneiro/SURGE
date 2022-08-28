@@ -1,7 +1,7 @@
 #include "allocators.hpp"
 #include "cli.hpp"
-#include "default_allocator.hpp"
-#include "linear_arena_allocator.hpp"
+#include "global_allocators.hpp"
+#include "image_loader.hpp"
 #include "log.hpp"
 #include "opengl_buffer_pools.hpp"
 #include "safe_ops.hpp"
@@ -18,27 +18,39 @@ const std::filesystem::path surge::global_file_log_manager::file_path =
 
 const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
 
+const std::size_t surge::global_linear_arena_allocator::capacity = 16384;
+
+const std::size_t surge::global_engine_window::subsystem_allocator_capacity =
+    100;
+
+const std::size_t surge::global_image_loader::subsystem_allocator_capacity =
+    16084;
+const std::size_t surge::global_image_loader::persistent_allocator_capacity =
+    8042;
+const std::size_t surge::global_image_loader::volatile_allocator_capacity = 100;
+
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
-  // Init subsystems
+  // Init log subsystem
   global_stdout_log_manager::get();
   global_file_log_manager::get();
-
-  default_allocator main_system_allocator;
-  linear_arena_allocator main_arena_allocator(main_system_allocator, 1024,
-                                              "Main arena");
-  linear_arena_allocator window_system_arena(main_arena_allocator, 256,
-                                             "Window system arena");
-
-  global_squirrel_vm::get();
-  global_engine_window::get();
+  draw_logo();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
   if (!cmd_line_args) {
     return EXIT_FAILURE;
   }
+
+  // Init remaining subsystems
+  global_default_allocator::get();
+  global_linear_arena_allocator::get();
+
+  global_squirrel_vm::get();
+  global_engine_window::get();
+
+  global_image_loader::get();
 
   // Config script validation and engine context loading
   const auto valid_config_script =
@@ -53,8 +65,12 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  global_image_loader::get().load_persistent(
+      "../resources/images/awesomeface.png");
+  return EXIT_SUCCESS;
+
   // Initialize GLFW
-  if (!global_engine_window::get().init(window_system_arena)) {
+  if (!global_engine_window::get().init()) {
     return EXIT_FAILURE;
   }
 

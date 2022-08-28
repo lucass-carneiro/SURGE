@@ -5,11 +5,10 @@
 #include "log.hpp"
 #include "options.hpp"
 
-#include <gsl/gsl-lite.hpp>
-
 #include <cstdint>
 #include <cstring>
-#include <vector>
+#include <functional>
+#include <memory>
 
 namespace surge {
 
@@ -200,11 +199,6 @@ private:
   const std::size_t requested_arena_capacity;
 
   /**
-   * @brief The default alignment
-   */
-  const std::size_t default_alignment{alignof(std::max_align_t)};
-
-  /**
    * @brief The actual amount of memory the arena can provide.
    */
   const std::size_t actual_arena_capacity;
@@ -222,29 +216,8 @@ private:
   /**
    * Pointer to the underlying memory buffer that is given to the callers.
    */
-  gsl::owner<std::byte *> arena_buffer;
-
-  /**
-   * @brief Determines if a number is a power of two, using bit operations.
-   *
-   * @param x The number to test
-   * @return true If the number is a power of 2.
-   * @return false It the numbe is not a power of 2.
-   */
-  [[nodiscard]] constexpr inline auto is_pow_2(std::size_t x) const -> bool {
-    return (x & (x - 1)) == 0;
-  }
-
-  /**
-   * @brief Modifies an allocation size to be aligned with the specified
-   * alignment
-   *
-   * @param intended_size The size one wishes to allocate.
-   * @param alignment The alignment of the allocation.
-   * @return std::size_t The aligned allocation size.
-   */
-  [[nodiscard]] auto align_alloc_size(std::size_t intended_size,
-                                      std::size_t alignment) -> std::size_t;
+  // gsl::owner<std::byte *> arena_buffer;
+  std::unique_ptr<std::byte, std::function<void(void *)>> arena_buffer;
 };
 
 } // namespace surge

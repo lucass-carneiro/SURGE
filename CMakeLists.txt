@@ -41,12 +41,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
   option(SURGE_BUILD_TESTING "Build tests" ON)
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
-  option(SURGE_VULKAN_VALIDATION "Enable Vulkan validation layers" ON)
+  option(SURGE_STBIMAGE_ERRORS "Enables error message strings in stb_image" ON)
 else()
   option(SURGE_USE_LOG "Enable log messages" OFF)
   option(SURGE_USE_LOG_COLOR "Use colors on log outputs" OFF)
   option(SURGE_BUILD_TESTING "Build tests" OFF)
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+  option(SURGE_STBIMAGE_ERRORS "Enables error message strings in stb_image" OFF)
 endif()
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -64,9 +65,12 @@ configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}
 # Core source files
 set(
   SURGE_HEADER_LIST
+  "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   "${Surge_SOURCE_DIR}/include/allocators.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/default_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/global_allocators.hpp"
+  "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
@@ -81,7 +85,9 @@ set(
 
 set(
   SURGE_SOURCE_LIST
+  "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
+  "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
   "${Surge_SOURCE_DIR}/source/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/safe_ops.cpp"
@@ -143,7 +149,6 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::glfw
   CONAN_PKG::glm
   CONAN_PKG::gsl-lite
-  CONAN_PKG::stb
 )
 
 target_include_directories(

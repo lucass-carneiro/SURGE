@@ -10,7 +10,6 @@ glm/0.9.9.8
 gsl-lite/0.40.0
 date/3.0.1
 glad/0.1.36
-stb/cci.20210910
 
 [options]
 gtest:no_main=True

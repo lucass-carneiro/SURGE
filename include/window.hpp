@@ -2,6 +2,8 @@
 #define SURGE_WINDOW_HPP
 
 #include "allocators.hpp"
+#include "global_allocators.hpp"
+#include "linear_arena_allocator.hpp"
 #include "options.hpp"
 #include "squirrel_bindings.hpp"
 
@@ -37,7 +39,7 @@ public:
     return gew;
   }
 
-  auto init(surge_allocator &allocator) noexcept -> bool;
+  auto init() noexcept -> bool;
 
   [[nodiscard]] inline auto should_close() noexcept -> bool {
     return static_cast<bool>(glfwWindowShouldClose(window.get()));
@@ -85,8 +87,16 @@ public:
 
   auto operator=(global_engine_window &&) -> global_engine_window & = delete;
 
+  static const std::size_t subsystem_allocator_capacity;
+
 private:
-  global_engine_window() : window{nullptr, glfwDestroyWindow} {}
+  global_engine_window()
+      : subsystem_allocator(global_linear_arena_allocator::get(),
+                            subsystem_allocator_capacity,
+                            "Window subsystem allocator"),
+        window{nullptr, glfwDestroyWindow} {}
+
+  linear_arena_allocator subsystem_allocator;
 
   int window_width = 800;
   int window_height = 600;

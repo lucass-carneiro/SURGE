@@ -30,7 +30,7 @@ surge::global_engine_window::~global_engine_window() {
   }
 }
 
-auto surge::global_engine_window::init(surge_allocator &) noexcept -> bool {
+auto surge::global_engine_window::init() noexcept -> bool {
 
   // Retrieve, parse and cast configuration values from config script
   const auto window_width_optional =

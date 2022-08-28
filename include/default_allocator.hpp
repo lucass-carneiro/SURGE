@@ -11,11 +11,11 @@ class default_allocator final : public surge_allocator {
 public:
   default_allocator() = default;
   default_allocator(const default_allocator &) = delete;
-  default_allocator(default_allocator &&) = delete;
+  default_allocator(default_allocator &&) = default;
 
   auto operator=(default_allocator) -> default_allocator & = delete;
   auto operator=(const default_allocator &) -> default_allocator & = delete;
-  auto operator=(default_allocator &&) -> default_allocator & = delete;
+  auto operator=(default_allocator &&) -> default_allocator & = default;
 
   ~default_allocator() final = default;
 

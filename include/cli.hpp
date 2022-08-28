@@ -30,6 +30,12 @@ enum class docopt_error_type : int {
 };
 
 /**
+ * @brief Draws the SURGE logo on the terminal
+ *
+ */
+void draw_logo() noexcept;
+
+/**
  * Parse command line arguments and return them.
  *
  * @param argc The number of arguments passed to the program.
