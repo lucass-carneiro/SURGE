@@ -25,6 +25,16 @@ const std::size_t surge::global_image_loader::subsystem_allocator_capacity = 160
 const std::size_t surge::global_image_loader::persistent_allocator_capacity = 8042;
 const std::size_t surge::global_image_loader::volatile_allocator_capacity = 100;
 
+constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
+  if (n == 0) {
+    return 1;
+  } else {
+    return 2 * pow2(n - 1);
+  }
+}
+
+const std::size_t surge::global_stack_allocator::capacity = pow2(30);
+
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
@@ -40,8 +50,9 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Init remaining subsystems
+  // global_linear_arena_allocator::get();
   global_default_allocator::get();
-  global_linear_arena_allocator::get();
+  global_stack_allocator::get();
 
   global_squirrel_vm::get();
   global_engine_window::get();

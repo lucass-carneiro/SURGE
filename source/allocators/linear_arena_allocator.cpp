@@ -2,11 +2,10 @@
 
 #include <cstddef>
 
-#ifdef SURGE_DEBUG_MEMORY
-
 const std::size_t default_alignment = alignof(std::max_align_t);
 
-surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa, std::size_t capacity,
+#ifdef SURGE_DEBUG_MEMORY
+surge::linear_arena_allocator::linear_arena_allocator(base_allocator &pa, std::size_t capacity,
                                                       const char *debug_name)
     : parent_allocator{pa},
       requested_arena_capacity{capacity},
@@ -16,7 +15,7 @@ surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa, std::
                        parent_allocator.aligned_alloc(default_alignment, actual_arena_capacity)),
                    [this](void *p) -> void { this->parent_allocator.free(p); }} {}
 #else
-surge::linear_arena_allocator::linear_arena_allocator(surge_allocator &pa, std::size_t capacity)
+surge::linear_arena_allocator::linear_arena_allocator(base_allocator &pa, std::size_t capacity)
     : parent_allocator{pa},
       requested_arena_capacity{capacity},
       actual_arena_capacity{align_alloc_size(requested_arena_capacity, default_alignment)},
@@ -50,7 +49,7 @@ surge::linear_arena_allocator::~linear_arena_allocator() {
   // Precondition 2: alignment is a multiple of sizeof(void*)
   if ((alignment % sizeof(void *)) != 0) {
     log_all<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
-                              "requested, which is not a multiple of sizeof(void*), which is {}",
+                              "requested, which is not a multiple of sizeof(void*) ({})",
                               allocator_debug_name, alignment, sizeof(void *));
 
     return nullptr;
@@ -103,15 +102,14 @@ surge::linear_arena_allocator::~linear_arena_allocator() {
 
 [[nodiscard]] auto surge::linear_arena_allocator::malloc(std::size_t size) noexcept -> void * {
 
-#ifdef SURGE_DEBUG_MEMORY
   // Precondition 1: size must be non null
   if (size == 0) {
+#ifdef SURGE_DEBUG_MEMORY
     log_all<log_event::error>("In allocator \"{}\"(malloc): Allocation of size 0 is ill defined",
                               allocator_debug_name);
-
+#endif
     return nullptr;
   }
-#endif
 
   const auto actual_alloc_size = align_alloc_size(size, default_alignment);
 
@@ -120,24 +118,27 @@ surge::linear_arena_allocator::~linear_arena_allocator() {
 
 [[nodiscard]] auto surge::linear_arena_allocator::calloc(std::size_t num, std::size_t size) noexcept
     -> void * {
-#ifdef SURGE_DEBUG_MEMORY
+
   // Precondition 1: num must be non null
   if (num == 0) {
+#ifdef SURGE_DEBUG_MEMORY
     log_all<log_event::error>("In allocator \"{}\"(calloc): Allocation of 0 elements ill defined",
                               allocator_debug_name);
+#endif
 
     return nullptr;
   }
 
   // Precondition 2: size must be non null
   if (size == 0) {
+#ifdef SURGE_DEBUG_MEMORY
     log_all<log_event::error>("In allocator \"{}\"(calloc): Allocation of size "
                               "0 elements ill defined",
                               allocator_debug_name);
+#endif
 
     return nullptr;
   }
-#endif
 
   const auto intended_alloc_size{num * size};
   const auto actual_alloc_size = align_alloc_size(intended_alloc_size, default_alignment);
@@ -165,4 +166,32 @@ void surge::linear_arena_allocator::free(void *ptr) noexcept {
 
   allocation_counter--;
 #endif
+}
+
+void surge::linear_arena_allocator::save() noexcept {
+  saved_state.saved = true;
+  saved_state.allocation_counter = allocation_counter;
+  saved_state.free_index = free_index;
+
+#ifdef SURGE_DEBUG_MEMORY
+  log_all<log_event::memory>("Allocator \"{}\": Saving state:\n"
+                             "  free index: {}\n"
+                             "  allocation counter: {}",
+                             allocator_debug_name, free_index, allocation_counter);
+#endif
+}
+
+void surge::linear_arena_allocator::restore() noexcept {
+  if (saved_state.saved) {
+    allocation_counter = saved_state.allocation_counter;
+    free_index = saved_state.free_index;
+    saved_state.saved = false;
+
+#ifdef SURGE_DEBUG_MEMORY
+    log_all<log_event::memory>("Allocator \"{}\": Restoring state:\n"
+                               "  free index: {}\n"
+                               "  allocation counter: {}",
+                               allocator_debug_name, free_index, allocation_counter);
+#endif
+  }
 }

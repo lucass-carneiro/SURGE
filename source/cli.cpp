@@ -1,8 +1,8 @@
 #include "cli.hpp"
 
+#include "file.hpp"
 #include "log.hpp"
 #include "options.hpp"
-#include "safe_ops.hpp"
 
 #include <exception>
 #include <filesystem>
@@ -28,9 +28,9 @@ static constexpr const char *USAGE =
       --config-file=<ext>  Path to an engine config file. [default: "surge_config.nut"]
 )";
 
-static constexpr const char *VERSION_STRING =
-    "SURGE v" SURGE_VERSION_MAJOR_STRING "." SURGE_VERSION_MINOR_STRING
-    "." SURGE_VERSION_PATCH_STRING;
+static constexpr const char *VERSION_STRING
+    = "SURGE v" SURGE_VERSION_MAJOR_STRING "." SURGE_VERSION_MINOR_STRING
+      "." SURGE_VERSION_PATCH_STRING;
 
 // clang-format off
 static constexpr const char *LOGO =
@@ -55,8 +55,7 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
   try {
     auto cmd_line_args
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        = docopt::docopt_parse(USAGE, {argv + 1, argv + argc}, true, true,
-                               false);
+        = docopt::docopt_parse(USAGE, {argv + 1, argv + argc}, true, true, false);
 
     return cmd_line_args;
 
@@ -75,20 +74,18 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
     return unexpected(docopt_error_type::docopt_language_error);
 
   } catch (const docopt::DocoptArgumentError &) {
-    log_all<log_event::message>(
-        "Unrecognized arguments passed. Rerun with the --help option "
-        "for usage instructions.");
+    log_all<log_event::message>("Unrecognized arguments passed. Rerun with the --help option "
+                                "for usage instructions.");
     return unexpected(docopt_error_type::docopt_argument_error);
 
   } catch (const std::exception &error) {
-    log_all<log_event::error>("Unhandled exception while running Docopt {}",
-                              error.what());
+    log_all<log_event::error>("Unhandled exception while running Docopt {}", error.what());
     return unexpected(docopt_error_type::docopt_unhandled_error);
   }
 }
 
 auto surge::validate_config_script_path(const docopt::Options &opts) noexcept
-    -> tl::expected<std::filesystem::path, path_error_type> {
+    -> tl::expected<std::filesystem::path, io_error> {
 
   using tl::unexpected;
 

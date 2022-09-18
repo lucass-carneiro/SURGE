@@ -69,10 +69,12 @@ set(
   "${Surge_SOURCE_DIR}/include/allocators/default_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/stack_allocator.hpp"
   
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
   "${Surge_SOURCE_DIR}/include/cli.hpp"
+  "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
@@ -89,13 +91,14 @@ set(
   SURGE_SOURCE_LIST
   "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
+  "${Surge_SOURCE_DIR}/source/allocators/stack_allocator.cpp"
   
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   
   "${Surge_SOURCE_DIR}/source/cli.cpp"
+  "${Surge_SOURCE_DIR}/source/file.cpp"
   "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
-  "${Surge_SOURCE_DIR}/source/safe_ops.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"
   "${Surge_SOURCE_DIR}/source/squirrel_bindings.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"

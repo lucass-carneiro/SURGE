@@ -6,7 +6,7 @@
 
 namespace surge {
 
-class default_allocator final : public surge_allocator {
+class default_allocator final : public base_allocator {
 public:
 #ifdef SURGE_DEBUG_MEMORY
   default_allocator(const char *debug_name) : allocator_debug_name(debug_name) {}
@@ -41,7 +41,6 @@ public:
 #ifdef SURGE_DEBUG_MEMORY
 private:
   const char *allocator_debug_name;
-  std::size_t allocation_counter{0};
 #endif
 };
 

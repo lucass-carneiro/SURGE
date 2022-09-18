@@ -72,12 +72,7 @@ public:
   static const std::size_t subsystem_allocator_capacity;
 
 private:
-  global_engine_window()
-      : subsystem_allocator(global_linear_arena_allocator::get(), subsystem_allocator_capacity,
-                            "Window subsystem allocator"),
-        window{nullptr, glfwDestroyWindow} {}
-
-  linear_arena_allocator subsystem_allocator;
+  global_engine_window() : window{nullptr, glfwDestroyWindow} {}
 
   int window_width = 800;
   int window_height = 600;

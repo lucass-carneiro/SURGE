@@ -1,25 +1,26 @@
-#ifndef SURGE_LINEAR_ARENA_ALLOCATOR
-#define SURGE_LINEAR_ARENA_ALLOCATOR
+#ifndef SURGE_STACK_ALLOCATOR
+#define SURGE_STACK_ALLOCATOR
 
 #include "allocators.hpp"
 #include "log.hpp"
 #include "options.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <tuple>
 
 namespace surge {
 
 /**
- * @brief A linear arena allocator.
+ * @brief A stack arena allocator.
  *
- * The linear arena allocator works by allocating a single contiguous block of
- * memory and dispensing memory from that block each time an allocation is
- * performed. There is no way to free individual objects and reuse a space
- * within the memory block. Instead, the arena can be resset and all of the
- * memory allocated in it's internal block will be freed at once.
+ * The stack arena allocator works by allocating a single contiguous stack of
+ * memory and dispensing memory from the bottom of the stack each time an allocation is
+ * performed. Objects are freed in a LIFO manner. If the block to be freed is not at the top of the
+ * stack, the free request is ignored.
  *
  * The arena requires an internal allocator type, that is responsible for
  * allocating it's internal buffer.
@@ -27,11 +28,11 @@ namespace surge {
  * @tparam parent_allocator_t The parent allocator for the arena, responsible
  * for allocating it's internal memory block.
  */
-class linear_arena_allocator final : public base_allocator {
+class stack_allocator final : public base_allocator {
 public:
 #ifdef SURGE_DEBUG_MEMORY
   /**
-   * @brief Construct a new linear arena allocator object
+   * @brief Construct a new stack arena allocator object
    *
    * @param pa The parent allocator to use while allocating memory blocks.
    *
@@ -39,29 +40,29 @@ public:
    *
    * @param debug_name The debug name of this instance of the arena
    */
-  linear_arena_allocator(base_allocator &pa, std::size_t capacity, const char *debug_name);
+  stack_allocator(base_allocator &pa, std::size_t capacity, const char *debug_name);
 #else
   /**
-   * @brief Construct a new linear arena allocator object
+   * @brief Construct a new stack arena allocator object
    *
    * @param pa The parent allocator to use while allocating memory blocks.
    *
    * @param capacity The total size (in Bytes) that the arena can allocate.
    */
-  linear_arena_allocator(base_allocator &pa, std::size_t capacity);
+  stack_allocator(base_allocator &pa, std::size_t capacity);
 #endif
 
   /**
-   * @brief Destroy the linear arena allocator object.
+   * @brief Destroy the stack arena allocator object.
    *
    */
-  ~linear_arena_allocator() final;
+  ~stack_allocator() final;
 
-  linear_arena_allocator(const linear_arena_allocator &) = delete;
-  linear_arena_allocator(linear_arena_allocator &&) = delete;
+  stack_allocator(const stack_allocator &) = delete;
+  stack_allocator(stack_allocator &&) = delete;
 
-  auto operator=(const linear_arena_allocator &) -> linear_arena_allocator & = delete;
-  auto operator=(linear_arena_allocator &&) -> linear_arena_allocator & = delete;
+  auto operator=(const stack_allocator &) -> stack_allocator & = delete;
+  auto operator=(stack_allocator &&) -> stack_allocator & = delete;
 
   /**
    * @brief Allocate bytes of uninitialized storage with the specified
@@ -117,9 +118,9 @@ public:
   [[nodiscard]] auto calloc(std::size_t num, std::size_t size) noexcept -> void * final;
 
   /**
-   * @brief Reallocates the given area of memory. Given that the arena is
-   * unable to free a single allocation, in practice, this function simply
-   * allocates a new block with the requested size within the arena.
+   * @brief Reallocates the given area of memory if it is at the top of the stack, otherwise
+   * allocates a new block of memory. If ptr is a null pointer, realloc() shall be equivalent to
+   * malloc() for the specified size.
    *
    * @param ptr Pointer to the memore area to be reallocated.
    *
@@ -128,15 +129,13 @@ public:
    * @return On success, returns a pointer to the beginning of newly allocated
    * memory.
    *
-   * @return On failure, returns a null pointer.
+   * @return On failure or if ptr is invalid, returns a null pointer.
    */
   [[nodiscard]] auto realloc(void *ptr, std::size_t new_size) noexcept -> void * final;
 
   /**
-   * @brief Releases previoslly allocated memory. Since the arena allocator
-   * cannot free individual objects, this function does if the flag
-   * SURGE_DEBUG_MEMORY is not set. If it is, it decreases the allocation
-   * counter.
+   * @brief Releases previuslly allocated memory if the block is at the top of the stack, otherwise
+   * the request is ignored.
    *
    * @param ptr Pointer to the memory to deallocate.
    */
@@ -210,19 +209,7 @@ private:
 
 #ifdef SURGE_DEBUG_MEMORY
   const char *allocator_debug_name;
-  std::size_t allocation_counter{0};
 #endif
-
-  /**
-   * Index to the first free adress in the underlying memory buffer
-   */
-  std::size_t free_index{0};
-
-  /**
-   * Pointer to the underlying memory buffer that is given to the callers.
-   */
-  // gsl::owner<std::byte *> arena_buffer;
-  std::unique_ptr<std::byte, std::function<void(void *)>> arena_buffer;
 
   /**
    * @brief Saves the state of the allocator for use in rewinding
@@ -233,8 +220,68 @@ private:
     std::size_t free_index{0};
     bool saved{false};
   } saved_state;
+
+  /**
+   * @brief Counts how many allocations have been made. Used to determine if a block is at the stack
+   * top during a free operation.
+   */
+  std::size_t allocation_counter{0};
+
+  /**
+   * Index to the first free adress in the underlying memory buffer
+   */
+  std::size_t free_index{0};
+
+  /**
+   * @brief The size of the allocation header.
+   */
+  const std::size_t header_size{sizeof(std::size_t)};
+
+  /**
+   * Pointer to the underlying memory buffer that is given to the callers.
+   */
+  // gsl::owner<std::byte *> arena_buffer;
+  std::unique_ptr<std::byte, std::function<void(void *)>> arena_buffer;
+
+  /**
+   * @brief Detect if a pointer is valid. A pointer is considered valid if:
+   * 1. It is not null
+   * 2. Is inside the internal buffer
+   * 3. Has a header <= the allocation counter.
+   *
+   * @param ptr The pointer to test
+   * @return true If this allocator has allocated this adress.
+   * @return false If the allocator has not allocated this address
+   */
+  auto is_valid(void *ptr) noexcept -> bool;
+
+  /**
+   * @brief Detect if a pointer points to the last block of allocated memory (stack top)
+   *
+   * @param ptr The pointer to test. Assumed to be valid according to is_valid
+   * @return true If the pointer is the last allocated block (stack top)
+   * @return false If the pointer is not the last allocated block (stack top)
+   */
+  auto is_last_block(void *ptr) noexcept -> bool;
+
+  /**
+   * @brief Converts a valid pointer to arena buffer index.
+   *
+   * @param ptr Pointer to the data block to convert to indices.
+   * @return std::tuple<std::size_t, std::size_t> A tuple containing the header start and data start
+   * indices .
+   */
+  auto ptr_to_idx(void *ptr) const noexcept -> std::tuple<std::size_t, std::size_t>;
+
+  /**
+   * @brief Reads the header of the block pointed by a valid pointer
+   *
+   * @param ptr Pointer to the data block to read.
+   * @return std::size_t The header of the data block
+   */
+  auto read_header(void *ptr) const noexcept -> std::size_t;
 };
 
 } // namespace surge
 
-#endif // SURGE_LINEAR_ARENA_ALLOCATOR
+#endif // SURGE_STACK_ALLOCATOR

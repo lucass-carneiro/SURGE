@@ -229,16 +229,16 @@ void surge::framebuffer_size_callback(GLFWwindow *, int width, int height) noexc
 
 // TODO: This is not available in conan yer. Also, revise the casts
 auto surge::glfw_allocate(std::size_t size, void *user) noexcept -> void * {
-  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  base_allocator *allocator{static_cast<base_allocator *>(user)};
   return allocator->malloc(size);
 }
 
 auto surge::glfw_reallocate(void *block, std::size_t size, void *user) noexcept -> void * {
-  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  base_allocator *allocator{static_cast<base_allocator *>(user)};
   return allocator->realloc(block, size);
 }
 
 auto surge::glfw_free(void *block, void *user) noexcept {
-  surge_allocator *allocator{static_cast<surge_allocator *>(user)};
+  base_allocator *allocator{static_cast<base_allocator *>(user)};
   allocator->free(block);
 }

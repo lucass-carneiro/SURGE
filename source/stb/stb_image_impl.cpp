@@ -1,9 +1,13 @@
 #include "allocators/global_allocators.hpp"
 #include "stb/stb_image.hpp"
 
-#define STBI_MALLOC(sz) surge::global_default_allocator::get().malloc(sz)
-#define STBI_REALLOC(p, newsz) surge::global_default_allocator::get().realloc(p, newsz)
-#define STBI_FREE(p) surge::global_default_allocator::get().free(p)
+#define STBI_MALLOC(sz) surge::global_stack_allocator::get().malloc(sz)
+#define STBI_REALLOC(p, newsz) surge::global_stack_allocator::get().realloc(p, newsz)
+#define STBI_FREE(p) surge::global_stack_allocator::get().free(p)
+
+#define S1(x) #x
+#define S2(x) S1(x)
+#define LOCATION __FILE__ " : " S2(__LINE__)
 
 #if defined(STBI_ONLY_JPEG) || defined(STBI_ONLY_PNG) || defined(STBI_ONLY_BMP)                    \
     || defined(STBI_ONLY_TGA) || defined(STBI_ONLY_GIF) || defined(STBI_ONLY_PSD)                  \
@@ -3920,16 +3924,16 @@ static int stbi__zexpand(stbi__zbuf *z, char *zout, int n) // need to make room 
   cur = (unsigned int)(z->zout - z->zout_start);
   limit = old_limit = (unsigned)(z->zout_end - z->zout_start);
   if (UINT_MAX - cur < (unsigned)n)
-    return stbi__err("outofmem", "Out of memory");
+    return stbi__err(LOCATION " outofmem", LOCATION " Out of memory");
   while (cur + n > limit) {
     if (limit > UINT_MAX / 2)
-      return stbi__err("outofmem", "Out of memory");
+      return stbi__err(LOCATION " outofmem", LOCATION " Out of memory");
     limit *= 2;
   }
   q = (char *)STBI_REALLOC_SIZED(z->zout_start, old_limit, limit);
   STBI_NOTUSED(old_limit);
   if (q == NULL)
-    return stbi__err("outofmem", "Out of memory");
+    return stbi__err(LOCATION " outofmem", LOCATION " Out of memory");
   z->zout_start = q;
   z->zout = q + cur;
   z->zout_end = q + limit;
@@ -4970,7 +4974,7 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp) {
         STBI_NOTUSED(idata_limit_old);
         p = (stbi_uc *)STBI_REALLOC_SIZED(z->idata, idata_limit_old, idata_limit);
         if (p == NULL)
-          return stbi__err("outofmem", "Out of memory");
+          return stbi__err(LOCATION " outofmem", LOCATION " Out of memory");
         z->idata = p;
       }
       if (!stbi__getn(s, z->idata + ioff, c.length))

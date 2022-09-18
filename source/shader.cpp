@@ -1,13 +1,15 @@
 #include "shader.hpp"
+
+#include "file.hpp"
 #include "options.hpp"
-#include "safe_ops.hpp"
+
 #include <filesystem>
 
 #ifdef SURGE_SYSTEM_IS_POSIX
-#include <cerrno>
-#include <cstring>
-#include <fcntl.h>
-#include <sys/mman.h>
+#  include <cerrno>
+#  include <cstring>
+#  include <fcntl.h>
+#  include <sys/mman.h>
 #endif
 
 #ifdef SURGE_SYSTEM_IS_POSIX
@@ -17,19 +19,18 @@ auto surge::dynamic_shader::mmap_file() noexcept -> char * {
   const auto fd = open(shader_path.c_str(), O_RDONLY);
 
   if (fd == -1) {
-    log_all<log_event::message>("Unable to open {}: {}", shader_path.c_str(),
-                                std::strerror(errno));
+    log_all<log_event::message>("Unable to open {}: {}", shader_path.c_str(), std::strerror(errno));
     return nullptr;
   }
 
-  auto memory_map = mmap(nullptr, std::filesystem::file_size(shader_path),
-                         PROT_READ, MAP_SHARED, fd, 0);
+  auto memory_map
+      = mmap(nullptr, std::filesystem::file_size(shader_path), PROT_READ, MAP_SHARED, fd, 0);
 
   close(fd);
 
   if (memory_map == MAP_FAILED) {
-    log_all<log_event::error>("Error while memory mapping {}: {}",
-                              shader_path.c_str(), std::strerror(errno));
+    log_all<log_event::error>("Error while memory mapping {}: {}", shader_path.c_str(),
+                              std::strerror(errno));
     return nullptr;
   }
 
@@ -101,21 +102,19 @@ void surge::dynamic_shader::compile() noexcept {
     GLsizei returnd_info_size{0};
     std::array<GLchar, info_buffer_size> info_log{};
 
-    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size,
-                       info_log.data());
+    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size, info_log.data());
 
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}",
-                              shader_name, info_log.data());
+    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name,
+                              info_log.data());
 
     shader_handle = {};
     return;
   }
 
-  log_all<log_event::message>("Shader \"{}\" compiled succesfully",
-                              shader_name);
+  log_all<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
   shader_handle = shader_handle_tmp;
 }
 
@@ -143,19 +142,17 @@ void surge::static_shader::compile() noexcept {
     GLsizei returnd_info_size{0};
     std::array<GLchar, info_buffer_size> info_log{};
 
-    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size,
-                       info_log.data());
+    glGetShaderInfoLog(shader_handle_tmp, info_buffer_size, &returnd_info_size, info_log.data());
 
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}",
-                              shader_name, info_log.data());
+    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name,
+                              info_log.data());
 
     shader_handle = {};
   }
 
-  log_all<log_event::message>("Shader \"{}\" compiled succesfully",
-                              shader_name);
+  log_all<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
   shader_handle = shader_handle_tmp;
 }

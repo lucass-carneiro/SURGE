@@ -7,6 +7,7 @@
 #ifndef SURGE_CLI_HPP
 #define SURGE_CLI_HPP
 
+#include "file.hpp"
 #include "safe_ops.hpp"
 
 // clang-format off
@@ -49,7 +50,7 @@ auto parse_arguments(int argc, char **argv) noexcept
  * TODO: doc
  */
 auto validate_config_script_path(const docopt::Options &opts) noexcept
-    -> tl::expected<std::filesystem::path, path_error_type>;
+    -> tl::expected<std::filesystem::path, io_error>;
 
 } // namespace surge
 

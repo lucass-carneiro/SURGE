@@ -14,14 +14,12 @@
 
 #ifdef SURGE_DEBUG_MEMORY
   if (buffer != nullptr) {
-    log_all<log_event::memory>("Allocator \"{}\" allocation summary:\n"
+    log_all<log_event::memory>("Allocator \"{}\" (malloc) allocation summary:\n"
                                "  Allocated size {}\n"
                                "  RAM address {:#x}",
                                allocator_debug_name, size,
                                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                                reinterpret_cast<std::uintptr_t>(buffer));
-
-    allocation_counter++;
   } else {
     log_all<log_event::error>(
         "In allocator \"{}\"(malloc): Allocation of size {} failed. Reason: {}",
@@ -39,14 +37,12 @@
 
 #ifdef SURGE_DEBUG_MEMORY
   if (buffer != nullptr) {
-    log_all<log_event::memory>("Allocator \"{}\" allocation summary:\n"
+    log_all<log_event::memory>("Allocator \"{}\" (alligned_alloc) allocation summary:\n"
                                "  Allocated size {}\n"
                                "  RAM address {:#x}",
                                allocator_debug_name, size,
                                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                                reinterpret_cast<std::uintptr_t>(buffer));
-
-    allocation_counter++;
   } else {
     log_all<log_event::error>(
         "In allocator \"{}\"(aligned_alloc): Allocation of size {} failed. Reason: {}",
@@ -65,14 +61,12 @@
 
 #ifdef SURGE_DEBUG_MEMORY
   if (buffer != nullptr) {
-    log_all<log_event::memory>("Allocator \"{}\" allocation summary:\n"
+    log_all<log_event::memory>("Allocator \"{}\" (calloc) allocation summary:\n"
                                "  Allocated size {}\n"
                                "  RAM address {:#x}",
                                allocator_debug_name, size,
                                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                                reinterpret_cast<std::uintptr_t>(buffer));
-
-    allocation_counter++;
   } else {
     log_all<log_event::error>(
         "In allocator \"{}\"(calloc): Allocation of size {} failed. Reason: {}",
@@ -97,8 +91,6 @@
                                allocator_debug_name, new_size,
                                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
                                reinterpret_cast<std::uintptr_t>(buffer));
-
-    allocation_counter++;
   } else {
     log_all<log_event::error>(
         "In allocator \"{}\"(realloc): Reallocation to new size {} failed. Reason: {}",
@@ -110,17 +102,18 @@
 }
 
 void surge::default_allocator::free(void *ptr) noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  log_all<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
+                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                             reinterpret_cast<std::uintptr_t>(ptr));
+#endif
+
   // NOLINTNEXTLINE
   std::free(ptr);
-
-#ifdef SURGE_DEBUG_MEMORY
-  allocation_counter--;
-#endif
 }
 
 #ifdef SURGE_DEBUG_MEMORY
 surge::default_allocator::~default_allocator() noexcept {
-  log_all<log_event::memory>("Allocator \"{}\"  was destroyed with {} remaining allocations.",
-                             allocator_debug_name, allocation_counter);
+  log_all<log_event::memory>("Allocator \"{}\"  was destroyed with.", allocator_debug_name);
 }
 #endif
