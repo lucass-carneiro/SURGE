@@ -19,7 +19,7 @@ auto surge::dynamic_shader::mmap_file() noexcept -> char * {
   const auto fd = open(shader_path.c_str(), O_RDONLY);
 
   if (fd == -1) {
-    log_all<log_event::message>("Unable to open {}: {}", shader_path.c_str(), std::strerror(errno));
+    glog<log_event::message>("Unable to open {}: {}", shader_path.c_str(), std::strerror(errno));
     return nullptr;
   }
 
@@ -29,8 +29,8 @@ auto surge::dynamic_shader::mmap_file() noexcept -> char * {
   close(fd);
 
   if (memory_map == MAP_FAILED) {
-    log_all<log_event::error>("Error while memory mapping {}: {}", shader_path.c_str(),
-                              std::strerror(errno));
+    glog<log_event::error>("Error while memory mapping {}: {}", shader_path.c_str(),
+                           std::strerror(errno));
     return nullptr;
   }
 
@@ -43,25 +43,25 @@ void surge::dynamic_shader::munmap_file(char *file) noexcept {
 #endif
 
 auto surge::dynamic_shader::load() noexcept -> char * {
-  log_all<log_event::message>("Loading shader file {}", shader_path.c_str());
+  glog<log_event::message>("Loading shader file {}", shader_path.c_str());
 
   // Validate the shader file paths
   switch (shader_type) {
 
   case GL_VERTEX_SHADER:
-    if (validate_path(shader_path, ".vert").has_value()) {
+    if (validate_path(shader_path, ".vert")) {
       return nullptr;
     }
     break;
 
   case GL_FRAGMENT_SHADER:
-    if (validate_path(shader_path, ".frag").has_value()) {
+    if (validate_path(shader_path, ".frag")) {
       return nullptr;
     }
     break;
 
   default:
-    log_all<log_event::error>("Unrecognized shader type {}", shader_type);
+    glog<log_event::error>("Unrecognized shader type {}", shader_type);
     return nullptr;
   }
 
@@ -69,7 +69,7 @@ auto surge::dynamic_shader::load() noexcept -> char * {
 }
 
 void surge::dynamic_shader::compile() noexcept {
-  log_all<log_event::message>("Compiling shader \"{}\"", shader_name);
+  glog<log_event::message>("Compiling shader \"{}\"", shader_name);
 
   // Load the shader
   const auto shader_src = load();
@@ -107,19 +107,18 @@ void surge::dynamic_shader::compile() noexcept {
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name,
-                              info_log.data());
+    glog<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name, info_log.data());
 
     shader_handle = {};
     return;
   }
 
-  log_all<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
+  glog<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
   shader_handle = shader_handle_tmp;
 }
 
 void surge::static_shader::compile() noexcept {
-  log_all<log_event::message>("Compiling shader \"{}\"", shader_name);
+  glog<log_event::message>("Compiling shader \"{}\"", shader_name);
 
   // Create an empty shader handle
   GLuint shader_handle_tmp = glCreateShader(shader_type);
@@ -147,12 +146,11 @@ void surge::static_shader::compile() noexcept {
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    log_all<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name,
-                              info_log.data());
+    glog<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name, info_log.data());
 
     shader_handle = {};
   }
 
-  log_all<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
+  glog<log_event::message>("Shader \"{}\" compiled succesfully", shader_name);
   shader_handle = shader_handle_tmp;
 }

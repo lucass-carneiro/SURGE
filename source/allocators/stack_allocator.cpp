@@ -1,6 +1,6 @@
 #include "allocators/stack_allocator.hpp"
 
-#include "allocators/allocators.hpp"
+#include "allocators/base_allocator.hpp"
 #include "log.hpp"
 
 #include <cstddef>
@@ -10,32 +10,27 @@
 const std::size_t default_alignment = alignof(std::max_align_t);
 
 #ifdef SURGE_DEBUG_MEMORY
-surge::stack_allocator::stack_allocator(base_allocator &pa, std::size_t capacity,
-                                        const char *debug_name)
-    : parent_allocator{pa},
-      requested_arena_capacity{capacity},
-      actual_arena_capacity{align_alloc_size(requested_arena_capacity, default_alignment)},
-      allocator_debug_name{debug_name},
-      arena_buffer{static_cast<std::byte *>(
-                       parent_allocator.aligned_alloc(default_alignment, actual_arena_capacity)),
-                   [this](void *p) -> void { this->parent_allocator.free(p); }} {}
-#else
-surge::stack_allocator::stack_allocator(base_allocator &pa, std::size_t capacity)
-    : parent_allocator{pa},
-      requested_arena_capacity{capacity},
-      actual_arena_capacity{align_alloc_size(requested_arena_capacity, default_alignment)},
-      arena_buffer{
-          static_cast<std::byte *>(pa.aligned_alloc(default_alignment, actual_arena_capacity))} {}
-#endif
+void surge::stack_allocator::init(base_allocator *pa, std::size_t capacity,
+                                  const char *debug_name) noexcept {
+  parent_allocator = pa;
+  requested_arena_capacity = capacity;
+  actual_arena_capacity = align_alloc_size(requested_arena_capacity, default_alignment);
 
-surge::stack_allocator::~stack_allocator() {
-  arena_buffer.reset();
+  allocator_debug_name = debug_name;
 
-#ifdef SURGE_DEBUG_MEMORY
-  log_all<log_event::memory>("Allocator \"{}\"  was destroyed with {} remaining allocations.",
-                             allocator_debug_name, allocation_counter);
-#endif
+  stack_buffer.reset(static_cast<std::byte *>(
+      parent_allocator->aligned_alloc(default_alignment, actual_arena_capacity)));
 }
+#else
+void surge::stack_allocator::init(base_allocator *pa, std::size_t capacity, const char *) noexcept {
+  parent_allocator = pa;
+  requested_arena_capacity = capacity;
+  actual_arena_capacity = align_alloc_size(requested_arena_capacity, default_alignment);
+
+  stack_buffer.reset(static_cast<std::byte *>(
+      parent_allocator->aligned_alloc(default_alignment, actual_arena_capacity)));
+}
+#endif
 
 auto surge::stack_allocator::is_valid(void *ptr) noexcept -> bool {
   // 1. It is not null
@@ -45,10 +40,10 @@ auto surge::stack_allocator::is_valid(void *ptr) noexcept -> bool {
 
   // 2. Is inside the internal buffer
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  const auto start_address{reinterpret_cast<std::uintptr_t>(arena_buffer.get())};
+  const auto start_address{reinterpret_cast<std::uintptr_t>(stack_buffer.get())};
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  const auto free_address{reinterpret_cast<std::uintptr_t>(&(arena_buffer.get()[free_index]))};
+  const auto free_address{reinterpret_cast<std::uintptr_t>(&(stack_buffer.get()[free_index]))};
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   const auto block_address{reinterpret_cast<std::uintptr_t>(ptr)};
@@ -69,7 +64,7 @@ auto surge::stack_allocator::ptr_to_idx(void *ptr) const noexcept
     -> std::tuple<std::size_t, std::size_t> {
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  const auto buffer_start{reinterpret_cast<std::uintptr_t>(arena_buffer.get())};
+  const auto buffer_start{reinterpret_cast<std::uintptr_t>(stack_buffer.get())};
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   const auto data_start{reinterpret_cast<std::uintptr_t>(ptr)};
@@ -84,7 +79,7 @@ auto surge::stack_allocator::read_header(void *ptr) const noexcept -> std::size_
   const auto idxs{ptr_to_idx(ptr)};
 
   std::size_t header{0};
-  std::memcpy(&header, &(arena_buffer.get()[std::get<0>(idxs)]), header_size);
+  std::memcpy(&header, &(stack_buffer.get()[std::get<0>(idxs)]), header_size);
 
   return header;
 }
@@ -100,9 +95,9 @@ auto surge::stack_allocator::is_last_block(void *ptr) noexcept -> bool {
   // Precondition 1: alignment must be a power of 2
   if (!is_pow_2(alignment)) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
-                              "requested, which is not a power of 2",
-                              allocator_debug_name, alignment);
+    glog<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
+                           "requested, which is not a power of 2",
+                           allocator_debug_name, alignment);
 #endif
 
     return nullptr;
@@ -111,9 +106,9 @@ auto surge::stack_allocator::is_last_block(void *ptr) noexcept -> bool {
   // Precondition 2: alignment is a multiple of sizeof(void*)
   if ((alignment % sizeof(void *)) != 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
-                              "requested, which is not a multiple of sizeof(void*) ({})",
-                              allocator_debug_name, alignment, sizeof(void *));
+    glog<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of alignment {} "
+                           "requested, which is not a multiple of sizeof(void*) ({})",
+                           allocator_debug_name, alignment, sizeof(void *));
 #endif
 
     return nullptr;
@@ -122,10 +117,10 @@ auto surge::stack_allocator::is_last_block(void *ptr) noexcept -> bool {
   // Precondition 3: size is a non zero integral multiple of alignment
   if (size == 0 || (size % alignment != 0)) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of size {} "
-                              "requested, "
-                              "which is not a non zero integral muliple of the alignment {}",
-                              allocator_debug_name, size, alignment);
+    glog<log_event::error>("In allocator \"{}\"(aligned_alloc): Allocation of size {} "
+                           "requested, "
+                           "which is not a non zero integral muliple of the alignment {}",
+                           allocator_debug_name, size, alignment);
 #endif
 
     return nullptr;
@@ -137,7 +132,7 @@ auto surge::stack_allocator::is_last_block(void *ptr) noexcept -> bool {
 
   if (data_end_idx >= actual_arena_capacity) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>(
+    glog<log_event::error>(
         "In allocator \"{}\"(aligned_alloc): Allocation of size {} (+ {} header) requested "
         "exceeds the stack capacity of (requested, actual, remaining) ({}, {}, "
         "{}) Bytes",
@@ -150,25 +145,29 @@ auto surge::stack_allocator::is_last_block(void *ptr) noexcept -> bool {
   // Allocation succesfull
   allocation_counter++;
   free_index = data_end_idx;
-  std::memcpy(&(arena_buffer.get()[header_start_idx]), &allocation_counter, header_size);
-  std::byte *start_ptr = &(arena_buffer.get()[data_start_idx]);
+  std::memcpy(&(stack_buffer.get()[header_start_idx]), &allocation_counter, header_size);
+  std::byte *start_ptr = &(stack_buffer.get()[data_start_idx]);
 
 #ifdef SURGE_DEBUG_MEMORY
-  log_all<log_event::memory>("Allocator \"{}\" allocation summary:\n"
-                             "  Allocated size {}\n"
-                             "  Internal range ({},{})\n"
-                             "  Alloction count {}\n"
-                             "  RAM address {:#x}",
-                             allocator_debug_name, size, data_start_idx, data_end_idx - 1,
-                             allocation_counter,
-                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                             reinterpret_cast<std::uintptr_t>(start_ptr));
+  glog<log_event::memory>("Allocator \"{}\" allocation summary:\n"
+                          "  Allocated size {}\n"
+                          "  Internal range ({},{})\n"
+                          "  Alloction count {}\n"
+                          "  RAM address {:#x}",
+                          allocator_debug_name, size, data_start_idx, data_end_idx - 1,
+                          allocation_counter,
+                          // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                          reinterpret_cast<std::uintptr_t>(start_ptr));
 #endif
 
   return start_ptr;
 }
 
 void surge::stack_allocator::free(void *ptr) noexcept {
+  if (ptr == nullptr) {
+    return;
+  }
+
 #ifdef SURGE_DEBUG_MEMORY
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   const auto uint_ptr = reinterpret_cast<std::uintptr_t>(ptr);
@@ -176,16 +175,16 @@ void surge::stack_allocator::free(void *ptr) noexcept {
 
   if (!is_valid(ptr)) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::warning>("In allocator \"{}\"(free): Block pointed by address {:#x} is "
-                                "invalid. Ignoring free request",
-                                allocator_debug_name, uint_ptr);
+    glog<log_event::warning>("In allocator \"{}\"(free): Block pointed by address {:#x} is "
+                             "invalid. Ignoring free request",
+                             allocator_debug_name, uint_ptr);
 #endif
     return;
   }
 
   if (!is_last_block(ptr)) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::warning>(
+    glog<log_event::warning>(
         "In allocator \"{}\"(free): Block pointed by address {:#x} is not the last block. Ignring "
         "free request.",
         allocator_debug_name, uint_ptr);
@@ -194,9 +193,9 @@ void surge::stack_allocator::free(void *ptr) noexcept {
   }
 
 #ifdef SURGE_DEBUG_MEMORY
-  log_all<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
-                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                             reinterpret_cast<std::uintptr_t>(ptr));
+  glog<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
+                          // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                          reinterpret_cast<std::uintptr_t>(ptr));
 #endif
 
   const auto [header_idx, data_idx] = ptr_to_idx(ptr);
@@ -208,8 +207,8 @@ void surge::stack_allocator::free(void *ptr) noexcept {
   // Precondition 1: size must be non null
   if (size == 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(malloc): Allocation of size 0 is ill defined",
-                              allocator_debug_name);
+    glog<log_event::error>("In allocator \"{}\"(malloc): Allocation of size 0 is ill defined",
+                           allocator_debug_name);
 #endif
     return nullptr;
   }
@@ -225,8 +224,8 @@ void surge::stack_allocator::free(void *ptr) noexcept {
   // Precondition 1: num must be non null
   if (num == 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(calloc): Allocation of 0 elements ill defined",
-                              allocator_debug_name);
+    glog<log_event::error>("In allocator \"{}\"(calloc): Allocation of 0 elements ill defined",
+                           allocator_debug_name);
 #endif
 
     return nullptr;
@@ -235,9 +234,9 @@ void surge::stack_allocator::free(void *ptr) noexcept {
   // Precondition 2: size must be non null
   if (size == 0) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::error>("In allocator \"{}\"(calloc): Allocation of size "
-                              "0 elements ill defined",
-                              allocator_debug_name);
+    glog<log_event::error>("In allocator \"{}\"(calloc): Allocation of size "
+                           "0 elements ill defined",
+                           allocator_debug_name);
 #endif
 
     return nullptr;
@@ -267,9 +266,9 @@ auto surge::stack_allocator::realloc(void *ptr, std::size_t new_size) noexcept -
 
   if (!is_valid(ptr)) {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::warning>("In allocator \"{}\"(realloc): Block pointed by address {:#x} is "
-                                "invalid. Ignoring realloc request",
-                                allocator_debug_name, uint_ptr);
+    glog<log_event::warning>("In allocator \"{}\"(realloc): Block pointed by address {:#x} is "
+                             "invalid. Ignoring realloc request",
+                             allocator_debug_name, uint_ptr);
 #endif
     return nullptr;
   }
@@ -288,24 +287,24 @@ auto surge::stack_allocator::realloc(void *ptr, std::size_t new_size) noexcept -
     }
 
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::memory>("Allocator \"{}\" reallocation summary:\n"
-                               "  New allocated size {}\n"
-                               "  Internal range ({},{})\n"
-                               "  Alloction count {}\n"
-                               "  RAM address {:#x}",
-                               allocator_debug_name, alligned_new_size, data_idx, free_index - 1,
-                               allocation_counter,
-                               // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                               reinterpret_cast<std::uintptr_t>(ptr));
+    glog<log_event::memory>("Allocator \"{}\" reallocation summary:\n"
+                            "  New allocated size {}\n"
+                            "  Internal range ({},{})\n"
+                            "  Alloction count {}\n"
+                            "  RAM address {:#x}",
+                            allocator_debug_name, alligned_new_size, data_idx, free_index - 1,
+                            allocation_counter,
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+                            reinterpret_cast<std::uintptr_t>(ptr));
 #endif
 
     return ptr;
 
   } else {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::warning>("In allocator \"{}\"(realloc): Block pointed by address {:#x} is "
-                                "not the last block. Allocating new memory.",
-                                allocator_debug_name, uint_ptr);
+    glog<log_event::warning>("In allocator \"{}\"(realloc): Block pointed by address {:#x} is "
+                             "not the last block. Allocating new memory.",
+                             allocator_debug_name, uint_ptr);
 #endif
 
     void *new_block{malloc(alligned_new_size)};
@@ -313,30 +312,29 @@ auto surge::stack_allocator::realloc(void *ptr, std::size_t new_size) noexcept -
   }
 }
 
-void surge::stack_allocator::save() noexcept {
-  saved_state.saved = true;
-  saved_state.allocation_counter = allocation_counter;
-  saved_state.free_index = free_index;
-
-#ifdef SURGE_DEBUG_MEMORY
-  log_all<log_event::memory>("Allocator \"{}\": Saving state:\n"
-                             "  free index: {}\n"
-                             "  allocation counter: {}",
-                             allocator_debug_name, free_index, allocation_counter);
-#endif
+void surge::stack_allocator::reset() noexcept {
+  free_index = 0;
+  allocation_counter = 0;
 }
 
-void surge::stack_allocator::restore() noexcept {
-  if (saved_state.saved) {
-    allocation_counter = saved_state.allocation_counter;
-    free_index = saved_state.free_index;
-    saved_state.saved = false;
-
+auto surge::stack_allocator::save() const noexcept -> stack_allocator_state {
 #ifdef SURGE_DEBUG_MEMORY
-    log_all<log_event::memory>("Allocator \"{}\": Restoring state:\n"
-                               "  free index: {}\n"
-                               "  allocation counter: {}",
-                               allocator_debug_name, free_index, allocation_counter);
+  glog<log_event::memory>("Allocator \"{}\": Saving state:\n"
+                          "  free index: {}\n"
+                          "  allocation counter: {}",
+                          allocator_debug_name, free_index, allocation_counter);
 #endif
-  }
+  return stack_allocator_state{allocation_counter, free_index};
+}
+
+void surge::stack_allocator::restore(const stack_allocator_state &saved_state) noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  glog<log_event::memory>("Allocator \"{}\": Restoring state:\n"
+                          "  free index: {}\n"
+                          "  allocation counter: {}",
+                          allocator_debug_name, free_index, allocation_counter);
+#endif
+
+  allocation_counter = saved_state.allocation_counter;
+  free_index = saved_state.free_index;
 }

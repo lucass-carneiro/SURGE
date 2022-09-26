@@ -1,23 +1,20 @@
+#include "allocators/base_allocator.hpp"
 #include "allocators/global_allocators.hpp"
+#include "allocators/linear_arena_allocator.hpp"
 #include "cli.hpp"
 #include "image_loader.hpp"
 #include "log.hpp"
+#include "lua_vm.hpp"
 #include "opengl_buffer_pools.hpp"
 #include "safe_ops.hpp"
 #include "shader.hpp"
-#include "squirrel_bindings.hpp"
+#include "task_executor.hpp"
+#include "thread_allocators.hpp"
 #include "window.hpp"
 
 #include <cstddef>
 #include <cstdlib>
-#include <exception>
-
-const std::filesystem::path surge::global_file_log_manager::file_path
-    = std::filesystem::path{"log.txt"};
-
-const SQInteger surge::global_squirrel_vm::stack_size = 1024 * SQInteger{10};
-
-const std::size_t surge::global_linear_arena_allocator::capacity = 16384;
+#include <vector>
 
 const std::size_t surge::global_engine_window::subsystem_allocator_capacity = 100;
 
@@ -33,14 +30,11 @@ constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
   }
 }
 
-const std::size_t surge::global_stack_allocator::capacity = pow2(30);
-
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
   // Init log subsystem
-  global_stdout_log_manager::get();
-  global_file_log_manager::get();
+  global_log_manager::get().init("./log.txt");
   draw_logo();
 
   // Command line argument parsing
@@ -49,107 +43,97 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Init remaining subsystems
-  // global_linear_arena_allocator::get();
-  global_default_allocator::get();
-  global_stack_allocator::get();
-
-  global_squirrel_vm::get();
-  global_engine_window::get();
-
-  global_image_loader::get();
-
-  // Config script validation and engine context loading
-  const auto valid_config_script = validate_config_script_path(*(cmd_line_args));
-  if (!valid_config_script) {
+  // Parameter recovery
+  const auto pages{get_arg_long(*cmd_line_args, "--pages")};
+  if (!pages) {
     return EXIT_FAILURE;
   }
 
-  const auto engine_context_pushed = global_squirrel_vm::get().load_context(*(valid_config_script));
-  if (!engine_context_pushed) {
+  const auto max_mem{(*pages) * get_page_size()};
+
+  const auto mem_quota{get_arg_long(*cmd_line_args, "--thread-mem-quota")};
+  if (!mem_quota) {
     return EXIT_FAILURE;
   }
 
-  global_image_loader::get().load_persistent("../resources/images/awesomeface.png");
-  return EXIT_SUCCESS;
+  if (*mem_quota < 0 || mem_quota > 100) {
+    glog<log_event::error>(" The thread memory quota must be between 0 and 100");
+    return EXIT_FAILURE;
+  }
+
+  const auto num_threads{get_arg_long(*cmd_line_args, "--num-threads")};
+  if (!num_threads) {
+    return EXIT_FAILURE;
+  }
+
+  const auto hardware_concurrency{std::thread::hardware_concurrency()};
+  if (*num_threads < 0 || *num_threads > hardware_concurrency) {
+    glog<log_event::error>("The number of threads must be in the range [{},{}]", 0,
+                           hardware_concurrency);
+    return EXIT_FAILURE;
+  }
+
+  const auto config_script_path = get_file_path(*cmd_line_args, "<config-script>", ".lua");
+  if (!config_script_path) {
+    return EXIT_FAILURE;
+  }
+
+  const auto startup_script_path = get_file_path(*cmd_line_args, "<startup-script>", ".lua");
+  if (!startup_script_path) {
+    return EXIT_FAILURE;
+  }
+
+  // Memory per thread calculation
+  const auto mem_per_thread{(static_cast<float>(*mem_quota) / 100)
+                            * (static_cast<float>(max_mem) / static_cast<float>(*num_threads))};
+  const auto mem_per_thread_long{static_cast<long>(mem_per_thread)};
+
+  glog<log_event::message>("Memory distribution:\n"
+                           "  System pages: {}\n"
+                           "  Page size: {} (B)\n"
+                           "  Total memory (B): {}\n"
+                           "  Number of threads: {}\n"
+                           "  Thread memory quota (%): {}\n"
+                           "  Memory per thread (B): {}\n"
+                           "  Remaining usable memory (B): {}",
+                           *pages, get_page_size(), max_mem, *num_threads, *mem_quota,
+                           mem_per_thread_long, max_mem - *num_threads * mem_per_thread_long);
+
+  // Main arena initialization
+  global_default_allocator::get().init("Global default allocator (mimalloc)");
+  global_linear_arena_allocator::get().init(&global_default_allocator::get(), max_mem,
+                                            "Global engine arena");
+
+  // Thread allocator initializations (uses global_linear_arena_allocator for the array and for
+  // allocators)
+  global_thread_allocators::get().init(*num_threads, mem_per_thread_long);
+
+  // Init Lua VM states ( global_linear_arena_allocator holds the array and
+  // LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
+  // LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
+  // XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
+  // future if possible
+  global_lua_states::get().init();
+
+  // Init parallel job system
+  glog<log_event::message>("Initializing job system with {} workers",
+                           *num_threads == 1 ? 1 : *num_threads - 1);
+  global_task_executor::get();
+
+  // Init all VMs with the engine configuration
+  for (auto i = 0; i < *num_threads; i++) {
+    global_task_executor::get().async(do_file_at, i, *config_script_path);
+  }
+  global_task_executor::get().wait_for_all();
 
   // Initialize GLFW
   if (!global_engine_window::get().init()) {
     return EXIT_FAILURE;
   }
 
-  // Compile and link shaders
-  dynamic_shader default_vertex_shader("../shaders/default.vert", GL_VERTEX_SHADER,
-                                       "defualt_vertex_shader");
-  dynamic_shader default_fragment_shader("../shaders/default.frag", GL_FRAGMENT_SHADER,
-                                         "defualt_fragment_shader");
-
-  if (!default_vertex_shader.is_compiled() || !default_fragment_shader.is_compiled()) {
-    return EXIT_FAILURE;
-  }
-
-  shader_program default_program(default_vertex_shader, default_fragment_shader,
-                                 "default_shader_program");
-  if (!default_program.is_linked()) {
-    return EXIT_FAILURE;
-  }
-
-  /*
-  // Load triangle in memory
-  std::array<float, 9> triangle_vertices{-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
-                                         0.0f,  0.0f,  0.5f, 0.0f};
-  static_vao_buffer_pool<1> VAOs;
-  static_buffer_pool<1> BOs;
-
-  VAOs.bind<0>();
-  BOs.bind<0>(GL_ARRAY_BUFFER);
-
-  BOs.transfer_data(GL_ARRAY_BUFFER, triangle_vertices.size() * sizeof(float),
-                    triangle_vertices.data(), GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-  VAOs.enable(0);
-  BOs.unbind(GL_ARRAY_BUFFER);
-  VAOs.unbind();*/
-
-  // Load quad in memory
-  std::array<float, 12> quad_verticies{
-      0.5f,  0.5f,  0.0f, // top right
-      0.5f,  -0.5f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f  // top left
-  };
-
-  std::array<unsigned int, 6> quad_indices{
-      // note that we start from 0!
-      0, 1, 3, // first triangle
-      1, 2, 3  // second triangle
-  };
-
-  static_vao_buffer_pool<1> VAOs;
-  static_buffer_pool<2> BOs;
-
-  VAOs.bind<0>();
-
-  BOs.bind<0>(GL_ARRAY_BUFFER);
-  BOs.transfer_data(GL_ARRAY_BUFFER, quad_verticies.size() * sizeof(float), quad_verticies.data(),
-                    GL_STATIC_DRAW);
-
-  BOs.bind<1>(GL_ELEMENT_ARRAY_BUFFER);
-  BOs.transfer_data(GL_ELEMENT_ARRAY_BUFFER, quad_indices.size() * sizeof(unsigned int),
-                    quad_indices.data(), GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-  VAOs.enable(0);
-
-  BOs.unbind(GL_ARRAY_BUFFER);
-  // remember: do NOT unbind the EBO while a VAO is active as the bound element
-  // buffer object IS stored in the VAO; keep the EBO bound.
-  // BOs.unbind(GL_ELEMENT_ARRAY_BUFFER);
-
-  VAOs.unbind();
-
-  // Main loop
+  /*******************************
+   *          MAIN LOOP          *
+   *******************************/
 
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
@@ -165,14 +149,6 @@ auto main(int argc, char **argv) noexcept -> int {
                  GLfloat{global_engine_window::get().get_clear_color_a()});
     glClear(GL_COLOR_BUFFER_BIT);
 
-    default_program.use();
-    VAOs.bind<0>(); // seeing as we only have a single VAO there's
-                    // no need to bind it every time, but we'll do
-                    // so to keep things a bit more organized
-    // glDrawArrays(GL_TRIANGLES, 0, 3); // draw triangle
-    glDrawElements(GL_TRIANGLES, quad_indices.size(), GL_UNSIGNED_INT, nullptr);
-    VAOs.unbind(); // no need to unbind it every time
-
     // Present rendering
     global_engine_window::get().swap_buffers();
 
@@ -182,9 +158,6 @@ auto main(int argc, char **argv) noexcept -> int {
     // Compute elapsed time
     global_engine_window::get().frame_timmer_compute_dt();
   }
-
-  // Normal shutdown
-  default_program.destroy();
 
   return EXIT_SUCCESS;
 }

@@ -11,49 +11,50 @@
 #include "static_map.hpp"
 
 // clang-format off
-#include <bits/types/FILE.h>
 #include <fmt/color.h>
 #include <fmt/core.h>
 // clang-format on
 
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
-#include <exception>
 #include <filesystem>
+#include <gsl/gsl-lite.hpp>
 #include <iostream>
 #include <memory>
-#include <mutex>
+
+#ifdef SURGE_ENABLE_THREADS
+#  include <mutex>
+#endif
+
 #include <string>
 
 namespace surge {
 
 /**
- * The type of event to be logged.
+ * @brief The type of event to be logged
  *
- * These types serve as tags that are passed to the general log function.
  */
-enum class log_event : std::uint8_t {
-  logo,    // bold crimson
-  warning, // yellow
-  error,   // bold red
-  message, // steel blue
-  memory,  // aquamarine
-  count
-};
-
-using log_color_map_t = static_map<log_event, fmt::text_style,
-                                   static_cast<std::size_t>(log_event::count)>;
-
-using log_banner_map_t =
-    static_map<log_event, const char *,
-               static_cast<std::size_t>(log_event::count) - 1>;
+enum class log_event : std::uint8_t { logo, warning, error, message, memory, count };
 
 /**
- * Static map of event-color assossiations
+ * @brief Type of a static hash map of events and colors.
+ *
+ */
+using log_color_map_t
+    = static_map<log_event, fmt::text_style, static_cast<std::size_t>(log_event::count)>;
+
+/**
+ * @brief Type of a static hash map of events and banners.
+ *
+ */
+using log_banner_map_t
+    = static_map<log_event, const char *, static_cast<std::size_t>(log_event::count) - 1>;
+
+/**
+ * @brief Event-color hash map
+ *
  */
 constexpr const log_color_map_t log_color_map{
     {{{log_event::logo, fmt::emphasis::bold | fg(fmt::color::crimson)},
@@ -63,100 +64,99 @@ constexpr const log_color_map_t log_color_map{
       {log_event::memory, fg(fmt::color::aquamarine)}}}};
 
 /**
- * Static map of event-baner assossiations
+ * @brief Event-banner hash map
+ *
  */
-constexpr const log_banner_map_t log_banner_map{
-    {{{log_event::warning, "warning"},
-      {log_event::error, "error"},
-      {log_event::message, "message"},
-      {log_event::memory, "memory event"}}}};
+constexpr const log_banner_map_t log_banner_map{{{{log_event::warning, "warning"},
+                                                  {log_event::error, "error"},
+                                                  {log_event::message, "message"},
+                                                  {log_event::memory, "memory event"}}}};
 
 /**
  * Handles logging output to files and stdout.
  */
 class log_manager {
 public:
-  log_manager(const std::filesystem::path &path)
-      : output_file(open_file(path), std::fclose) {}
+  log_manager() noexcept : output_file(nullptr, std::fclose) {}
 
-  log_manager() : output_file(stdout, [](std::FILE *) -> int { return 0; }) {}
+  void init(const std::filesystem::path &path) noexcept { output_file.reset(open_file(path)); }
 
 #ifdef SURGE_USE_LOG
   /**
-   * Log an event.
+   * @brief Log an event.
    *
-   * This function logs an event using fmt print syntax. @see vlog()
+   * This function logs an event using fmt print syntax.
    *
-   * @param e The type of event to log.
-   * @param Args The types of the format arguments. This is automatically
+   * @tparam e The type of event to log.
+   * @tparam Args The types of the format arguments. This is automatically
    * deduced by the compiler. and should not be specified.
    * @param str A fmt-like format string.
    * @param args The arguments of the fmt-like format string.
    */
   template <log_event e, typename... Args>
   inline void log(fmt::string_view str, Args &&...args) noexcept {
+#  ifdef SURGE_ENABLE_THREADS
     const std::lock_guard lock(log_mutex);
-    vlog<e>(str, fmt::make_format_args(args...));
+#  endif
+    vlog<e>(stdout, str, fmt::make_format_args(args...));
+    vlog<e>(output_file.get(), str, fmt::make_format_args(args...));
   }
 #else
   /**
-   * Log an event.
+   * @brief Log an event. This implementation is a no-op since SURGE_USE_LOG is disabled
    *
-   * This function logs an event using fmt print syntax. @see vlog()
+   * This function logs an event using fmt print syntax.
    *
-   * @param e The type of event to log.
-   * @param Args The types of the format arguments. This is automatically
+   * @tparam e The type of event to log.
+   * @tparam Args The types of the format arguments. This is automatically
    * deduced by the compiler. and should not be specified.
    * @param str A fmt-like format string.
    * @param args The arguments of the fmt-like format string.
    */
   template <log_event e, typename... Args>
-  inline void log(fmt::string_view, Args &&...) noexcept {
+  inline void log(fmt::string_view, Args &&...) const noexcept {
     return;
   }
 #endif
 
 private:
-  // The file pointer is released explicitly using the shutdown function
-  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   std::unique_ptr<std::FILE, int (*)(std::FILE *)> output_file;
 
-  // Protects file reads and writes
+#ifdef SURGE_ENABLE_THREADS
+  // Protects log file writes
   std::mutex log_mutex;
+#endif
 
   /**
-   * Invokes fopen and returns either a pointer to the oppened file or stderr
-   * if fopen files
+   * @brief Invokes fopen and sets output_file either to the oppened file or stderr
+   * if fopen fails
    *
    * @param path Path to the file to open
-   * @return Pointer to oppened file or stderr
    */
-  auto open_file(const std::filesystem::path &path) noexcept -> std::FILE * {
-    // This pointer owns the file only temporarilly, and after that it returns
-    // itself to a unique pointer, thus relinquinshing it's ownership over the
-    // file
-    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-    std::FILE *file = fopen(path.c_str(), "w");
+  [[nodiscard]] auto open_file(const std::filesystem::path &path) const noexcept -> std::FILE * {
+    auto *temp_file = gsl::owner<std::FILE *>{fopen(path.c_str(), "w")};
 
-    if (file == nullptr) {
-      // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      file = stderr;
-
-      log<log_event::warning>("Unable to open {} for outputting. Reason: {}. "
-                              "Using stderr for log output",
-                              path.c_str(), std::strerror(errno));
+    if (temp_file == nullptr) {
+      temp_file = stderr;
     }
-    return file;
+
+    return temp_file;
   }
 
   /**
-   * Prints a colored string
+   * @brief Prints a string with a colored banner
+   *
+   * @param file The file to print to.
+   * @param banner The banner of the log message.
+   * @param style The style of the log message.
+   * @param str The message content
+   * @param args Arguments to print in the message.
    */
-  void colored_print(fmt::string_view banner, const fmt::text_style &style,
-                     fmt::string_view str, fmt::format_args args) noexcept {
+  void colored_print(std::FILE *file, fmt::string_view banner, const fmt::text_style &style,
+                     fmt::string_view str, fmt::format_args args) const noexcept {
     try {
       // clang-format off
-      fmt::print(output_file.get(),
+      fmt::print(file,
                 #ifdef SURGE_USE_LOG_COLOR
                  style,
                 #endif
@@ -165,8 +165,8 @@ private:
       );
       // clang-format on
 
-      fmt::vprint(output_file.get(), str, args);
-      fmt::print(output_file.get(), "\n");
+      fmt::vprint(file, str, args);
+      fmt::print(file, "\n");
 
     } catch (const std::exception &e) {
       std::cout << "Error while invonking fmt: " << e.what() << std::endl;
@@ -174,19 +174,19 @@ private:
   }
 
   /**
-   * Print a log entry to the screen - non variadic version used
-   * internally.
+   * @brief Print a log entry to the screen.
    *
    * @tparam e The type of event to log.
+   * @param file The file to print to.
    * @param str A string containing fmt format information.
    * @param args The arguments of the format string.
    */
   template <log_event e>
-  void vlog(fmt::string_view str, fmt::format_args args) noexcept {
+  void vlog(std::FILE *file, fmt::string_view str, fmt::format_args args) const noexcept {
     if constexpr (e == log_event::logo) {
       try {
         // clang-format off
-        fmt::vprint(output_file.get(),
+        fmt::vprint(file,
                     #ifdef SURGE_USE_LOG_COLOR
                     log_color_map[e],
                     #endif
@@ -195,73 +195,43 @@ private:
         );
         // clang-format on
 
-        fmt::print(output_file.get(), "\n");
+        fmt::print(file, "\n");
 
       } catch (const std::exception &ex) {
         std::cout << "Error while invonking fmt: " << ex.what() << std::endl;
       }
 
     } else {
-      colored_print(log_banner_map[e], log_color_map[e], str, args);
+      colored_print(file, log_banner_map[e], log_color_map[e], str, args);
     }
   }
 };
 
-class global_stdout_log_manager {
+class global_log_manager {
 public:
   static auto get() noexcept -> log_manager & {
     static log_manager log;
     return log;
   }
 
-  global_stdout_log_manager(const global_stdout_log_manager &) = delete;
-  global_stdout_log_manager(global_stdout_log_manager &&) = delete;
+  global_log_manager(const global_log_manager &) = delete;
+  global_log_manager(global_log_manager &&) = delete;
 
-  auto operator=(global_stdout_log_manager)
-      -> global_stdout_log_manager & = delete;
+  auto operator=(global_log_manager) -> global_log_manager & = delete;
 
-  auto operator=(const global_stdout_log_manager &)
-      -> global_stdout_log_manager & = delete;
+  auto operator=(const global_log_manager &) -> global_log_manager & = delete;
 
-  auto operator=(global_stdout_log_manager &&)
-      -> global_stdout_log_manager & = delete;
+  auto operator=(global_log_manager &&) -> global_log_manager & = delete;
 
-  ~global_stdout_log_manager() = default;
+  ~global_log_manager() = default;
 
 private:
-  global_stdout_log_manager() = default;
-};
-
-class global_file_log_manager {
-public:
-  static auto get() noexcept -> log_manager & {
-    static log_manager log(file_path);
-    return log;
-  }
-
-  static const std::filesystem::path file_path;
-
-  global_file_log_manager(const global_file_log_manager &) = delete;
-  global_file_log_manager(global_file_log_manager &&) = delete;
-
-  auto operator=(global_file_log_manager) -> global_file_log_manager & = delete;
-
-  auto operator=(const global_file_log_manager &)
-      -> global_file_log_manager & = delete;
-
-  auto operator=(global_file_log_manager &&)
-      -> global_file_log_manager & = delete;
-
-  ~global_file_log_manager() = default;
-
-private:
-  global_file_log_manager() = default;
+  global_log_manager() = default;
 };
 
 template <log_event e, typename... Args>
-inline void log_all(fmt::string_view str, Args &&...args) noexcept {
-  global_stdout_log_manager::get().log<e>(str, args...);
-  global_file_log_manager::get().log<e>(str, args...);
+inline void glog(fmt::string_view str, Args &&...args) noexcept {
+  global_log_manager::get().log<e>(str, args...);
 }
 
 } // namespace surge

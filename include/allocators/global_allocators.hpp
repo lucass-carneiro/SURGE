@@ -13,11 +13,7 @@ namespace surge {
 class global_default_allocator {
 public:
   static inline auto get() -> default_allocator & {
-#ifdef SURGE_DEBUG_MEMORY
-    static default_allocator alloc("Default system allocator");
-#else
     static default_allocator alloc;
-#endif
     return alloc;
   }
 
@@ -39,12 +35,9 @@ private:
 class global_linear_arena_allocator {
 public:
   static inline auto get() -> linear_arena_allocator & {
-    static linear_arena_allocator alloc(global_default_allocator::get(), capacity,
-                                        "Global linear arena allocator");
+    static linear_arena_allocator alloc;
     return alloc;
   }
-
-  static const std::size_t capacity;
 
   global_linear_arena_allocator(const global_linear_arena_allocator &) = delete;
   global_linear_arena_allocator(global_linear_arena_allocator &&) = delete;
@@ -64,12 +57,9 @@ private:
 class global_stack_allocator {
 public:
   static inline auto get() -> stack_allocator & {
-    static stack_allocator alloc(global_default_allocator::get(), capacity,
-                                 "Global stack allocator");
+    static stack_allocator alloc;
     return alloc;
   }
-
-  static const std::size_t capacity;
 
   global_stack_allocator(const global_stack_allocator &) = delete;
   global_stack_allocator(global_stack_allocator &&) = delete;

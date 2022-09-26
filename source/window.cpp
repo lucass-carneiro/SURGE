@@ -3,7 +3,6 @@
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"
-#include "squirrel_bindings.hpp"
 
 //clang-format off
 #include <EASTL/set.h>
@@ -19,7 +18,7 @@
 #include <sstream>
 
 surge::global_engine_window::~global_engine_window() {
-  global_stdout_log_manager::get().log<log_event::message>("Deleating window.");
+  glog<log_event::message>("Deleating window.");
 
   // Calling reset on the window* guarantees that it will be destroyed before
   // glfwTerminate
@@ -31,65 +30,31 @@ surge::global_engine_window::~global_engine_window() {
 }
 
 auto surge::global_engine_window::init() noexcept -> bool {
+  // Retrieve, parse and cast configuration values from config script of the main thread VM (the
+  // last one in the array)
+  auto L{global_lua_states::get().back().get()};
+  const auto engine_config{get_lua_engine_config(L)};
 
-  // Retrieve, parse and cast configuration values from config script
-  const auto window_width_optional
-      = global_squirrel_vm::get().surge_retrieve<SQInteger, int>(_SC("window_width"));
-
-  const auto window_height_optional
-      = global_squirrel_vm::get().surge_retrieve<SQInteger, int>(_SC("window_height"));
-
-  const auto window_name_optional
-      = global_squirrel_vm::get().surge_retrieve<const SQChar *>(_SC("window_name"));
-
-  auto windowed_optional = global_squirrel_vm::get().surge_retrieve<SQBool>(_SC("windowed"));
-
-  auto window_monitor_index_optional
-      = global_squirrel_vm::get().surge_retrieve<SQInteger>(_SC("window_monitor_index"));
-
-  auto clear_color_r_optional
-      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_r"));
-
-  auto clear_color_g_optional
-      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_g"));
-
-  auto clear_color_b_optional
-      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_b"));
-
-  auto clear_color_a_optional
-      = global_squirrel_vm::get().surge_retrieve<SQFloat>(_SC("clear_color_a"));
-
-  bool parsed = window_width_optional.has_value() && window_height_optional.has_value()
-                && window_name_optional.has_value() && windowed_optional.has_value()
-                && window_monitor_index_optional.has_value() && clear_color_r_optional.has_value()
-                && clear_color_g_optional.has_value() && clear_color_b_optional.has_value()
-                && clear_color_a_optional.has_value();
-
-  if (!parsed) {
+  if (!engine_config) {
     glfw_init_success = false;
     return glfw_init_success;
   }
 
-  window_width = window_width_optional.value();
-  window_height = window_height_optional.value();
-  window_name = window_name_optional.value();
-  windowed = windowed_optional.value();
-  window_monitor_index = window_monitor_index_optional.value();
-  clear_color_r = clear_color_r_optional.value();
-  clear_color_g = clear_color_g_optional.value();
-  clear_color_b = clear_color_b_optional.value();
-  clear_color_a = clear_color_a_optional.value();
+  window_width = engine_config->window_width;
+  window_height = engine_config->window_height;
+  window_name = engine_config->window_name;
+  windowed = engine_config->windowed;
+  window_monitor_index = engine_config->window_monitor_index;
+  clear_color_r = engine_config->clear_color[0];
+  clear_color_g = engine_config->clear_color[1];
+  clear_color_b = engine_config->clear_color[2];
+  clear_color_a = engine_config->clear_color[3];
 
   // Register GLFW callbacks
   glfwSetErrorCallback(surge::glfw_error_callback);
 
   // Initialize GLFW memory allocator structure;
-  /* TODO: This is only available in conan 3.4, which conan does not support yet
-  GLFWallocator glfw_allocator;
-  glfw_allocator.allocate = glfw_allocate;
-  glfw_allocator.reallocate = glfw_reallocate;
-  glfw_allocator.deallocate = glfw_free;
-  */
+  // TODO: This is only available in conan 3.4, which conan does not support yet
 
   // Initialize glfw
   if (glfwInit() != GLFW_TRUE) {
@@ -106,14 +71,14 @@ auto surge::global_engine_window::init() noexcept -> bool {
   }
 
   if (window_monitor_index >= monitors.value().second) {
-    log_all<log_event::warning>("Unable to set window monitor to {} because there are only {} "
-                                "monitors. Using default monitor index 0",
-                                window_monitor_index, monitors.value().second);
+    glog<log_event::warning>("Unable to set window monitor to {} because there are only {} "
+                             "monitors. Using default monitor index 0",
+                             window_monitor_index, monitors.value().second);
     window_monitor_index = 0;
   }
 
   // GLFW window creation
-  log_all<log_event::message>("Initializing engine window");
+  glog<log_event::message>("Initializing engine window");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -122,7 +87,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 #endif
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  if (windowed == SQBool{true}) {
+  if (windowed) {
     (void)window.release();
     window.reset(glfwCreateWindow(window_width, window_height, window_name, nullptr, nullptr));
   } else {
@@ -142,7 +107,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    log_all<log_event::error>("Failed to initialize GLAD");
+    glog<log_event::error>("Failed to initialize GLAD");
     window.reset();
     glfwTerminate();
     glfw_init_success = false;
@@ -166,7 +131,7 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
     return {};
   }
 
-  log_all<log_event::message>("Monitors detected: {}", count);
+  glog<log_event::message>("Monitors detected: {}", count);
 
   for (int i = 0; i < count; i++) {
     int width = 0, height = 0;
@@ -193,7 +158,7 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
     }
 
     // clang-format off
-    log_all<log_event::message>(
+    glog<log_event::message>(
         "Properties of monitor {}:\n"
         "  Monitor name: {}.\n"
         "  Physical size (width, height): {}, {}.\n"
@@ -220,25 +185,9 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
 }
 
 void surge::glfw_error_callback(int code, const char *description) noexcept {
-  log_all<log_event::error>("GLFW error code {}: {}", code, description);
+  glog<log_event::error>("GLFW error code {}: {}", code, description);
 }
 
 void surge::framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
-}
-
-// TODO: This is not available in conan yer. Also, revise the casts
-auto surge::glfw_allocate(std::size_t size, void *user) noexcept -> void * {
-  base_allocator *allocator{static_cast<base_allocator *>(user)};
-  return allocator->malloc(size);
-}
-
-auto surge::glfw_reallocate(void *block, std::size_t size, void *user) noexcept -> void * {
-  base_allocator *allocator{static_cast<base_allocator *>(user)};
-  return allocator->realloc(block, size);
-}
-
-auto surge::glfw_free(void *block, void *user) noexcept {
-  base_allocator *allocator{static_cast<base_allocator *>(user)};
-  allocator->free(block);
 }

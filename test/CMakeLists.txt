@@ -30,10 +30,12 @@ target_link_libraries(tests PRIVATE
   CONAN_PKG::docopt.cpp
   CONAN_PKG::tl-expected
   CONAN_PKG::gtest
-  CONAN_PKG::squirrel
   CONAN_PKG::glfw
   CONAN_PKG::glm
   CONAN_PKG::gsl-lite
+  CONAN_PKG::mimalloc
+  CONAN_PKG::taskflow
+  CONAN_PKG::luajit
 )
 
 include(GoogleTest)

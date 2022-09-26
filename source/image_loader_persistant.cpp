@@ -25,22 +25,22 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-void surge::global_image_loader::load_persistent(const std::filesystem::path &path) {
-  const auto fs = std::filesystem::file_size(path);
+void surge::global_image_loader::load_persistent(const std::filesystem::path &) {
+  /*const auto fs = std::filesystem::file_size(path);
   void *buffer = global_stack_allocator::get().malloc(fs);
   load_to_mem(path, ".png", fs, buffer);
 
   int x = 0, y = 0, channels_in_file = 0;
-  global_stack_allocator::get().save();
+  const auto state = global_stack_allocator::get().save();
   auto img = stbi_load_from_memory(static_cast<const stbi_uc *>(buffer),
                                    safe_cast<int>(fs).value_or(0), &x, &y, &channels_in_file, 0);
 
   if (img == nullptr) {
-    log_all<log_event::error>("Stbi error: {}", stbi_failure_reason());
+    glog<log_event::error>("Stbi error: {}", stbi_failure_reason());
   }
 
   // clang-format off
-  log_all<log_event::message>("Read PNG image file {}:\n"
+  glog<log_event::message>("Read PNG image file {}:\n"
                               "  width: {}\n"
                               "  height: {}\n"
                               "  channels {}",
@@ -51,6 +51,6 @@ void surge::global_image_loader::load_persistent(const std::filesystem::path &pa
   // clang-format off
 
   stbi_image_free(img);
-  global_stack_allocator::get().restore();
-  global_stack_allocator::get().free(buffer);
+  global_stack_allocator::get().restore(state);
+  global_stack_allocator::get().free(buffer);*/
 }

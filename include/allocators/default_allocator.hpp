@@ -1,31 +1,24 @@
 #ifndef SURGE_DEFAULT_ALLOCATOR_HPP
 #define SURGE_DEFAULT_ALLOCATOR_HPP
 
-#include "allocators.hpp"
+#include "base_allocator.hpp"
 #include "options.hpp"
 
 namespace surge {
 
 class default_allocator final : public base_allocator {
 public:
-#ifdef SURGE_DEBUG_MEMORY
-  default_allocator(const char *debug_name) : allocator_debug_name(debug_name) {}
-#else
-  default_allocator() = default;
-#endif
+  default_allocator() noexcept = default;
+  ~default_allocator() noexcept final = default;
 
-  default_allocator(const default_allocator &) = delete;
-  default_allocator(default_allocator &&) = default;
+  void init(const char *name) noexcept;
 
-  auto operator=(default_allocator) -> default_allocator & = delete;
-  auto operator=(const default_allocator &) -> default_allocator & = delete;
-  auto operator=(default_allocator &&) -> default_allocator & = default;
+  default_allocator(const default_allocator &) noexcept = delete;
+  default_allocator(default_allocator &&) noexcept = default;
 
-#ifdef SURGE_DEBUG_MEMORY
-  ~default_allocator() noexcept final;
-#else
-  ~default_allocator() final = default;
-#endif
+  auto operator=(default_allocator) noexcept -> default_allocator & = delete;
+  auto operator=(const default_allocator &) noexcept -> default_allocator & = delete;
+  auto operator=(default_allocator &&) noexcept -> default_allocator & = default;
 
   [[nodiscard]] auto malloc(std::size_t size) noexcept -> void * final;
 
@@ -39,8 +32,7 @@ public:
   void free(void *ptr) noexcept final;
 
 #ifdef SURGE_DEBUG_MEMORY
-private:
-  const char *allocator_debug_name;
+  const char *allocator_debug_name{"Default allocator"};
 #endif
 };
 

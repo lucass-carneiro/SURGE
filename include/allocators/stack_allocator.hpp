@@ -1,11 +1,10 @@
 #ifndef SURGE_STACK_ALLOCATOR
 #define SURGE_STACK_ALLOCATOR
 
-#include "allocators.hpp"
+#include "base_allocator.hpp"
 #include "log.hpp"
 #include "options.hpp"
 
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -13,6 +12,15 @@
 #include <tuple>
 
 namespace surge {
+
+/**
+ * @brief Saves the state of the allocator for use in rewinding
+ *
+ */
+struct stack_allocator_state {
+  std::size_t allocation_counter{0};
+  std::size_t free_index{0};
+};
 
 /**
  * @brief A stack arena allocator.
@@ -30,33 +38,12 @@ namespace surge {
  */
 class stack_allocator final : public base_allocator {
 public:
-#ifdef SURGE_DEBUG_MEMORY
-  /**
-   * @brief Construct a new stack arena allocator object
-   *
-   * @param pa The parent allocator to use while allocating memory blocks.
-   *
-   * @param capacity The total size (in Bytes) that the arena can allocate.
-   *
-   * @param debug_name The debug name of this instance of the arena
-   */
-  stack_allocator(base_allocator &pa, std::size_t capacity, const char *debug_name);
-#else
-  /**
-   * @brief Construct a new stack arena allocator object
-   *
-   * @param pa The parent allocator to use while allocating memory blocks.
-   *
-   * @param capacity The total size (in Bytes) that the arena can allocate.
-   */
-  stack_allocator(base_allocator &pa, std::size_t capacity);
-#endif
+  stack_allocator() noexcept
+      : stack_buffer(nullptr, [&](void *ptr) { parent_allocator->free(ptr); }) {}
 
-  /**
-   * @brief Destroy the stack arena allocator object.
-   *
-   */
-  ~stack_allocator() final;
+  ~stack_allocator() noexcept final = default;
+
+  void init(base_allocator *pa, std::size_t capacity, const char *debug_name) noexcept;
 
   stack_allocator(const stack_allocator &) = delete;
   stack_allocator(stack_allocator &&) = delete;
@@ -146,10 +133,19 @@ public:
    * be reused for new allocations. This also means that any previously
    * existing pointers are invalidated after this call.
    */
-  void inline reset() noexcept {
-    free_index = 0;
-    allocation_counter = 0;
-  }
+  void reset() noexcept;
+
+  /**
+   * @brief Saves the state of the allocator at the point of invocation
+   *
+   */
+  [[nodiscard]] auto save() const noexcept -> stack_allocator_state;
+
+  /**
+   * @brief Restores the allocator to the saved point
+   *
+   */
+  void restore(const stack_allocator_state &) noexcept;
 
 #ifdef SURGE_DEBUG_MEMORY
   /**
@@ -179,47 +175,25 @@ public:
     return actual_arena_capacity;
   }
 
-  /**
-   * @brief Saves the state of the allocator at the point of invocation
-   *
-   */
-  void save() noexcept;
-
-  /**
-   * @brief Restores the allocator to the saved point
-   *
-   */
-  void restore() noexcept;
-
 private:
   /**
    * The parent allocator to use for this arena.
    */
-  base_allocator &parent_allocator;
+  base_allocator *parent_allocator{nullptr};
 
   /**
    * @brief The user requested total memory the arena can provide.
    */
-  const std::size_t requested_arena_capacity;
+  std::size_t requested_arena_capacity{0};
 
   /**
    * @brief The actual amount of memory the arena can provide.
    */
-  const std::size_t actual_arena_capacity;
+  std::size_t actual_arena_capacity{0};
 
 #ifdef SURGE_DEBUG_MEMORY
-  const char *allocator_debug_name;
+  const char *allocator_debug_name{"Stack allocator"};
 #endif
-
-  /**
-   * @brief Saves the state of the allocator for use in rewinding
-   *
-   */
-  struct save_state {
-    std::size_t allocation_counter{0};
-    std::size_t free_index{0};
-    bool saved{false};
-  } saved_state;
 
   /**
    * @brief Counts how many allocations have been made. Used to determine if a block is at the stack
@@ -240,8 +214,7 @@ private:
   /**
    * Pointer to the underlying memory buffer that is given to the callers.
    */
-  // gsl::owner<std::byte *> arena_buffer;
-  std::unique_ptr<std::byte, std::function<void(void *)>> arena_buffer;
+  std::unique_ptr<std::byte, std::function<void(void *)>> stack_buffer;
 
   /**
    * @brief Detect if a pointer is valid. A pointer is considered valid if:

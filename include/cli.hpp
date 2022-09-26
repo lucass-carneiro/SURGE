@@ -46,11 +46,16 @@ void draw_logo() noexcept;
 auto parse_arguments(int argc, char **argv) noexcept
     -> tl::expected<docopt::Options, docopt_error_type>;
 
+auto get_arg_string(const docopt::Options &opts, const char *arg) noexcept
+    -> std::optional<const char *>;
+
+auto get_arg_long(const docopt::Options &opts, const char *arg) noexcept -> std::optional<long>;
+
 /**
  * TODO: doc
  */
-auto validate_config_script_path(const docopt::Options &opts) noexcept
-    -> tl::expected<std::filesystem::path, io_error>;
+auto get_file_path(const docopt::Options &opts, const char *arg, const char *ext) noexcept
+    -> std::optional<std::filesystem::path>;
 
 } // namespace surge
 

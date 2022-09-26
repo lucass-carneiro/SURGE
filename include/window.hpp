@@ -2,8 +2,8 @@
 #define SURGE_WINDOW_HPP
 
 #include "allocators/global_allocators.hpp"
+#include "lua_vm.hpp"
 #include "options.hpp"
-#include "squirrel_bindings.hpp"
 
 // clang-format off
 #include <fmt/format.h>
@@ -12,6 +12,7 @@
 // clang-format on
 
 #include <cstddef>
+#include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>
 #include <tl/expected.hpp>
@@ -22,12 +23,6 @@ namespace surge {
 void glfw_error_callback(int code, const char *description) noexcept;
 
 void framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept;
-
-auto glfw_allocate(std::size_t size, void *user) noexcept -> void *;
-
-auto glfw_reallocate(void *block, std::size_t size, void *user) noexcept -> void *;
-
-auto glfw_free(void *block, void *user) noexcept;
 
 class global_engine_window {
 public:
@@ -44,13 +39,21 @@ public:
 
   inline void swap_buffers() noexcept { glfwSwapBuffers(window.get()); }
 
-  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> SQFloat { return clear_color_r; }
+  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> float {
+    return static_cast<float>(clear_color_r);
+  }
 
-  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> SQFloat { return clear_color_g; }
+  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> float {
+    return static_cast<float>(clear_color_g);
+  }
 
-  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> SQFloat { return clear_color_b; }
+  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> float {
+    return static_cast<float>(clear_color_b);
+  }
 
-  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> SQFloat { return clear_color_a; }
+  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> float {
+    return static_cast<float>(clear_color_a);
+  }
 
   [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return previous_frame_dt; }
 
@@ -74,15 +77,15 @@ public:
 private:
   global_engine_window() : window{nullptr, glfwDestroyWindow} {}
 
-  int window_width = 800;
-  int window_height = 600;
-  const SQChar *window_name = "Default window name";
-  SQBool windowed = SQBool{true};
-  SQInteger window_monitor_index = SQInteger{0};
-  SQFloat clear_color_r = SQFloat{0};
-  SQFloat clear_color_g = SQFloat{0};
-  SQFloat clear_color_b = SQFloat{0};
-  SQFloat clear_color_a = SQFloat{1};
+  lua_Integer window_width{800};
+  lua_Integer window_height{600};
+  lua_String window_name{"Default window name"};
+  lua_Boolean windowed{true};
+  lua_Integer window_monitor_index{0};
+  lua_Number clear_color_r = lua_Number{0};
+  lua_Number clear_color_g = lua_Number{0};
+  lua_Number clear_color_b = lua_Number{0};
+  lua_Number clear_color_a = lua_Number{1};
 
   bool glfw_init_success = false;
   std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)> window;

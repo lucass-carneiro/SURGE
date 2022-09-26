@@ -1,7 +1,7 @@
 #ifndef SURGE_LINEAR_ARENA_ALLOCATOR
 #define SURGE_LINEAR_ARENA_ALLOCATOR
 
-#include "allocators.hpp"
+#include "base_allocator.hpp"
 #include "log.hpp"
 #include "options.hpp"
 
@@ -11,6 +11,15 @@
 #include <memory>
 
 namespace surge {
+
+/**
+ * @brief Saves the state of the allocator for use in rewinding
+ *
+ */
+struct linear_arena_allocator_state {
+  std::size_t allocation_counter{0};
+  std::size_t free_index{0};
+};
 
 /**
  * @brief A linear arena allocator.
@@ -29,33 +38,12 @@ namespace surge {
  */
 class linear_arena_allocator final : public base_allocator {
 public:
-#ifdef SURGE_DEBUG_MEMORY
-  /**
-   * @brief Construct a new linear arena allocator object
-   *
-   * @param pa The parent allocator to use while allocating memory blocks.
-   *
-   * @param capacity The total size (in Bytes) that the arena can allocate.
-   *
-   * @param debug_name The debug name of this instance of the arena
-   */
-  linear_arena_allocator(base_allocator &pa, std::size_t capacity, const char *debug_name);
-#else
-  /**
-   * @brief Construct a new linear arena allocator object
-   *
-   * @param pa The parent allocator to use while allocating memory blocks.
-   *
-   * @param capacity The total size (in Bytes) that the arena can allocate.
-   */
-  linear_arena_allocator(base_allocator &pa, std::size_t capacity);
-#endif
+  linear_arena_allocator() noexcept
+      : arena_buffer(nullptr, [&](void *ptr) { parent_allocator->free(ptr); }) {}
 
-  /**
-   * @brief Destroy the linear arena allocator object.
-   *
-   */
-  ~linear_arena_allocator() final;
+  ~linear_arena_allocator() noexcept final = default;
+
+  void init(base_allocator *pa, std::size_t capacity, const char *debug_name) noexcept;
 
   linear_arena_allocator(const linear_arena_allocator &) = delete;
   linear_arena_allocator(linear_arena_allocator &&) = delete;
@@ -147,10 +135,19 @@ public:
    * be reused for new allocations. This also means that any previously
    * existing pointers are invalidated after this call.
    */
-  void inline reset() noexcept {
-    free_index = 0;
-    allocation_counter = 0;
-  }
+  void reset() noexcept;
+
+  /**
+   * @brief Saves the state of the allocator at the point of invocation
+   *
+   */
+  [[nodiscard]] auto save() const noexcept -> linear_arena_allocator_state;
+
+  /**
+   * @brief Restores the allocator to the saved point
+   *
+   */
+  void restore(const linear_arena_allocator_state &) noexcept;
 
 #ifdef SURGE_DEBUG_MEMORY
   /**
@@ -180,36 +177,24 @@ public:
     return actual_arena_capacity;
   }
 
-  /**
-   * @brief Saves the state of the allocator at the point of invocation
-   *
-   */
-  void save() noexcept;
-
-  /**
-   * @brief Restores the allocator to the saved point
-   *
-   */
-  void restore() noexcept;
-
 private:
   /**
    * The parent allocator to use for this arena.
    */
-  base_allocator &parent_allocator;
+  base_allocator *parent_allocator{nullptr};
 
   /**
    * @brief The user requested total memory the arena can provide.
    */
-  const std::size_t requested_arena_capacity;
+  std::size_t requested_arena_capacity{0};
 
   /**
    * @brief The actual amount of memory the arena can provide.
    */
-  const std::size_t actual_arena_capacity;
+  std::size_t actual_arena_capacity{0};
 
 #ifdef SURGE_DEBUG_MEMORY
-  const char *allocator_debug_name;
+  const char *allocator_debug_name{"linear arena allocator"};
   std::size_t allocation_counter{0};
 #endif
 
@@ -221,18 +206,7 @@ private:
   /**
    * Pointer to the underlying memory buffer that is given to the callers.
    */
-  // gsl::owner<std::byte *> arena_buffer;
   std::unique_ptr<std::byte, std::function<void(void *)>> arena_buffer;
-
-  /**
-   * @brief Saves the state of the allocator for use in rewinding
-   *
-   */
-  struct save_state {
-    std::size_t allocation_counter{0};
-    std::size_t free_index{0};
-    bool saved{false};
-  } saved_state;
 };
 
 } // namespace surge

@@ -36,18 +36,20 @@ conan_basic_setup(TARGETS)
 # Options
 # -----------------------------------------
 
+option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   option(SURGE_USE_LOG "Enable log messages" ON)
   option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
   option(SURGE_BUILD_TESTING "Build tests" ON)
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
-  option(SURGE_STBIMAGE_ERRORS "Enables error message strings in stb_image" ON)
+  option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_image" ON)
 else()
   option(SURGE_USE_LOG "Enable log messages" OFF)
   option(SURGE_USE_LOG_COLOR "Use colors on log outputs" OFF)
   option(SURGE_BUILD_TESTING "Build tests" OFF)
   option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
-  option(SURGE_STBIMAGE_ERRORS "Enables error message strings in stb_image" OFF)
+  option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_image" OFF)
 endif()
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -65,30 +67,35 @@ configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}
 # Core source files
 set(
   SURGE_HEADER_LIST
+  "${Surge_SOURCE_DIR}/include/allocators/allocator_utils.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/allocators.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/base_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/default_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/stack_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/stl_allocator.hpp"
   
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
-  "${Surge_SOURCE_DIR}/include/job_system.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
+  "${Surge_SOURCE_DIR}/include/lua_vm.hpp"
   "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/shader.hpp"
-  "${Surge_SOURCE_DIR}/include/squirrel_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
+  "${Surge_SOURCE_DIR}/include/task_executor.hpp"
+  "${Surge_SOURCE_DIR}/include/thread_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/vertex_renderer.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 
 set(
   SURGE_SOURCE_LIST
+  "${Surge_SOURCE_DIR}/source/allocators/allocator_utils.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/stack_allocator.cpp"
@@ -98,9 +105,10 @@ set(
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
   "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
+  "${Surge_SOURCE_DIR}/source/lua_vm.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"
-  "${Surge_SOURCE_DIR}/source/squirrel_bindings.cpp"
+  "${Surge_SOURCE_DIR}/source/thread_allocators.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"
 )
 
@@ -153,10 +161,12 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::fmt
   CONAN_PKG::docopt.cpp
   CONAN_PKG::tl-expected
-  CONAN_PKG::squirrel
   CONAN_PKG::glfw
   CONAN_PKG::glm
   CONAN_PKG::gsl-lite
+  CONAN_PKG::taskflow
+  CONAN_PKG::luajit
+  CONAN_PKG::mimalloc
 )
 
 target_include_directories(

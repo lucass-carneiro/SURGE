@@ -10,7 +10,7 @@ cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TY
 
 OR
 
-conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-clang-13-release
+conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-clang-14-release
 cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 
 cmake --build . -j20
