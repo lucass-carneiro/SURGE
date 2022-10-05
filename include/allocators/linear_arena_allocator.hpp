@@ -41,7 +41,7 @@ public:
   linear_arena_allocator() noexcept
       : arena_buffer(nullptr, [&](void *ptr) { parent_allocator->free(ptr); }) {}
 
-  ~linear_arena_allocator() noexcept final = default;
+  ~linear_arena_allocator() noexcept final;
 
   void init(base_allocator *pa, std::size_t capacity, const char *debug_name) noexcept;
 

@@ -22,7 +22,7 @@ namespace surge {
 class global_lua_states {
 public:
   using lua_state_ptr = std::unique_ptr<lua_State, void (*)(lua_State *)>;
-  using stl_allocator_t = stl_allocator<lua_state_ptr>;
+  using stl_allocator_t = stl_allocator<lua_state_ptr, linear_arena_allocator>;
   using state_vec_t = std::vector<lua_state_ptr, stl_allocator_t>;
 
   static inline auto get() -> global_lua_states & {

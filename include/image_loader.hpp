@@ -1,37 +1,42 @@
 #ifndef SURGE_IMAGE_LOADER_HPP
 #define SURGE_IMAGE_LOADER_HPP
 
-#include "allocators/global_allocators.hpp"
+#include "allocators/allocators.hpp"
+#include "file.hpp"
+#include "stb/stb_image.hpp"
 
 #include <filesystem>
-#include <png.h>
-#include <vector>
+#include <optional>
 
 namespace surge {
 
-class global_image_loader {
-public:
-  static inline auto get() -> global_image_loader & {
-    static global_image_loader instance;
-    return instance;
+template <surge_allocator alloc_t>
+inline auto load_image(alloc_t *allocator, const std::filesystem::path &p, const char *ext) noexcept
+    -> stbi_uc * {
+
+  glog<log_event::message>("Loading image file {}", p.c_str());
+
+  auto file{load_file(allocator, p, ext)};
+  if (!file) {
+    glog<log_event::error>("Unable to load image file {}", p.c_str());
+    return nullptr;
   }
 
-  global_image_loader(const global_image_loader &) = delete;
-  global_image_loader(global_image_loader &&) = delete;
+  int x{0}, y{0}, channels_in_file{0};
+  auto img_data{stbi_load_from_memory(
+      allocator, static_cast<stbi_uc *>(static_cast<void *>(file.value().data())),
+      file.value().size(), &x, &y, &channels_in_file, 0)};
 
-  auto operator=(global_image_loader) -> global_image_loader & = delete;
-  auto operator=(const global_image_loader &) -> global_image_loader & = delete;
-  auto operator=(global_image_loader &&) -> global_image_loader & = delete;
+  if (img_data == nullptr) {
+    glog<log_event::error>("Unable to load image file {} due to stbi error: {}", p.c_str(),
+                           stbi_failure_reason());
+    allocator->free(file.value().data());
+    return nullptr;
+  }
 
-  static const std::size_t subsystem_allocator_capacity;
-  static const std::size_t persistent_allocator_capacity;
-  static const std::size_t volatile_allocator_capacity;
-
-  void load_persistent(const std::filesystem::path &);
-
-private:
-  global_image_loader() noexcept = default;
-};
+  allocator->free(file.value().data());
+  return img_data;
+}
 
 } // namespace surge
 

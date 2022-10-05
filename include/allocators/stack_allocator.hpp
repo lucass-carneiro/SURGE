@@ -4,12 +4,15 @@
 #include "base_allocator.hpp"
 #include "log.hpp"
 #include "options.hpp"
+#include "static_arena_allocator.hpp"
 
+#include <EASTL/fixed_hash_map.h>
 #include <cstdint>
 #include <cstring>
 #include <functional>
 #include <memory>
 #include <tuple>
+#include <vector>
 
 namespace surge {
 
@@ -41,7 +44,7 @@ public:
   stack_allocator() noexcept
       : stack_buffer(nullptr, [&](void *ptr) { parent_allocator->free(ptr); }) {}
 
-  ~stack_allocator() noexcept final = default;
+  ~stack_allocator() noexcept final;
 
   void init(base_allocator *pa, std::size_t capacity, const char *debug_name) noexcept;
 
@@ -215,6 +218,15 @@ private:
    * Pointer to the underlying memory buffer that is given to the callers.
    */
   std::unique_ptr<std::byte, std::function<void(void *)>> stack_buffer;
+
+  /**
+   * @brief Hash map containing the blocks that are ready to be freed but could not previouslly be
+   * freed due to the stack's LIFO principle
+   *
+   */
+  eastl::fixed_hash_map<std::size_t, void *, SURGE_STACK_FREE_RECORD_SIZE,
+                        SURGE_STACK_FREE_RECORD_SIZE + 1, false>
+      ready_to_free;
 
   /**
    * @brief Detect if a pointer is valid. A pointer is considered valid if:

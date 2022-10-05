@@ -9,6 +9,8 @@
 #define SURGE_VERSION_MINOR_STRING "0" // NOLINT(cppcoreguidelines-macro-usage)
 #define SURGE_VERSION_PATCH_STRING "0" // NOLINT(cppcoreguidelines-macro-usage)
 
+#define SURGE_STACK_FREE_RECORD_SIZE 16 // NOLINT(cppcoreguidelines-macro-usage)
+
 #define SURGE_SYSTEM_Linux
 #define SURGE_SYSTEM_IS_POSIX
 #define SURGE_COMPILER_GNU

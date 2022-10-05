@@ -36,6 +36,13 @@ conan_basic_setup(TARGETS)
 # Options
 # -----------------------------------------
 
+if(NOT DEFINED SURGE_STACK_FREE_RECORD_SIZE)
+  set(SURGE_STACK_FREE_RECORD_SIZE 16)
+elseif(SURGE_STACK_FREE_RECORD_SIZE LESS 16)
+  message(WARNING "The variable SURGE_STACK_FREE_RECORD_SIZE should be set to at least 16. It will be automatically set to this value.")
+  set(SURGE_STACK_FREE_RECORD_SIZE 16)
+endif()
+
 option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -74,6 +81,7 @@ set(
   "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/stack_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/static_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/stl_allocator.hpp"
   
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
@@ -95,7 +103,6 @@ set(
 
 set(
   SURGE_SOURCE_LIST
-  "${Surge_SOURCE_DIR}/source/allocators/allocator_utils.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/stack_allocator.cpp"
@@ -104,7 +111,6 @@ set(
   
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
-  "${Surge_SOURCE_DIR}/source/image_loader_persistant.cpp"
   "${Surge_SOURCE_DIR}/source/lua_vm.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"

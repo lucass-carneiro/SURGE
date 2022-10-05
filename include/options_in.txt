@@ -9,6 +9,8 @@
 #define SURGE_VERSION_MINOR_STRING "@Surge_VERSION_MINOR@" // NOLINT(cppcoreguidelines-macro-usage)
 #define SURGE_VERSION_PATCH_STRING "@Surge_VERSION_PATCH@" // NOLINT(cppcoreguidelines-macro-usage)
 
+#define SURGE_STACK_FREE_RECORD_SIZE @SURGE_STACK_FREE_RECORD_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
+
 #define SURGE_SYSTEM_@CMAKE_SYSTEM_NAME@
 #define SURGE_SYSTEM_@SURGE_SYSTEM_IS_POSIX@
 #define SURGE_COMPILER_@CMAKE_CXX_COMPILER_ID@

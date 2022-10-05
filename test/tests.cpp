@@ -4,12 +4,6 @@
 
 #include <gtest/gtest.h>
 
-const std::size_t surge::global_engine_window::subsystem_allocator_capacity = 128;
-
-const std::size_t surge::global_image_loader::subsystem_allocator_capacity = 512;
-const std::size_t surge::global_image_loader::persistent_allocator_capacity = 128;
-const std::size_t surge::global_image_loader::volatile_allocator_capacity = 128;
-
 constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
   if (n == 0) {
     return 1;

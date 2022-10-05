@@ -32,6 +32,13 @@ void surge::stack_allocator::init(base_allocator *pa, std::size_t capacity, cons
 }
 #endif
 
+surge::stack_allocator::~stack_allocator() noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  glog<log_event::message>("Deleated allocator {} with {} remaining allocations.",
+                           allocator_debug_name, allocation_counter);
+#endif
+}
+
 auto surge::stack_allocator::is_valid(void *ptr) noexcept -> bool {
   // 1. It is not null
   if (ptr == nullptr) {
@@ -182,25 +189,49 @@ void surge::stack_allocator::free(void *ptr) noexcept {
     return;
   }
 
+  const auto header_data{read_header(ptr)};
+
+  // Not freeing memory in a lifo manner is not an error. Instead, if the block to be freed is not
+  // last, an entry in the ready_to_free record is created with the key being the allocation count
+  // and value the pointer to the memory block to free. When a sucsesfull free is performed, the
+  // record is consulted. If the block before the last free is present in the reccord, the memory
+  // gets freed. This continues untill no more freeable blocks exist.
   if (!is_last_block(ptr)) {
 #ifdef SURGE_DEBUG_MEMORY
-    glog<log_event::warning>(
-        "In allocator \"{}\"(free): Block pointed by address {:#x} is not the last block. Ignring "
-        "free request.",
-        allocator_debug_name, uint_ptr);
+    // TODO: This does not need to be a warning, but it makes it easier to see whule debugging
+    glog<log_event::memory>("Allocator \"{}\"(free): Block pointed by address {:#x} is not the "
+                            "last block. Adding ({}, {:#x}) to block to ready_to_free record ",
+                            allocator_debug_name, uint_ptr, header_data, uint_ptr);
 #endif
-    return;
-  }
+    ready_to_free[header_data] = ptr;
+
+  } else {
+    const auto [header_idx, data_idx] = ptr_to_idx(ptr);
+    free_index = header_idx;
+    allocation_counter--;
 
 #ifdef SURGE_DEBUG_MEMORY
-  glog<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
-                          // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                          reinterpret_cast<std::uintptr_t>(ptr));
+    glog<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
+                            uint_ptr);
 #endif
 
-  const auto [header_idx, data_idx] = ptr_to_idx(ptr);
-  free_index = header_idx;
-  allocation_counter--;
+    if (ready_to_free.size() != 0) {
+      const auto header_to_free{header_data > 0 ? ready_to_free.find(header_data - 1)
+                                                : ready_to_free.end()};
+
+      if (header_to_free != ready_to_free.end()) {
+        const auto ptr_to_free{ready_to_free[header_data - 1]};
+        ready_to_free.erase(header_to_free);
+        this->free(ptr_to_free);
+
+      } else {
+        glog<log_event::warning>(
+            "In allocator \"{}\" unable to free ready_to_free allocation index {}",
+            allocator_debug_name, header_data - 1);
+        return;
+      }
+    }
+  }
 }
 
 [[nodiscard]] auto surge::stack_allocator::malloc(std::size_t size) noexcept -> void * {
@@ -334,7 +365,6 @@ void surge::stack_allocator::restore(const stack_allocator_state &saved_state) n
                           "  allocation counter: {}",
                           allocator_debug_name, free_index, allocation_counter);
 #endif
-
   allocation_counter = saved_state.allocation_counter;
   free_index = saved_state.free_index;
 }

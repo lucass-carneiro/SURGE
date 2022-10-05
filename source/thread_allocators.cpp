@@ -77,3 +77,7 @@ auto surge::global_thread_allocators::at(std::size_t i) noexcept -> stack_alloca
   }
   return allocator_array.back();
 }
+
+auto surge::global_thread_allocators::back() noexcept -> stack_allocator_ptr & {
+  return allocator_array.back();
+}

@@ -66,6 +66,7 @@ using load_file_return_t = std::optional<std::span<std::byte>>;
 template <surge_allocator alloc_t>
 inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const char *ext) noexcept
     -> load_file_return_t {
+  glog<log_event::message>("Loading raw data for file  {}", p.c_str());
 
   const auto path_validation_result{validate_path(p, ext)};
 
@@ -84,6 +85,7 @@ inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const 
   if (os_open_read(p, buffer, file_size)) {
     return gsl::span<std::byte>(static_cast<std::byte *>(buffer), file_size);
   } else {
+    allocator->free(buffer);
     return {};
   }
 }

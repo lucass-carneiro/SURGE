@@ -1,7 +1,10 @@
 # TODO
+* []
+* [] Add VM hooks to load images.
+* [] Add vm hooks for shaders
+* [] Add vm hooks to opengl shapes and shape transformations
 * [] Thread allocators are not getting destroyed. Investigate.
 * [] Find out safer way to provide VM index from the lua state.
-* []
 
 # Done
 * [x] Review file loading to memory functions. Implement: load to buffer, ~load given allocator~
@@ -9,3 +12,6 @@
 * [x] Implement safety net in lua_log_message with try catch.
 * [x] Implement more log functions.
 * [X] Find out the VM index from the lua state.
+* [x] Review image loader
+* [x] Create stack-backed static allocator.
+* [x] Allow stack allocator to free out of order using the stack backed allocator.

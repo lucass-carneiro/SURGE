@@ -1,6 +1,3 @@
-#include "allocators/base_allocator.hpp"
-#include "allocators/global_allocators.hpp"
-#include "allocators/linear_arena_allocator.hpp"
 #include "cli.hpp"
 #include "image_loader.hpp"
 #include "log.hpp"
@@ -15,12 +12,6 @@
 #include <cstddef>
 #include <cstdlib>
 #include <vector>
-
-const std::size_t surge::global_engine_window::subsystem_allocator_capacity = 100;
-
-const std::size_t surge::global_image_loader::subsystem_allocator_capacity = 16084;
-const std::size_t surge::global_image_loader::persistent_allocator_capacity = 8042;
-const std::size_t surge::global_image_loader::volatile_allocator_capacity = 100;
 
 constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
   if (n == 0) {
@@ -125,6 +116,13 @@ auto main(int argc, char **argv) noexcept -> int {
     global_task_executor::get().async(do_file_at, i, *config_script_path);
   }
   global_task_executor::get().wait_for_all();
+
+  // img load test
+  auto img{load_image(global_thread_allocators::get().back().get(),
+                      "/home/lucas/SURGE/resources/images/awesomeface.png", ".png")};
+  stbi_image_free(global_thread_allocators::get().back().get(), img);
+
+  return EXIT_SUCCESS;
 
   // Initialize GLFW
   if (!global_engine_window::get().init()) {

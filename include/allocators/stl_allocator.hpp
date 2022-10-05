@@ -1,7 +1,7 @@
 #ifndef SURGE_STL_ALLOCATOR_HPP
 #define SURGE_STL_ALLOCATOR_HPP
 
-#include "base_allocator.hpp"
+#include "allocator_utils.hpp"
 
 namespace surge {
 
@@ -9,13 +9,13 @@ namespace surge {
  * @brief Adapts a base_allocator to work with stl containers
  *
  */
-template <typename T> class stl_allocator {
+template <typename T, typename surge_alloc_t> class stl_allocator {
 public:
   using value_type = T;
 
-  stl_allocator(base_allocator *sa) noexcept : allocator{sa} {}
+  stl_allocator(surge_alloc_t *sa) noexcept : allocator{sa} {}
 
-  template <class U> constexpr stl_allocator(const stl_allocator<U> &) noexcept {}
+  template <class U, class V> constexpr stl_allocator(const stl_allocator<U, V> &) noexcept {}
 
   [[nodiscard]] inline auto allocate(std::size_t n) noexcept -> T * {
     const std::size_t intended_size = n * sizeof(T);
@@ -29,7 +29,7 @@ public:
   inline void deallocate(T *p, std::size_t) noexcept { allocator->free(static_cast<void *>(p)); }
 
 private:
-  base_allocator *allocator{nullptr};
+  surge_alloc_t *allocator{nullptr};
 };
 
 } // namespace surge

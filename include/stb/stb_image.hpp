@@ -1,6 +1,8 @@
 #ifndef STBI_INCLUDE_STB_IMAGE_HPP
 #define STBI_INCLUDE_STB_IMAGE_HPP
 
+#include "allocators/allocators.hpp"
+
 #ifndef STBI_NO_STDIO
 #  include <cstdio>
 #endif // STBI_NO_STDIO
@@ -51,24 +53,25 @@ struct stbi_io_callbacks {
 // 8-bits-per-channel interface
 //
 
-STBIDEF auto stbi_load_from_memory(stbi_uc const *buffer, int len, int *x, int *y,
-                                   int *channels_in_file, int desired_channels) noexcept
-    -> stbi_uc *;
-STBIDEF auto stbi_load_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y,
-                                      int *channels_in_file, int desired_channels) noexcept
-    -> stbi_uc *;
+STBIDEF auto stbi_load_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer, int len,
+                                   int *x, int *y, int *channels_in_file,
+                                   int desired_channels) noexcept -> stbi_uc *;
+STBIDEF auto stbi_load_from_callbacks(surge::base_allocator *alloc, stbi_io_callbacks const *clbk,
+                                      void *user, int *x, int *y, int *channels_in_file,
+                                      int desired_channels) noexcept -> stbi_uc *;
 
 #ifndef STBI_NO_STDIO
-STBIDEF auto stbi_load(char const *filename, int *x, int *y, int *channels_in_file,
-                       int desired_channels) noexcept -> stbi_uc *;
-STBIDEF auto stbi_load_from_file(FILE *f, int *x, int *y, int *channels_in_file,
-                                 int desired_channels) noexcept -> stbi_uc *;
+STBIDEF auto stbi_load(surge::base_allocator *alloc, char const *filename, int *x, int *y,
+                       int *channels_in_file, int desired_channels) noexcept -> stbi_uc *;
+STBIDEF auto stbi_load_from_file(surge::base_allocator *alloc, FILE *f, int *x, int *y,
+                                 int *channels_in_file, int desired_channels) noexcept -> stbi_uc *;
 // for stbi_load_from_file, file pointer is left pointing immediately after image
 #endif
 
 #ifndef STBI_NO_GIF
-STBIDEF auto stbi_load_gif_from_memory(stbi_uc const *buffer, int len, int **delays, int *x, int *y,
-                                       int *z, int *comp, int req_comp) noexcept -> stbi_uc *;
+STBIDEF auto stbi_load_gif_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer, int len,
+                                       int **delays, int *x, int *y, int *z, int *comp,
+                                       int req_comp) noexcept -> stbi_uc *;
 #endif
 
 #ifdef STBI_WINDOWS_UTF8
@@ -81,18 +84,20 @@ STBIDEF auto stbi_convert_wchar_to_utf8(char *buffer, size_t bufferlen,
 // 16-bits-per-channel interface
 //
 
-STBIDEF auto stbi_load_16_from_memory(stbi_uc const *buffer, int len, int *x, int *y,
-                                      int *channels_in_file, int desired_channels) noexcept
-    -> stbi_us *;
-STBIDEF auto stbi_load_16_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y,
+STBIDEF auto stbi_load_16_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer, int len,
+                                      int *x, int *y, int *channels_in_file,
+                                      int desired_channels) noexcept -> stbi_us *;
+STBIDEF auto stbi_load_16_from_callbacks(surge::base_allocator *alloc,
+                                         stbi_io_callbacks const *clbk, void *user, int *x, int *y,
                                          int *channels_in_file, int desired_channels) noexcept
     -> stbi_us *;
 
 #ifndef STBI_NO_STDIO
-STBIDEF auto stbi_load_16(char const *filename, int *x, int *y, int *channels_in_file,
-                          int desired_channels) noexcept -> stbi_us *;
-STBIDEF auto stbi_load_from_file_16(FILE *f, int *x, int *y, int *channels_in_file,
-                                    int desired_channels) noexcept -> stbi_us *;
+STBIDEF auto stbi_load_16(surge::base_allocator *alloc, char const *filename, int *x, int *y,
+                          int *channels_in_file, int desired_channels) noexcept -> stbi_us *;
+STBIDEF auto stbi_load_from_file_16(surge::base_allocator *alloc, FILE *f, int *x, int *y,
+                                    int *channels_in_file, int desired_channels) noexcept
+    -> stbi_us *;
 #endif
 
 ////////////////////////////////////
@@ -100,18 +105,18 @@ STBIDEF auto stbi_load_from_file_16(FILE *f, int *x, int *y, int *channels_in_fi
 // float-per-channel interface
 //
 #ifndef STBI_NO_LINEAR
-STBIDEF auto stbi_loadf_from_memory(stbi_uc const *buffer, int len, int *x, int *y,
-                                    int *channels_in_file, int desired_channels) noexcept
-    -> float *;
-STBIDEF auto stbi_loadf_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y,
-                                       int *channels_in_file, int desired_channels) noexcept
-    -> float *;
+STBIDEF auto stbi_loadf_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer, int len,
+                                    int *x, int *y, int *channels_in_file,
+                                    int desired_channels) noexcept -> float *;
+STBIDEF auto stbi_loadf_from_callbacks(surge::base_allocator *alloc, stbi_io_callbacks const *clbk,
+                                       void *user, int *x, int *y, int *channels_in_file,
+                                       int desired_channels) noexcept -> float *;
 
 #  ifndef STBI_NO_STDIO
-STBIDEF auto stbi_loadf(char const *filename, int *x, int *y, int *channels_in_file,
-                        int desired_channels) noexcept -> float *;
-STBIDEF auto stbi_loadf_from_file(FILE *f, int *x, int *y, int *channels_in_file,
-                                  int desired_channels) noexcept -> float *;
+STBIDEF auto stbi_loadf(surge::base_allocator *alloc, char const *filename, int *x, int *y,
+                        int *channels_in_file, int desired_channels) noexcept -> float *;
+STBIDEF auto stbi_loadf_from_file(surge::base_allocator *alloc, FILE *f, int *x, int *y,
+                                  int *channels_in_file, int desired_channels) noexcept -> float *;
 #  endif
 #endif
 
@@ -138,22 +143,26 @@ STBIDEF auto stbi_is_hdr_from_file(FILE *f) noexcept -> int;
 STBIDEF auto stbi_failure_reason() noexcept -> const char *;
 
 // free the loaded image -- this is just free()
-STBIDEF void stbi_image_free(void *retval_from_stbi_load);
+STBIDEF void stbi_image_free(surge::base_allocator *alloc, void *retval_from_stbi_load);
 
 // get image dimensions & components without fully decoding
-STBIDEF auto stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y,
-                                   int *comp) noexcept -> int;
-STBIDEF auto stbi_info_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int *y,
-                                      int *comp) noexcept -> int;
-STBIDEF auto stbi_is_16_bit_from_memory(stbi_uc const *buffer, int len) noexcept -> int;
-STBIDEF auto stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *clbk, void *user) noexcept
+STBIDEF auto stbi_info_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer, int len,
+                                   int *x, int *y, int *comp) noexcept -> int;
+STBIDEF auto stbi_info_from_callbacks(surge::base_allocator *alloc, stbi_io_callbacks const *clbk,
+                                      void *user, int *x, int *y, int *comp) noexcept -> int;
+STBIDEF auto stbi_is_16_bit_from_memory(surge::base_allocator *alloc, stbi_uc const *buffer,
+                                        int len) noexcept -> int;
+STBIDEF auto stbi_is_16_bit_from_callbacks(surge::base_allocator *alloc,
+                                           stbi_io_callbacks const *clbk, void *user) noexcept
     -> int;
 
 #ifndef STBI_NO_STDIO
-STBIDEF auto stbi_info(char const *filename, int *x, int *y, int *comp) noexcept -> int;
-STBIDEF auto stbi_info_from_file(FILE *f, int *x, int *y, int *comp) noexcept -> int;
-STBIDEF auto stbi_is_16_bit(char const *filename) noexcept -> int;
-STBIDEF auto stbi_is_16_bit_from_file(FILE *f) noexcept -> int;
+STBIDEF auto stbi_info(surge::base_allocator *alloc, char const *filename, int *x, int *y,
+                       int *comp) noexcept -> int;
+STBIDEF auto stbi_info_from_file(surge::base_allocator *alloc, FILE *f, int *x, int *y,
+                                 int *comp) noexcept -> int;
+STBIDEF auto stbi_is_16_bit(surge::base_allocator *alloc, char const *filename) noexcept -> int;
+STBIDEF auto stbi_is_16_bit_from_file(surge::base_allocator *alloc, FILE *f) noexcept -> int;
 #endif
 
 // for image formats that explicitly notate that they have premultiplied alpha,
@@ -177,18 +186,21 @@ STBIDEF void stbi_set_flip_vertically_on_load_thread(int flag_true_if_should_fli
 
 // ZLIB client - used by PNG, available for other purposes
 
-STBIDEF auto stbi_zlib_decode_malloc_guesssize(const char *buffer, int len, int initial_size,
-                                               int *outlen) noexcept -> char *;
-STBIDEF auto stbi_zlib_decode_malloc_guesssize_headerflag(const char *buffer, int len,
+STBIDEF auto stbi_zlib_decode_malloc_guesssize(surge::base_allocator *alloc, const char *buffer,
+                                               int len, int initial_size, int *outlen) noexcept
+    -> char *;
+STBIDEF auto stbi_zlib_decode_malloc_guesssize_headerflag(surge::base_allocator *alloc,
+                                                          const char *buffer, int len,
                                                           int initial_size, int *outlen,
                                                           int parse_header) noexcept -> char *;
-STBIDEF auto stbi_zlib_decode_malloc(const char *buffer, int len, int *outlen) noexcept -> char *;
-STBIDEF auto stbi_zlib_decode_buffer(char *obuffer, int olen, const char *ibuffer,
-                                     int ilen) noexcept -> int;
+STBIDEF auto stbi_zlib_decode_malloc(surge::base_allocator *alloc, const char *buffer, int len,
+                                     int *outlen) noexcept -> char *;
+STBIDEF auto stbi_zlib_decode_buffer(surge::base_allocator *alloc, char *obuffer, int olen,
+                                     const char *ibuffer, int ilen) noexcept -> int;
 
-STBIDEF auto stbi_zlib_decode_noheader_malloc(const char *buffer, int len, int *outlen) noexcept
-    -> char *;
-STBIDEF auto stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const char *ibuffer,
-                                              int ilen) noexcept -> int;
+STBIDEF auto stbi_zlib_decode_noheader_malloc(surge::base_allocator *alloc, const char *buffer,
+                                              int len, int *outlen) noexcept -> char *;
+STBIDEF auto stbi_zlib_decode_noheader_buffer(surge::base_allocator *alloc, char *obuffer, int olen,
+                                              const char *ibuffer, int ilen) noexcept -> int;
 
 #endif // STBI_INCLUDE_STB_IMAGE_HPP

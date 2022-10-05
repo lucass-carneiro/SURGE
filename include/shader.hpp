@@ -34,7 +34,7 @@ public:
   [[nodiscard]] auto get_handle() const noexcept -> std::optional<GLuint> { return shader_handle; }
 
   inline void destroy() noexcept {
-    glog<log_event::message>("Deleating shader {}.", shader_name);
+    glog<log_event::message>("Deleting shader {}.", shader_name);
 
     if (shader_handle.has_value()) {
       glDeleteShader(shader_handle.value());
@@ -76,7 +76,7 @@ public:
   [[nodiscard]] auto get_handle() const noexcept -> std::optional<GLuint> { return shader_handle; }
 
   inline void destroy() noexcept {
-    glog<log_event::message>("Deleating shader {}.", shader_name);
+    glog<log_event::message>("Deleting shader {}.", shader_name);
 
     if (shader_handle.has_value()) {
       glDeleteShader(shader_handle.value());
@@ -292,7 +292,7 @@ public:
   void use() { glUseProgram(program_handle.value()); }
 
   void destroy() {
-    glog<log_event::message>("Deleating program \"{}\".", program_name);
+    glog<log_event::message>("Deleting program \"{}\".", program_name);
 
     if (program_handle.has_value()) {
       glDeleteProgram(program_handle.value());

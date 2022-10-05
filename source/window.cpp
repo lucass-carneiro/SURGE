@@ -18,7 +18,7 @@
 #include <sstream>
 
 surge::global_engine_window::~global_engine_window() {
-  glog<log_event::message>("Deleating window.");
+  glog<log_event::message>("Deleting window.");
 
   // Calling reset on the window* guarantees that it will be destroyed before
   // glfwTerminate

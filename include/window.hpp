@@ -72,8 +72,6 @@ public:
 
   auto operator=(global_engine_window &&) -> global_engine_window & = delete;
 
-  static const std::size_t subsystem_allocator_capacity;
-
 private:
   global_engine_window() : window{nullptr, glfwDestroyWindow} {}
 

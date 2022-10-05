@@ -13,7 +13,7 @@ namespace surge {
 class global_thread_allocators {
 public:
   using stack_allocator_ptr = std::unique_ptr<stack_allocator, std::function<void(void *)>>;
-  using stl_allocator_t = stl_allocator<stack_allocator_ptr>;
+  using stl_allocator_t = stl_allocator<stack_allocator_ptr, linear_arena_allocator>;
   using alloc_vec_t = std::vector<stack_allocator_ptr, stl_allocator_t>;
 
   static inline auto get() -> global_thread_allocators & {
@@ -23,7 +23,8 @@ public:
 
   void init(unsigned int nt, long mpt) noexcept;
 
-  auto at(std::size_t i) noexcept -> stack_allocator_ptr &;
+  [[nodiscard]] auto at(std::size_t i) noexcept -> stack_allocator_ptr &;
+  [[nodiscard]] auto back() noexcept -> stack_allocator_ptr &;
 
   [[nodiscard]] inline auto get_num_threads() const noexcept -> unsigned int { return num_threads; }
   [[nodiscard]] inline auto get_num_workers() const noexcept -> unsigned int {
