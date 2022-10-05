@@ -12,4 +12,7 @@ surge.log_message("Configuration summary:\n",
                                        surge.clear_color[3], ")"
 )
 
-surge.load_file("path", ".ext")
+local img = surge.load_image("/home/lucas/SURGE/resources/images/awesomeface.png", ".png")
+print("value in img: ", img)
+img = surge.drop_image(img)
+print("value in img: ", img)

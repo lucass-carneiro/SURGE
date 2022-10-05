@@ -2,7 +2,7 @@
 #define SURGE_WINDOW_HPP
 
 #include "allocators/global_allocators.hpp"
-#include "lua_vm.hpp"
+#include "lua/lua_vm.hpp"
 #include "options.hpp"
 
 // clang-format off

@@ -86,11 +86,17 @@ set(
   
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
+  "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_utils.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_vm.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
+  
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
-  "${Surge_SOURCE_DIR}/include/lua_vm.hpp"
   "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/shader.hpp"
@@ -109,9 +115,13 @@ set(
   
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   
+  "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
+
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
-  "${Surge_SOURCE_DIR}/source/lua_vm.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/shader.cpp"
   "${Surge_SOURCE_DIR}/source/thread_allocators.cpp"

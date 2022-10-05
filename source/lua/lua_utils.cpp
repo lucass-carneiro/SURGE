@@ -1,50 +1,15 @@
-#include "lua_vm.hpp"
+#include "lua/lua_utils.hpp"
 
-#include "allocators/global_allocators.hpp"
+// clang-format off
+#include "lua/lua_bindings.hpp"
+#include "lua/lua_logs.hpp"
+#include "lua/lua_states.hpp"
+#include "lua/lua_wrappers.hpp"
+// clang-format on
+
 #include "file.hpp"
-#include "log.hpp"
 #include "safe_ops.hpp"
-#include "task_executor.hpp"
 #include "thread_allocators.hpp"
-
-#include <exception>
-#include <fmt/core.h>
-
-void surge::global_lua_states::init() noexcept {
-  glog<log_event::message>("Starting up Lua states");
-
-  const auto num_threads{global_thread_allocators::get().get_num_threads()};
-
-  // Step 1: Allocate memory for the array of state pointers
-  state_array.reserve(num_threads);
-
-  // Setep 2: Allocate each state and store the pointer. Do initializations
-  for (unsigned int i = 0; i < num_threads; i++) {
-    state_array.push_back(lua_state_ptr{luaL_newstate(), lua_close});
-
-    // Initialize state with libs
-    luaL_openlibs(state_array[i].get());
-
-    // Turn JIT on globally
-    luaJIT_setmode(state_array[i].get(), 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
-
-    // Add engine context
-    push_engine_config_at(i);
-  }
-}
-
-auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
-  try {
-    return state_array.at(i);
-  } catch (const std::exception &e) {
-    glog<log_event::error>(
-        "Uanble to acess global lua VM array at index {}: {}. Returning main thread VM.", i,
-        e.what());
-  }
-  return state_array.back();
-}
-
-auto surge::global_lua_states::back() noexcept -> lua_state_ptr & { return state_array.back(); }
 
 void surge::push_engine_config_at(std::size_t i) noexcept {
   auto L = global_lua_states::get().at(i).get();
@@ -73,18 +38,12 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   add_table_field<lua_String, lua_CFunction>(L, "log_error", lua_log_error);
   add_table_field<lua_String, lua_CFunction>(L, "log_memory", lua_log_memory);
 
+  add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
+  add_table_field<lua_String, lua_CFunction>(L, "drop_image", lua_drop_image);
+
   lua_setglobal(L, "surge");
   // end surge table
 }
-
-/*struct lua_engine_config {
-  lua_Integer window_width;
-  lua_Integer window_height;
-  lua_String window_name;
-  lua_Boolean windowed;
-  lua_Integer window_monitor_index;
-  std::array<lua_Number, 4> clear_color;
-};*/
 
 auto surge::get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config> {
   lua_engine_config config{};
@@ -222,7 +181,6 @@ auto surge::do_file_at(std::size_t i, const std::filesystem::path &path) noexcep
   // https://www.lua.org/source/5.4/lua.c.html#msghandler
 
   glog<log_event::message>("Doing Lua script {} using index {}", path.c_str(), i);
-  // luaL_dofile is  (luaL_loadfile(L, filename) || lua_pcall(L, 0, LUA_MULTRET, 0))
 
   auto L{global_lua_states::get().at(i).get()};
   auto &alloc{global_thread_allocators::get().at(i)};
@@ -267,36 +225,4 @@ auto surge::do_file_at(std::size_t i, const std::filesystem::path &path) noexcep
   alloc->free(static_cast<void *>((*handle.opt_file_span).data()));
 
   return true;
-}
-
-void surge::vm_colored_print(lua_State *L, fmt::string_view banner,
-                             const fmt::text_style &style) noexcept {
-  try {
-    // clang-format off
-      fmt::print(
-                #ifdef SURGE_USE_LOG_COLOR
-                 style,
-                #endif
-                "SURGE Lua VM {}: ",
-                banner
-      );
-    // clang-format on
-
-    int nargs = lua_gettop(L);
-
-    for (int i = 1; i <= nargs; ++i) {
-      if (lua_isboolean(L, i)) {
-        fmt::print("{}", static_cast<bool>(lua_toboolean(L, i)));
-      } else if (lua_isnil(L, i)) {
-        fmt::print("nill");
-      } else {
-        fmt::print("{}", lua_tostring(L, i));
-      }
-    }
-
-    fmt::print("\n");
-
-  } catch (const std::exception &e) {
-    std::cout << "Error while invonking fmt: " << e.what() << std::endl;
-  }
 }

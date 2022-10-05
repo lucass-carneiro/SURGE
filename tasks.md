@@ -1,6 +1,5 @@
 # TODO
 * []
-* [] Add VM hooks to load images.
 * [] Add vm hooks for shaders
 * [] Add vm hooks to opengl shapes and shape transformations
 * [] Thread allocators are not getting destroyed. Investigate.
@@ -15,3 +14,4 @@
 * [x] Review image loader
 * [x] Create stack-backed static allocator.
 * [x] Allow stack allocator to free out of order using the stack backed allocator.
+* [x] Add VM hooks to load and drop images.

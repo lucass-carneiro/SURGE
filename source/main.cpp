@@ -1,7 +1,7 @@
 #include "cli.hpp"
 #include "image_loader.hpp"
 #include "log.hpp"
-#include "lua_vm.hpp"
+#include "lua/lua_vm.hpp"
 #include "opengl_buffer_pools.hpp"
 #include "safe_ops.hpp"
 #include "shader.hpp"
@@ -117,12 +117,8 @@ auto main(int argc, char **argv) noexcept -> int {
   }
   global_task_executor::get().wait_for_all();
 
-  // img load test
-  auto img{load_image(global_thread_allocators::get().back().get(),
-                      "/home/lucas/SURGE/resources/images/awesomeface.png", ".png")};
-  stbi_image_free(global_thread_allocators::get().back().get(), img);
-
-  return EXIT_SUCCESS;
+  // Do startup file at the main thread VM
+  do_file_at(*num_threads - 1, *startup_script_path);
 
   // Initialize GLFW
   if (!global_engine_window::get().init()) {
