@@ -43,6 +43,20 @@ elseif(SURGE_STACK_FREE_RECORD_SIZE LESS 16)
   set(SURGE_STACK_FREE_RECORD_SIZE 16)
 endif()
 
+if(NOT DEFINED SURGE_OPENGL_BUFFER_COUNT)
+  set(SURGE_OPENGL_BUFFER_COUNT 2)
+elseif(SURGE_OPENGL_BUFFER_COUNT LESS 2)
+  message(WARNING "The variable SURGE_OPENGL_BUFFER_COUNT should be set to at least 2. It will be automatically set to this value.")
+  set(SURGE_OPENGL_BUFFER_COUNT 2)
+endif()
+
+if(NOT DEFINED SURGE_OPENGL_ERROR_BUFFER_SIZE)
+  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
+elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
+  message(WARNING "The variable SURGE_OPENGL_ERROR_BUFFER_SIZE should be set to at least 1024. It will be automatically set to this value.")
+  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
+endif()
+
 option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -85,7 +99,16 @@ set(
   "${Surge_SOURCE_DIR}/include/allocators/stl_allocator.hpp"
   
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
-  
+
+  "${Surge_SOURCE_DIR}/include/opengl/create_program.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/gl_uniforms.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/global_buffers.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/global_vertex_arrays.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/link_program.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/primitive_drawing.hpp"
+
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
@@ -97,9 +120,7 @@ set(
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl_buffer_pools.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
-  "${Surge_SOURCE_DIR}/include/shader.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/task_executor.hpp"
   "${Surge_SOURCE_DIR}/include/thread_allocators.hpp"
@@ -120,10 +141,11 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
 
+  "${Surge_SOURCE_DIR}/source/opengl/primitive_drawing.cpp"
+
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
-  "${Surge_SOURCE_DIR}/source/shader.cpp"
   "${Surge_SOURCE_DIR}/source/thread_allocators.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"
 )

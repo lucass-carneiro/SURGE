@@ -27,6 +27,8 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   add_table_field<lua_String, lua_Boolean>(L, "windowed", false);
   add_table_field<lua_String, lua_Integer>(L, "window_monitor_index", 1);
 
+  add_table_field<lua_String, lua_Integer>(L, "current_shader_program", 0);
+
   // begin clear_color array
   lua_newtable(L);
   push_array(L, std::array<lua_Number, 4>{0.0, 0.0, 0.0, 1.0});
@@ -40,6 +42,8 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
 
   add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
   add_table_field<lua_String, lua_CFunction>(L, "drop_image", lua_drop_image);
+
+  add_table_field<lua_String, lua_CFunction>(L, "create_program", lua_create_program);
 
   lua_setglobal(L, "surge");
   // end surge table

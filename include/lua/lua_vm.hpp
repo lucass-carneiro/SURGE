@@ -5,5 +5,6 @@
 #include "lua_logs.hpp"
 #include "lua_states.hpp"
 #include "lua_utils.hpp"
+#include "lua_wrappers.hpp"
 
 #endif // SURGE_LUAVM_HPP

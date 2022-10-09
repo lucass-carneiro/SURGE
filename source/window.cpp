@@ -30,6 +30,8 @@ surge::global_engine_window::~global_engine_window() {
 }
 
 auto surge::global_engine_window::init() noexcept -> bool {
+  glog<log_event::message>("Initializing window");
+
   // Retrieve, parse and cast configuration values from config script of the main thread VM (the
   // last one in the array)
   auto L{global_lua_states::get().back().get()};
@@ -80,7 +82,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
   // GLFW window creation
   glog<log_event::message>("Initializing engine window");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef SURGE_SYSTEM_MacOSX // TODO: Is this macro name correct?
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -104,6 +106,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // OpenGL context creation
   glfwMakeContextCurrent(window.get());
+  glfwSwapInterval(1); // TODO: Set vsync via code;
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {

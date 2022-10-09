@@ -63,10 +63,11 @@ using load_file_return_t = std::optional<std::span<std::byte>>;
  * @param ext File extension
  * @return load_file_return_t An optional std/gsl span of the file bytes
  */
-template <surge_allocator alloc_t>
+template <surge_allocator alloc_t, bool append_null_byte = false>
 inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const char *ext) noexcept
     -> load_file_return_t {
-  glog<log_event::message>("Loading raw data for file  {}", p.c_str());
+  glog<log_event::message>("Loading raw data for file {}. Appending null byte: {}", p.c_str(),
+                           append_null_byte);
 
   const auto path_validation_result{validate_path(p, ext)};
 
@@ -74,7 +75,12 @@ inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const 
     return {};
   }
 
-  const auto file_size{std::filesystem::file_size(p)};
+  const auto file_size{[&]() {
+    if constexpr (append_null_byte)
+      return (std::filesystem::file_size(p) + 1);
+    else
+      return std::filesystem::file_size(p);
+  }()};
   void *buffer{allocator->malloc(file_size)};
 
   if (buffer == nullptr) {
@@ -82,8 +88,14 @@ inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const 
     return {};
   }
 
+  auto byte_buffer{static_cast<std::byte *>(buffer)};
+
+  if constexpr (append_null_byte) {
+    byte_buffer[file_size - 1] = std::byte{0};
+  }
+
   if (os_open_read(p, buffer, file_size)) {
-    return gsl::span<std::byte>(static_cast<std::byte *>(buffer), file_size);
+    return gsl::span<std::byte>(byte_buffer, file_size);
   } else {
     allocator->free(buffer);
     return {};

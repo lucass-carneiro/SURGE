@@ -2,9 +2,10 @@
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
-#include "opengl_buffer_pools.hpp"
+#include "opengl/global_buffers.hpp"
+#include "opengl/global_vertex_arrays.hpp"
+#include "opengl/primitive_drawing.hpp"
 #include "safe_ops.hpp"
-#include "shader.hpp"
 #include "task_executor.hpp"
 #include "thread_allocators.hpp"
 #include "window.hpp"
@@ -125,6 +126,25 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  // Generate OpenGL buffers
+  glog<log_event::message>("Creating OpenGL buffers");
+  global_opengl_buffers::get();
+
+  glog<log_event::message>("Creating OpenGL vertex arrays");
+  global_opengl_vertex_arrays::get();
+
+  const triangle triangle_mesh{glm::vec3{-0.5f, -0.5f, 0.0f}, glm::vec3{0.5f, -0.5f, 0.0f},
+                               glm::vec3{0.0f, 0.5f, 0.0f}};
+  send_to_gpu(global_opengl_buffers::get().data()[0], global_opengl_vertex_arrays::get().data()[0],
+              triangle_mesh);
+
+  /*******************************
+   *        LOAD CALLBACK        *
+   *******************************/
+  if (!lua_load_callback(global_lua_states::get().back().get())) {
+    return EXIT_FAILURE;
+  }
+
   /*******************************
    *          MAIN LOOP          *
    *******************************/
@@ -136,18 +156,28 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Update states
 
-    // Render calls
+    // Clear framebuffer
     glClearColor(GLfloat{global_engine_window::get().get_clear_color_r()},
                  GLfloat{global_engine_window::get().get_clear_color_g()},
                  GLfloat{global_engine_window::get().get_clear_color_b()},
                  GLfloat{global_engine_window::get().get_clear_color_a()});
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // Load shader
+    const auto shader_program{lua_get_shader_program_idx(global_lua_states::get().back().get())};
+    if (shader_program && *shader_program != 0) {
+      glUseProgram(*shader_program);
+    }
+
+    // Render triangle
+    glBindVertexArray(global_opengl_vertex_arrays::get().data()[0]);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
     // Present rendering
     global_engine_window::get().swap_buffers();
 
-    // Get events
-    glfwPollEvents();
+    // Poll IO events
+    global_engine_window::get().poll_events();
 
     // Compute elapsed time
     global_engine_window::get().frame_timmer_compute_dt();

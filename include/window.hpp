@@ -6,9 +6,7 @@
 #include "options.hpp"
 
 // clang-format off
-#include <fmt/format.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "opengl/headers.hpp"
 // clang-format on
 
 #include <cstddef>
@@ -56,6 +54,8 @@ public:
   }
 
   [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return previous_frame_dt; }
+
+  inline auto poll_events() const noexcept { glfwPollEvents(); }
 
   inline void frame_timer_reset_and_start() const noexcept { glfwSetTime(double{0}); }
 
