@@ -2,9 +2,9 @@
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
+#include "mesh/static_mesh.hpp"
 #include "opengl/global_buffers.hpp"
 #include "opengl/global_vertex_arrays.hpp"
-#include "opengl/primitive_drawing.hpp"
 #include "safe_ops.hpp"
 #include "task_executor.hpp"
 #include "thread_allocators.hpp"
@@ -133,10 +133,18 @@ auto main(int argc, char **argv) noexcept -> int {
   glog<log_event::message>("Creating OpenGL vertex arrays");
   global_opengl_vertex_arrays::get();
 
-  const triangle triangle_mesh{glm::vec3{-0.5f, -0.5f, 0.0f}, glm::vec3{0.5f, -0.5f, 0.0f},
-                               glm::vec3{0.0f, 0.5f, 0.0f}};
-  send_to_gpu(global_opengl_buffers::get().data()[0], global_opengl_vertex_arrays::get().data()[0],
-              triangle_mesh);
+  const static_mesh<GLfloat, 4, 2, 1> mesh{.vertex_attributes{
+                                               0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
+                                               0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
+                                               -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
+                                               -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
+                                           },
+                                           .draw_indices{0, 1, 3, 1, 2, 3},
+                                           .texture_id{0},
+                                           .texture_types{texture_type::diffuse}};
+
+  send_to_gpu(global_opengl_vertex_arrays::get().data()[0], global_opengl_buffers::get().data()[0],
+              global_opengl_buffers::get().data()[1], mesh);
 
   /*******************************
    *        LOAD CALLBACK        *
@@ -170,8 +178,7 @@ auto main(int argc, char **argv) noexcept -> int {
     }
 
     // Render triangle
-    glBindVertexArray(global_opengl_vertex_arrays::get().data()[0]);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    draw(global_opengl_vertex_arrays::get().data()[0], mesh);
 
     // Present rendering
     global_engine_window::get().swap_buffers();

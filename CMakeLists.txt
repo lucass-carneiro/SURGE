@@ -92,6 +92,7 @@ set(
   "${Surge_SOURCE_DIR}/include/allocators/allocators.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/base_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/default_allocator.hpp"
+  "${Surge_SOURCE_DIR}/include/allocators/eastl_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/stack_allocator.hpp"
@@ -107,7 +108,6 @@ set(
   "${Surge_SOURCE_DIR}/include/opengl/link_program.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/primitive_drawing.hpp"
 
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
@@ -115,6 +115,8 @@ set(
   "${Surge_SOURCE_DIR}/include/lua/lua_utils.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_vm.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
+  
+  "${Surge_SOURCE_DIR}/include/mesh/static_mesh.hpp"
   
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
@@ -140,8 +142,6 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
-
-  "${Surge_SOURCE_DIR}/source/opengl/primitive_drawing.cpp"
 
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
