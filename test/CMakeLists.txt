@@ -36,6 +36,7 @@ target_link_libraries(tests PRIVATE
   CONAN_PKG::mimalloc
   CONAN_PKG::taskflow
   CONAN_PKG::luajit
+  CONAN_PKG::imgui
 )
 
 include(GoogleTest)

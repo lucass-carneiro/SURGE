@@ -1,4 +1,5 @@
 #include "cli.hpp"
+#include "gui_windows/gui_windows.hpp"
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
@@ -156,20 +157,20 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *          MAIN LOOP          *
    *******************************/
-
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
     // Handle events
 
     // Update states
 
     // Clear framebuffer
-    glClearColor(GLfloat{global_engine_window::get().get_clear_color_r()},
-                 GLfloat{global_engine_window::get().get_clear_color_g()},
-                 GLfloat{global_engine_window::get().get_clear_color_b()},
-                 GLfloat{global_engine_window::get().get_clear_color_a()});
-    glClear(GL_COLOR_BUFFER_BIT);
+    global_engine_window::get().clear_framebuffer();
 
     // Load shader
     const auto shader_program{lua_get_shader_program_idx(global_lua_states::get().back().get())};
@@ -179,6 +180,12 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Render triangle
     draw(global_opengl_vertex_arrays::get().data()[0], mesh);
+
+    // Render Dear ImGui
+    // ImGui::ShowDemoWindow();
+    show_main_gui_window();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     // Present rendering
     global_engine_window::get().swap_buffers();

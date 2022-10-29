@@ -4,11 +4,9 @@
 #include "options.hpp"
 #include "safe_ops.hpp"
 
-//clang-format off
-#include <EASTL/set.h>
-#include <GL/gl.h>
+// clang-format off
 #include <GLFW/glfw3.h>
-//clang-format on
+// clang-format on
 
 #include <cstddef>
 #include <cstdint>
@@ -19,6 +17,10 @@
 
 surge::global_engine_window::~global_engine_window() {
   glog<log_event::message>("Deleting window.");
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
 
   // Calling reset on the window* guarantees that it will be destroyed before
   // glfwTerminate
@@ -35,22 +37,12 @@ auto surge::global_engine_window::init() noexcept -> bool {
   // Retrieve, parse and cast configuration values from config script of the main thread VM (the
   // last one in the array)
   auto L{global_lua_states::get().back().get()};
-  const auto engine_config{get_lua_engine_config(L)};
+  engine_config = get_lua_engine_config(L);
 
   if (!engine_config) {
     glfw_init_success = false;
     return glfw_init_success;
   }
-
-  window_width = engine_config->window_width;
-  window_height = engine_config->window_height;
-  window_name = engine_config->window_name;
-  windowed = engine_config->windowed;
-  window_monitor_index = engine_config->window_monitor_index;
-  clear_color_r = engine_config->clear_color[0];
-  clear_color_g = engine_config->clear_color[1];
-  clear_color_b = engine_config->clear_color[2];
-  clear_color_a = engine_config->clear_color[3];
 
   // Register GLFW callbacks
   glfwSetErrorCallback(surge::glfw_error_callback);
@@ -72,11 +64,11 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return glfw_init_success;
   }
 
-  if (window_monitor_index >= monitors.value().second) {
+  if (engine_config->window_monitor_index >= monitors.value().second) {
     glog<log_event::warning>("Unable to set window monitor to {} because there are only {} "
                              "monitors. Using default monitor index 0",
-                             window_monitor_index, monitors.value().second);
-    window_monitor_index = 0;
+                             engine_config->window_monitor_index, monitors.value().second);
+    engine_config->window_monitor_index = 0;
   }
 
   // GLFW window creation
@@ -89,13 +81,15 @@ auto surge::global_engine_window::init() noexcept -> bool {
 #endif
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-  if (windowed) {
+  if (engine_config->windowed) {
     (void)window.release();
-    window.reset(glfwCreateWindow(window_width, window_height, window_name, nullptr, nullptr));
+    window.reset(glfwCreateWindow(engine_config->window_width, engine_config->window_height,
+                                  engine_config->window_name, nullptr, nullptr));
   } else {
     (void)window.release();
-    window.reset(glfwCreateWindow(window_width, window_height, window_name,
-                                  (monitors.value().first)[window_monitor_index], nullptr));
+    window.reset(glfwCreateWindow(
+        engine_config->window_width, engine_config->window_height, engine_config->window_name,
+        (monitors.value().first)[engine_config->window_monitor_index], nullptr));
   }
 
   if (window == nullptr) {
@@ -107,6 +101,21 @@ auto surge::global_engine_window::init() noexcept -> bool {
   // OpenGL context creation
   glfwMakeContextCurrent(window.get());
   glfwSwapInterval(1); // TODO: Set vsync via code;
+
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsLight();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window.get(), true);
+  ImGui_ImplOpenGL3_Init("#version 130");
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {

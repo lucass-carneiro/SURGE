@@ -7,14 +7,20 @@
 
 // clang-format off
 #include "opengl/headers.hpp"
+
+#include <imgui.h>
+
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 // clang-format on
 
+#include <EASTL/bonus/fixed_ring_buffer.h>
+#include <algorithm>
 #include <cstddef>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>
 #include <tl/expected.hpp>
-#include <utility>
 
 namespace surge {
 
@@ -37,29 +43,24 @@ public:
 
   inline void swap_buffers() noexcept { glfwSwapBuffers(window.get()); }
 
-  [[nodiscard]] inline auto get_clear_color_r() const noexcept -> float {
-    return static_cast<float>(clear_color_r);
+  [[nodiscard]] inline auto get_config() const noexcept
+      -> const std::optional<lua_engine_config> & {
+    return engine_config;
   }
 
-  [[nodiscard]] inline auto get_clear_color_g() const noexcept -> float {
-    return static_cast<float>(clear_color_g);
-  }
-
-  [[nodiscard]] inline auto get_clear_color_b() const noexcept -> float {
-    return static_cast<float>(clear_color_b);
-  }
-
-  [[nodiscard]] inline auto get_clear_color_a() const noexcept -> float {
-    return static_cast<float>(clear_color_a);
-  }
-
-  [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return previous_frame_dt; }
+  [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return frame_dt; };
 
   inline auto poll_events() const noexcept { glfwPollEvents(); }
 
   inline void frame_timer_reset_and_start() const noexcept { glfwSetTime(double{0}); }
 
-  inline void frame_timmer_compute_dt() noexcept { previous_frame_dt = glfwGetTime(); }
+  inline void frame_timmer_compute_dt() noexcept { frame_dt = glfwGetTime(); }
+
+  inline void clear_framebuffer() noexcept {
+    glClearColor(engine_config->clear_color[0], engine_config->clear_color[1],
+                 engine_config->clear_color[2], engine_config->clear_color[3]);
+    glClear(GL_COLOR_BUFFER_BIT);
+  }
 
   ~global_engine_window();
 
@@ -75,20 +76,12 @@ public:
 private:
   global_engine_window() : window{nullptr, glfwDestroyWindow} {}
 
-  lua_Integer window_width{800};
-  lua_Integer window_height{600};
-  lua_String window_name{"Default window name"};
-  lua_Boolean windowed{true};
-  lua_Integer window_monitor_index{0};
-  lua_Number clear_color_r = lua_Number{0};
-  lua_Number clear_color_g = lua_Number{0};
-  lua_Number clear_color_b = lua_Number{0};
-  lua_Number clear_color_a = lua_Number{1};
+  std::optional<lua_engine_config> engine_config{};
 
   bool glfw_init_success = false;
   std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)> window;
 
-  double previous_frame_dt{0};
+  double frame_dt{0};
 
   /**
    * Querry the existing available monitors.

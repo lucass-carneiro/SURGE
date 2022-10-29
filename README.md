@@ -39,8 +39,13 @@ View with (https://profiler.firefox.com/)
 
 # Tasks
 
-## TODO
-* [ ]
+## GUI TODO
+* [ ] Implement FPS counter
+* [ ] Implement memory visualizer
+
+## GUI Done
+
+##  Main TODO
 * [ ] Add texture to static mesh
 * [ ] Add Mesh drawing support
 * [ ] Add vm hooks for sending vertex data to OpenGL from the vm
@@ -49,7 +54,7 @@ View with (https://profiler.firefox.com/)
 * [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.
 
-## Done
+## Main Done
 * [x] Review file loading to memory functions. Implement: load to buffer, ~load given allocator~
 * [x] Implement do_file_at with more granularity
 * [x] Implement safety net in lua_log_message with try catch.

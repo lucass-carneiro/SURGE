@@ -1,5 +1,5 @@
-surge.window_width  = 800
-surge.window_height = 600
+surge.window_width  = 800 + 200
+surge.window_height = 600 + 200
 surge.window_name   = "SURGE OpenGL Window"
 
 surge.windowed = true

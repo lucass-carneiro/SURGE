@@ -99,6 +99,12 @@ set(
   "${Surge_SOURCE_DIR}/include/allocators/static_arena_allocator.hpp"
   "${Surge_SOURCE_DIR}/include/allocators/stl_allocator.hpp"
   
+  "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
+
+  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_glfw.h"
+  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3.h"
+  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3_loader.h"
+  
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
 
   "${Surge_SOURCE_DIR}/include/opengl/create_program.hpp"
@@ -135,6 +141,13 @@ set(
   "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
   "${Surge_SOURCE_DIR}/source/allocators/stack_allocator.cpp"
+
+  "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
+  "${Surge_SOURCE_DIR}/source/gui_windows/memory_profiler_window.cpp"
+  "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
+
+  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_glfw.cpp"
+  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3.cpp"
   
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   
@@ -158,6 +171,10 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 # -----------------------------------------
 # Compilers flags and options
 # -----------------------------------------
+
+target_compile_definitions(Surge
+  PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW
+)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
@@ -205,6 +222,7 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::taskflow
   CONAN_PKG::luajit
   CONAN_PKG::mimalloc
+  CONAN_PKG::imgui
 )
 
 target_include_directories(

@@ -17,12 +17,12 @@ namespace surge {
 void push_engine_config_at(std::size_t i) noexcept;
 
 struct lua_engine_config {
-  lua_Integer window_width{0};
-  lua_Integer window_height{0};
-  lua_String window_name{nullptr};
-  lua_Boolean windowed{false};
+  lua_Integer window_width{800};
+  lua_Integer window_height{600};
+  lua_String window_name{"Default Window Name"};
+  lua_Boolean windowed{true};
   lua_Integer window_monitor_index{0};
-  std::array<lua_Number, 4> clear_color{};
+  std::array<lua_Number, 4> clear_color{0, 0, 0, 1};
 };
 
 auto get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
