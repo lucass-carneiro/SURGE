@@ -1,8 +1,10 @@
 #version 460 core
 out vec4 o_fragment_color;
 
-in vec2 i_texture_coordinates;
+in vec2 texture_coordinates;
+
+uniform sampler2D texture_sampler;
 
 void main() {
-    o_fragment_color = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    o_fragment_color = texture(texture_sampler, texture_coordinates);
 } 

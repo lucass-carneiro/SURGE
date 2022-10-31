@@ -6,6 +6,7 @@
 #include "mesh/static_mesh.hpp"
 #include "opengl/global_buffers.hpp"
 #include "opengl/global_vertex_arrays.hpp"
+#include "opengl/load_texture.hpp"
 #include "safe_ops.hpp"
 #include "task_executor.hpp"
 #include "thread_allocators.hpp"
@@ -134,6 +135,8 @@ auto main(int argc, char **argv) noexcept -> int {
   glog<log_event::message>("Creating OpenGL vertex arrays");
   global_opengl_vertex_arrays::get();
 
+  const auto diffuse_idx{load_texture(global_thread_allocators::get().back().get(),
+                                      "/home/lucas/SURGE/resources/images/container.jpg", ".jpg")};
   const static_mesh<GLfloat, 4, 2, 1> mesh{.vertex_attributes{
                                                0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
                                                0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
@@ -141,7 +144,7 @@ auto main(int argc, char **argv) noexcept -> int {
                                                -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
                                            },
                                            .draw_indices{0, 1, 3, 1, 2, 3},
-                                           .texture_id{0},
+                                           .texture_ids{*diffuse_idx},
                                            .texture_types{texture_type::diffuse}};
 
   send_to_gpu(global_opengl_vertex_arrays::get().data()[0], global_opengl_buffers::get().data()[0],

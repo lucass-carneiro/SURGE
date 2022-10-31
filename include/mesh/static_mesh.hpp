@@ -26,7 +26,7 @@ struct static_mesh {
    * @brief Vertex attributes are interleaved, that is, the attributes are a 1D array of repeating
    * cells. Each cell has the format:
    *
-   * pos_x pos_y pos_z | tex_u tex_v | norm_x norm_y norm_z |
+   * pos_x pos_y pos_z | tex_u tex_v
    *
    * See: https://stackoverflow.com/a/39684775
    *
@@ -35,7 +35,7 @@ struct static_mesh {
 
   std::array<GLuint, std::size_t{3} * num_triangles> draw_indices{};
 
-  std::array<GLuint, num_textures> texture_id{};
+  std::array<GLuint, num_textures> texture_ids{};
   std::array<texture_type, num_textures> texture_types{};
 };
 
@@ -108,8 +108,10 @@ void send_to_gpu(GLuint VAO, GLuint VBO, GLuint EBO,
  */
 template <std::floating_point T, std::size_t num_vertices, std::size_t num_triangles,
           std::size_t num_textures>
-void draw(GLuint VAO, const static_mesh<T, num_vertices, num_triangles, num_textures> &) noexcept {
-  // TODO: activate textures
+void draw(GLuint VAO,
+          const static_mesh<T, num_vertices, num_triangles, num_textures> &mesh) noexcept {
+
+  glBindTexture(GL_TEXTURE_2D, mesh.texture_ids[0]);
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, std::size_t{3} * num_triangles, GL_UNSIGNED_INT, nullptr);
   glBindVertexArray(0);

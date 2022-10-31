@@ -34,12 +34,14 @@ auto surge::lua_load_image(lua_State *L) noexcept -> int {
   lua_pop(L, 2);
 
   // Internal function call
-  void *img{load_image(global_thread_allocators::get().at(vm_index).get(), path_str, ext_str)};
+  auto img{load_image(global_thread_allocators::get().at(vm_index).get(), path_str, ext_str)};
 
-  if (img == nullptr) {
+  if (!img) {
     lua_pushnil(L);
   } else {
-    lua_pushlightuserdata(L, img);
+    // TODO: This passes only the data to the Lua VM and not the metadata (width, height, channels).
+    // Fix this.
+    lua_pushlightuserdata(L, img->data);
   }
 
   return 1;

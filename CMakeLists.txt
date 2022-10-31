@@ -113,7 +113,8 @@ set(
   "${Surge_SOURCE_DIR}/include/opengl/global_vertex_arrays.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/link_program.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_text.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/load_texture.hpp"
 
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"

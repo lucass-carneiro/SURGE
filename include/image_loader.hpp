@@ -10,16 +10,23 @@
 
 namespace surge {
 
+struct image {
+  int width{0};
+  int height{0};
+  int channels_in_file{0};
+  stbi_uc *data{nullptr};
+};
+
 template <surge_allocator alloc_t>
 inline auto load_image(alloc_t *allocator, const std::filesystem::path &p, const char *ext) noexcept
-    -> stbi_uc * {
+    -> std::optional<image> {
 
   glog<log_event::message>("Loading image file {}", p.c_str());
 
   auto file{load_file(allocator, p, ext)};
   if (!file) {
     glog<log_event::error>("Unable to load image file {}", p.c_str());
-    return nullptr;
+    return {};
   }
 
   int x{0}, y{0}, channels_in_file{0};
@@ -31,11 +38,11 @@ inline auto load_image(alloc_t *allocator, const std::filesystem::path &p, const
     glog<log_event::error>("Unable to load image file {} due to stbi error: {}", p.c_str(),
                            stbi_failure_reason());
     allocator->free(file.value().data());
-    return nullptr;
+    return {};
   }
 
   allocator->free(file.value().data());
-  return img_data;
+  return image{.width{x}, .height{y}, .channels_in_file{channels_in_file}, .data{img_data}};
 }
 
 } // namespace surge
