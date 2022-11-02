@@ -3,8 +3,8 @@ out vec4 o_fragment_color;
 
 in vec2 texture_coordinates;
 
-uniform sampler2D texture_sampler;
+uniform sampler2D texture0;
 
 void main() {
-    o_fragment_color = texture(texture_sampler, texture_coordinates);
+    o_fragment_color = texture(texture0, texture_coordinates);
 } 

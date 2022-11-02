@@ -4,6 +4,7 @@
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
 #include "mesh/static_mesh.hpp"
+#include "opengl/gl_uniforms.hpp"
 #include "opengl/global_buffers.hpp"
 #include "opengl/global_vertex_arrays.hpp"
 #include "opengl/load_texture.hpp"
@@ -179,6 +180,7 @@ auto main(int argc, char **argv) noexcept -> int {
     const auto shader_program{lua_get_shader_program_idx(global_lua_states::get().back().get())};
     if (shader_program && *shader_program != 0) {
       glUseProgram(*shader_program);
+      set_uniform<GLint>(*shader_program, "texture0", 0);
     }
 
     // Render triangle

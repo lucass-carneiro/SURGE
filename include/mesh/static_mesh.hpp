@@ -111,6 +111,7 @@ template <std::floating_point T, std::size_t num_vertices, std::size_t num_trian
 void draw(GLuint VAO,
           const static_mesh<T, num_vertices, num_triangles, num_textures> &mesh) noexcept {
 
+  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, mesh.texture_ids[0]);
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, std::size_t{3} * num_triangles, GL_UNSIGNED_INT, nullptr);
