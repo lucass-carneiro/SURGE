@@ -46,8 +46,9 @@ View with (https://profiler.firefox.com/)
 ## GUI Done
 
 ##  Main TODO
-* [ ] Add texture to static mesh
-* [ ] Add Mesh drawing support
+* [ ] Create sprite shader.
+* [ ] Use sprite shader to shade all sprites. 
+* [ ] Add dynamic Mesh drawing support
 * [ ] Add vm hooks for sending vertex data to OpenGL from the vm
 * [ ] Add vm hooks to opengl shapes and shape transformations
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
@@ -68,6 +69,9 @@ View with (https://profiler.firefox.com/)
 * [x] Load shaders in vm.
 * [x] Add vm hooks for shaders: Compiling and using
 * [x] Add static mesh drawing
+* [x] Add texture to static mesh
+* [x] Remake the static mesh as a single drawable sprite.
+* [x] Remove global opengl buffers.
 
 
 # References
@@ -75,3 +79,4 @@ https://www.lua.org/manual/5.3/manual.html
 https://registry.khronos.org/OpenGL-Refpages/gl4/
 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 https://learnopengl.com/
+https://stackoverflow.com/a/39684775

@@ -12,11 +12,17 @@ template <surge_allocator alloc_t>
 [[nodiscard]] inline auto load_texture(alloc_t *allocator, const std::filesystem::path &p,
                                        const char *ext) -> std::optional<GLuint> {
 
+  // When passing images to OpenGL they must be flipped.
+  stbi_set_flip_vertically_on_load(static_cast<int>(true));
+
   auto image{load_image(allocator, p, ext)};
   if (!image) {
+    stbi_set_flip_vertically_on_load(static_cast<int>(false));
     glog<log_event::error>("Unable to load texture {}", p.c_str());
     return {};
   }
+
+  stbi_set_flip_vertically_on_load(static_cast<int>(false));
 
   GLuint texture{0};
   glGenTextures(1, &texture);

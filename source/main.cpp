@@ -3,10 +3,9 @@
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
-#include "mesh/static_mesh.hpp"
+#include "mesh/sprite.hpp"
+#include "opengl/create_program.hpp"
 #include "opengl/gl_uniforms.hpp"
-#include "opengl/global_buffers.hpp"
-#include "opengl/global_vertex_arrays.hpp"
 #include "opengl/load_texture.hpp"
 #include "safe_ops.hpp"
 #include "task_executor.hpp"
@@ -129,27 +128,20 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Generate OpenGL buffers
-  glog<log_event::message>("Creating OpenGL buffers");
-  global_opengl_buffers::get();
+  // TEMPORARY
+  const sprite test_sprite(global_thread_allocators::get().back().get(),
+                           "/home/lucas/SURGE/resources/images/awesomeface.png", ".png",
+                           buffer_usage_hint::static_draw);
 
-  glog<log_event::message>("Creating OpenGL vertex arrays");
-  global_opengl_vertex_arrays::get();
-
-  const auto diffuse_idx{load_texture(global_thread_allocators::get().back().get(),
-                                      "/home/lucas/SURGE/resources/images/container.jpg", ".jpg")};
-  const static_mesh<GLfloat, 4, 2, 1> mesh{.vertex_attributes{
-                                               0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
-                                               0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-                                               -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-                                               -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
-                                           },
-                                           .draw_indices{0, 1, 3, 1, 2, 3},
-                                           .texture_ids{*diffuse_idx},
-                                           .texture_types{texture_type::diffuse}};
-
-  send_to_gpu(global_opengl_vertex_arrays::get().data()[0], global_opengl_buffers::get().data()[0],
-              global_opengl_buffers::get().data()[1], mesh);
+  /*******************************
+   *     SHADER COMPILATION      *
+   *******************************/
+  glog<log_event::message>("Compiling sprite shader");
+  const auto sprite_shader{create_program(global_thread_allocators::get().back().get(),
+                                          "../shaders/sprite.vert", "../shaders/sprite.frag")};
+  if (!sprite_shader) {
+    return EXIT_FAILURE;
+  }
 
   /*******************************
    *        LOAD CALLBACK        *
@@ -164,6 +156,9 @@ auto main(int argc, char **argv) noexcept -> int {
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
 
+    // OpenGL options
+    glEnable(GL_DEPTH_TEST);
+
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -173,18 +168,12 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Update states
 
-    // Clear framebuffer
+    // Clear buffers
     global_engine_window::get().clear_framebuffer();
+    glClear(GL_DEPTH_BUFFER_BIT);
 
-    // Load shader
-    const auto shader_program{lua_get_shader_program_idx(global_lua_states::get().back().get())};
-    if (shader_program && *shader_program != 0) {
-      glUseProgram(*shader_program);
-      set_uniform<GLint>(*shader_program, "texture0", 0);
-    }
-
-    // Render triangle
-    draw(global_opengl_vertex_arrays::get().data()[0], mesh);
+    // Render user meshes
+    test_sprite.draw(*sprite_shader);
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();

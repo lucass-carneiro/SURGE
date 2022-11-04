@@ -22,10 +22,10 @@ function surge.load()
     surge.log_message("surge.load called in VM ", surge.vm_index)
     
     -- Compile and load shaders
-    vs_dir = root_dir.."shaders/default.vert"
-    fs_dir = root_dir.."shaders/default.frag"
+    -- vs_dir = root_dir.."shaders/default.vert"
+    -- fs_dir = root_dir.."shaders/default.frag"
 
-    surge.log_message("Compiling and linking ", vs_dir, " + ", fs_dir)
+    -- surge.log_message("Compiling and linking ", vs_dir, " + ", fs_dir)
 
-    surge.current_shader_program = surge.create_program(vs_dir, fs_dir)
+    -- surge.current_shader_program = surge.create_program(vs_dir, fs_dir)
 end

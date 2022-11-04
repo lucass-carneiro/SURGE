@@ -10,10 +10,10 @@
 #endif
 namespace surge {
 
-constexpr auto is_pow_2(std::size_t x) noexcept -> bool { return (x & (x - 1)) == 0; }
+constexpr inline auto is_pow_2(std::size_t x) noexcept -> bool { return (x & (x - 1)) == 0; }
 
-constexpr auto align_alloc_size(std::size_t intended_size,
-                                std::size_t alignment = alignof(std::max_align_t)) noexcept
+constexpr inline auto align_alloc_size(std::size_t intended_size,
+                                       std::size_t alignment = alignof(std::max_align_t)) noexcept
     -> std::size_t {
 
   std::size_t modulo{0};

@@ -10,7 +10,6 @@
 #define SURGE_VERSION_PATCH_STRING "@Surge_VERSION_PATCH@" // NOLINT(cppcoreguidelines-macro-usage)
 
 #define SURGE_STACK_FREE_RECORD_SIZE @SURGE_STACK_FREE_RECORD_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
-#define SURGE_OPENGL_BUFFER_COUNT @SURGE_OPENGL_BUFFER_COUNT@ // NOLINT(cppcoreguidelines-macro-usage)
 #define SURGE_OPENGL_ERROR_BUFFER_SIZE @SURGE_OPENGL_ERROR_BUFFER_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
 
 #define SURGE_SYSTEM_@CMAKE_SYSTEM_NAME@
