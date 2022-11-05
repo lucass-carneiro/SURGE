@@ -5,7 +5,6 @@
 #include "lua/lua_vm.hpp"
 #include "mesh/sprite.hpp"
 #include "opengl/create_program.hpp"
-#include "opengl/gl_uniforms.hpp"
 #include "opengl/load_texture.hpp"
 #include "safe_ops.hpp"
 #include "task_executor.hpp"
@@ -14,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdlib>
+#include <glm/common.hpp>
 #include <vector>
 
 constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
@@ -127,14 +127,20 @@ auto main(int argc, char **argv) noexcept -> int {
   if (!global_engine_window::get().init()) {
     return EXIT_FAILURE;
   }
+  const auto &engine_config{*global_engine_window::get().get_config()};
 
   // TEMPORARY
+  const sprite_position pos{.x = static_cast<float>(engine_config.window_width) / 4,
+                            .y = static_cast<float>(engine_config.window_height) / 4,
+                            .z = 0.0f,
+                            .width = 400.0f,
+                            .height = 400.0f};
   const sprite test_sprite(global_thread_allocators::get().back().get(),
                            "/home/lucas/SURGE/resources/images/awesomeface.png", ".png",
-                           buffer_usage_hint::static_draw);
+                           buffer_usage_hint::static_draw, pos);
 
   /*******************************
-   *     SHADER COMPILATION      *
+   *     SHADERS/TRANSFORMS      *
    *******************************/
   glog<log_event::message>("Compiling sprite shader");
   const auto sprite_shader{create_program(global_thread_allocators::get().back().get(),
@@ -142,6 +148,15 @@ auto main(int argc, char **argv) noexcept -> int {
   if (!sprite_shader) {
     return EXIT_FAILURE;
   }
+
+  // TODO: Let script choose the projection matrix?
+  const auto default_2D_orthographic_projection{
+      glm::ortho(0.0f, static_cast<float>(engine_config.window_width),
+                 static_cast<float>(engine_config.window_height), 0.0f, -1.0f, 1.0f)};
+
+  // The view matrix
+  auto default_camera{glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
+                                  glm::vec3(0.0f, 1.0f, 0.0f))};
 
   /*******************************
    *        LOAD CALLBACK        *
@@ -156,7 +171,7 @@ auto main(int argc, char **argv) noexcept -> int {
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
 
-    // OpenGL options
+    // OpenGL options. TODO: Set by script
     glEnable(GL_DEPTH_TEST);
 
     // Start the Dear ImGui frame
@@ -172,8 +187,8 @@ auto main(int argc, char **argv) noexcept -> int {
     global_engine_window::get().clear_framebuffer();
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    // Render user meshes
-    test_sprite.draw(*sprite_shader);
+    // Render user meshes. TODO: Do not pass projectio matrix every time. Set it once.
+    test_sprite.draw(*sprite_shader, default_2D_orthographic_projection, default_camera);
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();

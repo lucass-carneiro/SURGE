@@ -12,27 +12,38 @@
 
 namespace surge {
 
+struct sprite_position {
+  float x{0};
+  float y{0};
+  float z{0};
+  float width{0};
+  float height{0};
+};
+
 /**
  * @brief A sprite is a 2D quad (rectangle) with a diffuse map.
  *
  */
 class sprite {
 public:
-  template <surge_allocator alloc_t> sprite(alloc_t *allocator, const std::filesystem::path &p,
-                                            const char *ext, buffer_usage_hint usage_hint) noexcept
+  template <surge_allocator alloc_t>
+  sprite(alloc_t *allocator, const std::filesystem::path &p, const char *ext,
+         buffer_usage_hint usage_hint, const sprite_position &pos) noexcept
       : VAO{gen_vao()},
         VBO{gen_buff()},
         EBO{gen_buff()},
         texture_id{load_texture(allocator, p, ext).value_or(0)} {
 
+    // clang-format off
     std::array<float, 20> vertex_attributes{
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-        0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-        0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
-        -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
+        pos.x            , pos.y             , pos.z, 0.0f, 1.0f, // top left
+        pos.x            , pos.y + pos.height, pos.z, 0.0f, 0.0f, // bottom left
+        pos.x + pos.width, pos.y + pos.height, pos.z, 1.0f, 0.0f, // bottom right
+        pos.x + pos.width, pos.y             , pos.z, 1.0f, 1.0f, // top right
     };
+    // clang-format on
 
-    std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
+    std::array<GLuint, 6> draw_indices{1, 2, 3, 3, 0, 1};
 
     glBindVertexArray(VAO);
 
@@ -55,10 +66,17 @@ public:
     glBindVertexArray(0);
   }
 
-  void draw(GLuint shader_program) const noexcept {
+  void draw(GLuint shader_program, const glm::mat4 &projection,
+            const glm::mat4 &view) const noexcept {
+
+    // TODO: The user sets the model matrix
+    const auto model{glm::mat4(1.0f)};
 
     glUseProgram(shader_program);
     set_uniform(shader_program, "txt_0", GLint{0});
+    set_uniform(shader_program, "projection", projection);
+    set_uniform(shader_program, "view", view);
+    set_uniform(shader_program, "model", model);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture_id);

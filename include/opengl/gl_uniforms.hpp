@@ -2,10 +2,7 @@
 #define SURGE_GL_UNIFORMS_HPP
 
 #include "create_program.hpp"
-
-// clang-format off
-#include <glm/glm.hpp>
-// clang-format on
+#include "glm.hpp"
 
 #include <concepts>
 
@@ -44,7 +41,7 @@ void set_uniform(GLuint program_handle, const char *uniform_name, T value) noexc
 }
 
 template <glm::length_t N, typename T>
-requires gl_nd_uniform<N, T>
+  requires gl_nd_uniform<N, T>
 void set_uniform(GLuint program_handle, const char *uniform_name,
                  glm::vec<N, T, glm::defaultp> value) noexcept {
   if constexpr (N == 2) {
@@ -84,6 +81,12 @@ void set_uniform(GLuint program_handle, const char *uniform_name,
                   value.w);
     }
   }
+}
+
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::mat4 &value) noexcept {
+  glUniformMatrix4fv(glGetUniformLocation(program_handle, uniform_name), 1, GL_FALSE,
+                     glm::value_ptr(value));
 }
 
 } // namespace surge

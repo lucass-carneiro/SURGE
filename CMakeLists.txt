@@ -103,6 +103,7 @@ set(
   "${Surge_SOURCE_DIR}/include/opengl/buffer_usage_hints.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/create_program.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/gl_uniforms.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/glm.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/link_program.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
   "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_text.hpp"
