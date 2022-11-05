@@ -46,7 +46,8 @@ View with (https://profiler.firefox.com/)
 ## GUI Done
 
 ##  Main TODO
-* [ ] Create sprite shader.
+* [ ] Add sprite drawing to script.
+* [ ] Commit to a 2D renderer?.
 * [ ] Use sprite shader to shade all sprites. 
 * [ ] Add dynamic Mesh drawing support
 * [ ] Add vm hooks for sending vertex data to OpenGL from the vm
@@ -72,6 +73,7 @@ View with (https://profiler.firefox.com/)
 * [x] Add texture to static mesh
 * [x] Remake the static mesh as a single drawable sprite.
 * [x] Remove global opengl buffers.
+* [x] Create sprite shader.
 
 
 # References
