@@ -140,30 +140,27 @@ auto main(int argc, char **argv) noexcept -> int {
                            buffer_usage_hint::static_draw, pos);
 
   /*******************************
-   *     SHADERS/TRANSFORMS      *
+   *      PRE LOOP CALLBACK      *
    *******************************/
-  glog<log_event::message>("Compiling sprite shader");
-  const auto sprite_shader{create_program(global_thread_allocators::get().back().get(),
-                                          "../shaders/sprite.vert", "../shaders/sprite.frag")};
-  if (!sprite_shader) {
+  if (!lua_pre_loop_callback(global_lua_states::get().back().get())) {
     return EXIT_FAILURE;
   }
 
-  // TODO: Let script choose the projection matrix?
-  const auto default_2D_orthographic_projection{
-      glm::ortho(0.0f, static_cast<float>(engine_config.window_width),
-                 static_cast<float>(engine_config.window_height), 0.0f, -1.0f, 1.0f)};
+  /*******************************
+   *     SHADERS/TRANSFORMS      *
+   *******************************/
+  const auto default_shader{lua_get_shader_program_idx(global_lua_states::get().back().get())};
+  if (!default_shader) {
+    return EXIT_FAILURE;
+  }
+
+  auto projection_matrix{lua_get_current_projection_matrix(
+      global_lua_states::get().back().get(), static_cast<float>(engine_config.window_width),
+      static_cast<float>(engine_config.window_height))};
 
   // The view matrix
   auto default_camera{glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
                                   glm::vec3(0.0f, 1.0f, 0.0f))};
-
-  /*******************************
-   *        LOAD CALLBACK        *
-   *******************************/
-  if (!lua_load_callback(global_lua_states::get().back().get())) {
-    return EXIT_FAILURE;
-  }
 
   /*******************************
    *          MAIN LOOP          *
@@ -188,7 +185,7 @@ auto main(int argc, char **argv) noexcept -> int {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     // Render user meshes. TODO: Do not pass projectio matrix every time. Set it once.
-    test_sprite.draw(*sprite_shader, default_2D_orthographic_projection, default_camera);
+    test_sprite.draw(*default_shader, projection_matrix, default_camera);
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();

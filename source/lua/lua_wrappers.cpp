@@ -2,8 +2,11 @@
 
 #include "image_loader.hpp"
 #include "log.hpp"
+#include "lua/lua_bindings.hpp"
 #include "opengl/create_program.hpp"
 #include "thread_allocators.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 auto surge::lua_load_image(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
@@ -132,9 +135,9 @@ auto surge::lua_get_shader_program_idx(lua_State *L) noexcept -> std::optional<l
   }
 }
 
-auto surge::lua_load_callback(lua_State *L) noexcept -> bool {
+auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
   lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "load");
+  lua_getfield(L, -1, "pre_loop");
 
   const auto pcall_result{lua_pcall(L, 0, 0, 0)};
 
@@ -145,5 +148,42 @@ auto surge::lua_load_callback(lua_State *L) noexcept -> bool {
   } else {
     lua_pop(L, 2);
     return true;
+  }
+}
+
+auto surge::lua_get_current_projection_matrix(lua_State *L, float window_width,
+                                              float window_height) noexcept -> glm::mat4 {
+
+  const auto z_near{get_field<lua_Number>(L, "surge", "z_near")};
+  const auto z_far{get_field<lua_Number>(L, "surge", "z_far")};
+  const auto perspective_projection{get_field<lua_Boolean>(L, "surge", "perspective_projection")};
+
+  if (!z_near) {
+    glog<log_event::warning>("Unable to read surge.z_near. Using the default -1.0");
+  }
+
+  if (!z_far) {
+    glog<log_event::warning>("Unable to read surge.z_far. Using the default -1.0");
+  }
+
+  if (!perspective_projection) {
+    glog<log_event::warning>(
+        "Unable to read surge.perspective_projection. Using the default false");
+  }
+
+  if (perspective_projection.value_or(false)) {
+    const auto field_of_view{get_field<lua_Number>(L, "surge", "field_of_view")};
+
+    if (!perspective_projection) {
+      glog<log_event::warning>("Unable to read surge.field_of_view. Using the default 45 degrees");
+    }
+
+    return glm::perspective(glm::degrees(static_cast<float>(field_of_view.value_or(45.0))),
+                            window_width / window_height, static_cast<float>(z_near.value_or(-1.0)),
+                            static_cast<float>(z_far.value_or(1.0)));
+  } else {
+    return glm::ortho(0.0f, window_width, window_height, 0.0f,
+                      static_cast<float>(z_near.value_or(-1.0)),
+                      static_cast<float>(z_far.value_or(1.0)));
   }
 }

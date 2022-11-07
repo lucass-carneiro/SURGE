@@ -12,20 +12,11 @@ surge.log_message("Configuration summary:\n",
                                        surge.clear_color[4], ")"
 )
 
--- Example: Load image
--- local img = surge.load_image("/home/lucas/SURGE/resources/images/awesomeface.png", ".png")
--- img = surge.drop_image(img)
-
-local root_dir = "/home/lucas/SURGE/"
-
-function surge.load()
-    surge.log_message("surge.load called in VM ", surge.vm_index)
+function surge.pre_loop()
+    surge.log_message("VM ", surge.vm_index, ": ", "compiling and linking default sprite shaders")
     
-    -- Compile and load shaders
-    -- vs_dir = root_dir.."shaders/default.vert"
-    -- fs_dir = root_dir.."shaders/default.frag"
+    local vs_dir = surge.engine_dir.."shaders/sprite.vert"
+    local fs_dir = surge.engine_dir.."shaders/sprite.frag"
 
-    -- surge.log_message("Compiling and linking ", vs_dir, " + ", fs_dir)
-
-    -- surge.current_shader_program = surge.create_program(vs_dir, fs_dir)
+    surge.current_shader_program = surge.create_program(vs_dir, fs_dir)
 end

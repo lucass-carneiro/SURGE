@@ -3,6 +3,7 @@
 
 #include "lua_states.hpp"
 
+#include <optional>
 #include <type_traits>
 
 namespace surge {
@@ -22,7 +23,7 @@ template <typename T> inline void push_scalar(lua_State *L, T value) noexcept {
     lua_pushinteger(L, value);
   } else if constexpr (std::is_same<T, lua_Number>::value) {
     lua_pushnumber(L, value);
-  } else if constexpr (std::is_same<T, lua_String>::value) {
+  } else if constexpr (std::is_same<T, const char *>::value) {
     lua_pushstring(L, value);
   } else if constexpr (std::is_same<T, void>::value) {
     lua_pushnil(L);
@@ -71,11 +72,72 @@ inline void add_table_field(lua_State *L, key_t key, value_t value) noexcept {
   lua_settable(L, -3);
 }
 
+/**
+ * @brief Pushes an array to the lua stack
+ *
+ * @tparam element_t Type of the element array
+ * @tparam array_size Size of the array
+ * @param L The lua state
+ * @param array The array
+ */
 template <typename element_t, std::size_t array_size>
 inline void push_array(lua_State *L, std::array<element_t, array_size> &&array) {
   for (lua_Integer i = 1; const auto &element : array) {
     add_table_field<lua_Integer, element_t>(L, i, element);
     i++;
+  }
+}
+
+template <typename T> [[nodiscard]] inline auto get_field(lua_State *L, const char *root_table,
+                                                          const char *field_name) noexcept
+    -> std::optional<T> {
+
+  // Get global root table
+  lua_getglobal(L, root_table);
+
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 1);
+    glog<log_event::error>("Global table {} not found.", root_table);
+    return {};
+  }
+
+  // Get field from table
+  lua_getfield(L, -1, field_name);
+
+  if constexpr (std::is_same<T, lua_Integer>::value) {
+    if (!lua_isnumber(L, -1)) {
+      lua_pop(L, 2);
+      glog<log_event::error>("integer field {} not found", field_name);
+      return {};
+    } else {
+      const T value{lua_tointeger(L, -1)};
+      lua_pop(L, 2);
+      return value;
+    }
+  } else if constexpr (std::is_same<T, lua_Number>::value) {
+    if (!lua_isnumber(L, -1)) {
+      lua_pop(L, 2);
+      glog<log_event::error>("numeric field {} not found", field_name);
+      return {};
+    } else {
+      const T value{lua_tonumber(L, -1)};
+      lua_pop(L, 2);
+      return value;
+    }
+  } else if constexpr (std::is_same<T, lua_Boolean>::value) {
+    if (!lua_isboolean(L, -1)) {
+      lua_pop(L, 2);
+      glog<log_event::error>("boolean field {} not found", field_name);
+      return {};
+    } else {
+      const T value{static_cast<bool>(lua_toboolean(L, -1))};
+      lua_pop(L, 2);
+      return value;
+    }
+  } else {
+    lua_pop(L, 2);
+    glog<log_event::warning>("Unable to read {} because it's type is not implemented", field_name);
+    return {};
   }
 }
 
