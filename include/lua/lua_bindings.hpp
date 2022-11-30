@@ -18,7 +18,7 @@ using lua_Boolean = bool;
  * @param L The lua state
  * @param value The value to push
  */
-template <typename T> inline void push_scalar(lua_State *L, T value) noexcept {
+template <typename T> inline void lua_push_scalar(lua_State *L, T value) noexcept {
   if constexpr (std::is_same<T, lua_Integer>::value) {
     lua_pushinteger(L, value);
   } else if constexpr (std::is_same<T, lua_Number>::value) {
@@ -41,7 +41,9 @@ template <typename T> inline void push_scalar(lua_State *L, T value) noexcept {
  * @param L The lua state
  * @param value The value to push
  */
-template <typename T> inline void push(lua_State *L, T value) noexcept { push_scalar(L, value); }
+template <typename T> inline void lua_push(lua_State *L, T value) noexcept {
+  lua_push_scalar(L, value);
+}
 
 /**
  * @brief Pushes a generic value to a specific lua stack in the global_lua_states array
@@ -50,9 +52,9 @@ template <typename T> inline void push(lua_State *L, T value) noexcept { push_sc
  * @param i The index of the lua state to push to
  * @param value The value to push
  */
-template <typename T> inline void push(std::size_t i, T value) noexcept {
+template <typename T> inline void lua_push(std::size_t i, T value) noexcept {
   auto L = global_lua_states::get().at(i).get();
-  push(L, value);
+  lua_push(L, value);
 }
 
 /**
@@ -66,9 +68,9 @@ template <typename T> inline void push(std::size_t i, T value) noexcept {
  * @param value The value
  */
 template <typename key_t, typename value_t>
-inline void add_table_field(lua_State *L, key_t key, value_t value) noexcept {
-  push<key_t>(L, key);
-  push<value_t>(L, value);
+inline void lua_add_table_field(lua_State *L, key_t key, value_t value) noexcept {
+  lua_push<key_t>(L, key);
+  lua_push<value_t>(L, value);
   lua_settable(L, -3);
 }
 
@@ -81,15 +83,15 @@ inline void add_table_field(lua_State *L, key_t key, value_t value) noexcept {
  * @param array The array
  */
 template <typename element_t, std::size_t array_size>
-inline void push_array(lua_State *L, std::array<element_t, array_size> &&array) {
+inline void lua_push_array(lua_State *L, std::array<element_t, array_size> &&array) {
   for (lua_Integer i = 1; const auto &element : array) {
-    add_table_field<lua_Integer, element_t>(L, i, element);
+    lua_add_table_field<lua_Integer, element_t>(L, i, element);
     i++;
   }
 }
 
-template <typename T> [[nodiscard]] inline auto get_field(lua_State *L, const char *root_table,
-                                                          const char *field_name) noexcept
+template <typename T> [[nodiscard]] inline auto lua_get_field(lua_State *L, const char *root_table,
+                                                              const char *field_name) noexcept
     -> std::optional<T> {
 
   // Get global root table
@@ -131,6 +133,16 @@ template <typename T> [[nodiscard]] inline auto get_field(lua_State *L, const ch
       return {};
     } else {
       const T value{static_cast<bool>(lua_toboolean(L, -1))};
+      lua_pop(L, 2);
+      return value;
+    }
+  } else if constexpr (std::is_same<T, std::filesystem::path>::value) {
+    if (!lua_isstring(L, -1)) {
+      lua_pop(L, 2);
+      glog<log_event::error>("path string field {} not found", field_name);
+      return {};
+    } else {
+      const T value{lua_tostring(L, -1)};
       lua_pop(L, 2);
       return value;
     }

@@ -19,31 +19,29 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
 
   // TODO: Warning! This is potentially very dangerous. What happens if the user changes this
   // number? Maybe this can be made more secure.
-  add_table_field<lua_String, lua_Integer>(L, "vm_index", safe_cast<long>(i).value_or(0));
-
-  add_table_field<lua_String, lua_Integer>(L, "window_width", 800);
-  add_table_field<lua_String, lua_Integer>(L, "window_height", 600);
-  add_table_field<lua_String, lua_String>(L, "window_name", "SURGE window");
-  add_table_field<lua_String, lua_Boolean>(L, "windowed", false);
-  add_table_field<lua_String, lua_Integer>(L, "window_monitor_index", 1);
-
-  add_table_field<lua_String, lua_Integer>(L, "current_shader_program", 0);
+  lua_add_table_field<lua_String, lua_Integer>(L, "vm_index", safe_cast<long>(i).value_or(0));
 
   // begin clear_color array
   lua_newtable(L);
-  push_array(L, std::array<lua_Number, 4>{0.0, 0.0, 0.0, 1.0});
+  lua_push_array(L, std::array<lua_Number, 4>{0.0, 0.0, 0.0, 1.0});
   lua_setfield(L, -2, "clear_color");
   // end clear_color table
 
-  add_table_field<lua_String, lua_CFunction>(L, "log_message", lua_log_message);
-  add_table_field<lua_String, lua_CFunction>(L, "log_warning", lua_log_warning);
-  add_table_field<lua_String, lua_CFunction>(L, "log_error", lua_log_error);
-  add_table_field<lua_String, lua_CFunction>(L, "log_memory", lua_log_memory);
+  // begin image_meta table
+  lua_newtable(L);
+  lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::image");
+  lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_image);
+  lua_setfield(L, -2, "image_meta");
+  // end image_meta table
 
-  add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
-  add_table_field<lua_String, lua_CFunction>(L, "drop_image", lua_drop_image);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "log_message", lua_log_message);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "log_warning", lua_log_warning);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "log_error", lua_log_error);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "log_memory", lua_log_memory);
 
-  add_table_field<lua_String, lua_CFunction>(L, "create_program", lua_create_program);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
+
+  lua_add_table_field<lua_String, lua_CFunction>(L, "create_program", lua_create_program);
 
   lua_setglobal(L, "surge");
   // end surge table

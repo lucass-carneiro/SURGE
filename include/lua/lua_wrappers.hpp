@@ -1,6 +1,7 @@
 #ifndef SURGE_LUA_WRAPPERS_HPP
 #define SURGE_LUA_WRAPPERS_HPP
 
+#include <filesystem>
 #include <glm/mat4x4.hpp>
 #include <lua.hpp>
 #include <optional>

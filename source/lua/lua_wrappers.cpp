@@ -9,6 +9,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 auto surge::lua_load_image(lua_State *L) noexcept -> int {
+  glog<log_event::message>("lua_load_image called");
+
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
@@ -37,36 +39,36 @@ auto surge::lua_load_image(lua_State *L) noexcept -> int {
   lua_pop(L, 2);
 
   // Internal function call
-  auto img{load_image(global_thread_allocators::get().at(vm_index).get(), path_str, ext_str)};
+  auto img_optional{
+      load_image(global_thread_allocators::get().at(vm_index).get(), path_str, ext_str)};
 
-  if (!img) {
+  if (!img_optional) {
     lua_pushnil(L);
   } else {
-    // TODO: This passes only the data to the Lua VM and not the metadata (width, height, channels).
-    // Fix this.
-    lua_pushlightuserdata(L, img->data);
+    // Create and image object on the engine heap and assing the data of the optional to it
+    auto img_ptr{
+        static_cast<image *>(global_thread_allocators::get().at(vm_index)->malloc(sizeof(image)))};
+    *img_ptr = img_optional.value();
+
+    // Pass this pointer to the Lua VM as userdata
+    auto vm_img_ptr{static_cast<image **>(lua_newuserdata(L, sizeof(void *)))};
+    *vm_img_ptr = img_ptr;
+
+    lua_getglobal(L, "surge");
+    lua_getfield(L, -1, "image_meta");
+    lua_setmetatable(L, -3);
+    lua_pop(L, 1);
   }
 
   return 1;
 }
 
 auto surge::lua_drop_image(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 1) {
-    glog<log_event::warning>("Function drop_image expected 1 arguments and instead got {} argument",
-                             nargs);
-    return 0;
-  }
-
-  if (!lua_islightuserdata(L, 1)) {
-    glog<log_event::warning>("Fucntion load_image expects 1 light user data argument.");
-    return 0;
-  }
+  glog<log_event::message>("lua_drop_image called");
 
   // Argument extraction
-  void *img{lua_touserdata(L, 1)};
+  auto vm_img_ptr{static_cast<image **>(lua_touserdata(L, 1))};
+  auto img_ptr{*vm_img_ptr};
 
   // VM index recovery
   lua_getglobal(L, "surge");
@@ -74,10 +76,11 @@ auto surge::lua_drop_image(lua_State *L) noexcept -> int {
   const auto vm_index{static_cast<std::size_t>(lua_tointeger(L, -1))};
   lua_pop(L, 2);
 
-  stbi_image_free(global_thread_allocators::get().at(vm_index).get(), img);
-  lua_pushnil(L);
+  // Data cleanup
+  stbi_image_free(global_thread_allocators::get().at(vm_index).get(), img_ptr->data);
+  global_thread_allocators::get().at(vm_index)->free(img_ptr);
 
-  return 1;
+  return 0;
 }
 
 auto surge::lua_create_program(lua_State *L) noexcept -> int {
@@ -154,9 +157,10 @@ auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
 auto surge::lua_get_current_projection_matrix(lua_State *L, float window_width,
                                               float window_height) noexcept -> glm::mat4 {
 
-  const auto z_near{get_field<lua_Number>(L, "surge", "z_near")};
-  const auto z_far{get_field<lua_Number>(L, "surge", "z_far")};
-  const auto perspective_projection{get_field<lua_Boolean>(L, "surge", "perspective_projection")};
+  const auto z_near{lua_get_field<lua_Number>(L, "surge", "z_near")};
+  const auto z_far{lua_get_field<lua_Number>(L, "surge", "z_far")};
+  const auto perspective_projection{
+      lua_get_field<lua_Boolean>(L, "surge", "perspective_projection")};
 
   if (!z_near) {
     glog<log_event::warning>("Unable to read surge.z_near. Using the default -1.0");
@@ -172,7 +176,7 @@ auto surge::lua_get_current_projection_matrix(lua_State *L, float window_width,
   }
 
   if (perspective_projection.value_or(false)) {
-    const auto field_of_view{get_field<lua_Number>(L, "surge", "field_of_view")};
+    const auto field_of_view{lua_get_field<lua_Number>(L, "surge", "field_of_view")};
 
     if (!perspective_projection) {
       glog<log_event::warning>("Unable to read surge.field_of_view. Using the default 45 degrees");

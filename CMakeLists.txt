@@ -150,6 +150,8 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
 
+  "${Surge_SOURCE_DIR}/source/mesh/sprite.cpp"
+
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"

@@ -8,79 +8,67 @@
 
 namespace surge {
 
-// clang-format off
-template <typename T>
-concept gl_scalar_uniform = 
-  std::is_same<T, bool>::value    || 
-  std::is_same<T, GLint>::value   ||
-  std::is_same<T,GLfloat>::value;
-// clang-format on
-
-// clang-format off
-template <glm::length_t N, typename T>
-concept gl_nd_uniform =
-  (N == 2 || N == 3 || N == 4)                                   &&
-  (
-    std::is_same<T, glm::vec<N, bool, glm::defaultp>>::value     ||
-    std::is_same<T, glm::vec<N, GLint, glm::defaultp>>::value    ||
-    std::is_same<T, glm::vec<N, GLfloat, glm::defaultp>>::value
-  );
-// clang-format on
-
-template <gl_scalar_uniform T>
-void set_uniform(GLuint program_handle, const char *uniform_name, T value) noexcept {
-  if constexpr (std::is_same<T, bool>::value) {
-    glUniform1i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value));
-
-  } else if constexpr (std::is_same<T, GLint>::value) {
-    glUniform1i(glGetUniformLocation(program_handle, uniform_name), value);
-
-  } else if constexpr (std::is_same<T, GLfloat>::value) {
-    glUniform1f(glGetUniformLocation(program_handle, uniform_name), value);
-  }
+inline void set_uniform(GLuint program_handle, const char *uniform_name, bool value) noexcept {
+  glUniform1i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value));
 }
 
-template <glm::length_t N, typename T>
-  requires gl_nd_uniform<N, T>
-void set_uniform(GLuint program_handle, const char *uniform_name,
-                 glm::vec<N, T, glm::defaultp> value) noexcept {
-  if constexpr (N == 2) {
-    if constexpr (std::is_same<T, bool>::value) {
-      glUniform2i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value.x),
-                  static_cast<GLint>(value.y));
+inline void set_uniform(GLuint program_handle, const char *uniform_name, GLint value) noexcept {
+  glUniform1i(glGetUniformLocation(program_handle, uniform_name), value);
+}
 
-    } else if constexpr (std::is_same<T, GLint>::value) {
-      glUniform2i(glGetUniformLocation(program_handle, uniform_name), value.x, value.y);
+inline void set_uniform(GLuint program_handle, const char *uniform_name, float value) noexcept {
+  glUniform1f(glGetUniformLocation(program_handle, uniform_name), value);
+}
 
-    } else if constexpr (std::is_same<T, GLfloat>::value) {
-      glUniform2f(glGetUniformLocation(program_handle, uniform_name), value.x, value.y);
-    }
-  } else if constexpr (N == 3) {
-    if constexpr (std::is_same<T, bool>::value) {
-      glUniform3i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value.x),
-                  static_cast<GLint>(value.y), static_cast<GLint>(value.z));
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::bvec2 &value) noexcept {
+  glUniform2i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value[0]),
+              static_cast<GLint>(value[1]));
+}
 
-    } else if constexpr (std::is_same<T, GLint>::value) {
-      glUniform3i(glGetUniformLocation(program_handle, uniform_name), value.x, value.y, value.z);
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::ivec2 &value) noexcept {
+  glUniform2i(glGetUniformLocation(program_handle, uniform_name), value[0], value[1]);
+}
 
-    } else if constexpr (std::is_same<T, GLfloat>::value) {
-      glUniform3f(glGetUniformLocation(program_handle, uniform_name), value.x, value.y, value.z);
-    }
-  } else if constexpr (N == 4) {
-    if constexpr (std::is_same<T, bool>::value) {
-      glUniform4i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value.x),
-                  static_cast<GLint>(value.y), static_cast<GLint>(value.z),
-                  static_cast<GLint>(value.w));
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::fvec2 &value) noexcept {
+  glUniform2f(glGetUniformLocation(program_handle, uniform_name), value[0], value[1]);
+}
 
-    } else if constexpr (std::is_same<T, GLint>::value) {
-      glUniform4i(glGetUniformLocation(program_handle, uniform_name), value.x, value.y, value.z,
-                  value.w);
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::bvec3 &value) noexcept {
+  glUniform3i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value[0]),
+              static_cast<GLint>(value[1]), static_cast<GLint>(value[2]));
+}
 
-    } else if constexpr (std::is_same<T, GLfloat>::value) {
-      glUniform4f(glGetUniformLocation(program_handle, uniform_name), value.x, value.y, value.z,
-                  value.w);
-    }
-  }
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::ivec3 &value) noexcept {
+  glUniform3i(glGetUniformLocation(program_handle, uniform_name), value[0], value[1], value[2]);
+}
+
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::fvec3 &value) noexcept {
+  glUniform3f(glGetUniformLocation(program_handle, uniform_name), value[0], value[1], value[2]);
+}
+
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::bvec4 &value) noexcept {
+  glUniform4i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value[0]),
+              static_cast<GLint>(value[1]), static_cast<GLint>(value[2]),
+              static_cast<GLint>(value[3]));
+}
+
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::ivec4 &value) noexcept {
+  glUniform4i(glGetUniformLocation(program_handle, uniform_name), value[0], value[1], value[2],
+              value[3]);
+}
+
+inline void set_uniform(GLuint program_handle, const char *uniform_name,
+                        const glm::fvec4 &value) noexcept {
+  glUniform4f(glGetUniformLocation(program_handle, uniform_name), value[0], value[1], value[2],
+              value[3]);
 }
 
 inline void set_uniform(GLuint program_handle, const char *uniform_name,

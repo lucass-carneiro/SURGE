@@ -16,8 +16,8 @@ surge.clear_color[2] = 0.3
 surge.clear_color[3] = 0.3
 surge.clear_color[4] = 1.0
 
--- Folder in which the engine files are located
-surge.engine_dir = "/home/lucas/SURGE/"
+-- Folder structure
+surge.engine_root_dir = "/home/lucas/SURGE/"
 
 -- Projection matrix setup
 surge.z_near = -1.0

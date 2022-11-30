@@ -7,43 +7,35 @@
 #include "opengl/headers.hpp"
 #include "opengl/load_texture.hpp"
 
-#include <array>
 #include <filesystem>
 
 namespace surge {
 
-struct sprite_position {
-  float x{0};
-  float y{0};
-  float z{0};
-  float width{0};
-  float height{0};
-};
-
 /**
  * @brief A sprite is a 2D quad (rectangle) with a diffuse map.
+ * see https://gamedev.stackexchange.com/q/170083
  *
  */
 class sprite {
 public:
   template <surge_allocator alloc_t>
-  sprite(alloc_t *allocator, const std::filesystem::path &p, const char *ext,
-         buffer_usage_hint usage_hint, const sprite_position &pos) noexcept
+  sprite(alloc_t *allocator, const std::filesystem::path &p, const char *ext, GLint sw, GLint sh,
+         buffer_usage_hint usage_hint) noexcept
       : VAO{gen_vao()},
         VBO{gen_buff()},
         EBO{gen_buff()},
-        texture_id{load_texture(allocator, p, ext).value_or(0)} {
+        texture_id{load_texture(allocator, p, ext).value_or(0)},
+        sheet_width{sw},
+        sheet_heigth{sh} {
 
-    // clang-format off
-    std::array<float, 20> vertex_attributes{
-        pos.x            , pos.y             , pos.z, 0.0f, 1.0f, // top left
-        pos.x            , pos.y + pos.height, pos.z, 0.0f, 0.0f, // bottom left
-        pos.x + pos.width, pos.y + pos.height, pos.z, 1.0f, 0.0f, // bottom right
-        pos.x + pos.width, pos.y             , pos.z, 1.0f, 1.0f, // top right
+    const std::array<float, 20> vertex_attributes{
+        0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+        1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+        1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+        0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
     };
-    // clang-format on
 
-    std::array<GLuint, 6> draw_indices{1, 2, 3, 3, 0, 1};
+    const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
 
     glBindVertexArray(VAO);
 
@@ -58,8 +50,9 @@ public:
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                          reinterpret_cast<const void *>(3 * sizeof(float)));
+    // NOLINTNEXTLINE
+    const auto offset_1{reinterpret_cast<const void *>(3 * sizeof(float))};
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), offset_1);
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -67,40 +60,23 @@ public:
   }
 
   void draw(GLuint shader_program, const glm::mat4 &projection,
-            const glm::mat4 &view) const noexcept {
+            const glm::mat4 &view) const noexcept;
 
-    // TODO: The user sets the model matrix
-    const auto model{glm::mat4(1.0f)};
+  void sheet_reset() noexcept;
+  void sheet_set(int i, int j) noexcept;
+  void sheet_next() noexcept;
 
-    glUseProgram(shader_program);
-    set_uniform(shader_program, "txt_0", GLint{0});
-    set_uniform(shader_program, "projection", projection);
-    set_uniform(shader_program, "view", view);
-    set_uniform(shader_program, "model", model);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-    glBindVertexArray(0);
-  }
+  void move(GLuint shader_program, glm::vec3 &&vec) noexcept;
+  void scale(GLuint shader_program, glm::vec3 &&vec) noexcept;
 
 private:
   const GLuint VAO{0}, VBO{0}, EBO{0}, texture_id{0};
+  const GLint sheet_width{0}, sheet_heigth{0};
+  glm::mat4 model_matrix{1.0f};
+  glm::ivec4 sheet_coords{-1, -1, sheet_width, sheet_heigth};
 
-  [[nodiscard]] inline auto gen_buff() const noexcept -> GLuint {
-    GLuint tmp{0};
-    glGenBuffers(1, &tmp);
-    return tmp;
-  }
-
-  [[nodiscard]] inline auto gen_vao() const noexcept -> GLuint {
-    GLuint tmp{0};
-    glGenVertexArrays(1, &tmp);
-    return tmp;
-  }
+  [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
+  [[nodiscard]] auto gen_vao() const noexcept -> GLuint;
 };
 
 } // namespace surge

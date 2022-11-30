@@ -62,6 +62,10 @@ public:
     glClear(GL_COLOR_BUFFER_BIT);
   }
 
+  [[nodiscard]] inline auto get_key(int key) const noexcept -> int {
+    return glfwGetKey(window.get(), key);
+  };
+
   ~global_engine_window();
 
   global_engine_window(const global_engine_window &) = delete;
