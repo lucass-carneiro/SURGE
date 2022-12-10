@@ -34,12 +34,23 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_setfield(L, -2, "image_meta");
   // end image_meta table
 
+  // begin sprite_meta table
+  lua_newtable(L);
+  lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::sprite");
+  lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_sprite);
+  lua_setfield(L, -2, "sprite_meta");
+  // end sprite_meta table
+
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_message", lua_log_message);
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_warning", lua_log_warning);
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_error", lua_log_error);
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_memory", lua_log_memory);
 
   lua_add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
+
+  lua_add_table_field<lua_String, lua_CFunction>(L, "load_sprite", lua_load_sprite);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "draw_sprite", lua_draw_sprite);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "scale_sprite", lua_scale_sprite);
 
   lua_add_table_field<lua_String, lua_CFunction>(L, "create_program", lua_create_program);
 

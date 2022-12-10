@@ -12,13 +12,8 @@ auto surge::sprite::gen_vao() const noexcept -> GLuint {
   return tmp;
 }
 
-void surge::sprite::draw(GLuint shader_program, const glm::mat4 &projection,
-                         const glm::mat4 &view) const noexcept {
-
-  glUseProgram(shader_program);
+void surge::sprite::draw(GLuint shader_program) const noexcept {
   set_uniform(shader_program, "txt_0", GLint{0});
-  set_uniform(shader_program, "projection", projection);
-  set_uniform(shader_program, "view", view);
   set_uniform(shader_program, "model", model_matrix);
   set_uniform(shader_program, "sheet_coords", sheet_coords);
 
@@ -36,9 +31,9 @@ void surge::sprite::sheet_reset() noexcept {
   sheet_coords[1] = -1;
 }
 
-void surge::sprite::sheet_set(int i, int j) noexcept {
-  sheet_coords[0] = i;
-  sheet_coords[1] = j;
+void surge::sprite::sheet_set(const glm::ivec2 &ij) noexcept {
+  sheet_coords[0] = ij[0];
+  sheet_coords[1] = ij[1];
 }
 
 void surge::sprite::sheet_next() noexcept {

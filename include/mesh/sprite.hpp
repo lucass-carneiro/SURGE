@@ -11,6 +11,11 @@
 
 namespace surge {
 
+template <std::size_t i, typename T> [[nodiscard]] auto buffer_offset() noexcept -> const void * {
+  // NOLINTNEXTLINE
+  return reinterpret_cast<const void *>(i * sizeof(T));
+}
+
 /**
  * @brief A sprite is a 2D quad (rectangle) with a diffuse map.
  * see https://gamedev.stackexchange.com/q/170083
@@ -51,19 +56,17 @@ public:
     glEnableVertexAttribArray(0);
 
     // NOLINTNEXTLINE
-    const auto offset_1{reinterpret_cast<const void *>(3 * sizeof(float))};
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), offset_1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), buffer_offset<3, float>());
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
   }
 
-  void draw(GLuint shader_program, const glm::mat4 &projection,
-            const glm::mat4 &view) const noexcept;
+  void draw(GLuint shader_program) const noexcept;
 
   void sheet_reset() noexcept;
-  void sheet_set(int i, int j) noexcept;
+  void sheet_set(const glm::ivec2 &ij) noexcept;
   void sheet_next() noexcept;
 
   void move(GLuint shader_program, glm::vec3 &&vec) noexcept;

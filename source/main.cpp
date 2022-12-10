@@ -129,15 +129,8 @@ auto main(int argc, char **argv) noexcept -> int {
   }
   const auto &engine_config{*global_engine_window::get().get_config()};
 
-  // TEMPORARY
-  /*const sprite_position pos{.x = static_cast<float>(engine_config.window_width) / 4,
-                            .y = static_cast<float>(engine_config.window_height) / 4,
-                            .z = 0.0f,
-                            .width = 100.0f,
-                            .height = 100.0f};*/
-  sprite test_sprite(global_thread_allocators::get().back().get(),
-                     "/home/lucas/SURGE/resources/images/test_spritesheet.png", ".png", 2, 2,
-                     buffer_usage_hint::static_draw);
+  // OpenGL options. TODO: Set by script
+  glEnable(GL_DEPTH_TEST);
 
   /*******************************
    *           SHADERS           *
@@ -155,8 +148,10 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  glUseProgram(*sprite_shader);
+
   /*******************************
-   *      VIEW/PROJECTION      *
+   *       VIEW/PROJECTION       *
    *******************************/
   auto view_matrix{glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
                                glm::vec3(0.0f, 1.0f, 0.0f))};
@@ -165,6 +160,9 @@ auto main(int argc, char **argv) noexcept -> int {
       global_lua_states::get().back().get(), static_cast<float>(engine_config.window_width),
       static_cast<float>(engine_config.window_height))};
 
+  set_uniform(*sprite_shader, "view", view_matrix);
+  set_uniform(*sprite_shader, "projection", projection_matrix);
+
   /*******************************
    *      PRE LOOP CALLBACK      *
    *******************************/
@@ -172,18 +170,11 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // TEMPORARY
-  test_sprite.move(*sprite_shader, glm::vec3(250.0f, 200.0f, 0.0f)); // 1000x800
-  test_sprite.scale(*sprite_shader, glm::vec3(500.0f, 500.0f, 0.0f));
-
   /*******************************
    *          MAIN LOOP          *
    *******************************/
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
-
-    // OpenGL options. TODO: Set by script
-    glEnable(GL_DEPTH_TEST);
 
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -191,9 +182,6 @@ auto main(int argc, char **argv) noexcept -> int {
     ImGui::NewFrame();
 
     // Handle events
-    if (global_engine_window::get().get_key(GLFW_KEY_RIGHT) == GLFW_PRESS) {
-      test_sprite.sheet_next();
-    }
 
     // Update states
 
@@ -201,8 +189,10 @@ auto main(int argc, char **argv) noexcept -> int {
     global_engine_window::get().clear_framebuffer();
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    // Render user meshes. TODO: Do not pass projectio matrix every time. Set it once.
-    test_sprite.draw(*sprite_shader, projection_matrix, view_matrix);
+    /*
+     * Lua draw callback
+     */
+    lua_draw_callback(global_lua_states::get().back().get());
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();

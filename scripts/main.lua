@@ -13,13 +13,11 @@ surge.log_message("Configuration summary:\n",
 )
 
 function surge.pre_loop()
-    -- surge.log_message("VM ", surge.vm_index, ": ", "compiling and linking default sprite shaders")
-    -- local vs_dir = surge.engine_dir.."shaders/sprite.vert"
-    -- local fs_dir = surge.engine_dir.."shaders/sprite.frag"
-    -- surge.current_shader_program = surge.create_program(vs_dir, fs_dir)
     surge.log_message("surge.pre_loop()")
-    
-    local img = surge.load_image("../resources/images/awesomeface.png", ".png")
-    img = nil
-    collectgarbage()
+    sprite = surge.load_sprite("/home/lucas/SURGE/resources/images/test_spritesheet.png", ".png", 2, 2)
+    surge.scale_sprite(sprite)
+end
+
+function surge.draw()
+    surge.draw_sprite(sprite)
 end
