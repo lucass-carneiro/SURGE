@@ -4,7 +4,7 @@
 
 # Demo
 
-![Alt Text](https://github.com/lucass-carneiro/SURGE/demo.gif)
+![](resources/demo.gif)
 
 # Debug Build instructions
 
