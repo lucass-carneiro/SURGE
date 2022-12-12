@@ -66,6 +66,16 @@ public:
     return glfwGetKey(window.get(), key);
   };
 
+  [[nodiscard]] inline auto get_shader_program() const noexcept -> GLuint {
+    return sprite_shader.value_or(0);
+  }
+
+  [[nodiscard]] inline auto get_projection() const noexcept -> const glm::mat4 & {
+    return projection_matrix;
+  }
+
+  [[nodiscard]] inline auto get_view() const noexcept -> const glm::mat4 & { return view_matrix; }
+
   ~global_engine_window();
 
   global_engine_window(const global_engine_window &) = delete;
@@ -82,10 +92,13 @@ private:
 
   std::optional<lua_engine_config> engine_config{};
 
-  bool glfw_init_success = false;
+  bool window_init_success = false;
   std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)> window;
 
   double frame_dt{0};
+
+  std::optional<GLuint> sprite_shader{};
+  glm::mat4 view_matrix{1.0f}, projection_matrix{1.0f};
 
   /**
    * Querry the existing available monitors.

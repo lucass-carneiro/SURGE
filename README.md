@@ -46,12 +46,7 @@ View with (https://profiler.firefox.com/)
 ## GUI Done
 
 ##  Main TODO
-* [ ] Add sprite drawing to script.
-* [ ] Commit to a 2D renderer?.
-* [ ] Use sprite shader to shade all sprites. 
-* [ ] Add dynamic Mesh drawing support
-* [ ] Add vm hooks for sending vertex data to OpenGL from the vm
-* [ ] Add vm hooks to opengl shapes and shape transformations
+* [ ] Animate sprites via scripts
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
 * [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.
@@ -74,6 +69,9 @@ View with (https://profiler.firefox.com/)
 * [x] Remake the static mesh as a single drawable sprite.
 * [x] Remove global opengl buffers.
 * [x] Create sprite shader.
+* [x] Add sprite drawing to script.
+* [x] Commit to a 2D renderer?.
+* [x] Use sprite shader to shade all sprites. 
 
 
 # References

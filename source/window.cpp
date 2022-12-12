@@ -3,9 +3,14 @@
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"
+#include "thread_allocators.hpp"
 
 // clang-format off
 #include <GLFW/glfw3.h>
+#include "opengl/create_program.hpp"
+#include "opengl/gl_uniforms.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
 // clang-format on
 
 #include <cstddef>
@@ -26,7 +31,7 @@ surge::global_engine_window::~global_engine_window() {
   // glfwTerminate
   window.reset();
 
-  if (glfw_init_success) {
+  if (window_init_success) {
     glfwTerminate();
   }
 }
@@ -40,8 +45,8 @@ auto surge::global_engine_window::init() noexcept -> bool {
   engine_config = get_lua_engine_config(L);
 
   if (!engine_config) {
-    glfw_init_success = false;
-    return glfw_init_success;
+    window_init_success = false;
+    return window_init_success;
   }
 
   // Register GLFW callbacks
@@ -52,16 +57,16 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // Initialize glfw
   if (glfwInit() != GLFW_TRUE) {
-    glfw_init_success = false;
-    return glfw_init_success;
+    window_init_success = false;
+    return window_init_success;
   }
 
   // Validate monitor index
   auto monitors = querry_available_monitors();
   if (!monitors.has_value()) {
     glfwTerminate();
-    glfw_init_success = false;
-    return glfw_init_success;
+    window_init_success = false;
+    return window_init_success;
   }
 
   if (engine_config->window_monitor_index >= monitors.value().second) {
@@ -94,8 +99,8 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   if (window == nullptr) {
     glfwTerminate();
-    glfw_init_success = false;
-    return glfw_init_success;
+    window_init_success = false;
+    return window_init_success;
   }
 
   // OpenGL context creation
@@ -105,9 +110,9 @@ auto surge::global_engine_window::init() noexcept -> bool {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+  // ImGuiIO &io = ImGui::GetIO();
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+  // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -122,15 +127,61 @@ auto surge::global_engine_window::init() noexcept -> bool {
     glog<log_event::error>("Failed to initialize GLAD");
     window.reset();
     glfwTerminate();
-    glfw_init_success = false;
-    return glfw_init_success;
+    window_init_success = false;
+    return window_init_success;
   }
 
   // Resize callback and viewport creation.
   glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
 
-  glfw_init_success = true;
-  return glfw_init_success;
+  /*******************************
+   *       OpenGL Options        *
+   *******************************/
+  glEnable(GL_DEPTH_TEST);
+
+  /*******************************
+   *           SHADERS           *
+   *******************************/
+  if (!(std::filesystem::exists(engine_config->root_dir)
+        && std::filesystem::is_directory(engine_config->root_dir))) {
+
+    glog<log_event::error>(
+        "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
+        engine_config->root_dir.c_str());
+
+    window.reset();
+    glfwTerminate();
+    window_init_success = false;
+    return window_init_success;
+  }
+
+  sprite_shader = create_program(global_thread_allocators::get().back().get(),
+                                 engine_config->root_dir / "shaders/sprite.vert",
+                                 engine_config->root_dir / "shaders/sprite.frag");
+  if (!sprite_shader) {
+    window.reset();
+    glfwTerminate();
+    window_init_success = false;
+    return window_init_success;
+  }
+
+  glUseProgram(*sprite_shader);
+
+  /*******************************
+   *       VIEW/PROJECTION       *
+   *******************************/
+  view_matrix = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
+                            glm::vec3(0.0f, 1.0f, 0.0f));
+
+  projection_matrix
+      = glm::ortho(0.0f, static_cast<float>(engine_config->window_width),
+                   static_cast<float>(engine_config->window_height), 0.0f, -1.0f, 1.0f);
+
+  set_uniform(*sprite_shader, "view", view_matrix);
+  set_uniform(*sprite_shader, "projection", projection_matrix);
+
+  window_init_success = true;
+  return window_init_success;
 }
 
 auto surge::global_engine_window::querry_available_monitors() noexcept

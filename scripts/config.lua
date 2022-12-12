@@ -18,9 +18,3 @@ surge.clear_color[4] = 1.0
 
 -- Folder structure
 surge.engine_root_dir = "/home/lucas/SURGE/"
-
--- Projection matrix setup
-surge.z_near = -1.0
-surge.z_far = 1.0
-surge.field_of_view = 45.0 -- degrees
-surge.perspective_projection = false -- If false, uses ortographic projection If true, the field of view value must be set.

@@ -31,7 +31,7 @@ void surge::sprite::sheet_reset() noexcept {
   sheet_coords[1] = -1;
 }
 
-void surge::sprite::sheet_set(const glm::ivec2 &ij) noexcept {
+void surge::sprite::sheet_set(glm::ivec2 &&ij) noexcept {
   sheet_coords[0] = ij[0];
   sheet_coords[1] = ij[1];
 }

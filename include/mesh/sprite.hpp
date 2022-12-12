@@ -66,7 +66,7 @@ public:
   void draw(GLuint shader_program) const noexcept;
 
   void sheet_reset() noexcept;
-  void sheet_set(const glm::ivec2 &ij) noexcept;
+  void sheet_set(glm::ivec2 &&ij) noexcept;
   void sheet_next() noexcept;
 
   void move(GLuint shader_program, glm::vec3 &&vec) noexcept;

@@ -9,13 +9,6 @@
 
 namespace surge {
 
-/**
- * @brief Pushes the engine configuration table in the specified VM of the global_lua_states array
- *
- * @param i The index in the global_lua_states array to push to.
- */
-void push_engine_config_at(std::size_t i) noexcept;
-
 struct lua_engine_config {
   lua_Integer window_width{800};
   lua_Integer window_height{600};
@@ -23,7 +16,15 @@ struct lua_engine_config {
   lua_Boolean windowed{true};
   lua_Integer window_monitor_index{0};
   std::array<lua_Number, 4> clear_color{0, 0, 0, 1};
+  std::filesystem::path root_dir{"/home/surge/"};
 };
+
+/**
+ * @brief Pushes the engine configuration table in the specified VM of the global_lua_states array
+ *
+ * @param i The index in the global_lua_states array to push to.
+ */
+void push_engine_config_at(std::size_t i) noexcept;
 
 auto get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
 

@@ -27,13 +27,6 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_setfield(L, -2, "clear_color");
   // end clear_color table
 
-  // begin image_meta table
-  lua_newtable(L);
-  lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::image");
-  lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_image);
-  lua_setfield(L, -2, "image_meta");
-  // end image_meta table
-
   // begin sprite_meta table
   lua_newtable(L);
   lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::sprite");
@@ -46,13 +39,12 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_error", lua_log_error);
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_memory", lua_log_memory);
 
-  lua_add_table_field<lua_String, lua_CFunction>(L, "load_image", lua_load_image);
-
   lua_add_table_field<lua_String, lua_CFunction>(L, "load_sprite", lua_load_sprite);
   lua_add_table_field<lua_String, lua_CFunction>(L, "draw_sprite", lua_draw_sprite);
   lua_add_table_field<lua_String, lua_CFunction>(L, "scale_sprite", lua_scale_sprite);
-
-  lua_add_table_field<lua_String, lua_CFunction>(L, "create_program", lua_create_program);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "move_sprite", lua_move_sprite);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set", lua_sheet_set);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_next", lua_sheet_next);
 
   lua_setglobal(L, "surge");
   // end surge table
@@ -112,6 +104,16 @@ auto surge::get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_en
     return {};
   } else {
     config.window_monitor_index = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+
+  lua_getfield(L, -1, "engine_root_dir");
+  if (!lua_isstring(L, -1)) {
+    glog<log_event::error>("The value stored in the field engine_root_dir is not a string");
+    lua_settop(L, stack_top);
+    return {};
+  } else {
+    config.root_dir = lua_tostring(L, -1);
     lua_pop(L, 1);
   }
 

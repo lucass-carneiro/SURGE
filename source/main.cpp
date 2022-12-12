@@ -8,7 +8,6 @@
 #include "opengl/load_texture.hpp"
 #include "safe_ops.hpp"
 #include "task_executor.hpp"
-#include "thread_allocators.hpp"
 #include "window.hpp"
 
 #include <cstddef>
@@ -127,41 +126,6 @@ auto main(int argc, char **argv) noexcept -> int {
   if (!global_engine_window::get().init()) {
     return EXIT_FAILURE;
   }
-  const auto &engine_config{*global_engine_window::get().get_config()};
-
-  // OpenGL options. TODO: Set by script
-  glEnable(GL_DEPTH_TEST);
-
-  /*******************************
-   *           SHADERS           *
-   *******************************/
-  const auto engine_root_dir{lua_get_field<std::filesystem::path>(
-      global_lua_states::get().back().get(), "surge", "engine_root_dir")};
-  if (!engine_root_dir) {
-    return EXIT_FAILURE;
-  }
-
-  const auto sprite_shader{create_program(global_thread_allocators::get().back().get(),
-                                          *engine_root_dir / "shaders/sprite.vert",
-                                          *engine_root_dir / "shaders/sprite.frag")};
-  if (!sprite_shader) {
-    return EXIT_FAILURE;
-  }
-
-  glUseProgram(*sprite_shader);
-
-  /*******************************
-   *       VIEW/PROJECTION       *
-   *******************************/
-  auto view_matrix{glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
-                               glm::vec3(0.0f, 1.0f, 0.0f))};
-
-  auto projection_matrix{lua_get_current_projection_matrix(
-      global_lua_states::get().back().get(), static_cast<float>(engine_config.window_width),
-      static_cast<float>(engine_config.window_height))};
-
-  set_uniform(*sprite_shader, "view", view_matrix);
-  set_uniform(*sprite_shader, "projection", projection_matrix);
 
   /*******************************
    *      PRE LOOP CALLBACK      *
@@ -183,7 +147,10 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Handle events
 
-    // Update states
+    /*
+     * Lua update callback
+     */
+    lua_update_callback(global_lua_states::get().back().get());
 
     // Clear buffers
     global_engine_window::get().clear_framebuffer();
