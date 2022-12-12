@@ -2,6 +2,10 @@
 
  A prototype game engine made for fun.
 
+# Demo
+
+![Alt Text](https://github.com/lucass-carneiro/SURGE/demo.gif)
+
 # Debug Build instructions
 
 ```
