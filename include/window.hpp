@@ -12,6 +12,8 @@
 
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
+
+#include <implot.h>
 // clang-format on
 
 #include <EASTL/bonus/fixed_ring_buffer.h>

@@ -37,6 +37,7 @@ target_link_libraries(tests PRIVATE
   CONAN_PKG::taskflow
   CONAN_PKG::luajit
   CONAN_PKG::imgui
+  CONAN_PKG::implot
 )
 
 include(GoogleTest)

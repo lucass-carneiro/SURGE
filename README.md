@@ -44,10 +44,10 @@ View with (https://profiler.firefox.com/)
 # Tasks
 
 ## GUI TODO
-* [ ] Implement FPS counter
 * [ ] Implement memory visualizer
 
 ## GUI Done
+* [x] Implement FPS counter
 
 ##  Main TODO
 * [ ] Animate sprites via scripts
@@ -76,7 +76,6 @@ View with (https://profiler.firefox.com/)
 * [x] Add sprite drawing to script.
 * [x] Commit to a 2D renderer?.
 * [x] Use sprite shader to shade all sprites. 
-
 
 # References
 https://www.lua.org/manual/5.3/manual.html

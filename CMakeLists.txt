@@ -219,6 +219,7 @@ target_link_libraries(Surge PRIVATE
   CONAN_PKG::luajit
   CONAN_PKG::mimalloc
   CONAN_PKG::imgui
+  CONAN_PKG::implot
 )
 
 target_include_directories(
