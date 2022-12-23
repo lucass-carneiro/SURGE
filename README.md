@@ -26,6 +26,7 @@ cmake --build . -j20
 * [x] Implement FPS counter
 
 ##  Main TODO
+* [ ] Add script hooks for keybord/mouse input
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
 * [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.

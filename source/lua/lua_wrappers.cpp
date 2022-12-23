@@ -2,6 +2,7 @@
 
 #include "log.hpp"
 #include "lua/lua_bindings.hpp"
+#include "lua/lua_states.hpp"
 #include "mesh/sprite.hpp"
 #include "opengl/create_program.hpp"
 #include "thread_allocators.hpp"
@@ -347,6 +348,27 @@ void surge::lua_update_callback(lua_State *L) noexcept {
   if (pcall_result != 0) {
     glog<log_event::error>("Unable to call surge.update: {}", lua_tostring(L, -1));
     lua_pop(L, 3);
+  } else {
+    lua_pop(L, 1);
+  }
+}
+
+void surge::glfw_key_callback(GLFWwindow *, int key, int, int action, int mods) noexcept {
+
+  // Recover main VM state
+  auto L{global_lua_states::get().back().get()};
+
+  lua_getglobal(L, "surge");
+  lua_getfield(L, -1, "key_event");
+  lua_pushinteger(L, key);
+  lua_pushinteger(L, action);
+  lua_pushinteger(L, mods);
+
+  const auto pcall_result{lua_pcall(L, 3, 0, 0)};
+
+  if (pcall_result != 0) {
+    glog<log_event::error>("Unable to call surge.key_event: {}", lua_tostring(L, -1));
+    lua_pop(L, 5);
   } else {
     lua_pop(L, 1);
   }

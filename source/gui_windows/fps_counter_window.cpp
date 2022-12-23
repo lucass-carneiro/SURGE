@@ -74,16 +74,13 @@ void surge::show_fps_counter_window(bool *open) noexcept {
     const auto frame_rate{1.0 / global_engine_window::get().get_frame_dt()};
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-    ImGui::Text("Cur. : %.0f FPS", frame_rate);
+    ImGui::Text("Avg. : %.0f FPS", plot_data.get_avg());
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     ImGui::Text("Min. : %.0f FPS", plot_data.get_min());
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     ImGui::Text("Max. : %.0f FPS", plot_data.get_max());
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-    ImGui::Text("Avg. : %.0f FPS", plot_data.get_avg());
 
     x = std::fmod(x, x_max);
 

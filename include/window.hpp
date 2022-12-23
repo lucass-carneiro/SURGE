@@ -30,6 +30,8 @@ void glfw_error_callback(int code, const char *description) noexcept;
 
 void framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept;
 
+void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) noexcept;
+
 class global_engine_window {
 public:
   static auto get() noexcept -> global_engine_window & {

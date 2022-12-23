@@ -50,8 +50,8 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
-  // Register GLFW callbacks
-  glfwSetErrorCallback(surge::glfw_error_callback);
+  // Register GLFW error callback
+  glfwSetErrorCallback(glfw_error_callback);
 
   // Initialize GLFW memory allocator structure;
   // TODO: This is only available in conan 3.4, which conan does not support yet
@@ -135,6 +135,9 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // Resize callback and viewport creation.
   glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
+
+  // Keyboard event callback
+  glfwSetKeyCallback(window.get(), glfw_key_callback);
 
   /*******************************
    *       OpenGL Options        *

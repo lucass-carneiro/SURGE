@@ -1,5 +1,20 @@
 -- SURGE entry point script
 
+local timer = 0.0
+local threshold = 0.1
+
+surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
+
+function surge.key_event(key, action, mods)
+    if key == surge.keys.RIGHT then
+        threshold = threshold + 0.01
+        surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
+    elseif key == surge.keys.LEFT then
+        threshold = threshold - 0.01
+        surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
+    end
+end
+
 function surge.pre_loop()
     surge.log_message("surge.pre_loop()")
 
@@ -16,11 +31,9 @@ function surge.draw()
     surge.draw_sprite(sprite)
 end
 
-timer = 0.0
-
 function surge.update(dt)
     timer = timer + dt
-    if(timer > 0.15) then
+    if(timer > threshold) then
         timer = 0.0
         surge.sheet_next(sprite)
     end

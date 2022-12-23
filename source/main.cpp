@@ -170,11 +170,11 @@ auto main(int argc, char **argv) noexcept -> int {
     // Present rendering
     global_engine_window::get().swap_buffers();
 
-    // Poll IO events
-    global_engine_window::get().poll_events();
-
     // Compute elapsed time
     global_engine_window::get().frame_timmer_compute_dt();
+
+    // Poll IO events
+    global_engine_window::get().poll_events();
   }
 
   return EXIT_SUCCESS;
