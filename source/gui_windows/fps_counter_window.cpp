@@ -1,10 +1,6 @@
 #include "gui_windows/gui_windows.hpp"
 #include "window.hpp"
 
-// clang-format off
-#include <imgui.h>
-// clang-format on
-
 #include <cmath>
 #include <limits>
 #include <numeric>
@@ -68,13 +64,17 @@ void surge::show_fps_counter_window(bool *open) noexcept {
 
   ImGui::SetNextWindowSize(ImVec2(430, 430), ImGuiCond_FirstUseEver);
   if (ImGui::Begin("FPS counter", open, ImGuiWindowFlags_NoResize)) {
-    static constexpr const std::size_t max_samples{500};
+
+    static constexpr const std::size_t max_samples{SURGE_FPS_COUNTER_SAMPLE_SIZE};
     static constexpr const double x_max{max_samples};
 
     static rolling_data<double, max_samples> plot_data{};
     static double x{0};
 
     const auto frame_rate{1.0 / global_engine_window::get().get_frame_dt()};
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+    ImGui::Text("Cur. : %.0f FPS", frame_rate);
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     ImGui::Text("Min. : %.0f FPS", plot_data.get_min());
@@ -93,7 +93,7 @@ void surge::show_fps_counter_window(bool *open) noexcept {
     if (ImPlot::BeginPlot("##Rolling")) {
       ImPlot::SetupAxes("Time", "Frame Rate (FPS)", ImPlotAxisFlags_NoTickLabels);
       ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, x_max - 1.0, ImGuiCond_Always);
-      ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 140.0);
+      ImPlot::SetupAxisLimits(ImAxis_Y1, 50.0, 70.0);
       ImPlot::PlotLine("Frame rate", plot_data.get_x_data().data(), plot_data.get_y_data().data(),
                        plot_data.get_last_idx());
       ImPlot::EndPlot();

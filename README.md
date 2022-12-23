@@ -6,34 +6,16 @@
 
 ![](resources/demo.gif)
 
-# Build instructions
+# Build & run instructions
 
 ```
-mkdir Debug && cd Debug
+cd Debug
 
 conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-gcc-12-release
 cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON
 cmake --build . -j20
+./run
 ```
-
-# Sanitizer supression
-
-```
-export ASAN_OPTIONS=suppressions=../configs/asan_supressions.sup
-```
-
-# Valgrind supression
-
-```
-valgrind --leak-check=full --show-reachable=yes --show-leak-kinds=all --error-limit=no --suppressions=../configs/sdl_valgrind_suppressions.sup ./bin/surge main.sqr --config-file=../configs/surge_config.yaml
-```
-
-# Perf with firefox
-```
-perf record -g -F 999 ./bin/surge ../configs/config.nut
-perf script -F +pid > firefox.perf
-```
-View with (https://profiler.firefox.com/)
 
 # Tasks
 
@@ -44,7 +26,6 @@ View with (https://profiler.firefox.com/)
 * [x] Implement FPS counter
 
 ##  Main TODO
-* [ ] Animate sprites via scripts
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
 * [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.
@@ -70,6 +51,7 @@ View with (https://profiler.firefox.com/)
 * [x] Add sprite drawing to script.
 * [x] Commit to a 2D renderer?.
 * [x] Use sprite shader to shade all sprites. 
+* [x] Animate sprites via scripts
 
 # References
 https://www.lua.org/manual/5.3/manual.html

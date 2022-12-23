@@ -1,0 +1,10 @@
+leak:__interceptor_malloc
+leak:__interceptor_calloc
+leak:__interceptor_realloc
+leak:libX11*
+leak:libglib*
+leak:libnvidia*
+leak:i965_dri
+leak:libdrm*
+leak:radeon*
+leak:libGLX*
