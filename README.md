@@ -61,3 +61,4 @@ https://registry.khronos.org/OpenGL-Refpages/gl4/
 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 https://learnopengl.com/
 https://stackoverflow.com/a/39684775
+https://pbrfrat.com/post/imgui_in_browser.html
