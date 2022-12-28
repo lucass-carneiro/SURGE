@@ -33,7 +33,7 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 # -----------------------------------------
-# Options
+# Size options
 # -----------------------------------------
 
 if(NOT DEFINED SURGE_STACK_FREE_RECORD_SIZE)
@@ -54,21 +54,9 @@ if(NOT DEFINED SURGE_FPS_COUNTER_SAMPLE_SIZE)
   set(SURGE_FPS_COUNTER_SAMPLE_SIZE 1000)
 endif()
 
-option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "OptimizedDebug")
-  option(SURGE_USE_LOG "Enable log messages" ON)
-  option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
-  option(SURGE_BUILD_TESTING "Build tests" ON)
-  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
-  option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_image" ON)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Quiet")
-  option(SURGE_USE_LOG "Enable log messages" OFF)
-  option(SURGE_USE_LOG_COLOR "Use colors on log outputs" OFF)
-  option(SURGE_BUILD_TESTING "Build tests" OFF)
-  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
-  option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_image" OFF)
-endif()
+# -----------------------------------------
+# Operating system and compiler detection
+# -----------------------------------------
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(SURGE_SYSTEM_IS_POSIX "IS_POSIX")
@@ -76,13 +64,48 @@ else()
   set(SURGE_SYSTEM_IS_POSIX "NOT_POSIX")
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+  set(SURGE_COMPILER_FLAG_STYLE "gcc")
+else()
+  set(SURGE_COMPILER_FLAG_STYLE "msvc")
+endif()
+
+# -----------------------------------------
+# Logging options
+# -----------------------------------------
+
+option(SURGE_USE_LOG "Enable log messages" ON)
+option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
+option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_image" ON)
+
+# -----------------------------------------
+# Compilation flag options
+# -----------------------------------------
+
+option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" ON)
+option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
+option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
+option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
+option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
+
+# -----------------------------------------
+# Other options
+# -----------------------------------------
+
+option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
+option(SURGE_BUILD_TESTING "Build tests" ON)
+option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
+
+# -----------------------------------------
+# Option file
+# -----------------------------------------
+
 configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}/include/options.hpp")
 
 # -----------------------------------------
 # Source files
 # -----------------------------------------
 
-# Core source files
 set(
   SURGE_HEADER_LIST
   "${Surge_SOURCE_DIR}/include/allocators/allocator_utils.hpp"
@@ -163,7 +186,10 @@ set(
   "${Surge_SOURCE_DIR}/source/window.cpp"
 )
 
-# Executable target
+# -----------------------------------------
+# Executable engine target
+# -----------------------------------------
+
 add_executable(Surge ${SURGE_HEADER_LIST} ${SURGE_SOURCE_LIST})
 target_compile_features(Surge PRIVATE cxx_std_20)
 set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
@@ -172,45 +198,61 @@ set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
 # Compilers flags and options
 # -----------------------------------------
 
-target_compile_definitions(Surge
-  PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW
-)
+target_compile_definitions(Surge PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
+
+if(SURGE_ENABLE_SANITIZERS)
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -fsanitize=address,null,unreachable,undefined)
+    target_link_options(Surge PUBLIC -fsanitize=address,null,unreachable,undefined)
+  else()
+    # TODO
+  endif()
+endif()
+
+if(SURGE_ENABLE_OPTIMIZATIONS)
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -O2)
+    target_link_options(Surge PUBLIC -O2)
+  else()
+    # TODO
+  endif()
+endif()
+
+if(SURGE_ENABLE_TUNING)
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -march=native -mtune=native)
+    target_link_options(Surge PUBLIC -march=native -mtune=native)
+  else()
+    # TODO
+  endif()
+endif()
+
+if(SURGE_ENABLE_LTO)
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -flto)
+    target_link_options(Surge PUBLIC -flto)
+  else()
+    # TODO
+  endif()
+endif()
+
+if(SURGE_ENABLE_FAST_MATH)
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -ffast-math)
+    target_link_options(Surge PUBLIC -ffast-math)
+  else()
+    # TODO
+  endif()
+endif()
+
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a debug build system")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC  -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined)
-    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,null,unreachable,undefined)
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_link_options(Surge PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+  else()
     # TODO:
-    target_compile_options(Surge PUBLIC /Wall /Wextra /permissive- /O2)
-  endif()
-elseif(CMAKE_BUILD_TYPE STREQUAL "OptimizedDebug")
-  message(STATUS "Generating a debug build system with optimizations")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC -O3 -flto -ffast-math -march=native -mtune=native -Wall -Wextra)
-    target_link_options(Surge PUBLIC -O3 -flto -ffast-math -march=native -mtune=native -Wall -Wextra)
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    # TODO:
-    target_compile_options(Surge PUBLIC /Wall /Wextra /permissive- /O2)
-  endif()
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(STATUS "Generating a release build system")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC -O2 -Wall -Wextra -pedantic)
-    target_link_options(Surge PUBLIC -O2 -Wall -Wextra -pedantic)
-  elseif(MSVC)
-    # TODO:
-    target_compile_options(Surge PUBLIC /O2)
-  endif()
-elseif(CMAKE_BUILD_TYPE STREQUAL "Profile")
-  message(STATUS "Generating a profiling build system")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC -g3 -O2 -pg)
-    target_link_options(Surge PUBLIC -g3 -O2 -pg)
-  elseif(MSVC)
-    # TODO:
-    target_compile_options(Surge PUBLIC /O2)
   endif()
 endif()
 

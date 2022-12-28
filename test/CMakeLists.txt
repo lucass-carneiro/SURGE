@@ -1,4 +1,4 @@
- set(SURGE_TESTS_SOURCE_LIST ${SURGE_SOURCE_LIST})
+set(SURGE_TESTS_SOURCE_LIST ${SURGE_SOURCE_LIST})
 set(SURGE_TESTS_HEADER_LIST ${SURGE_HEADER_LIST})
 
 list(REMOVE_ITEM SURGE_TESTS_SOURCE_LIST ${Surge_SOURCE_DIR}/source/main.cpp)
@@ -6,16 +6,21 @@ list(REMOVE_ITEM SURGE_TESTS_SOURCE_LIST ${Surge_SOURCE_DIR}/source/main.cpp)
 list(APPEND SURGE_TESTS_SOURCE_LIST "${Surge_SOURCE_DIR}/test/tests.cpp")
 list(APPEND SURGE_TESTS_SOURCE_LIST "${Surge_SOURCE_DIR}/test/test_template.cpp")
 
-#list(APPEND SURGE_TESTS_HEADER_LIST "${Surge_SOURCE_DIR}/test/HEADER_NAME.hpp")
-
 enable_testing()
 
 add_executable(tests ${SURGE_TESTS_HEADER_LIST} ${SURGE_TESTS_SOURCE_LIST})
 target_compile_features(tests PRIVATE cxx_std_20)
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
-    target_compile_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,undefined)
-    target_link_options(Surge PUBLIC -g3 -O0 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer -fsanitize=address,undefined)
+set_target_properties(tests PROPERTIES OUTPUT_NAME "test")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(tests PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_link_options(tests PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+  else()
+    # TODO:
+  endif()
 endif()
+
 
 target_include_directories(
     tests PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

@@ -1,12 +1,5 @@
 .cache/*
 
-Debug/bin
-Debug/CMakeFiles
-Debug/*.txt
-Debug/*.cmake
-Debug/*.lock
-Debug/*.json
-Debug/*.ini
-Debug/Makefile
+Debug/*
 
 compile_commands.json

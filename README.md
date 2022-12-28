@@ -12,7 +12,7 @@
 cd Debug
 
 conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-gcc-12-release
-cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -DSURGE_BUILD_TESTING=ON
+cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build . -j20
 ./run
 ```
@@ -26,7 +26,7 @@ cmake --build . -j20
 * [x] Implement FPS counter
 
 ##  Main TODO
-* [ ] Add script hooks for keybord/mouse input
+* [ ] Add script hooks for mouse input
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
 * [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.
@@ -53,6 +53,7 @@ cmake --build . -j20
 * [x] Commit to a 2D renderer?.
 * [x] Use sprite shader to shade all sprites. 
 * [x] Animate sprites via scripts
+* [x] Add script hooks for keyboard input
 
 # References
 https://www.lua.org/manual/5.3/manual.html
