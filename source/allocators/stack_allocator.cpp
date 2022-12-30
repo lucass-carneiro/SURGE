@@ -225,9 +225,8 @@ void surge::stack_allocator::free(void *ptr) noexcept {
         this->free(ptr_to_free);
 
       } else {
-        glog<log_event::warning>(
-            "In allocator \"{}\" unable to free ready_to_free allocation index {}",
-            allocator_debug_name, header_data - 1);
+        glog<log_event::warning>("Stack allocator unable to free ready_to_free allocation index {}",
+                                 header_data - 1);
         return;
       }
     }

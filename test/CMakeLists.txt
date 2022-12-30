@@ -12,13 +12,11 @@ add_executable(tests ${SURGE_TESTS_HEADER_LIST} ${SURGE_TESTS_SOURCE_LIST})
 target_compile_features(tests PRIVATE cxx_std_20)
 set_target_properties(tests PROPERTIES OUTPUT_NAME "test")
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(tests PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
-    target_link_options(tests PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
-  else()
-    # TODO:
-  endif()
+if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+  target_compile_options(tests PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+  target_link_options(tests PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+else()
+  # TODO:
 endif()
 
 

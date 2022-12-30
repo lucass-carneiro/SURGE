@@ -25,6 +25,9 @@ public:
 
   [[nodiscard]] auto at(std::size_t i) noexcept -> stack_allocator_ptr &;
   [[nodiscard]] auto back() noexcept -> stack_allocator_ptr &;
+  [[nodiscard]] auto get_allocator_array() const noexcept -> const alloc_vec_t & {
+    return allocator_array;
+  }
 
   [[nodiscard]] inline auto get_num_threads() const noexcept -> unsigned int { return num_threads; }
   [[nodiscard]] inline auto get_num_workers() const noexcept -> unsigned int {

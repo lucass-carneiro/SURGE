@@ -23,7 +23,7 @@ public:
 #ifdef SURGE_DEBUG_MEMORY
   static_arena_allocator(const char *name) : allocator_debug_name{name} {}
 #else
-  static_arena_allocator(const char *) = default;
+  static_arena_allocator() = default;
 #endif
 
   [[nodiscard]] auto aligned_alloc(std::size_t alignment, std::size_t size) noexcept -> void * {
@@ -148,7 +148,7 @@ public:
     return this->malloc(new_size);
   }
 
-  void free(void *ptr) noexcept {
+  void free([[maybe_unused]] void *ptr) noexcept {
 #ifdef SURGE_DEBUG_MEMORY
     glog<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -160,7 +160,10 @@ public:
 
   void reset() noexcept {
     free_index = 0;
+
+#ifdef SURGE_DEBUG_MEMORY
     allocation_counter = 0;
+#endif
   }
 
   [[nodiscard]] auto save() const noexcept -> static_arena_allocator_state {

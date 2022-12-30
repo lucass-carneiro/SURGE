@@ -49,10 +49,12 @@ auto os_open_read(const std::filesystem::path &p, void *buffer, std::uintmax_t f
     -> bool;
 
 #ifdef SURGE_DEBUG_MEMORY
-using load_file_return_t = std::optional<gsl::span<std::byte>>;
+using load_file_span = gsl::span<std::byte>;
 #else
-using load_file_return_t = std::optional<std::span<std::byte>>;
+using load_file_span = std::span<std::byte>;
 #endif
+
+using load_file_return_t = std::optional<load_file_span>;
 
 /**
  * @brief Loads a whole file to memory using the specified allocator.
@@ -95,7 +97,7 @@ inline auto load_file(alloc_t *allocator, const std::filesystem::path &p, const 
   }
 
   if (os_open_read(p, buffer, file_size)) {
-    return gsl::span<std::byte>(byte_buffer, file_size);
+    return load_file_return_t{load_file_span{byte_buffer, file_size}};
   } else {
     allocator->free(buffer);
     return {};

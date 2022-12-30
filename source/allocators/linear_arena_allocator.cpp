@@ -6,14 +6,13 @@
 const std::size_t default_alignment = alignof(std::max_align_t);
 
 #ifdef SURGE_DEBUG_MEMORY
-
 surge::linear_arena_allocator::~linear_arena_allocator() noexcept {
-#  ifdef SURGE_DEBUG_MEMORY
   glog<log_event::message>("Deleated allocator {} with {} remaining allocations.",
                            allocator_debug_name, allocation_counter);
-#  endif
 }
+#endif
 
+#ifdef SURGE_DEBUG_MEMORY
 void surge::linear_arena_allocator::init(base_allocator *pa, std::size_t capacity,
                                          const char *debug_name) noexcept {
   parent_allocator = pa;
@@ -40,9 +39,9 @@ void surge::linear_arena_allocator::init(base_allocator *pa, std::size_t capacit
 }
 #endif
 
-[[nodiscard]] auto surge::linear_arena_allocator::aligned_alloc(std::size_t alignment,
-                                                                std::size_t size) noexcept
-    -> void * {
+[[nodiscard]] auto
+surge::linear_arena_allocator::aligned_alloc([[maybe_unused]] std::size_t alignment,
+                                             std::size_t size) noexcept -> void * {
 
 #ifdef SURGE_DEBUG_MEMORY
   // Precondition 1: alignment must be a power of 2
@@ -165,7 +164,7 @@ void surge::linear_arena_allocator::init(base_allocator *pa, std::size_t capacit
   return this->malloc(new_size);
 }
 
-void surge::linear_arena_allocator::free(void *ptr) noexcept {
+void surge::linear_arena_allocator::free([[maybe_unused]] void *ptr) noexcept {
 #ifdef SURGE_DEBUG_MEMORY
   glog<log_event::memory>("Allocator \"{}\" released address {:#x}", allocator_debug_name,
                           // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
@@ -177,7 +176,10 @@ void surge::linear_arena_allocator::free(void *ptr) noexcept {
 
 void surge::linear_arena_allocator::reset() noexcept {
   free_index = 0;
+
+#ifdef SURGE_DEBUG_MEMORY
   allocation_counter = 0;
+#endif
 }
 
 auto surge::linear_arena_allocator::save() const noexcept -> linear_arena_allocator_state {

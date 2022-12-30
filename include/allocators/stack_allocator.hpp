@@ -178,6 +178,15 @@ public:
     return actual_arena_capacity;
   }
 
+  /**
+   * @brief Get the allocated size
+   *
+   * @return The size (in bytes) of allocated memory
+   */
+  [[nodiscard]] inline auto get_allocated_size() const noexcept -> size_t {
+    return free_index != 0 ? (free_index - header_size) * sizeof(std::byte) : 0;
+  }
+
 private:
   /**
    * The parent allocator to use for this arena.

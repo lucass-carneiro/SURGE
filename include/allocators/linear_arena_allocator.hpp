@@ -41,7 +41,11 @@ public:
   linear_arena_allocator() noexcept
       : arena_buffer(nullptr, [&](void *ptr) { parent_allocator->free(ptr); }) {}
 
+#ifdef SURGE_DEBUG_MEMORY
   ~linear_arena_allocator() noexcept final;
+#else
+  ~linear_arena_allocator() noexcept final = default;
+#endif
 
   void init(base_allocator *pa, std::size_t capacity, const char *debug_name) noexcept;
 
@@ -175,6 +179,15 @@ public:
    */
   [[nodiscard]] inline auto get_actual_capacity() const noexcept -> std::size_t {
     return actual_arena_capacity;
+  }
+
+  /**
+   * @brief Get the allocated size
+   *
+   * @return The size (in bytes) of allocated memory
+   */
+  [[nodiscard]] inline auto get_allocated_size() const noexcept -> std::size_t {
+    return free_index * sizeof(std::byte);
   }
 
 private:

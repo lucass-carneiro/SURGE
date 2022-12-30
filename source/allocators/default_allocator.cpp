@@ -120,7 +120,7 @@ void surge::default_allocator::init(const char *debug_name) noexcept {
   mi_option_set(mi_option_show_errors, 1);
 }
 #else
-void surge::default_allocator::init(const char *debug_name) noexcept {
+void surge::default_allocator::init(const char *) noexcept {
   mi_option_set(mi_option_show_errors, 1);
 }
 #endif

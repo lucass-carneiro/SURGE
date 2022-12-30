@@ -82,11 +82,21 @@ option(SURGE_STBIMAGE_ERRORS "Enables more verbose error message strings in stb_
 # Compilation flag options
 # -----------------------------------------
 
-option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" ON)
-option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
-option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
-option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
-option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" ON)
+  option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" OFF)
+  option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" OFF)
+  option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" OFF)
+  option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" OFF)
+option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" OFF)
+  option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
+  option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
+  option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
+  option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+endif()
 
 # -----------------------------------------
 # Other options
@@ -94,7 +104,6 @@ option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
 
 option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
 option(SURGE_BUILD_TESTING "Build tests" ON)
-option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
 
 # -----------------------------------------
 # Option file
@@ -229,8 +238,8 @@ endif()
 
 if(SURGE_ENABLE_LTO)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(Surge PUBLIC -flto)
-    target_link_options(Surge PUBLIC -flto)
+    target_compile_options(Surge PUBLIC -flto -fuse-linker-plugin)
+    target_link_options(Surge PUBLIC -flto -fuse-linker-plugin)
   else()
     # TODO
   endif()
@@ -247,13 +256,15 @@ endif()
 
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message(STATUS "Generating a debug build system")
+  message(STATUS "Generating a Debug build system")
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(Surge PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
-    target_link_options(Surge PUBLIC -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_compile_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_link_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
   else()
     # TODO:
   endif()
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  message(STATUS "Generating a Release build system")
 endif()
 
 # -----------------------------------------
