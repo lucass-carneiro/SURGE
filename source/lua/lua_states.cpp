@@ -26,6 +26,21 @@ void surge::global_lua_states::init() noexcept {
   }
 }
 
+auto surge::global_lua_states::configure(const std::filesystem::path &path) noexcept -> bool {
+  for (std::size_t i = 0; i < state_array.size(); i++) {
+    const auto succes{do_file_at(i, path)};
+    if (!succes) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+surge::global_lua_states::~global_lua_states() noexcept {
+  glog<log_event::message>("Closing Lua states");
+}
+
 auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
   try {
     return state_array.at(i);

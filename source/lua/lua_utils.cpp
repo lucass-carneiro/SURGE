@@ -48,6 +48,10 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set", lua_sheet_set);
   lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_next", lua_sheet_next);
 
+  // Tasker functions
+  lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "run_task_at", lua_run_task_at);
+
   // Keyboard keys table
   lua_newtable(L);
   lua_add_table_field<lua_String, lua_Integer>(L, "UNKNOWN", -1);

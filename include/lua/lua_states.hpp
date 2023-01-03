@@ -29,11 +29,16 @@ public:
   }
 
   void init() noexcept;
+  auto configure(const std::filesystem::path &path) noexcept -> bool;
 
   [[nodiscard]] auto at(std::size_t i) noexcept -> lua_state_ptr &;
   [[nodiscard]] auto back() noexcept -> lua_state_ptr &;
+  [[nodiscard]] inline auto get_state_array() const noexcept -> const state_vec_t & {
+    return state_array;
+  }
+  [[nodiscard]] auto size() const noexcept -> std::size_t { return state_array.size(); }
 
-  ~global_lua_states() noexcept = default;
+  ~global_lua_states() noexcept;
 
   global_lua_states(const global_lua_states &) = delete;
   global_lua_states(global_lua_states &&) = delete;

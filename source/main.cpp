@@ -108,19 +108,21 @@ auto main(int argc, char **argv) noexcept -> int {
   // future if possible
   global_lua_states::get().init();
 
-  // Init parallel job system
-  glog<log_event::message>("Initializing job system with {} workers",
-                           *num_threads == 1 ? 1 : *num_threads - 1);
-  global_task_executor::get();
-
   // Init all VMs with the engine configuration
-  for (auto i = 0; i < *num_threads; i++) {
-    global_task_executor::get().async(do_file_at, i, *config_script_path);
+  if (!global_lua_states::get().configure(*config_script_path)) {
+    return EXIT_FAILURE;
   }
-  global_task_executor::get().wait_for_all();
 
-  // Do startup file at the main thread VM
-  do_file_at(*num_threads - 1, *startup_script_path);
+  // Do the startup file in VM 0 (main thread)
+  if (!do_file_at(0, *startup_script_path)) {
+    return EXIT_FAILURE;
+  }
+
+  // Init parallel job system
+  if (*num_threads > 1) {
+    glog<log_event::message>("Initializing job system with {} workers", *num_threads - 1);
+    global_task_executor::get();
+  }
 
   // Initialize GLFW
   if (!global_engine_window::get().init()) {
@@ -130,7 +132,7 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *      PRE LOOP CALLBACK      *
    *******************************/
-  if (!lua_pre_loop_callback(global_lua_states::get().back().get())) {
+  if (!lua_pre_loop_callback(global_lua_states::get().at(0).get())) {
     return EXIT_FAILURE;
   }
 
@@ -150,7 +152,7 @@ auto main(int argc, char **argv) noexcept -> int {
     /*
      * Lua update callback
      */
-    lua_update_callback(global_lua_states::get().back().get());
+    lua_update_callback(global_lua_states::get().at(0).get());
 
     // Clear buffers
     global_engine_window::get().clear_framebuffer();
@@ -159,7 +161,7 @@ auto main(int argc, char **argv) noexcept -> int {
     /*
      * Lua draw callback
      */
-    lua_draw_callback(global_lua_states::get().back().get());
+    lua_draw_callback(global_lua_states::get().at(0).get());
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();

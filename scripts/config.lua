@@ -18,3 +18,6 @@ surge.clear_color[4] = 1.0
 
 -- Folder structure
 surge.engine_root_dir = "/home/lucas/SURGE/"
+
+-- Load external libraries
+surge.serialize = require("scripts/libs/ser")

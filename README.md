@@ -29,8 +29,8 @@ cmake --build . -j20
 ##  Main TODO
 * [ ] Add script hooks for mouse input
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
-* [ ] Thread allocators are not getting destroyed. Investigate.
 * [ ] Find out safer way to provide VM index from the lua state.
+* [ ] Add parallel task synchronization. Review parallel task system?
 
 ## Main Done
 * [x] Review file loading to memory functions. Implement: load to buffer, ~load given allocator~
@@ -55,6 +55,8 @@ cmake --build . -j20
 * [x] Use sprite shader to shade all sprites. 
 * [x] Animate sprites via scripts
 * [x] Add script hooks for keyboard input
+* [x] Thread allocators are not getting destroyed. Investigate.
+* [x] Add VM hooks for parallel job system
 
 # References
 https://www.lua.org/manual/5.3/manual.html

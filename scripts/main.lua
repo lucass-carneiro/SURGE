@@ -3,8 +3,6 @@
 local timer = 0.0
 local threshold = 0.1
 
-surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
-
 function surge.key_event(key, action, mods)
     if key == surge.keys.RIGHT then
         threshold = threshold + 0.01
