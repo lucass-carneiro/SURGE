@@ -40,9 +40,8 @@ surge::global_engine_window::~global_engine_window() {
 auto surge::global_engine_window::init() noexcept -> bool {
   glog<log_event::message>("Initializing window");
 
-  // Retrieve, parse and cast configuration values from config script of the main thread VM (the
-  // last one in the array)
-  auto L{global_lua_states::get().back().get()};
+  // Retrieve, parse and cast configuration values from config script using the main thread VM
+  lua_State *L{global_lua_states::get().at(0).get()};
   engine_config = get_lua_engine_config(L);
 
   if (!engine_config) {
@@ -104,11 +103,24 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
-  // OpenGL context creation
+  /*******************************
+   *       OpenGL Context        *
+   *******************************/
+
   glfwMakeContextCurrent(window.get());
   glfwSwapInterval(1); // TODO: Set vsync via code;
 
-  // Setup Dear ImGui context
+  /*******************************
+   *      Input callbacks        *
+   *******************************/
+  glfwSetKeyCallback(window.get(), glfw_key_callback);
+  glfwSetMouseButtonCallback(window.get(), glfw_mouse_button_callback);
+  glfwSetScrollCallback(window.get(), glfw_scroll_callback);
+
+  /*******************************
+   *          DearImGui          *
+   *******************************/
+
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImPlot::CreateContext();
@@ -135,9 +147,6 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // Resize callback and viewport creation.
   glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
-
-  // Keyboard event callback
-  glfwSetKeyCallback(window.get(), glfw_key_callback);
 
   /*******************************
    *       OpenGL Options        *
@@ -184,6 +193,15 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   set_uniform(*sprite_shader, "view", view_matrix);
   set_uniform(*sprite_shader, "projection", projection_matrix);
+
+  /*******************************
+   *           CURSORS           *
+   *******************************/
+  if (engine_config->show_cursor) {
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  } else {
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+  }
 
   window_init_success = true;
   return window_init_success;

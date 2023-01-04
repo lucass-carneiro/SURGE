@@ -3,14 +3,34 @@
 local timer = 0.0
 local threshold = 0.1
 
+local cursor_x = 0.0
+local cursor_y = 0.0
+
 function surge.key_event(key, action, mods)
-    if key == surge.keys.RIGHT then
+    if key == surge.keyboard_key.RIGHT and action == surge.input_action.PRESS then
         threshold = threshold + 0.01
         surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
-    elseif key == surge.keys.LEFT then
+
+    elseif key == surge.keyboard_key.LEFT and action == surge.input_action.PRESS then
         threshold = threshold - 0.01
         surge.log_message("Animation frame rate: ", 1.0/threshold, " FPS")
     end
+end
+
+function surge.mouse_button_event(button, action, mods)
+    if button == surge.mouse_button.LEFT and action == surge.input_action.PRESS then
+        surge.log_message("Left click at pos (", cursor_x, ",", cursor_y, ")")
+
+    elseif button == surge.mouse_button.MIDDLE and action == surge.input_action.PRESS then
+        surge.log_message("Middle click at pos (", cursor_x, ",", cursor_y, ")")
+
+    elseif button == surge.mouse_button.RIGHT and action == surge.input_action.PRESS then
+        surge.log_message("Right click at pos (", cursor_x, ",", cursor_y, ")")
+    end
+end
+
+function surge.mouse_scroll_event(xoffset, yoffset)
+    surge.log_message("Mouse offset (", xoffset, ",", yoffset, ")")
 end
 
 function surge.pre_loop()
@@ -35,4 +55,6 @@ function surge.update(dt)
         timer = 0.0
         surge.sheet_next(sprite)
     end
+
+    cursor_x, cursor_y = surge.get_cursor_pos()
 end

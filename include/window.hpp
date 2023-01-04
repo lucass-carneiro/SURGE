@@ -16,13 +16,13 @@
 #include <implot.h>
 // clang-format on
 
-#include <EASTL/bonus/fixed_ring_buffer.h>
 #include <algorithm>
 #include <cstddef>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>
 #include <tl/expected.hpp>
+#include <tuple>
 
 namespace surge {
 
@@ -31,6 +31,10 @@ void glfw_error_callback(int code, const char *description) noexcept;
 void framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept;
 
 void glfw_key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) noexcept;
+
+void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) noexcept;
+
+void glfw_scroll_callback(GLFWwindow *window, double xoffset, double yoffset) noexcept;
 
 class global_engine_window {
 public:
@@ -79,6 +83,12 @@ public:
   }
 
   [[nodiscard]] inline auto get_view() const noexcept -> const glm::mat4 & { return view_matrix; }
+
+  [[nodiscard]] inline auto get_cursor_pos() const noexcept -> std::tuple<double, double> {
+    double x{0}, y{0};
+    glfwGetCursorPos(window.get(), &x, &y);
+    return std::make_tuple(x, y);
+  }
 
   ~global_engine_window();
 

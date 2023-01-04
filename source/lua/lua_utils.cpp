@@ -52,7 +52,10 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
   lua_add_table_field<lua_String, lua_CFunction>(L, "run_task_at", lua_run_task_at);
 
-  // Keyboard keys table
+  // Mouse functions
+  lua_add_table_field<lua_String, lua_CFunction>(L, "get_cursor_pos", lua_get_cursor_pos);
+
+  // begin keyboard_key table
   lua_newtable(L);
   lua_add_table_field<lua_String, lua_Integer>(L, "UNKNOWN", -1);
   lua_add_table_field<lua_String, lua_Integer>(L, "SPACE", 32);
@@ -176,20 +179,44 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_Integer>(L, "RIGHT_SUPER", 347);
   lua_add_table_field<lua_String, lua_Integer>(L, "MENU", 348);
   lua_add_table_field<lua_String, lua_Integer>(L, "LAST", 348);
+  lua_setfield(L, -2, "keyboard_key");
+  // end keyboard_key table
 
+  // Begin modifier_bits table
+  lua_newtable(L);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_SHIFT", 0x0001);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_CONTROL", 0x0002);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_ALT", 0x0004);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_SUPER", 0x0008);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_CAPS_LOCK", 0x0010);
   lua_add_table_field<lua_String, lua_Integer>(L, "MOD_NUM_LOCK", 0x0020);
+  lua_setfield(L, -2, "modifier_bits");
+  // end modifier_bits table
 
+  // Begin input_action table
+  lua_newtable(L);
   lua_add_table_field<lua_String, lua_Integer>(L, "RELEASE", 0);
   lua_add_table_field<lua_String, lua_Integer>(L, "PRESS", 1);
   lua_add_table_field<lua_String, lua_Integer>(L, "REPEAT", 2);
+  lua_setfield(L, -2, "input_action");
+  // end input_action table
 
-  lua_setfield(L, -2, "keys");
-  // end sprite_meta table
+  // Mouse button table
+  lua_newtable(L);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_1", 0);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_2", 1);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_3", 2);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_4", 3);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_5", 4);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_6", 5);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_7", 6);
+  lua_add_table_field<lua_String, lua_Integer>(L, "BUTTON_8", 7);
+  lua_add_table_field<lua_String, lua_Integer>(L, "LAST", 7);
+  lua_add_table_field<lua_String, lua_Integer>(L, "LEFT", 0);
+  lua_add_table_field<lua_String, lua_Integer>(L, "RIGHT", 1);
+  lua_add_table_field<lua_String, lua_Integer>(L, "MIDDLE", 2);
+  lua_setfield(L, -2, "mouse_button");
+  // end Mouse button table
 
   lua_setglobal(L, "surge");
   // end surge table
@@ -249,6 +276,16 @@ auto surge::get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_en
     return {};
   } else {
     config.window_monitor_index = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+  }
+
+  lua_getfield(L, -1, "show_cursor");
+  if (!lua_isboolean(L, -1)) {
+    glog<log_event::error>("The value stored in the field show_cursor is not a boolean");
+    lua_settop(L, stack_top);
+    return {};
+  } else {
+    config.show_cursor = static_cast<lua_Boolean>(lua_toboolean(L, -1));
     lua_pop(L, 1);
   }
 

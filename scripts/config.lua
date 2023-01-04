@@ -9,6 +9,9 @@ surge.window_name   = "SURGE OpenGL Window"
 surge.windowed = true          -- true for windowed, false for fullscreen
 surge.window_monitor_index = 1
 
+-- Show/hide window cursor
+surge.show_cursor = false -- Not working
+
 -- The color to use while clearing the framebuffer.
 -- The color currently set is Horseshit green.
 surge.clear_color[1] = 0.2
