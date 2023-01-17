@@ -4,7 +4,7 @@
 
 # Demo
 
-![](demos/demo.mp4)
+![](demos/demo.gif)
 
 # Build & run instructions
 
