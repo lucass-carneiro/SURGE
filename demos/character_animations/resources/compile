@@ -1,0 +1,103 @@
+#!/usr/bin/python
+
+import os
+import shutil
+import subprocess
+
+# Get all .xcf files in dir
+sprite_files = os.listdir("./")
+sprite_files = [f for f in sprite_files if f.endswith(".xcf")]
+
+# Get file names
+sprite_file_names = list(map(lambda x : os.path.splitext(x)[0], sprite_files))
+sprite_file_names.sort()
+
+# Create directories for each sprite file and result, if it does not exist
+for f in sprite_file_names:
+    if not os.path.exists(f):
+        os.makedirs(f)
+
+if not os.path.exists("./spritesheet"):
+    os.makedirs("spritesheet")
+
+# The dictionary of sprite data
+sprite_data = []
+
+# extract sprites from xcf
+for sprite_file in sprite_file_names:
+    os.chdir(sprite_file)
+    os.system("convert ../" + sprite_file +".xcf " + sprite_file + "_%02d.png")
+
+    # Get the list of png files extracted from the xcf
+    sprite_pngs = os.listdir("./")
+    sprite_pngs.sort()
+
+    # Get the sprite dimentions
+    img_dim = subprocess.check_output("identify -ping -format \"%w %h\" " + sprite_pngs[0], shell=True, universal_newlines=True)
+    img_dim = img_dim.split()
+
+    # Save sprite data
+    sprite_data.append({
+        "name": sprite_file,
+        "Sw": int(img_dim[0]),
+        "Sh": int(img_dim[1]),
+        "rows": 1,
+        "cols": len(sprite_pngs)
+    })
+    
+    # Concatenate the list of png files as a string
+    sprite_pngs = " ".join(sprite_pngs)
+
+    # Concatenate sprites into a sheet
+    os.system("convert +append " + sprite_pngs + " " + sprite_file + ".png")
+
+    # Move the partial result up
+    os.system("mv " + sprite_file + ".png ../spritesheet")
+
+    os.chdir("../")
+
+# Concatenate sheets into a set. This cannot be done algorithmically :(
+os.chdir("./spritesheet")
+os.system("convert -background none +append sophia_front_walk.png sophia_back_walk.png sophia_idle_front.png sophia_idle_back.png spritesheet_a.png")
+os.system("convert -background none +append sophia_side_walk.png sophia_idle_side.png spritesheet_b.png")
+os.system("convert -background none -append spritesheet_a.png spritesheet_b.png sophia_spritesheet.png")
+os.system("optipng -o7 sophia_spritesheet.png")
+os.system("mv sophia_spritesheet.png ../")
+os.chdir("../")
+
+# Remove directories
+for sprite_names in sprite_file_names:
+    shutil.rmtree(sprite_names)
+shutil.rmtree("spritesheet")
+
+# Create lua file
+lua_file = """-- Convenience sprite set descriptor for sophia animations
+local sophia_sheet_set = {}
+
+"""
+
+index = 1
+for sprite in sprite_data:
+    lua_file = lua_file + "-- " + sprite["name"] + "\n"
+    lua_file = lua_file + f"""sophia_sheet_set[{index}] = {{
+    x0 = TODO,
+    y0 = TODO,
+
+    Sw = {sprite["Sw"]},
+    Sh = {sprite["Sh"]},
+
+    alpha = 0,
+    beta = 0,
+
+    rows = {sprite["rows"]},
+    cols = {sprite["cols"]}
+}}
+
+"""
+    index = index + 1
+
+lua_file = lua_file + "return sophia_sheet_set"
+
+output_file = open("sophia_sheet_set.lua", "w")
+output_file.write(lua_file)
+output_file.close()
