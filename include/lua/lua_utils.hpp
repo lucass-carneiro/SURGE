@@ -16,6 +16,7 @@ struct lua_engine_config {
   bool windowed{true};
   lua_Integer window_monitor_index{0};
   bool show_cursor{true};
+  lua_Integer show_debug_objects{0};
   std::array<lua_Number, 4> clear_color{0, 0, 0, 1};
   std::filesystem::path root_dir{"/home/surge/"};
 };

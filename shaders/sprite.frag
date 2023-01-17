@@ -8,36 +8,41 @@ in VS_OUT {
 
 uniform sampler2D txt_0;
 
-uniform ivec4 sheet_coords;
+uniform vec2 sheet_set_dimentions;
+uniform vec2 sheet_offsets;
+uniform vec2 sheet_dimentions;
+uniform vec2 sheet_indices;
 
 vec2 get_sprite_coord() {
-  const int i = sheet_coords.x;
-  const int j = sheet_coords.y;
-  const int sw = sheet_coords.z;
-  const int sh = sheet_coords.w;
+  const float Sw = sheet_set_dimentions.x;
+  const float Sh = sheet_set_dimentions.y;
   
+  const float x0 = sheet_offsets.x;
+  const float y0 = sheet_offsets.y;
+
+  const float w  = sheet_dimentions.x;
+  const float h = sheet_dimentions.y;
+  
+  const float alpha = sheet_indices.x;
+  const float beta = sheet_indices.y;
+
   // Show the whole sprite sheet
-  if (i < 0 || j < 0) {
+  if (alpha < 0 || beta < 0) {
     return fs_in.txt_pos;
   } else {
-    // Step 1: Compute steps
-    const float du = 1.0/sw;
-    const float dv = 1.0/sh;
+    const float A = w / Sw;
+    const float B = h / Sh;
+    const float C = (x0 + w * beta) / Sw;
+    const float D = 1 - (y0 + h * (alpha + 1)) / Sh;
 
-    // Step 1: Extended fs_in.txt_pos
-    const vec3 ext_txt_pos = vec3(fs_in.txt_pos, 1.0);
-
-    // Step 2: Build transformation matrix
     const mat3 M = mat3(
-      du, 0, 0,
-      0, dv, 0,
-      j * du, (sh - 1 - i) * dv, 1
-    );
+      A, 0, 0,
+      0, B, 0,
+      C, D, 1
+    ); 
 
-    // Step 3: Transform vertex coordinates
+    const vec3 ext_txt_pos = vec3(fs_in.txt_pos, 1.0);
     const vec3 sprite_coord = M * ext_txt_pos;
-    
-    // Step 4: Downgrade dimention and return
     return sprite_coord.xy;
   }
 }

@@ -13,8 +13,10 @@ auto lua_drop_sprite(lua_State *L) noexcept -> int;
 auto lua_draw_sprite(lua_State *L) noexcept -> int;
 auto lua_scale_sprite(lua_State *L) noexcept -> int;
 auto lua_move_sprite(lua_State *L) noexcept -> int;
-auto lua_sheet_set(lua_State *L) noexcept -> int;
-auto lua_sheet_next(lua_State *L) noexcept -> int;
+auto lua_set_sprite_geometry(lua_State *L) noexcept -> int;
+auto lua_sheet_set_indices(lua_State *L) noexcept -> int;
+auto lua_sheet_set_offsets(lua_State *L) noexcept -> int;
+auto lua_sheet_set_dimentions(lua_State *L) noexcept -> int;
 
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;

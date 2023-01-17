@@ -106,7 +106,8 @@ private:
 
   std::optional<lua_engine_config> engine_config{};
 
-  bool window_init_success = false;
+  bool window_init_success{false};
+
   std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)> window;
 
   double frame_dt{0};

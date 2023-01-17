@@ -45,8 +45,11 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "draw_sprite", lua_draw_sprite);
   lua_add_table_field<lua_String, lua_CFunction>(L, "scale_sprite", lua_scale_sprite);
   lua_add_table_field<lua_String, lua_CFunction>(L, "move_sprite", lua_move_sprite);
-  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set", lua_sheet_set);
-  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_next", lua_sheet_next);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "set_sprite_geometry", lua_set_sprite_geometry);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set_indices", lua_sheet_set_indices);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set_offsets", lua_sheet_set_offsets);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set_dimentions",
+                                                 lua_sheet_set_dimentions);
 
   // Tasker functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
@@ -286,6 +289,16 @@ auto surge::get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_en
     return {};
   } else {
     config.show_cursor = static_cast<lua_Boolean>(lua_toboolean(L, -1));
+    lua_pop(L, 1);
+  }
+
+  lua_getfield(L, -1, "show_debug_objects");
+  if (!lua_isnumber(L, -1)) {
+    glog<log_event::error>("The value stored in the field show_debug_objects is not a number");
+    lua_settop(L, stack_top);
+    return {};
+  } else {
+    config.show_debug_objects = lua_tointeger(L, -1);
     lua_pop(L, 1);
   }
 

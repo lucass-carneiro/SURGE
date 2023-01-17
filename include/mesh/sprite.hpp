@@ -23,15 +23,13 @@ template <std::size_t i, typename T> [[nodiscard]] auto buffer_offset() noexcept
  */
 class sprite {
 public:
-  template <surge_allocator alloc_t>
-  sprite(alloc_t *allocator, const std::filesystem::path &p, const char *ext, GLint sw, GLint sh,
-         buffer_usage_hint usage_hint) noexcept
+  template <surge_allocator alloc_t> sprite(alloc_t *allocator, const std::filesystem::path &p,
+                                            const char *ext, buffer_usage_hint usage_hint) noexcept
       : VAO{gen_vao()},
         VBO{gen_buff()},
         EBO{gen_buff()},
         texture_id{load_texture(allocator, p, ext).value_or(0)},
-        sheet_width{sw},
-        sheet_heigth{sh} {
+        set_dimentions{dimentions_from_texture()} {
 
     const std::array<float, 20> vertex_attributes{
         0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
@@ -65,21 +63,27 @@ public:
 
   void draw(GLuint shader_program) const noexcept;
 
-  void sheet_reset() noexcept;
-  void sheet_set(glm::ivec2 &&ij) noexcept;
-  void sheet_next() noexcept;
+  void sheet_set_offset(glm::ivec2 &&offset) noexcept;
+  void sheet_set_dimentions(glm::ivec2 &&dimentions) noexcept;
+  void sheet_set_indices(glm::vec2 &&indices) noexcept;
 
   void move(GLuint shader_program, glm::vec3 &&vec) noexcept;
   void scale(GLuint shader_program, glm::vec3 &&vec) noexcept;
+  void set_geometry(GLuint shader_program, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
 
 private:
   const GLuint VAO{0}, VBO{0}, EBO{0}, texture_id{0};
-  const GLint sheet_width{0}, sheet_heigth{0};
+  const glm::vec2 set_dimentions{0.0f, 0.0f};
+
   glm::mat4 model_matrix{1.0f};
-  glm::ivec4 sheet_coords{-1, -1, sheet_width, sheet_heigth};
+
+  glm::vec2 sheet_offsets{0.0f, 0.0f};
+  glm::vec2 sheet_dimentions{0.0f, 0.0f};
+  glm::vec2 sheet_indices{0.0f, 0.0f};
 
   [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
   [[nodiscard]] auto gen_vao() const noexcept -> GLuint;
+  [[nodiscard]] auto dimentions_from_texture() -> glm::vec2;
 };
 
 } // namespace surge

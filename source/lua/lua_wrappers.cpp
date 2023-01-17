@@ -15,17 +15,16 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 4) {
-    glog<log_event::warning>("Function load_sprite expected 4 arguments and instead got {} "
+  if (nargs != 2) {
+    glog<log_event::warning>("Function load_sprite expected 2 arguments and instead got {} "
                              "arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
     return 1;
   }
 
-  if (!(lua_isstring(L, 1) || lua_isstring(L, 2) || lua_isnumber(L, 3) || lua_isnumber(L, 4))) {
-    glog<log_event::warning>(
-        "Fucntion load_image expects 2 string arguments and 2 integer arguments. Returning nil");
+  if (!(lua_isstring(L, 1) || lua_isstring(L, 2))) {
+    glog<log_event::warning>("Fucntion load_image expects 2 string arguments. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -33,8 +32,6 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
   // Argument extraction
   const char *path_str{lua_tostring(L, 1)};
   const char *ext_str{lua_tostring(L, 2)};
-  const lua_Integer sheet_width{lua_tointeger(L, 3)};
-  const lua_Integer sheet_height{lua_tointeger(L, 4)};
 
   // VM index recovery
   lua_getglobal(L, "surge");
@@ -45,8 +42,7 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
   // Internal call
   auto sprite_buffer{global_thread_allocators::get().at(vm_index).get()->malloc(sizeof(sprite))};
   sprite *sprite_ptr{new (sprite_buffer) sprite(global_thread_allocators::get().at(vm_index).get(),
-                                                path_str, ext_str, sheet_width, sheet_height,
-                                                buffer_usage_hint::static_draw)};
+                                                path_str, ext_str, buffer_usage_hint::static_draw)};
 
   // Pass this pointer to the Lua VM as userdata
   auto vm_sprite_ptr{static_cast<sprite **>(lua_newuserdata(L, sizeof(void *)))};
@@ -149,25 +145,13 @@ auto surge::lua_scale_sprite(lua_State *L) noexcept -> int {
     return 1;
   }
 
-  if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function scale_sprite expected second argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 3)) {
-    glog<log_event::warning>(
-        "Function scale_sprite expected third argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 4)) {
-    glog<log_event::warning>(
-        "Function scale_sprite expected fourth argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
+  for (int i = 2; i <= 4; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function scale_sprite expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
   }
 
   // Data recovery
@@ -201,25 +185,13 @@ auto surge::lua_move_sprite(lua_State *L) noexcept -> int {
     return 1;
   }
 
-  if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function move_sprite expected second argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 3)) {
-    glog<log_event::warning>(
-        "Function move_sprite expected third argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 4)) {
-    glog<log_event::warning>(
-        "Function move_sprite expected fourth argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
+  for (int i = 2; i <= 4; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function move_sprite expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
   }
 
   // Data recovery
@@ -236,63 +208,75 @@ auto surge::lua_move_sprite(lua_State *L) noexcept -> int {
   return 0;
 }
 
-auto surge::lua_sheet_set(lua_State *L) noexcept -> int {
+auto surge::lua_set_sprite_geometry(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 3) {
-    glog<log_event::warning>("Function sheet_set expected 3 arguments and instead got "
+  if (nargs != 7) {
+    glog<log_event::warning>("Function set_sprite_geometry expected 7 arguments and instead got "
                              "{} arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
     return 1;
   }
 
-  if (!is_sprite(L, "sheet_set")) {
+  if (!is_sprite(L, "set_sprite_geometry")) {
     lua_pushnil(L);
     return 1;
   }
 
-  if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function sheet_set expected second argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 3)) {
-    glog<log_event::warning>(
-        "Function sheet_set expected third argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
+  for (int i = 2; i <= 7; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function set_sprite_geometry expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
   }
 
   // Data recovery
   auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
   auto sprite_ptr{*vm_sprite_ptr};
-  const auto i{static_cast<GLint>(lua_tonumber(L, 2))}, j{static_cast<GLint>(lua_tonumber(L, 3))};
+  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
+      mz{static_cast<float>(lua_tonumber(L, 4))}, sx{static_cast<float>(lua_tonumber(L, 5))},
+      sy{static_cast<float>(lua_tonumber(L, 6))}, sz{static_cast<float>(lua_tonumber(L, 7))};
 
   // Internal call
-  sprite_ptr->sheet_set(glm::ivec2{i, j});
+  sprite_ptr->set_geometry(global_engine_window::get().get_shader_program(), glm::vec3{mx, my, mz},
+                           glm::vec3{sx, sy, sz});
 
   lua_pop(L, 1);
 
   return 0;
 }
 
-auto surge::lua_sheet_next(lua_State *L) noexcept -> int {
+auto surge::lua_sheet_set_indices(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 1) {
-    glog<log_event::warning>("Function sheet_next expected 1 argument and instead got "
+  if (nargs != 3) {
+    glog<log_event::warning>("Function sheet_set_indices expected 3 arguments and instead got "
                              "{} arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
     return 1;
   }
 
-  if (!is_sprite(L, "sheet_next")) {
+  if (!is_sprite(L, "sheet_set_indices")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function sheet_set_indices expected second argument to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 3)) {
+    glog<log_event::warning>(
+        "Function sheet_set_indices expected third argument to be a number. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -300,9 +284,101 @@ auto surge::lua_sheet_next(lua_State *L) noexcept -> int {
   // Data recovery
   auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
   auto sprite_ptr{*vm_sprite_ptr};
+  const auto i{static_cast<GLfloat>(lua_tonumber(L, 2))},
+      j{static_cast<GLfloat>(lua_tonumber(L, 3))};
 
   // Internal call
-  sprite_ptr->sheet_next();
+  sprite_ptr->sheet_set_indices(glm::vec2{i, j});
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
+auto surge::lua_sheet_set_offsets(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 3) {
+    glog<log_event::warning>("Function sheet_set_offsets expected 3 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_sprite(L, "sheet_set_offsets")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function sheet_set_offsets expected second argument to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 3)) {
+    glog<log_event::warning>(
+        "Function sheet_set_offsets expected third argument to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
+  auto sprite_ptr{*vm_sprite_ptr};
+  const auto x0{static_cast<GLfloat>(lua_tonumber(L, 2))},
+      y0{static_cast<GLfloat>(lua_tonumber(L, 3))};
+
+  // Internal call
+  sprite_ptr->sheet_set_offset(glm::vec2{x0, y0});
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
+auto surge::lua_sheet_set_dimentions(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 3) {
+    glog<log_event::warning>("Function sheet_set_dimentions expected 3 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_sprite(L, "sheet_set_dimentions")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function sheet_set_dimentions expected second argument to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 3)) {
+    glog<log_event::warning>(
+        "Function sheet_set_dimentions expected third argument to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
+  auto sprite_ptr{*vm_sprite_ptr};
+  const auto Sw{static_cast<GLfloat>(lua_tonumber(L, 2))},
+      Sh{static_cast<GLfloat>(lua_tonumber(L, 3))};
+
+  // Internal call
+  sprite_ptr->sheet_set_dimentions(glm::vec2{Sw, Sh});
 
   lua_pop(L, 1);
 
@@ -470,7 +546,7 @@ void surge::lua_update_callback(lua_State *L) noexcept {
 
 void surge::glfw_key_callback(GLFWwindow *, int key, int, int action, int mods) noexcept {
 
-  // Recover main VM state
+  // VM defined actions
   lua_State *L{global_lua_states::get().at(0).get()};
 
   lua_getglobal(L, "surge");

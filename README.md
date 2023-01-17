@@ -4,7 +4,7 @@
 
 # Demo
 
-![](resources/demo.gif)
+![](demos/demo.mp4)
 
 # Build & run instructions
 
@@ -27,6 +27,10 @@ cmake --build . -j20
 * [x] Implement memory visualizer
 
 ##  Main TODO
+* [ ] Finish character animation with P&C movement demo
+* [ ] Finish state changes demo
+* [ ] Fix paths in scripts
+* [ ] Add show/hide to debug windows triggered by customized key
 * [ ] Investigate why hidden cursors are not working
 * [ ] Add VM hooks for joysticks?
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
@@ -59,6 +63,9 @@ cmake --build . -j20
 * [x] Thread allocators are not getting destroyed. Investigate.
 * [x] Add VM hooks for parallel job system
 * [x] Add script hooks for mouse input
+* [x] Handle sprite sets with many sprite sheets of different properties
+* [x] Finish background test demo
+* [x] Add a function to reset quad geometry
 
 
 # References

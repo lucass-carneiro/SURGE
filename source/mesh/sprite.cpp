@@ -12,10 +12,25 @@ auto surge::sprite::gen_vao() const noexcept -> GLuint {
   return tmp;
 }
 
+auto surge::sprite::dimentions_from_texture() -> glm::vec2 {
+  GLint w{0}, h{0};
+
+  glBindTexture(GL_TEXTURE_2D, texture_id);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+  glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  return glm::vec2{static_cast<GLfloat>(w), static_cast<GLfloat>(h)};
+}
+
 void surge::sprite::draw(GLuint shader_program) const noexcept {
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
-  set_uniform(shader_program, "sheet_coords", sheet_coords);
+
+  set_uniform(shader_program, "sheet_set_dimentions", set_dimentions);
+  set_uniform(shader_program, "sheet_offsets", sheet_offsets);
+  set_uniform(shader_program, "sheet_dimentions", sheet_dimentions);
+  set_uniform(shader_program, "sheet_indices", sheet_indices);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -26,32 +41,13 @@ void surge::sprite::draw(GLuint shader_program) const noexcept {
   glBindVertexArray(0);
 }
 
-void surge::sprite::sheet_reset() noexcept {
-  sheet_coords[0] = -1;
-  sheet_coords[1] = -1;
+void surge::sprite::sheet_set_offset(glm::ivec2 &&offset) noexcept { sheet_offsets = offset; }
+
+void surge::sprite::sheet_set_dimentions(glm::ivec2 &&dimentions) noexcept {
+  sheet_dimentions = dimentions;
 }
 
-void surge::sprite::sheet_set(glm::ivec2 &&ij) noexcept {
-  sheet_coords[0] = ij[0];
-  sheet_coords[1] = ij[1];
-}
-
-void surge::sprite::sheet_next() noexcept {
-  const int current_i{sheet_coords[0]};
-  const int current_j{sheet_coords[1]};
-
-  if (current_i < 0 || current_j < 0) {
-    sheet_coords[0] = 0;
-    sheet_coords[1] = 0;
-  } else {
-    if ((current_j + 1) < sheet_width) {
-      sheet_coords[1] = current_j + 1;
-    } else {
-      sheet_coords[0] = (current_i + 1) % sheet_heigth;
-      sheet_coords[1] = 0;
-    }
-  }
-}
+void surge::sprite::sheet_set_indices(glm::vec2 &&indices) noexcept { sheet_indices = indices; }
 
 void surge::sprite::move(GLuint shader_program, glm::vec3 &&vec) noexcept {
   model_matrix = glm::translate(model_matrix, vec);
@@ -60,5 +56,15 @@ void surge::sprite::move(GLuint shader_program, glm::vec3 &&vec) noexcept {
 
 void surge::sprite::scale(GLuint shader_program, glm::vec3 &&vec) noexcept {
   model_matrix = glm::scale(model_matrix, vec);
+  set_uniform(shader_program, "model", model_matrix);
+}
+
+void surge::sprite::set_geometry(GLuint shader_program, glm::vec3 &&position,
+                                 glm::vec3 &&scale) noexcept {
+
+  model_matrix = glm::mat4{1.0f};
+  model_matrix = glm::translate(model_matrix, position);
+  model_matrix = glm::scale(model_matrix, scale);
+
   set_uniform(shader_program, "model", model_matrix);
 }
