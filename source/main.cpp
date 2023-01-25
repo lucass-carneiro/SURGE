@@ -3,7 +3,6 @@
 #include "image_loader.hpp"
 #include "log.hpp"
 #include "lua/lua_vm.hpp"
-#include "mesh/sprite.hpp"
 #include "opengl/create_program.hpp"
 #include "opengl/load_texture.hpp"
 #include "safe_ops.hpp"

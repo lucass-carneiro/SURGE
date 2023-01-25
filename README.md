@@ -27,6 +27,8 @@ cmake --build . -j20
 * [x] Implement memory visualizer
 
 ##  Main TODO
+* [ ] Read animation from .sad files
+* [ ] Add actor interface/abstraction in the engine
 * [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
@@ -66,6 +68,7 @@ cmake --build . -j20
 * [x] Handle sprite sets with many sprite sheets of different properties
 * [x] Finish background test demo
 * [x] Add a function to reset quad geometry
+* [x] Add a general sprite compiler
 
 
 # References

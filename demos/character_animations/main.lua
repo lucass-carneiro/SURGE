@@ -7,10 +7,14 @@ local sophia_sheet_set = require("character_animations/sophia_sheet_set")
 local sophia_num_sheets = table.getn(sophia_sheet_set)
 
 --  Index of the current set being shown (idle side)
-local sophia_current_set = 6
+local sophia_current_set = 5
 
 -- Sprite scale factor
 local scale_factor = 5.0
+
+-- Position of the character's feet in sprite coordinates
+sophia_feet_pos_x = 17
+sophia_feet_pos_y = 49
 
 -- Convenience function that moves the sprite index forward
 function next_sprite(sprite_obj, sprite_sheet)
@@ -70,7 +74,7 @@ end
 
 function surge.pre_loop()    
     -- Load Sprite
-    sophia_sprite = surge.load_sprite("character_animations/resources/sophia_spritesheet.png", ".png")
+    sophia_sprite = surge.load_sprite("character_animations/resources/spritesheet.png", ".png")
 
     surge.set_sprite_geometry(
         sophia_sprite,

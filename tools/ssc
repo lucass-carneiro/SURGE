@@ -1,0 +1,422 @@
+#!/usr/bin/python
+
+"""SURGE Sprite Set Compiler (SSC).
+
+Usage:
+  ssc [options] [-o <output-file>] <input-files>...
+  ssc (-h | --help)
+  ssc --version
+
+Options:
+  -h, --help                                  Show this screen.
+  --version                                   Show version.
+  -v, --verbose                               Print more information during compilation.
+  -k, --keep                                  Keeps intermediate files and directories
+  -o <output-file>, --output <output-file>    The name to use in the output file [default: spritesheet.png]
+  -V, --vertical                              Compiles sprites vertically instead of horizontally
+  -O <level>, --optimize <level>              Optimizes the result using optipng with the specified level [default: 2]
+  -j <jobs>, --jobs <jobs>                    Number of parallel jobs to use in compilation [default: 1]
+"""
+
+from docopt import docopt
+import logging
+import sys
+import os
+import subprocess
+import shutil
+import pickle
+from multiprocessing import Pool
+import fixedint
+
+# See https://github.com/jakesgordon/bin-packing/blob/master/js/packer.growing.js and
+# https://codeincomplete.com/articles/bin-packing/
+
+class packer_block:
+  def __init__(self, name, Sw, Sh, rows, cols):
+    self.name = name
+    
+    self.Sw = Sw
+    self.Sh = Sh
+    
+    self.rows = rows
+    self.cols = cols
+    
+    self.w = cols * Sw
+    self.h = rows * Sh
+    self.pixel_count = self.w * self.h
+
+    self.fit = None
+
+class packer_node:  
+  def __init__(self, x, y, w, h, used, down, right):
+    self.x = x
+    self.y = y
+    self.w = w
+    self.h = h
+    self.used = used
+    self.down = down
+    self.right = right
+
+class growing_packer:
+  def __init__(self):
+    self.root = None
+
+  def fit(self, blocks):
+    blocks_length = len(blocks)
+    
+    w = blocks[0].w if blocks_length > 0 else 0
+    h = blocks[0].h if blocks_length > 0 else 0
+
+    self.root = packer_node(0, 0, w, h, False, None, None)
+
+    for n in range(0, blocks_length):
+      block = blocks[n]
+      node = self.find_node(self.root, block.w, block.h)
+
+      if node:
+        block.fit = self.split_node(node, block.w, block.h)
+      else:
+        block.fit = self.grow_node(block.w, block.h)
+  
+  def find_node(self, root, w, h):
+    if root.used:
+      return self.find_node(root.right, w, h) or self.find_node(root.down, w, h)
+    elif (w <= root.w) and (h <= root.h):
+      return root
+    else:
+      return None
+      
+  def split_node(self, node, w, h):
+    node.used = True
+    node.down = packer_node(node.x, node.y + h, node.w, node.h - h, False, None, None)
+    node.right = packer_node(node.x + w, node.y, node.w - w, h, False, None, None)
+    return node
+
+  def grow_node(self, w, h):
+    can_grow_down = w <= self.root.w
+    can_grow_right = h < self.root.h
+
+    shoud_grow_down  = can_grow_down  and (self.root.w >= (self.root.h + h))
+    should_grow_right = can_grow_right and (self.root.h >= (self.root.w + w))
+
+    if should_grow_right:
+      return self.grow_right(w, h)
+    elif shoud_grow_down:
+      return self.grow_down(w, h)
+    elif can_grow_right:
+      return self.grow_right(w, h)
+    elif can_grow_down:
+      return self.grow_down(w, h)
+    else:
+      return None
+
+  def grow_down(self, w, h):
+    self.root = packer_node(
+      0,
+      0,
+      self.root.w,
+      self.root.h + h,
+      True,
+      packer_node(0, self.root.h, self.root.w, h, False, None, None),
+      self.root
+    )
+
+    node = self.find_node(self.root, w, h)
+    if node:
+      return self.split_node(node, w, h)
+    else:
+      return None
+
+  def grow_right(self, w, h):
+    #(self, x, y, w, h, used, down, right)
+    self.root = packer_node(
+      0,
+      0,
+      self.root.w + w,
+      self.root.h,
+      True,
+      self.root,
+      packer_node(self.root.w, 0, w, self.root.h, False, None, None)
+    )
+
+    node = self.find_node(self.root, w, h)
+    if node:
+      return self.split_node(node, w, h)
+    else:
+      return None
+
+def log(verbose, log_function, msg):
+  if verbose:
+    log_function(msg)
+
+def validate_file(file):
+  # Detect if file is xcf
+  if not file.endswith(".xcf"):
+    logging.error("File %s is not a .xcf file." % file)
+    raise NameError("File %s is not a .xcf file." % file)
+
+  # Detect if file exists
+  if not os.path.exists(file):
+    logging.error("File %s does not exist" % file)
+    raise NameError("File %s does not exist" % file)
+
+def check_programs():
+  # Check if ImageMagick convert is available
+  if shutil.which("convert") == None:
+    logging.error("ImageMagick's convert not found")
+    raise RuntimeError("ImageMagick's convert not found")
+
+  # Check if ImageMagick identify is available
+  if shutil.which("identify") == None:
+    logging.error("ImageMagick's identify not found")
+    raise RuntimeError("ImageMagick's identify not found")
+
+  # Check if optipng is available
+  if shutil.which("optipng") == None:
+    logging.error("optipng not found")
+    raise RuntimeError("optipng not found")
+
+def create_folder(verbose, folder_name):
+  if not os.path.exists(folder_name):
+    log(verbose, logging.info, "Creating directory %s" % folder_name)
+    os.makedirs(folder_name)
+  else:
+    log(verbose, logging.info, "Directory %s already exists" % folder_name)
+
+def extract_xcf(xcf_file, output_file):
+  subprocess.run(
+    [
+      "convert",
+      xcf_file,
+      output_file
+    ],
+    check=True
+  )
+
+def get_sprite_dimentions(file):
+  sprite_dim = subprocess.check_output(
+    "identify -ping -format \"%w %h\" " + file,
+    shell=True,
+    universal_newlines=True
+  )
+  sprite_dim = sprite_dim.split()
+  
+  return [int(sprite_dim[0]), int(sprite_dim[1])]
+
+def get_sprite_count(file):
+  sprite_count = subprocess.check_output(
+    "identify -ping -format \"%N\" " + file,
+    shell=True,
+    universal_newlines=True
+  )
+
+  return int(sprite_count)
+
+def append_sprites(verbose, file, sprite_count, sprite_dim, vertical):
+  sprite_file_list = ["%s_%s.png" % (file, str(i).zfill(3)) for i in range(0, sprite_count)]
+  sprite_compile_command = ["convert", "-background", "none"]
+
+  if vertical:
+    log(verbose, logging.info, "Vertical compilation selected")
+    sprite_compile_command.append("-append")
+
+    sprite_data = packer_block(file, sprite_dim[0], sprite_dim[1], sprite_count, 1)
+  else:
+    log(verbose, logging.info, "Horizontal compilation selected")
+    sprite_compile_command.append("+append")
+
+    sprite_data = packer_block(file, sprite_dim[0], sprite_dim[1], 1, sprite_count)
+
+  sprite_compile_command.extend(sprite_file_list)
+  sprite_compile_command.append(file + ".png")
+
+  subprocess.run(sprite_compile_command, check=True)
+
+  return sprite_data
+
+def optimize(verbose, level, file):
+  if int(level) != 0:
+    log(verbose, logging.info, "Optimizing %s" % file)
+    subprocess.run(["optipng", "-o" + level, file], check=True)
+
+def pack(verbose, block_list, output_name):
+  packer = growing_packer()
+  packer.fit(block_list)
+
+  log(verbose, logging.info, "Filtering for fitting data")
+  block_list = list(filter(lambda data: data.fit != None, block_list))
+
+  log(verbose, logging.info, "Creating ImageMagick command")
+  command = "convert "
+  for data in block_list:
+    command = command + "-page "
+    command = command + "\"+" + str(data.fit.x) + "+" + str(data.fit.y) + "\" "
+    command = command + data.name + ".png "
+  command = command + "-background none -layers merge +repage " + output_name
+
+  log(verbose, logging.info, "Creating packed image")
+  os.system(command)
+
+def merge_sprites(arguments, sprite_data_list, i):
+  verbose = arguments["--verbose"]
+  input_file = arguments["<input-files>"][i]
+  log(verbose, logging.info, "Merging spriets in file %s" % input_file)
+  
+  log(verbose, logging.info, "Validating file %s" % input_file)
+  validate_file(input_file)
+
+  # Strip extension
+  no_ext_input_file = os.path.splitext(input_file)[0]
+  
+  log(verbose, logging.info, "Creating temporary folder %s" % no_ext_input_file)
+  create_folder(verbose, no_ext_input_file)
+
+  log(verbose, logging.info, "Changing into temporary folder %s" % no_ext_input_file)
+  os.chdir(no_ext_input_file)
+  
+  log(verbose, logging.info, "Extracting layers from %s" % input_file)
+  extract_xcf(os.path.join("..", input_file), no_ext_input_file + "_%03d.png"),
+
+  log(verbose, logging.info, "Recovering sprite dimentions")
+  sprite_dim = get_sprite_dimentions(no_ext_input_file + "_000.png")
+
+  log(verbose, logging.info, "Recovering sprite count")
+  sprite_count = get_sprite_count(os.path.join("..", input_file))
+
+  log(verbose, logging.info, "Appending sprites")
+  sprite_data = append_sprites(verbose, no_ext_input_file, sprite_count, sprite_dim, arguments["--vertical"])
+  
+  log(verbose, logging.info, "Moving result to calling directory")
+  os.replace(no_ext_input_file + ".png", os.path.join("..",no_ext_input_file + ".png"))
+  
+  log(verbose, logging.info, "Leaving temporary folder %s" % no_ext_input_file)
+  os.chdir("..")
+
+  # Delete temporary
+  if arguments["--keep"]:
+    log(verbose, logging.info, "Keeping temporary folder %s" % no_ext_input_file)
+  else:
+    log(verbose, logging.info, "Removing temporary folder %s" % no_ext_input_file)
+    shutil.rmtree(no_ext_input_file)
+
+  log(verbose, logging.info, "Saving sprite sheet data")
+  sprite_data_list[i] = sprite_data
+
+def compile_sheets(verbose, arguments):
+  num_comp_files = len(arguments["<input-files>"])
+  num_jobs = int(arguments["--jobs"])
+  sheet_data_list = [packer_block(None, 0, 0, 0, 0)] * num_comp_files
+      
+  # Parallel compilation
+  if num_comp_files > 1 and num_jobs > 1:
+    log(verbose, logging.info, "Parallel compilation with %i jobs" % num_jobs)
+        
+    pool = Pool(num_jobs)
+        
+    for i in range (0, num_comp_files):
+      pool.apply_async(merge_sprites, args=(arguments, sheet_data_list, i))
+
+    pool.close()
+    pool.join()
+  else:
+    log(verbose, logging.info, "Serial compilation")
+    for i in range (0, num_comp_files):
+      merge_sprites(arguments, sheet_data_list, i)
+
+  return sheet_data_list
+
+def link_sheets(verbose, arguments, sheet_data_list):
+  verbose = arguments["--verbose"]
+
+  # Sort data in descending order by the total area
+  log(verbose, logging.info, "Sorting sheet data")
+  sheet_data_list = sorted(sheet_data_list, key=lambda d: d.pixel_count, reverse=True)
+
+  # Pack (see links above)
+  log(verbose, logging.info, "Packing")
+  pack(verbose, sheet_data_list, arguments["--output"])
+
+  # Delete temporary
+  if arguments["--keep"]:
+    log(verbose, logging.info, "Keeping intermediate data")
+  else:
+    log(verbose, logging.info, "Removing intermediate data")
+    for data in sheet_data_list:
+      os.remove(data.name + ".png")
+
+def save_set_data_binary(arguments, data_list):
+  with open(os.path.splitext(arguments["--output"])[0] + ".sad", "wb") as file:
+    # Header (ascii string, X B)
+    file.write("SAD - SURGE Animation Data File v1.0.0".encode("ASCII"))
+    
+    # Number of animations stored (unsigned 32 bit integer, X B)
+    file.write(fixedint.UInt32(len(data_list)).to_bytes(byteorder=sys.byteorder))
+
+    for data in data_list:
+      # Animation name length
+      file.write(fixedint.UInt32(len(data.name)).to_bytes(byteorder=sys.byteorder))
+      
+      # Animation name
+      file.write(data.name.encode("ASCII"))
+
+      # x
+      file.write(fixedint.UInt32(data.fit.x).to_bytes(byteorder=sys.byteorder))
+      
+      # y
+      file.write(fixedint.UInt32(data.fit.y).to_bytes(byteorder=sys.byteorder))
+      
+      # Sw
+      file.write(fixedint.UInt32(data.Sw).to_bytes(byteorder=sys.byteorder))
+
+      # Sh
+      file.write(fixedint.UInt32(data.Sh).to_bytes(byteorder=sys.byteorder))
+
+      # Rows
+      file.write(fixedint.UInt32(data.rows).to_bytes(byteorder=sys.byteorder))
+
+      # Cols
+      file.write(fixedint.UInt32(data.cols).to_bytes(byteorder=sys.byteorder))
+
+def save_set_data_text(arguments, data_list):
+  with open(os.path.splitext(arguments["--output"])[0] + ".txt", "w") as file:
+    print("# Animation count: ", len(data_list), file=file)
+    print("# 1:name 2:x0 3:y0 4:Sw 5:Sh 6:rows 7:cols", file=file)
+    
+    for data in data_list:
+      print(data.name, data.fit.x, data.fit.y, data.Sw, data.Sh, data.rows, data.cols, file=file, sep="    ")
+
+def main():
+  try:
+    arguments = docopt(__doc__, version="ssc version 1.0.0")
+
+    verbose = arguments["--verbose"]
+
+    logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
+    log(verbose, logging.info, "Verbose mode on")
+
+    log(verbose, logging.info, "Checking if required programs are available")
+    check_programs()
+
+    log(verbose, logging.info, "Compiling sprites into sheets")
+    sheet_data_list = compile_sheets(verbose, arguments)
+      
+    log(verbose, logging.info, "Linking sheets into sets")
+    link_sheets(verbose, arguments, sheet_data_list)
+
+    log(verbose, logging.info, "Optimizing")
+    optimize(verbose, arguments["--optimize"], arguments["--output"])
+    
+    log(verbose, logging.info, "Saving sprite set data as .sad file")
+    save_set_data_binary(arguments, sheet_data_list)
+    
+    log(verbose, logging.info, "Saving sprite set data as .txt file")
+    save_set_data_text(arguments, sheet_data_list)
+
+    log(verbose, logging.info, "Done")
+    sys.exit(0)
+
+  except OSError as err:
+    print("OS error:", err)
+    sys.exit(1)
+
+main()

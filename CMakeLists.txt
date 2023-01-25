@@ -152,7 +152,8 @@ set(
   "${Surge_SOURCE_DIR}/include/lua/lua_vm.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
   
-  "${Surge_SOURCE_DIR}/include/mesh/sprite.hpp"
+  "${Surge_SOURCE_DIR}/include/entities/sprite.hpp"
+  "${Surge_SOURCE_DIR}/include/entities/actor.hpp"
   
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
@@ -162,7 +163,6 @@ set(
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/task_executor.hpp"
   "${Surge_SOURCE_DIR}/include/thread_allocators.hpp"
-  "${Surge_SOURCE_DIR}/include/vertex_renderer.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -186,7 +186,8 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
 
-  "${Surge_SOURCE_DIR}/source/mesh/sprite.cpp"
+  "${Surge_SOURCE_DIR}/source/entities/sprite.cpp"
+  "${Surge_SOURCE_DIR}/source/entities/actor.cpp"
 
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"

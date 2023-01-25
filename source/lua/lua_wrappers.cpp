@@ -1,9 +1,9 @@
 #include "lua/lua_wrappers.hpp"
 
+#include "entities/sprite.hpp"
 #include "log.hpp"
 #include "lua/lua_bindings.hpp"
 #include "lua/lua_states.hpp"
-#include "mesh/sprite.hpp"
 #include "opengl/create_program.hpp"
 #include "task_executor.hpp"
 #include "thread_allocators.hpp"

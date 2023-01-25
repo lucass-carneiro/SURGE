@@ -1,4 +1,4 @@
-#include "mesh/sprite.hpp"
+#include "entities/sprite.hpp"
 
 auto surge::sprite::gen_buff() const noexcept -> GLuint {
   GLuint tmp{0};
