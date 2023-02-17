@@ -9,6 +9,10 @@
 #include "task_executor.hpp"
 #include "window.hpp"
 
+// clang-format off
+#include <sad_file.hpp> // TEMP
+// clang-format on
+
 #include <cstddef>
 #include <cstdlib>
 #include <glm/common.hpp>
@@ -100,6 +104,12 @@ auto main(int argc, char **argv) noexcept -> int {
   // allocators)
   global_thread_allocators::get().init(*num_threads, mem_per_thread_long);
 
+  // Init parallel job system
+  if (*num_threads > 1) {
+    glog<log_event::message>("Initializing job system with {} workers", *num_threads - 1);
+    global_task_executor::get();
+  }
+
   // Init Lua VM states ( global_linear_arena_allocator holds the array and
   // LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
   // LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
@@ -115,12 +125,6 @@ auto main(int argc, char **argv) noexcept -> int {
   // Do the startup file in VM 0 (main thread)
   if (!do_file_at(0, *startup_script_path)) {
     return EXIT_FAILURE;
-  }
-
-  // Init parallel job system
-  if (*num_threads > 1) {
-    glog<log_event::message>("Initializing job system with {} workers", *num_threads - 1);
-    global_task_executor::get();
   }
 
   // Initialize GLFW
@@ -146,7 +150,14 @@ auto main(int argc, char **argv) noexcept -> int {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Handle events
+    /*
+     * Hot reload startup script. TODO: Maybe this should be better, like user controlled?
+     */
+    if (global_engine_window::get().get_key(GLFW_KEY_F5) == GLFW_PRESS) {
+      if (!do_file_at(0, *startup_script_path)) {
+        return EXIT_FAILURE;
+      }
+    }
 
     /*
      * Lua update callback

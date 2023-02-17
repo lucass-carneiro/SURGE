@@ -1,17 +1,9 @@
-#include "lua/lua_wrappers.hpp"
-
 #include "entities/sprite.hpp"
-#include "log.hpp"
-#include "lua/lua_bindings.hpp"
-#include "lua/lua_states.hpp"
-#include "opengl/create_program.hpp"
-#include "task_executor.hpp"
+#include "lua/lua_wrappers.hpp"
 #include "thread_allocators.hpp"
 #include "window.hpp"
 
 auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
-  glog<log_event::message>("lua_load_sprite called");
-
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
@@ -24,7 +16,7 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
   }
 
   if (!(lua_isstring(L, 1) || lua_isstring(L, 2))) {
-    glog<log_event::warning>("Fucntion load_image expects 2 string arguments. Returning nil");
+    glog<log_event::warning>("Fucntion load_sprite expects 2 string arguments. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -57,8 +49,6 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
 }
 
 auto surge::lua_drop_sprite(lua_State *L) noexcept -> int {
-  glog<log_event::message>("lua_drop_sprite called");
-
   // Data recovery
   auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
   auto sprite_ptr{*vm_sprite_ptr};
@@ -383,230 +373,4 @@ auto surge::lua_sheet_set_dimentions(lua_State *L) noexcept -> int {
   lua_pop(L, 1);
 
   return 0;
-}
-
-auto surge::lua_send_task_to(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 2) {
-    glog<log_event::warning>("Function send_task_to expects 2 arguments: The target index and the "
-                             "function to send Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 1)) {
-    glog<log_event::warning>(
-        "Function send_task_to expects it's first argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isfunction(L, 2)) {
-    glog<log_event::warning>(
-        "Function send_task_to expects it's second argument to be a function. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  const auto target_vm_idx{static_cast<std::size_t>(lua_tointeger(L, 1))};
-
-  if (target_vm_idx == 0 || target_vm_idx >= global_lua_states::get().size()) {
-    glog<log_event::warning>("Cannot send to VM index {}. Returning nil", target_vm_idx);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  // Get worker VM
-  lua_State *worker{global_lua_states::get().at(target_vm_idx).get()};
-
-  // Serialize the task
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "serialize");
-  lua_pushvalue(L, 2);
-
-  lua_call(L, 1, 1);
-
-  // Copy serialization to worker
-  const char *serialization_result{lua_tostring(L, -1)};
-  lua_getglobal(worker, "loadstring");
-  lua_pushstring(worker, serialization_result);
-  lua_call(worker, 1, 1);
-  lua_call(worker, 0, 1); // an extra call is necessary to get the actual callable task
-
-  // Save the callable
-  lua_setglobal(worker, "remote_task");
-
-  // Clean the sender stack
-  lua_pop(L, 2);
-
-  // Return success
-  lua_pushboolean(L, static_cast<lua_Boolean>(true));
-  return 1;
-}
-
-auto surge::lua_run_task_at(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 1) {
-    glog<log_event::warning>("Function run_task_at expects at 1 argument, the index of the VM to "
-                             "run the task. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 1)) {
-    glog<log_event::warning>(
-        "Function run_task_at expects it's argument to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  const auto target_vm_idx{static_cast<std::size_t>(lua_tointeger(L, 1))};
-
-  if (target_vm_idx == 0 || target_vm_idx >= global_lua_states::get().size()) {
-    glog<log_event::warning>("Cannot run task in VM index {}. Returning nil", target_vm_idx);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  // Get worker VM
-  lua_State *worker{global_lua_states::get().at(target_vm_idx).get()};
-
-  // Schedule task in another thread
-  global_task_executor::get().silent_async([=]() -> void {
-    // Get remote task and ckeck for nil
-    lua_getglobal(worker, "remote_task");
-
-    if (lua_isnil(worker, -1)) {
-      glog<log_event::warning>("No task loaded in VM {}.", target_vm_idx);
-      lua_pushboolean(worker, static_cast<lua_Boolean>(false));
-      lua_setglobal(worker, "remote_task_success");
-      lua_pop(worker, 1);
-      return;
-    }
-
-    // Call remote task.
-    lua_pcall(worker, 0, 0, 0);
-
-    lua_pushboolean(worker, static_cast<lua_Boolean>(true));
-    lua_setglobal(worker, "remote_task_success");
-  });
-
-  lua_pushboolean(L, static_cast<lua_Boolean>(true));
-  return 0;
-}
-
-auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "pre_loop");
-
-  const auto pcall_result{lua_pcall(L, 0, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.pre_loop: {}", lua_tostring(L, -1));
-    lua_pop(L, 2);
-    return false;
-  } else {
-    lua_pop(L, 1);
-    return true;
-  }
-}
-
-void surge::lua_draw_callback(lua_State *L) noexcept {
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "draw");
-
-  const auto pcall_result{lua_pcall(L, 0, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.draw: {}", lua_tostring(L, -1));
-    lua_pop(L, 2);
-  } else {
-    lua_pop(L, 1);
-  }
-}
-
-void surge::lua_update_callback(lua_State *L) noexcept {
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "update");
-  lua_pushnumber(L, global_engine_window::get().get_frame_dt());
-
-  const auto pcall_result{lua_pcall(L, 1, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.update: {}", lua_tostring(L, -1));
-    lua_pop(L, 3);
-  } else {
-    lua_pop(L, 1);
-  }
-}
-
-void surge::glfw_key_callback(GLFWwindow *, int key, int, int action, int mods) noexcept {
-
-  // VM defined actions
-  lua_State *L{global_lua_states::get().at(0).get()};
-
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "key_event");
-  lua_pushinteger(L, key);
-  lua_pushinteger(L, action);
-  lua_pushinteger(L, mods);
-
-  const auto pcall_result{lua_pcall(L, 3, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.key_event: {}", lua_tostring(L, -1));
-    lua_pop(L, 5);
-  } else {
-    lua_pop(L, 1);
-  }
-}
-
-auto surge::lua_get_cursor_pos(lua_State *L) noexcept -> int {
-  auto [x, y] = global_engine_window::get().get_cursor_pos();
-  lua_pushnumber(L, x);
-  lua_pushnumber(L, y);
-  return 2;
-}
-
-void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int mods) noexcept {
-  // Recover main VM state
-  lua_State *L{global_lua_states::get().at(0).get()};
-
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "mouse_button_event");
-  lua_pushinteger(L, button);
-  lua_pushinteger(L, action);
-  lua_pushinteger(L, mods);
-
-  const auto pcall_result{lua_pcall(L, 3, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.mouse_button_event: {}", lua_tostring(L, -1));
-    lua_pop(L, 5);
-  } else {
-    lua_pop(L, 1);
-  }
-}
-
-void surge::glfw_scroll_callback(GLFWwindow *, double xoffset, double yoffset) noexcept {
-  // Recover main VM state
-  lua_State *L{global_lua_states::get().at(0).get()};
-
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "mouse_scroll_event");
-  lua_pushnumber(L, xoffset);
-  lua_pushnumber(L, yoffset);
-
-  const auto pcall_result{lua_pcall(L, 2, 0, 0)};
-
-  if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.mouse_scroll_event: {}", lua_tostring(L, -1));
-    lua_pop(L, 5);
-  } else {
-    lua_pop(L, 1);
-  }
 }

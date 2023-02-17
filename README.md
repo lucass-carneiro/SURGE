@@ -20,6 +20,7 @@ cmake --build . -j20
 # Tasks
 
 ## GUI TODO
+* [ ] Create animation debugger
 * [ ] Integrate tracy profiler
 
 ## GUI Done
@@ -27,8 +28,7 @@ cmake --build . -j20
 * [x] Implement memory visualizer
 
 ##  Main TODO
-* [ ] Read animation from .sad files
-* [ ] Add actor interface/abstraction in the engine
+* [ ] Add texture flipping.
 * [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
@@ -69,6 +69,9 @@ cmake --build . -j20
 * [x] Finish background test demo
 * [x] Add a function to reset quad geometry
 * [x] Add a general sprite compiler
+* [x] Read animation from .sad files
+* [x] Add actor interface/abstraction in the engine
+* [x] Add animation playing in actor abstraction
 
 
 # References

@@ -27,6 +27,7 @@ import shutil
 import pickle
 from multiprocessing import Pool
 import fixedint
+from cityhash import CityHash32
 
 # See https://github.com/jakesgordon/bin-packing/blob/master/js/packer.growing.js and
 # https://codeincomplete.com/articles/bin-packing/
@@ -346,19 +347,19 @@ def link_sheets(verbose, arguments, sheet_data_list):
 
 def save_set_data_binary(arguments, data_list):
   with open(os.path.splitext(arguments["--output"])[0] + ".sad", "wb") as file:
-    # Header (ascii string, X B)
-    file.write("SAD - SURGE Animation Data File v1.0.0".encode("ASCII"))
+    # Header (0x00 - 0x1F = 32 B)
+    file.write("SAD - SURGE Animation Data File\0".encode("ASCII"))
     
-    # Number of animations stored (unsigned 32 bit integer, X B)
+    # Number of animations stored N (0x20 - 0x23 = 4B)
     file.write(fixedint.UInt32(len(data_list)).to_bytes(byteorder=sys.byteorder))
 
+    # Numeric animation data
+    animation_index = 0
     for data in data_list:
-      # Animation name length
-      file.write(fixedint.UInt32(len(data.name)).to_bytes(byteorder=sys.byteorder))
+      # Animation Index
+      file.write(fixedint.UInt32(animation_index).to_bytes(byteorder=sys.byteorder))
+      animation_index = animation_index + 1
       
-      # Animation name
-      file.write(data.name.encode("ASCII"))
-
       # x
       file.write(fixedint.UInt32(data.fit.x).to_bytes(byteorder=sys.byteorder))
       
@@ -380,10 +381,12 @@ def save_set_data_binary(arguments, data_list):
 def save_set_data_text(arguments, data_list):
   with open(os.path.splitext(arguments["--output"])[0] + ".txt", "w") as file:
     print("# Animation count: ", len(data_list), file=file)
-    print("# 1:name 2:x0 3:y0 4:Sw 5:Sh 6:rows 7:cols", file=file)
+    print("# 1:name 2:index 3:x0 4:y0 5:Sw 6:Sh 7:rows 8:cols", file=file)
     
+    i = 0
     for data in data_list:
-      print(data.name, data.fit.x, data.fit.y, data.Sw, data.Sh, data.rows, data.cols, file=file, sep="    ")
+      print(data.name, i, data.fit.x, data.fit.y, data.Sw, data.Sh, data.rows, data.cols, file=file, sep="    ")
+      i = i + 1
 
 def main():
   try:

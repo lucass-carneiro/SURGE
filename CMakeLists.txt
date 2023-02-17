@@ -159,6 +159,8 @@ set(
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
+  "${Surge_SOURCE_DIR}/include/options.hpp"
+  "${Surge_SOURCE_DIR}/include/sad_file.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/task_executor.hpp"
@@ -184,7 +186,11 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_wrappers.cpp"
+  
+  "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_sprite_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"
 
   "${Surge_SOURCE_DIR}/source/entities/sprite.cpp"
   "${Surge_SOURCE_DIR}/source/entities/actor.cpp"

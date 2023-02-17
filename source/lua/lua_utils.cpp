@@ -34,6 +34,13 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_setfield(L, -2, "sprite_meta");
   // end sprite_meta table
 
+  // begin actor_meta table
+  lua_newtable(L);
+  lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::actor");
+  lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_actor);
+  lua_setfield(L, -2, "actor_meta");
+  // end actor_meta table
+
   // Log functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_message", lua_log_message);
   lua_add_table_field<lua_String, lua_CFunction>(L, "log_warning", lua_log_warning);
@@ -50,6 +57,18 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set_offsets", lua_sheet_set_offsets);
   lua_add_table_field<lua_String, lua_CFunction>(L, "sheet_set_dimentions",
                                                  lua_sheet_set_dimentions);
+
+  // Actor functions
+  lua_add_table_field<lua_String, lua_CFunction>(L, "new_actor", lua_new_actor);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "draw_actor", lua_draw_actor);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_animation", lua_set_actor_animation);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_geometry", lua_set_actor_geometry);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_position", lua_set_actor_position);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_anchor_point",
+                                                 lua_set_actor_anchor_point);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "advance_actor_frame", lua_advance_actor_frame);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "move_actor", lua_move_actor);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "scale_actor", lua_scale_actor);
 
   // Tasker functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
