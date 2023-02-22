@@ -28,6 +28,8 @@ auto lua_set_actor_anchor_point(lua_State *L) noexcept -> int;
 auto lua_advance_actor_frame(lua_State *L) noexcept -> int;
 auto lua_move_actor(lua_State *L) noexcept -> int;
 auto lua_scale_actor(lua_State *L) noexcept -> int;
+auto lua_actor_toggle_h_flip(lua_State *L) noexcept -> int;
+auto lua_actor_toggle_v_flip(lua_State *L) noexcept -> int;
 
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;

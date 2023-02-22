@@ -39,6 +39,9 @@ public:
   void set_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept;
   void set_position(glm::vec3 &&position, float scale) noexcept;
 
+  void toggle_h_flip() noexcept;
+  void toggle_v_flip() noexcept;
+
 private:
   sprite actor_sprite;
   load_file_return_t sad_file;

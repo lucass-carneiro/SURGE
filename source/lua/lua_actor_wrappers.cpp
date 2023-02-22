@@ -384,3 +384,61 @@ auto surge::lua_scale_actor(lua_State *L) noexcept -> int {
 
   return 0;
 }
+
+auto surge::lua_actor_toggle_h_flip(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function toggle_actor_h_flip expected 1 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "toggle_actor_h_flip")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  actor_ptr->toggle_h_flip();
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
+auto surge::lua_actor_toggle_v_flip(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function toggle_actor_v_flip expected 1 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "toggle_actor_v_flip")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  actor_ptr->toggle_v_flip();
+
+  lua_pop(L, 1);
+
+  return 0;
+}

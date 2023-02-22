@@ -6,7 +6,7 @@
 
 ![](demos/demo.gif)
 
-# Build & run instructions
+# Build instructions
 
 ```
 cd Debug
@@ -14,7 +14,6 @@ cd Debug
 conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-gcc-12-release
 cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
 cmake --build . -j20
-./run
 ```
 
 # Tasks
@@ -28,7 +27,7 @@ cmake --build . -j20
 * [x] Implement memory visualizer
 
 ##  Main TODO
-* [ ] Add texture flipping.
+* [ ] Track actor heading.
 * [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
@@ -72,6 +71,7 @@ cmake --build . -j20
 * [x] Read animation from .sad files
 * [x] Add actor interface/abstraction in the engine
 * [x] Add animation playing in actor abstraction
+* [x] Add texture flipping.
 
 
 # References

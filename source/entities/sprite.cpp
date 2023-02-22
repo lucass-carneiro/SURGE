@@ -68,3 +68,13 @@ void surge::sprite::set_geometry(GLuint shader_program, glm::vec3 &&position,
 
   set_uniform(shader_program, "model", model_matrix);
 }
+
+void surge::sprite::toggle_h_flip(GLuint shader_program) noexcept {
+  sheet_h_flip = !sheet_h_flip;
+  set_uniform(shader_program, "h_flip", static_cast<GLboolean>(sheet_h_flip));
+}
+
+void surge::sprite::toggle_v_flip(GLuint shader_program) noexcept {
+  sheet_v_flip = !sheet_v_flip;
+  set_uniform(shader_program, "v_flip", static_cast<GLboolean>(sheet_v_flip));
+}

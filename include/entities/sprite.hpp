@@ -71,6 +71,9 @@ public:
   void scale(GLuint shader_program, glm::vec3 &&vec) noexcept;
   void set_geometry(GLuint shader_program, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
 
+  void toggle_h_flip(GLuint shader_program) noexcept;
+  void toggle_v_flip(GLuint shader_program) noexcept;
+
 private:
   const GLuint VAO{0}, VBO{0}, EBO{0}, texture_id{0};
   const glm::vec2 set_dimentions{0.0f, 0.0f};
@@ -80,6 +83,8 @@ private:
   glm::vec2 sheet_offsets{0.0f, 0.0f};
   glm::vec2 sheet_dimentions{0.0f, 0.0f};
   glm::vec2 sheet_indices{0.0f, 0.0f};
+
+  bool sheet_h_flip{false}, sheet_v_flip{false};
 
   [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
   [[nodiscard]] auto gen_vao() const noexcept -> GLuint;

@@ -69,6 +69,8 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "advance_actor_frame", lua_advance_actor_frame);
   lua_add_table_field<lua_String, lua_CFunction>(L, "move_actor", lua_move_actor);
   lua_add_table_field<lua_String, lua_CFunction>(L, "scale_actor", lua_scale_actor);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_actor_h_flip", lua_actor_toggle_h_flip);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_actor_v_flip", lua_actor_toggle_v_flip);
 
   // Tasker functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);

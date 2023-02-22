@@ -71,3 +71,11 @@ void surge::actor::set_position(glm::vec3 &&position, float scale) noexcept {
                glm::vec3{static_cast<float>(current_animation.Sw) * scale,
                          static_cast<float>(current_animation.Sh) * scale, 0.0});
 }
+
+void surge::actor::toggle_h_flip() noexcept {
+  actor_sprite.toggle_h_flip(global_engine_window::get().get_shader_program());
+}
+
+void surge::actor::toggle_v_flip() noexcept {
+  actor_sprite.toggle_v_flip(global_engine_window::get().get_shader_program());
+}
