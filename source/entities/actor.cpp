@@ -102,3 +102,7 @@ void surge::actor::toggle_h_flip() noexcept {
 void surge::actor::toggle_v_flip() noexcept {
   actor_sprite.toggle_v_flip(global_engine_window::get().get_shader_program());
 }
+
+[[nodiscard]] auto surge::actor::get_anchor_coords() const noexcept -> glm::vec3 {
+  return current_quad.corner + current_quad.anchor;
+}

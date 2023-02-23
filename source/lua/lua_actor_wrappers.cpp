@@ -403,3 +403,35 @@ auto surge::lua_actor_toggle_v_flip(lua_State *L) noexcept -> int {
 
   return 0;
 }
+
+auto surge::lua_get_actor_anchor_coords(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>(
+        "Function get_actor_anchor_coords expected 1 arguments and instead got "
+        "{} arguments. Returning nil",
+        nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "get_actor_anchor_coords")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  const auto anchor_coords{actor_ptr->get_anchor_coords()};
+
+  lua_pushnumber(L, anchor_coords[0]);
+  lua_pushnumber(L, anchor_coords[1]);
+  lua_pushnumber(L, anchor_coords[2]);
+
+  return 3;
+}

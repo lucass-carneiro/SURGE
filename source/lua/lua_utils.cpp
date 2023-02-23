@@ -70,6 +70,8 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "scale_actor", lua_scale_actor);
   lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_actor_h_flip", lua_actor_toggle_h_flip);
   lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_actor_v_flip", lua_actor_toggle_v_flip);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "get_actor_anchor_coords",
+                                                 lua_get_actor_anchor_coords);
 
   // Tasker functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);

@@ -44,6 +44,8 @@ public:
   void toggle_h_flip() noexcept;
   void toggle_v_flip() noexcept;
 
+  [[nodiscard]] auto get_anchor_coords() const noexcept -> glm::vec3;
+
 private:
   sprite actor_sprite;
   load_file_return_t sad_file;
