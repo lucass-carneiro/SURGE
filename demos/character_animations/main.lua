@@ -1,12 +1,32 @@
  -- Demonstrates character animations
 
- local move_speed = 10.0
+ local animation_index = 0
+
+-- Show next animation
+ function next_anim()
+    if animation_index < 6 then
+        animation_index = animation_index + 1
+    else
+        animation_index = 0
+    end
+end
+
+-- Show previous
+function prev_anim()
+    if animation_index > 0 then
+        animation_index = animation_index - 1
+    else
+        animation_index = 6
+    end
+end
 
 function surge.key_event(key, action, mods)
     if key == surge.keyboard_key.RIGHT and action == surge.input_action.PRESS then
-        surge.move_actor(sophia_actor, move_speed, 0.0, 0.0)
+        next_anim()
+        surge.set_actor_animation(sophia_actor, animation_index)       
     elseif key == surge.keyboard_key.LEFT and action == surge.input_action.PRESS then
-        surge.move_actor(sophia_actor, -move_speed, 0.0, 0.0)
+        prev_anim()
+        surge.set_actor_animation(sophia_actor, animation_index)
     elseif key == surge.keyboard_key.PAGE_UP and action == surge.input_action.PRESS then
         surge.scale_actor(sophia_actor, 1.5, 1.5, 0.0)
     elseif key == surge.keyboard_key.PAGE_DOWN and action == surge.input_action.PRESS then
@@ -30,7 +50,7 @@ function surge.pre_loop()
     )
     
     -- Select first animation
-    surge.set_actor_animation(sophia_actor, 6)
+    surge.set_actor_animation(sophia_actor, animation_index)
     
     -- Place the actor on the scene
     surge.set_actor_geometry(
