@@ -72,6 +72,7 @@ cmake --build . -j20
 * [x] Add actor interface/abstraction in the engine
 * [x] Add animation playing in actor abstraction
 * [x] Add texture flipping.
+* [x] Anchor point relative motion
 
 
 # References

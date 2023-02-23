@@ -23,8 +23,6 @@ auto lua_drop_actor(lua_State *L) noexcept -> int;
 auto lua_draw_actor(lua_State *L) noexcept -> int;
 auto lua_set_actor_animation(lua_State *L) noexcept -> int;
 auto lua_set_actor_geometry(lua_State *L) noexcept -> int;
-auto lua_set_actor_position(lua_State *L) noexcept -> int;
-auto lua_set_actor_anchor_point(lua_State *L) noexcept -> int;
 auto lua_advance_actor_frame(lua_State *L) noexcept -> int;
 auto lua_move_actor(lua_State *L) noexcept -> int;
 auto lua_scale_actor(lua_State *L) noexcept -> int;

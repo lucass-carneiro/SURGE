@@ -8,8 +8,6 @@ void surge::actor::draw() const noexcept {
   actor_sprite.draw(global_engine_window::get().get_shader_program());
 };
 
-void surge::actor::set_anchor_point(glm::vec3 &&anchor) noexcept { anchor_point = anchor; }
-
 void surge::actor::set_zero_animation() noexcept {
   current_animation = animation_data{};
   actor_sprite.sheet_set_offset(glm::ivec2{0, 0});
@@ -53,23 +51,38 @@ void surge::actor::advance_frame() noexcept {
 }
 
 void surge::actor::move(glm::vec3 &&vec) noexcept {
-  actor_sprite.move(global_engine_window::get().get_shader_program(), std::forward<glm::vec3>(vec));
+  current_quad.corner = current_quad.corner + vec;
+
+  actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
+                            std::forward<glm::vec3>(current_quad.corner),
+                            std::forward<glm::vec3>(current_quad.dims));
 }
 
 void surge::actor::scale(glm::vec3 &&vec) noexcept {
-  actor_sprite.scale(global_engine_window::get().get_shader_program(),
-                     std::forward<glm::vec3>(vec));
-}
+  const glm::vec3 position = current_quad.corner + current_quad.anchor;
 
-void surge::actor::set_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept {
+  current_quad.anchor = current_quad.anchor * vec;
+  current_quad.dims = current_quad.dims * vec;
+  current_quad.corner = position - current_quad.anchor;
+
   actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
-                            position - anchor_point, std::forward<glm::vec3>(scale));
+                            std::forward<glm::vec3>(current_quad.corner),
+                            std::forward<glm::vec3>(current_quad.dims));
 }
 
-void surge::actor::set_position(glm::vec3 &&position, float scale) noexcept {
-  set_geometry(std::forward<glm::vec3>(position),
-               glm::vec3{static_cast<float>(current_animation.Sw) * scale,
-                         static_cast<float>(current_animation.Sh) * scale, 0.0});
+void surge::actor::set_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
+                                glm::vec3 &&scale) noexcept {
+
+  current_quad.anchor = anchor * scale;
+
+  current_quad.dims = glm::vec3{static_cast<float>(current_animation.Sw) * scale[0],
+                                static_cast<float>(current_animation.Sh) * scale[1], 0.0};
+
+  current_quad.corner = position - current_quad.anchor;
+
+  actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
+                            std::forward<glm::vec3>(current_quad.corner),
+                            std::forward<glm::vec3>(current_quad.dims));
 }
 
 void surge::actor::toggle_h_flip() noexcept {

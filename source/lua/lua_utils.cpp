@@ -63,9 +63,6 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "draw_actor", lua_draw_actor);
   lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_animation", lua_set_actor_animation);
   lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_geometry", lua_set_actor_geometry);
-  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_position", lua_set_actor_position);
-  lua_add_table_field<lua_String, lua_CFunction>(L, "set_actor_anchor_point",
-                                                 lua_set_actor_anchor_point);
   lua_add_table_field<lua_String, lua_CFunction>(L, "advance_actor_frame", lua_advance_actor_frame);
   lua_add_table_field<lua_String, lua_CFunction>(L, "move_actor", lua_move_actor);
   lua_add_table_field<lua_String, lua_CFunction>(L, "scale_actor", lua_scale_actor);

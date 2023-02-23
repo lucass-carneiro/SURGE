@@ -1,13 +1,16 @@
  -- Demonstrates character animations
 
-local sophia_scale_factor = 5.0
-local move_speed = 0.1
+ local move_speed = 10.0
 
 function surge.key_event(key, action, mods)
     if key == surge.keyboard_key.RIGHT and action == surge.input_action.PRESS then
         surge.move_actor(sophia_actor, move_speed, 0.0, 0.0)
     elseif key == surge.keyboard_key.LEFT and action == surge.input_action.PRESS then
         surge.move_actor(sophia_actor, -move_speed, 0.0, 0.0)
+    elseif key == surge.keyboard_key.PAGE_UP and action == surge.input_action.PRESS then
+        surge.scale_actor(sophia_actor, 1.5, 1.5, 0.0)
+    elseif key == surge.keyboard_key.PAGE_DOWN and action == surge.input_action.PRESS then
+        surge.scale_actor(sophia_actor, 1.0/1.5, 1.0/1.5, 0.0)
     end
 end
 
@@ -25,25 +28,16 @@ function surge.pre_loop()
         "character_animations/resources/spritesheet.png",
         "character_animations/resources/spritesheet.sad"
     )
-
-    -- Set actor animation index. Do this before calling set_actor_position
-    -- because it uses the current animation sheet for scaling the sprite
-    surge.set_actor_animation(sophia_actor, 6)
-
-    -- Set actor anchor point (the place in the sprite where the position parameter refers to)
-    surge.set_actor_anchor_point(sophia_actor, 16.0 * sophia_scale_factor, 48.0 * sophia_scale_factor, 0.0)
     
-    -- Set actor position and scale
-    surge.set_actor_position(
-        sophia_actor,
-        
-        -- Pos
-        surge.window_width / 2.0, 
-        surge.window_height / 2.0,
-        0.0,
-        
-        -- XY Scale factor
-        sophia_scale_factor
+    -- Select first animation
+    surge.set_actor_animation(sophia_actor, 6)
+    
+    -- Place the actor on the scene
+    surge.set_actor_geometry(
+        sophia_actor, 
+        16.0, 48.0, 0.0,                                           -- Anchor
+        surge.window_width / 2.0,  surge.window_height / 2.0, 0.0, -- Position
+        5.0, 5.0, 1.0                                              -- Scale
     )
 end
 

@@ -159,8 +159,8 @@ auto surge::lua_set_actor_geometry(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 7) {
-    glog<log_event::warning>("Function set_actor_geometry expected 7 arguments and instead got "
+  if (nargs != 10) {
+    glog<log_event::warning>("Function set_actor_geometry expected 10 arguments and instead got "
                              "{} arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
@@ -172,7 +172,7 @@ auto surge::lua_set_actor_geometry(lua_State *L) noexcept -> int {
     return 1;
   }
 
-  for (int i = 2; i <= 7; i++) {
+  for (int i = 2; i <= 10; i++) {
     if (!lua_isnumber(L, i)) {
       glog<log_event::warning>(
           "Function set_actor_geometry expected argument {} to be a number. Returning nil", i);
@@ -184,92 +184,15 @@ auto surge::lua_set_actor_geometry(lua_State *L) noexcept -> int {
   // Data recovery
   auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
   auto actor_ptr{*vm_actor_ptr};
-  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
-      mz{static_cast<float>(lua_tonumber(L, 4))}, sx{static_cast<float>(lua_tonumber(L, 5))},
-      sy{static_cast<float>(lua_tonumber(L, 6))}, sz{static_cast<float>(lua_tonumber(L, 7))};
 
   // Internal call
-  actor_ptr->set_geometry(glm::vec3{mx, my, mz}, glm::vec3{sx, sy, sz});
-
-  lua_pop(L, 1);
-
-  return 0;
-}
-
-auto surge::lua_set_actor_position(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 5) {
-    glog<log_event::warning>("Function set_actor_position expected 5 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!is_actor(L, "set_actor_position")) {
-    lua_pushnil(L);
-    return 1;
-  }
-
-  for (int i = 2; i <= 5; i++) {
-    if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function set_actor_position expected argument {} to be a number. Returning nil", i);
-      lua_pushnil(L);
-      return 1;
-    }
-  }
-
-  // Data recovery
-  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
-  auto actor_ptr{*vm_actor_ptr};
-  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
-      mz{static_cast<float>(lua_tonumber(L, 4))}, s{static_cast<float>(lua_tonumber(L, 5))};
-
-  // Internal call
-  actor_ptr->set_position(glm::vec3{mx, my, mz}, s);
-
-  lua_pop(L, 1);
-
-  return 0;
-}
-
-auto surge::lua_set_actor_anchor_point(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 4) {
-    glog<log_event::warning>("Function set_actor_anchor_point expected 4 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!is_actor(L, "set_actor_anchor_point")) {
-    lua_pushnil(L);
-    return 1;
-  }
-
-  for (int i = 2; i <= 4; i++) {
-    if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function set_actor_anchor_point expected argument {} to be a number. Returning nil", i);
-      lua_pushnil(L);
-      return 1;
-    }
-  }
-
-  // Data recovery
-  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
-  auto actor_ptr{*vm_actor_ptr};
-  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
-      mz{static_cast<float>(lua_tonumber(L, 4))};
-
-  // Internal call
-  actor_ptr->set_anchor_point(glm::vec3{mx, my, mz});
+  actor_ptr->set_geometry(
+      glm::vec3{static_cast<float>(lua_tonumber(L, 2)), static_cast<float>(lua_tonumber(L, 3)),
+                static_cast<float>(lua_tonumber(L, 4))},
+      glm::vec3{static_cast<float>(lua_tonumber(L, 5)), static_cast<float>(lua_tonumber(L, 6)),
+                static_cast<float>(lua_tonumber(L, 7))},
+      glm::vec3{static_cast<float>(lua_tonumber(L, 8)), static_cast<float>(lua_tonumber(L, 9)),
+                static_cast<float>(lua_tonumber(L, 10))});
 
   lua_pop(L, 1);
 
