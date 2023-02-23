@@ -34,6 +34,7 @@ public:
 
   void select_animation(std::uint32_t index) noexcept;
   void advance_frame() noexcept;
+  void play_animation(double animation_frame_dt) noexcept;
 
   void move(glm::vec3 &&vec) noexcept;
   void scale(glm::vec3 &&vec) noexcept;

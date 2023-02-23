@@ -45,12 +45,6 @@ function surge.draw()
     surge.draw_actor(sophia_actor)
 end
 
-local animation_frame_time = 0.0
-
 function surge.update(dt)
-    animation_frame_time = animation_frame_time + dt
-    if animation_frame_time > 0.1 then
-        animation_frame_time = 0.0
-        surge.advance_actor_frame(sophia_actor)
-    end
+    surge.play_actor_animation(sophia_actor, 0.1)
 end

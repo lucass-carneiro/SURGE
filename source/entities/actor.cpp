@@ -50,6 +50,16 @@ void surge::actor::advance_frame() noexcept {
   actor_sprite.sheet_set_indices(current_frame_indices);
 }
 
+void surge::actor::play_animation(double animation_frame_dt) noexcept {
+  static double frame_time{0};
+  frame_time = frame_time + global_engine_window::get().get_frame_dt();
+
+  if (frame_time > animation_frame_dt) {
+    frame_time = 0.0;
+    advance_frame();
+  }
+}
+
 void surge::actor::move(glm::vec3 &&vec) noexcept {
   current_quad.corner = current_quad.corner + vec;
 

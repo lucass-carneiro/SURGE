@@ -228,6 +228,44 @@ auto surge::lua_advance_actor_frame(lua_State *L) noexcept -> int {
   return 0;
 }
 
+auto surge::lua_play_actor_animation(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 2) {
+    glog<log_event::warning>("Function play_actor_animation expected 2 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "play_actor_animation")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function play_actor_animation expected argument 2 to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  const auto animation_frame_dt{static_cast<double>(lua_tonumber(L, 2))};
+
+  // Internal call
+  actor_ptr->play_animation(animation_frame_dt);
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
 auto surge::lua_move_actor(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
