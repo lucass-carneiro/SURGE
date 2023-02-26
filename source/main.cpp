@@ -148,6 +148,10 @@ auto main(int argc, char **argv) noexcept -> int {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
+
+    // This is required to fix a failed assartion in ImGui. Stupid, but works
+    ImGui::GetIO().DeltaTime = 1.0e-5;
+
     ImGui::NewFrame();
 
     /*

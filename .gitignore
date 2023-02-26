@@ -7,3 +7,6 @@ demos/log.txt
 demos/imgui.ini
 
 compile_commands.json
+
+vcpkg/*
+vcpkg_installed/*

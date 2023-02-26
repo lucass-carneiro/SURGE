@@ -5,7 +5,7 @@
 #include "allocators/stl_allocator.hpp"
 
 // clang-format off
-#include <lua.hpp>
+#include <luajit/lua.hpp>
 // clang-format on
 
 #include <memory>

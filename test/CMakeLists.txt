@@ -27,20 +27,20 @@ target_include_directories(
 
 target_link_libraries(tests PRIVATE
   OpenGL::GL
-  CONAN_PKG::glad
-  CONAN_PKG::eastl
-  CONAN_PKG::fmt
-  CONAN_PKG::docopt.cpp
-  CONAN_PKG::tl-expected
-  CONAN_PKG::gtest
-  CONAN_PKG::glfw
-  CONAN_PKG::glm
-  CONAN_PKG::gsl-lite
-  CONAN_PKG::mimalloc
-  CONAN_PKG::taskflow
-  CONAN_PKG::luajit
-  CONAN_PKG::imgui
-  CONAN_PKG::implot
+  EASTL
+  fmt::fmt-header-only
+  docopt_s
+  tl::expected
+  glfw
+  glm::glm
+  gsl::gsl-lite
+  Taskflow::Taskflow
+  luajit-5.1
+  mimalloc-static
+  imgui::imgui
+  implot::implot
+  GTest::gtest
+  glad::glad
 )
 
 include(GoogleTest)

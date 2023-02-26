@@ -72,7 +72,8 @@ auto surge::lua_get_cursor_pos(lua_State *L) noexcept -> int {
   auto [x, y] = global_engine_window::get().get_cursor_pos();
   lua_pushnumber(L, x);
   lua_pushnumber(L, y);
-  return 2;
+  lua_pushnumber(L, 0.0);
+  return 3;
 }
 
 void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int mods) noexcept {

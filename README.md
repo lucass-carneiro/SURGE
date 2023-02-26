@@ -1,6 +1,6 @@
  SURGE: Super UnderRated Game Engine
 
- A prototype game engine made for fun.
+ A prototype game engine made for fun (and profit ?).
 
 # Demo
 
@@ -8,13 +8,23 @@
 
 # Build instructions
 
-```
-cd Debug
+1. Install `git` and `cmake`
+2. Clone the repository `git clone https://github.com/lucass-carneiro/SURGE`
+3. Initialize submodules `git submodule init`
+4. Update submodules `git submodule update`
+5. Choose your build parameters
 
-conan install ../conan --remote=conancenter --build missing --profile ../conan/toolchain-gcc-12-release
-cmake .. -G "Unix Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug
-cmake --build . -j20
-```
+| Build types | [Build argument] |
+|:-----------:|:----------------:|
+|   Release   |      Release     |
+|    Debug    |       Debug      |
+
+|              Argument              |                   Effect                   |
+|:----------------------------------:|:------------------------------------------:|
+| -DCMAKE_EXPORT_COMPILE_COMMANDS=ON | Exports compile commands for usage in IDEs |
+
+6. Install dependencies and create build system `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments] -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake`
+7. Build `cmake --build [Build argument]`
 
 # Tasks
 

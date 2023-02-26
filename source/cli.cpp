@@ -52,7 +52,7 @@ static constexpr const char *LOGO =
 void surge::draw_logo() noexcept { glog<log_event::logo>(LOGO); }
 
 auto surge::parse_arguments(int argc, char **argv) noexcept
-    -> tl::expected<docopt::Options, docopt_error_type> {
+    -> tl::expected<cmd_opts, docopt_error_type> {
   using tl::unexpected;
 
   try {
@@ -87,7 +87,7 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
   }
 }
 
-auto surge::get_arg_string(const docopt::Options &opts, const char *arg) noexcept
+auto surge::get_arg_string(const cmd_opts &opts, const char *arg) noexcept
     -> std::optional<const char *> {
   try {
     return opts.at(arg).asString().c_str();
@@ -97,8 +97,7 @@ auto surge::get_arg_string(const docopt::Options &opts, const char *arg) noexcep
   }
 }
 
-auto surge::get_arg_long(const docopt::Options &opts, const char *arg) noexcept
-    -> std::optional<long> {
+auto surge::get_arg_long(const cmd_opts &opts, const char *arg) noexcept -> std::optional<long> {
   try {
     return opts.at(arg).asLong();
   } catch (const std::exception &error) {
@@ -107,7 +106,7 @@ auto surge::get_arg_long(const docopt::Options &opts, const char *arg) noexcept
   }
 }
 
-auto surge::get_file_path(const docopt::Options &opts, const char *arg, const char *ext) noexcept
+auto surge::get_file_path(const cmd_opts &opts, const char *arg, const char *ext) noexcept
     -> std::optional<std::filesystem::path> {
 
   const auto arg_string{get_arg_string(opts, arg)};

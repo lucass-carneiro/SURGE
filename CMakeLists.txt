@@ -28,9 +28,27 @@ endif()
 # External dependencies
 # -----------------------------------------
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+list(APPEND VCPKG_FEATURE_FLAGS "versions")
+
 include(FindOpenGL)
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
+include(FindLuaJIT)
+
+find_package(EASTL CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(docopt CONFIG REQUIRED)
+find_package(tl-expected CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(gsl-lite CONFIG REQUIRED)
+find_package(Taskflow CONFIG REQUIRED)
+find_package(LuaJIT REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(implot CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
 
 # -----------------------------------------
 # Size options
@@ -130,10 +148,6 @@ set(
   
   "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
   
-  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_glfw.h"
-  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3.h"
-  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3_loader.h"
-  
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
   "${Surge_SOURCE_DIR}/include/opengl/buffer_usage_hints.hpp"
@@ -177,9 +191,6 @@ set(
   "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
   "${Surge_SOURCE_DIR}/source/gui_windows/memory_profiler_window.cpp"
   "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
-
-  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_glfw.cpp"
-  "${Surge_SOURCE_DIR}/include/imgui/imgui_impl_opengl3.cpp"
   
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
   
@@ -280,19 +291,20 @@ endif()
 
 target_link_libraries(Surge PRIVATE
   OpenGL::GL
-  CONAN_PKG::glad
-  CONAN_PKG::eastl
-  CONAN_PKG::fmt
-  CONAN_PKG::docopt.cpp
-  CONAN_PKG::tl-expected
-  CONAN_PKG::glfw
-  CONAN_PKG::glm
-  CONAN_PKG::gsl-lite
-  CONAN_PKG::taskflow
-  CONAN_PKG::luajit
-  CONAN_PKG::mimalloc
-  CONAN_PKG::imgui
-  CONAN_PKG::implot
+  EASTL
+  fmt::fmt-header-only
+  docopt_s
+  tl::expected
+  glfw
+  glm::glm
+  gsl::gsl-lite
+  Taskflow::Taskflow
+  luajit-5.1
+  mimalloc-static
+  imgui::imgui
+  implot::implot
+  GTest::gtest
+  glad::glad
 )
 
 target_include_directories(

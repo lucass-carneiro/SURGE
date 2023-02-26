@@ -9,8 +9,8 @@ surge.window_name   = "SURGE OpenGL Window"
 surge.windowed = true          -- true for windowed, false for fullscreen
 surge.window_monitor_index = 1
 
--- Show/hide window cursor (Not working)
-surge.show_cursor = false
+-- Show/hide window cursor
+surge.show_cursor = true
 
 -- Key for showing/hiding debug objects (not implemented)
 surge.show_debug_objects = surge.keyboard_key.F11

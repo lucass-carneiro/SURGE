@@ -3,7 +3,7 @@
 
 #include <filesystem>
 #include <glm/mat4x4.hpp>
-#include <lua.hpp>
+#include <luajit/lua.hpp>
 #include <optional>
 
 namespace surge {

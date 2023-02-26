@@ -4,7 +4,7 @@
 #include "static_map.hpp"
 
 // clang-format off
-#include <lua.hpp>
+#include <luajit/lua.hpp>
 // clang-format on
 
 #include <fmt/color.h>
