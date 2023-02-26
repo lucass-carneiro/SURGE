@@ -19,9 +19,23 @@
 |   Release   |      Release     |
 |    Debug    |       Debug      |
 
-|              Argument              |                   Effect                   |
-|:----------------------------------:|:------------------------------------------:|
-| -DCMAKE_EXPORT_COMPILE_COMMANDS=ON | Exports compile commands for usage in IDEs |
+| Argument                           | Effect                                                     | Possible values | Default value            |
+|------------------------------------|------------------------------------------------------------|-----------------|--------------------------|
+| -DCMAKE_EXPORT_COMPILE_COMMANDS=ON | Exports `compile_commands.json` file for usage in IDEs.    | OFF/ON          | OFF                      |
+| -DSURGE_STACK_FREE_RECORD_SIZE     | Sets the size of the `free_record` in stack allocators (1) | >=16            | 16                       |
+| -DSURGE_OPENGL_ERROR_BUFFER_SIZE   | Size of the static buffer used to capture OpenGL messages  | >=1024          | 1024                     |
+| -DSURGE_OPENGL_ERROR_BUFFER_SIZE   | Number of samples in the FPS counter (2)                   | Integer         | 1000                     |
+| -DSURGE_USE_LOG                    | Enable log messages.                                       | OFF/ON          | ON                       |
+| -DSURGE_USE_LOG_COLOR              | Use colors on log outputs.                                 | OFF/ON          | ON                       |
+| -DSURGE_STBIMAGE_ERRORS            | Enables more verbose error message strings in stb_image.   | OFF/ON          | ON                       |
+| -DSURGE_ENABLE_SANITIZERS          | Compiles code with sanitizers.                             | OFF/ON          | ON (Debug), OFF(Release) |
+| -DSURGE_ENABLE_OPTIMIZATIONS       | Compiles code with optimizations.                          | OFF/ON          | OFF (Debug), ON(Release) |
+| -DSURGE_ENABLE_LTO                 | Compiles code with link time optimizations (-O2).          | OFF/ON          | OFF (Debug), ON(Release) |
+| -DSURGE_ENABLE_FAST_MATH           | Compiles code with fast math mode.                         | OFF/ON          | OFF (Debug), ON(Release) |
+| -DSURGE_ENABLE_TUNING              | Compiles code with architecture tuning.                    | OFF/ON          | OFF (Debug), ON(Release) |
+| -DSURGE_DEBUG_MEMORY               | Enable custom allocators debug facilities.                 | OFF/ON          | ON (Debug), OFF(Release) |
+| -DSURGE_ENABLE_THREADS             | Enables multithreading.                                    | OFF/ON          | ON                       |
+| -DSURGE_BUILD_TESTING              | Build tests.                                               | OFF/ON          | ON                       |
 
 6. Install dependencies and create build system `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments] -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake`
 7. Build `cmake --build [Build argument]`
