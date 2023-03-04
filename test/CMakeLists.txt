@@ -35,7 +35,7 @@ target_link_libraries(tests PRIVATE
   glm::glm
   gsl::gsl-lite
   Taskflow::Taskflow
-  luajit-5.1
+  PkgConfig::LUAJIT
   mimalloc-static
   imgui::imgui
   implot::implot

@@ -32,8 +32,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 list(APPEND VCPKG_FEATURE_FLAGS "versions")
 
 include(FindOpenGL)
-include(FindLuaJIT)
 
+find_package(PkgConfig REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(docopt CONFIG REQUIRED)
@@ -42,7 +42,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
-find_package(LuaJIT REQUIRED)
+pkg_search_module(LUAJIT REQUIRED IMPORTED_TARGET luajit)
 find_package(OpenGL REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
@@ -299,7 +299,7 @@ target_link_libraries(Surge PRIVATE
   glm::glm
   gsl::gsl-lite
   Taskflow::Taskflow
-  luajit-5.1
+  PkgConfig::LUAJIT
   mimalloc-static
   imgui::imgui
   implot::implot
