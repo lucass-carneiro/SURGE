@@ -1,6 +1,6 @@
+#include "allocator.hpp"
 #include "entities/sprite.hpp"
 #include "lua/lua_wrappers.hpp"
-#include "thread_allocators.hpp"
 #include "window.hpp"
 
 auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
@@ -25,16 +25,9 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
   const char *path_str{lua_tostring(L, 1)};
   const char *ext_str{lua_tostring(L, 2)};
 
-  // VM index recovery
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "vm_index");
-  const auto vm_index{static_cast<std::size_t>(lua_tointeger(L, -1))};
-  lua_pop(L, 2);
-
   // Internal call
-  auto sprite_buffer{global_thread_allocators::get().at(vm_index).get()->malloc(sizeof(sprite))};
-  sprite *sprite_ptr{new (sprite_buffer) sprite(global_thread_allocators::get().at(vm_index).get(),
-                                                path_str, ext_str, buffer_usage_hint::static_draw)};
+  auto sprite_buffer{mi_malloc(sizeof(sprite))};
+  sprite *sprite_ptr{new (sprite_buffer) sprite(path_str, ext_str, buffer_usage_hint::static_draw)};
 
   // Pass this pointer to the Lua VM as userdata
   auto vm_sprite_ptr{static_cast<sprite **>(lua_newuserdata(L, sizeof(void *)))};
@@ -53,14 +46,8 @@ auto surge::lua_drop_sprite(lua_State *L) noexcept -> int {
   auto vm_sprite_ptr{static_cast<sprite **>(lua_touserdata(L, 1))};
   auto sprite_ptr{*vm_sprite_ptr};
 
-  // VM index recovery
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "vm_index");
-  const auto vm_index{static_cast<std::size_t>(lua_tointeger(L, -1))};
-  lua_pop(L, 2);
-
   // Data cleanup
-  global_thread_allocators::get().at(vm_index)->free(sprite_ptr);
+  mi_free(sprite_ptr);
 
   return 0;
 }

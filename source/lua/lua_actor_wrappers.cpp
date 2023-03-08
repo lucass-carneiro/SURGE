@@ -1,6 +1,7 @@
+#include "allocator.hpp"
 #include "entities/actor.hpp"
+#include "log.hpp"
 #include "lua/lua_wrappers.hpp"
-#include "thread_allocators.hpp"
 
 auto surge::lua_new_actor(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
@@ -24,16 +25,9 @@ auto surge::lua_new_actor(lua_State *L) noexcept -> int {
   const char *sheet_path_str{lua_tostring(L, 1)};
   const char *sad_path_str{lua_tostring(L, 2)};
 
-  // VM index recovery
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "vm_index");
-  const auto vm_index{static_cast<std::size_t>(lua_tointeger(L, -1))};
-  lua_pop(L, 2);
-
   // Internal call
-  auto actor_buffer{global_thread_allocators::get().at(vm_index).get()->malloc(sizeof(actor))};
-  actor *actor_ptr{new (actor_buffer) actor(global_thread_allocators::get().at(vm_index).get(),
-                                            sheet_path_str, sad_path_str)};
+  auto actor_buffer{mi_malloc(sizeof(actor))};
+  actor *actor_ptr{new (actor_buffer) actor(sheet_path_str, sad_path_str)};
 
   // Pass this pointer to the Lua VM as userdata
   auto vm_actor_ptr{static_cast<actor **>(lua_newuserdata(L, sizeof(void *)))};
@@ -52,15 +46,9 @@ auto surge::lua_drop_actor(lua_State *L) noexcept -> int {
   auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
   auto actor_ptr{*vm_actor_ptr};
 
-  // VM index recovery
-  lua_getglobal(L, "surge");
-  lua_getfield(L, -1, "vm_index");
-  const auto vm_index{static_cast<std::size_t>(lua_tointeger(L, -1))};
-  lua_pop(L, 2);
-
   // Data cleanup
-  actor_ptr->drop_sad_file(global_thread_allocators::get().at(vm_index).get());
-  global_thread_allocators::get().at(vm_index)->free(actor_ptr);
+  actor_ptr->drop_sad_file();
+  mi_free(actor_ptr);
 
   return 0;
 }

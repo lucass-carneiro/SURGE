@@ -4,12 +4,6 @@
 #include "log.hpp"
 #include "options.hpp"
 
-#include <exception>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <tl/expected.hpp>
-
 /**
  * The program help/usage message that is also used to generate the command line
  * parser.
@@ -18,17 +12,14 @@ static constexpr const char *USAGE =
     R"(SURGE engine.
 
     Usage:
-      surge [--pages=<num>] [--num-threads=<num>] [--thread-mem-quota=<quota>] <config-script> <startup-script>
+      surge [options] <config-script> <startup-script>
       surge (-h | --help)
       surge --version
 
     Options:
-      -h --help                   Show this screen.
-      --version                   Show version.
-      --config-script=<path>      Path to an engine config file. [default: "config.lua"]
-      --pages=<num>               The max. amount of engine memory to use (in page size multiples). [default: 524288]
-      --num-threads=<num>         The total number of threads to use. If negative, use all available threads. [default: 4]
-      --thread-mem-quota=<quota>  The percentage of the total memory to be assigned to the worker threads (in bytes). [default: 75]
+      -h --help                                 Show this screen.
+      --version                                 Show version.
+      --num-threads=<num>                       The total number of threads to use. If negative, use all available threads. [default: 2]
 )";
 
 static constexpr const char *VERSION_STRING
@@ -51,10 +42,7 @@ static constexpr const char *LOGO =
 
 void surge::draw_logo() noexcept { glog<log_event::logo>(LOGO); }
 
-auto surge::parse_arguments(int argc, char **argv) noexcept
-    -> tl::expected<cmd_opts, docopt_error_type> {
-  using tl::unexpected;
-
+auto surge::parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd_opts> {
   try {
     auto cmd_line_args
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -64,26 +52,26 @@ auto surge::parse_arguments(int argc, char **argv) noexcept
 
   } catch (const docopt::DocoptExitHelp &) {
     std::cout << USAGE << std::endl;
-    return unexpected(docopt_error_type::docopt_exit_help);
+    return {};
 
   } catch (const docopt::DocoptExitVersion &) {
     std::cout << VERSION_STRING << std::endl;
-    return unexpected(docopt_error_type::docopt_exit_version);
+    return {};
 
   } catch (const docopt::DocoptLanguageError &) {
     glog<log_event::error>("Internal problem: a syntax error ocurred in the "
                            "USAGE string. Please contact a "
                            "developper");
-    return unexpected(docopt_error_type::docopt_language_error);
+    return {};
 
   } catch (const docopt::DocoptArgumentError &) {
     glog<log_event::message>("Unrecognized arguments passed. Rerun with the --help option "
                              "for usage instructions.");
-    return unexpected(docopt_error_type::docopt_argument_error);
+    return {};
 
   } catch (const std::exception &error) {
     glog<log_event::error>("Unhandled exception while running Docopt {}", error.what());
-    return unexpected(docopt_error_type::docopt_unhandled_error);
+    return {};
   }
 }
 

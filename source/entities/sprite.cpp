@@ -1,5 +1,45 @@
 #include "entities/sprite.hpp"
 
+#include <array>
+
+surge::sprite::sprite(const std::filesystem::path &p, const char *ext,
+                      buffer_usage_hint usage_hint) noexcept
+    : VAO{gen_vao()},
+      VBO{gen_buff()},
+      EBO{gen_buff()},
+      texture_id{load_texture(p, ext).value_or(0)},
+      set_dimentions{dimentions_from_texture()} {
+
+  const std::array<float, 20> vertex_attributes{
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+  };
+
+  const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
+
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, vertex_attributes.size() * sizeof(float), vertex_attributes.data(),
+               to_gl_hint(usage_hint));
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, draw_indices.size() * sizeof(GLuint), draw_indices.data(),
+               to_gl_hint(usage_hint));
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+
+  // NOLINTNEXTLINE
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), buffer_offset<3, float>());
+  glEnableVertexAttribArray(1);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+}
+
 auto surge::sprite::gen_buff() const noexcept -> GLuint {
   GLuint tmp{0};
   glGenBuffers(1, &tmp);

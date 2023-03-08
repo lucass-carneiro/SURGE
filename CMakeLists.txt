@@ -31,24 +31,20 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 list(APPEND VCPKG_FEATURE_FLAGS "versions")
 
-include(FindOpenGL)
-
 find_package(PkgConfig REQUIRED)
-find_package(EASTL CONFIG REQUIRED)
+find_package(OpenGL REQUIRED)
+
+find_package(mimalloc CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(docopt CONFIG REQUIRED)
-find_package(tl-expected CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
 pkg_search_module(LUAJIT REQUIRED IMPORTED_TARGET luajit)
-find_package(OpenGL REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
-find_package(GTest CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
 
 # -----------------------------------------
 # Size options
@@ -121,7 +117,6 @@ endif()
 # -----------------------------------------
 
 option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
-option(SURGE_BUILD_TESTING "Build tests" ON)
 
 # -----------------------------------------
 # Option file
@@ -135,40 +130,27 @@ configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}
 
 set(
   SURGE_HEADER_LIST
-  "${Surge_SOURCE_DIR}/include/allocators/allocator_utils.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/allocators.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/base_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/default_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/eastl_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/global_allocators.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/linear_arena_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/stack_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/static_arena_allocator.hpp"
-  "${Surge_SOURCE_DIR}/include/allocators/stl_allocator.hpp"
-  
+  "${Surge_SOURCE_DIR}/include/entities/sprite.hpp"
+  "${Surge_SOURCE_DIR}/include/entities/actor.hpp"
+
   "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
-  
-  "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
-  
-  "${Surge_SOURCE_DIR}/include/opengl/buffer_usage_hints.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/create_program.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/gl_uniforms.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/glm.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/link_program.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_path.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/load_and_compile_from_text.hpp"
-  "${Surge_SOURCE_DIR}/include/opengl/load_texture.hpp"
-  
+
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_utils.hpp"
-  "${Surge_SOURCE_DIR}/include/lua/lua_vm.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
-  
-  "${Surge_SOURCE_DIR}/include/entities/sprite.hpp"
-  "${Surge_SOURCE_DIR}/include/entities/actor.hpp"
-  
+
+  "${Surge_SOURCE_DIR}/include/opengl/buffer_usage_hints.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/glm.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/headers.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/load_texture.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/program.hpp"
+  "${Surge_SOURCE_DIR}/include/opengl/uniforms.hpp"
+
+  "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
+
+  "${Surge_SOURCE_DIR}/include/allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
@@ -178,38 +160,37 @@ set(
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
   "${Surge_SOURCE_DIR}/include/task_executor.hpp"
-  "${Surge_SOURCE_DIR}/include/thread_allocators.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 
 set(
   SURGE_SOURCE_LIST
-  "${Surge_SOURCE_DIR}/source/allocators/default_allocator.cpp"
-  "${Surge_SOURCE_DIR}/source/allocators/linear_arena_allocator.cpp"
-  "${Surge_SOURCE_DIR}/source/allocators/stack_allocator.cpp"
-
-  "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
-  "${Surge_SOURCE_DIR}/source/gui_windows/memory_profiler_window.cpp"
-  "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
-  
-  "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
-  
-  "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
-  
-  "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_sprite_wrappers.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"
-
   "${Surge_SOURCE_DIR}/source/entities/sprite.cpp"
   "${Surge_SOURCE_DIR}/source/entities/actor.cpp"
 
+  "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
+  "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
+
+  "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_sprite_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
+
+  "${Surge_SOURCE_DIR}/source/opengl/program.cpp"
+  "${Surge_SOURCE_DIR}/source/opengl/uniforms.cpp"
+  "${Surge_SOURCE_DIR}/source/opengl/load_texture.cpp"
+
+  "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
+
+  "${Surge_SOURCE_DIR}/source/allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
+  "${Surge_SOURCE_DIR}/source/image_loader.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
-  "${Surge_SOURCE_DIR}/source/thread_allocators.cpp"
+  "${Surge_SOURCE_DIR}/source/sad_file.cpp"
   "${Surge_SOURCE_DIR}/source/window.cpp"
 )
 
@@ -290,32 +271,20 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(Surge PRIVATE
-  OpenGL::GL
-  EASTL
+  mimalloc-static  
   fmt::fmt-header-only
   docopt_s
-  tl::expected
-  glfw
-  glm::glm
   gsl::gsl-lite
   Taskflow::Taskflow
   PkgConfig::LUAJIT
-  mimalloc-static
+  glm::glm
+  glad::glad
+  glfw
   imgui::imgui
   implot::implot
-  GTest::gtest
-  glad::glad
 )
 
 target_include_directories(
   Surge PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
-
-# -----------------------------------------
-# Compile tests
-# -----------------------------------------
-
-if(SURGE_BUILD_TESTING)
-  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/test)
-endif()

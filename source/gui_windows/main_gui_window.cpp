@@ -5,12 +5,8 @@ void surge::show_main_gui_window(bool *open) noexcept {
   using namespace ImGui;
 
   // Surge apps
-  static bool show_memory_profiler{false};
   static bool show_fps_counter{false};
 
-  if (show_memory_profiler) {
-    show_memory_profiler_window(&show_memory_profiler);
-  }
   if (show_fps_counter) {
     show_fps_counter_window(&show_fps_counter);
   }
@@ -49,7 +45,6 @@ void surge::show_main_gui_window(bool *open) noexcept {
       // SURGE debug apps
       if (BeginMenu("Apps")) {
         MenuItem("FPS counter", nullptr, &show_fps_counter);
-        MenuItem("Memory profiler", nullptr, &show_memory_profiler);
         EndMenu();
       }
 

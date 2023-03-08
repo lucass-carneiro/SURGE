@@ -1,24 +1,9 @@
-/**
- * cli.hpp
- *
- * Handles command line interface opperations
- */
-
 #ifndef SURGE_CLI_HPP
 #define SURGE_CLI_HPP
 
-#include "file.hpp"
-#include "safe_ops.hpp"
-
-// clang-format off
 #include <docopt/docopt.h>
-//#include <docopt/docopt_private.h>
-//#include <docopt/docopt_util.h>
-//#include <docopt/docopt_value.h>
-#include <tl/expected.hpp>
-// clang-format on
-
 #include <filesystem>
+#include <optional>
 
 namespace surge {
 
@@ -48,7 +33,7 @@ void draw_logo() noexcept;
  * @param argv The argument strings passed to the program.
  * @return The parsed command line options or an error in case of failure.
  */
-auto parse_arguments(int argc, char **argv) noexcept -> tl::expected<cmd_opts, docopt_error_type>;
+auto parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd_opts>;
 
 auto get_arg_string(const cmd_opts &opts, const char *arg) noexcept -> std::optional<const char *>;
 

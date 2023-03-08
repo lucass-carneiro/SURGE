@@ -1,9 +1,25 @@
 #include "entities/actor.hpp"
 
+#include "allocator.hpp"
 #include "window.hpp"
 
 #include <cmath>
 #include <numbers>
+
+surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
+                    const std::filesystem::path &sad_file_path,
+                    const char *sprite_sheet_ext) noexcept
+    : actor_sprite{sprite_sheet_path, sprite_sheet_ext, buffer_usage_hint::static_draw},
+      sad_file{load_sad_file(sad_file_path)} {
+  select_animation(0);
+}
+
+void surge::actor::drop_sad_file() noexcept {
+  if (sad_file.has_value()) {
+    mi_free(sad_file->data());
+  }
+  sad_file = load_file_return_t{};
+}
 
 void surge::actor::draw() const noexcept {
   actor_sprite.draw(global_engine_window::get().get_shader_program());

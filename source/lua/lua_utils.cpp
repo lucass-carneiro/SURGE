@@ -9,7 +9,6 @@
 
 #include "file.hpp"
 #include "safe_ops.hpp"
-#include "thread_allocators.hpp"
 
 void surge::push_engine_config_at(std::size_t i) noexcept {
   auto L = global_lua_states::get().at(i).get();
@@ -430,11 +429,10 @@ auto surge::do_file_at(std::size_t i, const std::filesystem::path &path) noexcep
   glog<log_event::message>("Doing Lua script {} using index {}", path.c_str(), i);
 
   auto L{global_lua_states::get().at(i).get()};
-  auto &alloc{global_thread_allocators::get().at(i)};
 
-  // Step 1: load file into the thread's stack and construct a file_handle object to pass to
+  // Step 1: load file and construct a file_handle object to pass to
   // lua_reader
-  file_handle handle{load_file(alloc.get(), path, ".lua"), false};
+  file_handle handle{load_file(path, ".lua"), false};
   if (!handle.opt_file_span) {
     return false;
   }
@@ -445,7 +443,7 @@ auto surge::do_file_at(std::size_t i, const std::filesystem::path &path) noexcep
     glog<log_event::error>("Error while loading Lua script: {}", lua_tostring(L, -1));
 
     // Step 2.1: free allocated file
-    alloc->free(static_cast<void *>((*handle.opt_file_span).data()));
+    mi_free(static_cast<void *>((*handle.opt_file_span).data()));
 
     return false;
   }
@@ -463,13 +461,13 @@ auto surge::do_file_at(std::size_t i, const std::filesystem::path &path) noexcep
     glog<log_event::error>("Error while executing Lua script:\n{}", lua_tostring(L, -1));
 
     // Step 4.1: free allocated file
-    alloc->free(static_cast<void *>((*handle.opt_file_span).data()));
+    mi_free(static_cast<void *>((*handle.opt_file_span).data()));
 
     return false;
   }
 
   // Step 5: free allocated file
-  alloc->free(static_cast<void *>((*handle.opt_file_span).data()));
+  mi_free(static_cast<void *>((*handle.opt_file_span).data()));
 
   return true;
 }

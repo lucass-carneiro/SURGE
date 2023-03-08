@@ -1,8 +1,6 @@
 #ifndef SURGE_ACTOR_HPP
 #define SURGE_ACTOR_HPP
 
-#include "allocators/global_allocators.hpp"
-#include "allocators/stl_allocator.hpp"
 #include "sad_file.hpp"
 #include "sprite.hpp"
 
@@ -27,21 +25,10 @@ enum class actor_heading : std::ptrdiff_t {
 
 class actor {
 public:
-  template <surge_allocator alloc_t>
-  actor(alloc_t *allocator, const std::filesystem::path &sprite_sheet_path,
-        const std::filesystem::path &sad_file_path, const char *sprite_sheet_ext = ".png") noexcept
-      : actor_sprite{allocator, sprite_sheet_path, sprite_sheet_ext,
-                     buffer_usage_hint::static_draw},
-        sad_file{load_sad_file(allocator, sad_file_path)} {
-    select_animation(0);
-  }
+  actor(const std::filesystem::path &sprite_sheet_path, const std::filesystem::path &sad_file_path,
+        const char *sprite_sheet_ext = ".png") noexcept;
 
-  template <surge_allocator alloc_t> void drop_sad_file(alloc_t *allocator) noexcept {
-    if (sad_file.has_value()) {
-      allocator->free(sad_file->data());
-    }
-    sad_file = load_file_return_t{};
-  }
+  void drop_sad_file() noexcept;
 
   void draw() const noexcept;
 

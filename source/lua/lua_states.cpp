@@ -1,12 +1,12 @@
 #include "lua/lua_states.hpp"
 
 #include "lua/lua_utils.hpp"
-#include "thread_allocators.hpp"
+#include "task_executor.hpp"
 
 void surge::global_lua_states::init() noexcept {
   glog<log_event::message>("Starting up Lua states");
 
-  const auto num_threads{global_thread_allocators::get().get_num_threads()};
+  const auto num_threads{global_num_threads::get().count()};
 
   // Step 1: Allocate memory for the array of state pointers
   state_array.reserve(num_threads);
@@ -49,7 +49,7 @@ auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
         "Uanble to acess global lua VM array at index {}: {}. Returning main thread VM.", i,
         e.what());
   }
-  return state_array.back();
+  return state_array[0];
 }
 
 auto surge::global_lua_states::back() noexcept -> lua_state_ptr & { return state_array.back(); }

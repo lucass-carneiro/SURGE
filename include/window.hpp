@@ -1,11 +1,15 @@
 #ifndef SURGE_WINDOW_HPP
 #define SURGE_WINDOW_HPP
 
-#include "allocators/global_allocators.hpp"
-#include "lua/lua_vm.hpp"
 #include "options.hpp"
 
 // clang-format off
+#include "lua/lua_bindings.hpp"
+#include "lua/lua_logs.hpp"
+#include "lua/lua_states.hpp"
+#include "lua/lua_utils.hpp"
+#include "lua/lua_wrappers.hpp"
+
 #include "opengl/headers.hpp"
 
 // #include <imgui.h>
@@ -21,7 +25,6 @@
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>
-#include <tl/expected.hpp>
 #include <tuple>
 
 namespace surge {

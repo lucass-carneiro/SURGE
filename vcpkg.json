@@ -4,24 +4,13 @@
     "version": "1.0.0",
     "builtin-baseline": "223d33be7d3ec6c3d64381ca37f501b8c87dda6a",
     "dependencies": [
-        "eastl",
+        "mimalloc",
         "fmt",
         "docopt",
-        "tl-expected",
-        "glm",
         "gsl-lite",
         "taskflow",
         "luajit",
-        "mimalloc",
-        {
-            "name": "imgui",
-            "features": [
-                "glfw-binding",
-                "opengl3-binding"
-            ]
-        },
-        "implot",
-        "gtest",
+        "glm",
         "glfw3",
         {
             "name": "glad",
@@ -29,6 +18,14 @@
                 "loader",
                 "gl-api-latest"
             ]
-        }
+        },
+        {
+            "name": "imgui",
+            "features": [
+                "glfw-binding",
+                "opengl3-binding"
+            ]
+        },
+        "implot"
     ]
 }

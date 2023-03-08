@@ -3,13 +3,7 @@
 
 #include "log.hpp"
 
-#include <concepts>
-#include <filesystem>
-#include <limits>
 #include <optional>
-#include <string>
-#include <tl/expected.hpp>
-#include <type_traits>
 
 namespace surge {
 
@@ -17,8 +11,7 @@ enum class cast_error { missing_input_type, target_type_too_small, negative_to_u
 
 template <std::integral target_type, std::integral original_type>
 [[nodiscard]] constexpr inline auto safe_cast(original_type value) noexcept
-    -> tl::expected<target_type, cast_error> {
-  using namespace tl;
+    -> std::optional<target_type> {
 
   if constexpr ((std::is_unsigned<original_type>::value && std::is_unsigned<target_type>::value)
                 || (std::is_signed<original_type>::value && std::is_signed<target_type>::value)
@@ -31,12 +24,12 @@ template <std::integral target_type, std::integral original_type>
       glog<log_event::error>("Attempt to cast {} to a target type to small to "
                              "hold the original value.",
                              value);
-      return unexpected(cast_error::target_type_too_small);
+      return {};
     }
   } else {
     glog<log_event::error>("Casting a negative number ({}) to a unsigned type is undefined.",
                            value);
-    return unexpected(cast_error::negative_to_unsigned_undefined);
+    return {};
   }
 }
 

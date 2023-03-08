@@ -1,59 +1,25 @@
+#include "allocator.hpp"
 #include "cli.hpp"
 #include "gui_windows/gui_windows.hpp"
-#include "image_loader.hpp"
 #include "log.hpp"
-#include "lua/lua_vm.hpp"
-#include "opengl/create_program.hpp"
-#include "opengl/load_texture.hpp"
-#include "safe_ops.hpp"
+#include "lua/lua_states.hpp"
+#include "lua/lua_utils.hpp"
 #include "task_executor.hpp"
 #include "window.hpp"
-
-// clang-format off
-#include <sad_file.hpp> // TEMP
-// clang-format on
-
-#include <cstddef>
-#include <cstdlib>
-#include <glm/common.hpp>
-#include <vector>
-
-constexpr auto pow2(std::size_t n) noexcept -> std::size_t {
-  if (n == 0) {
-    return 1;
-  } else {
-    return 2 * pow2(n - 1);
-  }
-}
 
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
 
+  // Init allocator subsystem
+  init_mimalloc();
+
   // Init log subsystem
-  global_log_manager::get().init("./log.txt");
+  global_log_manager::get().init("log.txt");
   draw_logo();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
   if (!cmd_line_args) {
-    return EXIT_FAILURE;
-  }
-
-  // Parameter recovery
-  const auto pages{get_arg_long(*cmd_line_args, "--pages")};
-  if (!pages) {
-    return EXIT_FAILURE;
-  }
-
-  const auto max_mem{(*pages) * get_page_size()};
-
-  const auto mem_quota{get_arg_long(*cmd_line_args, "--thread-mem-quota")};
-  if (!mem_quota) {
-    return EXIT_FAILURE;
-  }
-
-  if (*mem_quota < 0 || mem_quota > 100) {
-    glog<log_event::error>(" The thread memory quota must be between 0 and 100");
     return EXIT_FAILURE;
   }
 
@@ -79,42 +45,18 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Memory per thread calculation
-  const auto mem_per_thread{(static_cast<float>(*mem_quota) / 100)
-                            * (static_cast<float>(max_mem) / static_cast<float>(*num_threads))};
-  const auto mem_per_thread_long{static_cast<long>(mem_per_thread)};
-
-  glog<log_event::message>("Memory distribution:\n"
-                           "  System pages: {}\n"
-                           "  Page size: {} (B)\n"
-                           "  Total memory (B): {}\n"
-                           "  Number of threads: {}\n"
-                           "  Thread memory quota (%): {}\n"
-                           "  Memory per thread (B): {}\n"
-                           "  Remaining usable memory (B): {}",
-                           *pages, get_page_size(), max_mem, *num_threads, *mem_quota,
-                           mem_per_thread_long, max_mem - *num_threads * mem_per_thread_long);
-
-  // Main arena initialization
-  global_default_allocator::get().init("Global default allocator (mimalloc)");
-  global_linear_arena_allocator::get().init(&global_default_allocator::get(), max_mem,
-                                            "Global engine arena");
-
-  // Thread allocator initializations (uses global_linear_arena_allocator for the array and for
-  // allocators)
-  global_thread_allocators::get().init(*num_threads, mem_per_thread_long);
-
   // Init parallel job system
-  if (*num_threads > 1) {
-    glog<log_event::message>("Initializing job system with {} workers", *num_threads - 1);
-    global_task_executor::get();
-  }
+  const auto num_workers{*num_threads > 1 ? *num_threads - 1 : *num_threads};
+  glog<log_event::message>("Initializing job system with {} workers", num_workers);
+  global_num_threads::get().init(num_workers);
+  global_task_executor::get();
 
-  // Init Lua VM states ( global_linear_arena_allocator holds the array and
-  // LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
-  // LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
-  // XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
-  // future if possible
+  /* Init Lua VM states
+   * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
+   * LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
+   * XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
+   * future if possible
+   */
   global_lua_states::get().init();
 
   // Init all VMs with the engine configuration

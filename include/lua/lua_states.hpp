@@ -1,13 +1,13 @@
 #ifndef SURGE_GLOBAL_LUA_STATES_HPP
 #define SURGE_GLOBAL_LUA_STATES_HPP
 
-#include "allocators/global_allocators.hpp"
-#include "allocators/stl_allocator.hpp"
+#include "allocator.hpp"
 
 // clang-format off
 #include <luajit/lua.hpp>
 // clang-format on
 
+#include <filesystem>
 #include <memory>
 #include <vector>
 
@@ -20,7 +20,7 @@ namespace surge {
 class global_lua_states {
 public:
   using lua_state_ptr = std::unique_ptr<lua_State, void (*)(lua_State *)>;
-  using stl_allocator_t = stl_allocator<lua_state_ptr, linear_arena_allocator>;
+  using stl_allocator_t = mi_stl_allocator<lua_state_ptr>;
   using state_vec_t = std::vector<lua_state_ptr, stl_allocator_t>;
 
   static inline auto get() -> global_lua_states & {
@@ -52,10 +52,7 @@ public:
 private:
   global_lua_states() = default;
 
-  linear_arena_allocator *parent_allocator{&global_linear_arena_allocator::get()};
-  stl_allocator_t parent_stl_allocator{parent_allocator};
-
-  state_vec_t state_array{parent_stl_allocator};
+  state_vec_t state_array;
 };
 
 } // namespace surge

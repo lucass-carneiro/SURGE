@@ -3,12 +3,10 @@
 #include "log.hpp"
 #include "options.hpp"
 #include "safe_ops.hpp"
-#include "thread_allocators.hpp"
 
 // clang-format off
-#include <GLFW/glfw3.h>
-#include "opengl/create_program.hpp"
-#include "opengl/gl_uniforms.hpp"
+#include "opengl/program.hpp"
+#include "opengl/uniforms.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 // clang-format on
@@ -172,8 +170,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
-  sprite_shader = create_program(global_thread_allocators::get().back().get(),
-                                 engine_config->root_dir / "shaders/sprite.vert",
+  sprite_shader = create_program(engine_config->root_dir / "shaders/sprite.vert",
                                  engine_config->root_dir / "shaders/sprite.frag");
   if (!sprite_shader) {
     window.reset();

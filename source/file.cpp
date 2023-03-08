@@ -1,5 +1,6 @@
 #include "file.hpp"
 
+#include "allocator.hpp"
 #include "log.hpp"
 
 #ifdef SURGE_SYSTEM_IS_POSIX
@@ -35,9 +36,48 @@ auto surge::validate_path(const std::filesystem::path &path,
   }
 }
 
+auto surge::load_file(const std::filesystem::path &p, const char *ext,
+                      bool append_null_byte) noexcept -> load_file_return_t {
+  glog<log_event::message>("Loading raw data for file {}. Appending null byte: {}", p.c_str(),
+                           append_null_byte);
+
+  const auto path_validation_result{validate_path(p, ext)};
+
+  if (path_validation_result == false) {
+    return {};
+  }
+
+  const auto file_size{[&]() {
+    if (append_null_byte)
+      return (std::filesystem::file_size(p) + 1);
+    else
+      return std::filesystem::file_size(p);
+  }()};
+  void *buffer{mi_malloc(file_size)};
+
+  if (buffer == nullptr) {
+    glog<log_event::error>("Unable to allocate memory to hold file {}", p.c_str());
+    return {};
+  }
+
+  auto byte_buffer{static_cast<std::byte *>(buffer)};
+
+  if (append_null_byte) {
+    byte_buffer[file_size - 1] = std::byte{0};
+  }
+
+  if (os_open_read(p, buffer, file_size)) {
+    return load_file_return_t{load_file_span{byte_buffer, file_size}};
+  } else {
+    mi_free(buffer);
+    return {};
+  }
+}
+
+#ifdef SURGE_SYSTEM_IS_POSIX
+
 auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
                          std::uintmax_t file_size) noexcept -> bool {
-#ifdef SURGE_SYSTEM_IS_POSIX
   // NOLINTNEXTLINE
   int fd = open(p.c_str(), O_RDONLY);
 
@@ -55,7 +95,8 @@ auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
   close(fd);
 
   return true;
-#else
-#  error "OS specific open/read functions not implemented"
-#endif
 }
+
+#else
+#  error "No os_open_read implementation for this system is available. Please implement it here"
+#endif
