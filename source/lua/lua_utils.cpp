@@ -72,6 +72,8 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_actor_v_flip", lua_actor_toggle_v_flip);
   lua_add_table_field<lua_String, lua_CFunction>(L, "get_actor_anchor_coords",
                                                  lua_get_actor_anchor_coords);
+  lua_add_table_field<lua_String, lua_CFunction>(L, "compute_actor_heading",
+                                                 lua_compute_actor_heading);
 
   // Tasker functions
   lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
@@ -242,6 +244,19 @@ void surge::push_engine_config_at(std::size_t i) noexcept {
   lua_add_table_field<lua_String, lua_Integer>(L, "MIDDLE", 2);
   lua_setfield(L, -2, "mouse_button");
   // end Mouse button table
+
+  // Actor heading
+  lua_newtable(L);
+  lua_add_table_field<lua_String, lua_Integer>(L, "N", 0);
+  lua_add_table_field<lua_String, lua_Integer>(L, "S", 1);
+  lua_add_table_field<lua_String, lua_Integer>(L, "E", 2);
+  lua_add_table_field<lua_String, lua_Integer>(L, "W", 3);
+  lua_add_table_field<lua_String, lua_Integer>(L, "NE", 4);
+  lua_add_table_field<lua_String, lua_Integer>(L, "NE", 5);
+  lua_add_table_field<lua_String, lua_Integer>(L, "SE", 6);
+  lua_add_table_field<lua_String, lua_Integer>(L, "SW", 7);
+  lua_setfield(L, -2, "actor_heading");
+  // end Actor heading
 
   lua_setglobal(L, "surge");
   // end surge table

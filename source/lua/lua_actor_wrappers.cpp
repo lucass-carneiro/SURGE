@@ -232,8 +232,8 @@ auto surge::lua_play_actor_animation(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 2) {
-    glog<log_event::warning>("Function play_actor_animation expected 2 arguments and instead got "
+  if (nargs != 3) {
+    glog<log_event::warning>("Function play_actor_animation expected 3 arguments and instead got "
                              "{} arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
@@ -245,11 +245,13 @@ auto surge::lua_play_actor_animation(lua_State *L) noexcept -> int {
     return 1;
   }
 
-  if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function play_actor_animation expected argument 2 to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
+  for (int i = 2; i <= 3; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function play_actor_animation expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
   }
 
   // Data recovery
@@ -257,8 +259,10 @@ auto surge::lua_play_actor_animation(lua_State *L) noexcept -> int {
   auto actor_ptr{*vm_actor_ptr};
 
   const auto animation_frame_dt{static_cast<double>(lua_tonumber(L, 2))};
+  const auto index{static_cast<std::uint32_t>(lua_tonumber(L, 3))};
 
   // Internal call
+  actor_ptr->select_animation(index);
   actor_ptr->play_animation(animation_frame_dt);
 
   lua_pop(L, 1);
@@ -434,4 +438,45 @@ auto surge::lua_get_actor_anchor_coords(lua_State *L) noexcept -> int {
   lua_pushnumber(L, anchor_coords[2]);
 
   return 3;
+}
+
+auto surge::lua_compute_actor_heading(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 4) {
+    glog<log_event::warning>("Function compute_actor_heading expected 4 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "compute_actor_heading")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  for (int i = 2; i <= 4; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function compute_actor_heading expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+  const auto x{static_cast<float>(lua_tonumber(L, 2))}, y{static_cast<float>(lua_tonumber(L, 3))},
+      z{static_cast<float>(lua_tonumber(L, 4))};
+
+  // Internal call
+  const auto heading{actor_ptr->compute_heading(glm::vec3{x, y, z})};
+  (void)heading;
+
+  lua_pop(L, 1);
+
+  return 0;
 }

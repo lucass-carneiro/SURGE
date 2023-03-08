@@ -51,7 +51,8 @@
 * [x] Implement memory visualizer
 
 ##  Main TODO
-* [ ] Track actor heading.
+* [ ] Review allocator system.
+* [ ] Add queue or stack of animation commands to perform to actors.
 * [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
@@ -97,6 +98,7 @@
 * [x] Add animation playing in actor abstraction
 * [x] Add texture flipping.
 * [x] Anchor point relative motion
+* [x] Track actor heading.
 
 
 # References

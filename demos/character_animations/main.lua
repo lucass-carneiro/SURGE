@@ -91,6 +91,7 @@ end
 function surge.mouse_button_event(button, action, mods)
     if button == surge.mouse_button.RIGHT and action == surge.input_action.PRESS then
         left_click_coords = vec3.new(surge.get_cursor_pos())
+        surge.compute_actor_heading(sophia_actor, surge.get_cursor_pos())
     end
 end
 
@@ -103,7 +104,7 @@ function surge.draw()
 end
 
 function surge.update(dt)
-    surge.play_actor_animation(sophia_actor, 0.1)
+    surge.play_actor_animation(sophia_actor, 0.1, 0)
 
     if should_move() then
         surge.move_actor(sophia_actor, reuired_velocity.x, reuired_velocity.y, reuired_velocity.z)
