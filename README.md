@@ -43,15 +43,14 @@
 # Tasks
 
 ## GUI TODO
-* [ ] Create animation debugger
 * [ ] Integrate tracy profiler
+* [ ] Create animation debugger
 
 ## GUI Done
 * [x] Implement FPS counter
-* [x] Implement memory visualizer
+* [x] ~Implement memory visualizer~
 
 ##  Main TODO
-* [ ] Review allocator system.
 * [ ] Add queue or stack of animation commands to perform to actors.
 * [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
@@ -99,6 +98,7 @@
 * [x] Add texture flipping.
 * [x] Anchor point relative motion
 * [x] Track actor heading.
+* [x] Review allocator system.
 
 
 # References

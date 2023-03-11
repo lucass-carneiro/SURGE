@@ -76,6 +76,36 @@ auto surge::lua_get_cursor_pos(lua_State *L) noexcept -> int {
   return 3;
 }
 
+auto surge::lua_get_key_state(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function get_key_state expected 1 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 1)) {
+    glog<log_event::warning>(
+        "Function get_key_state expected argument 1 to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto key{static_cast<int>(lua_tointeger(L, 1))};
+
+  // Internal call
+  const auto status{global_engine_window::get().get_key(key)};
+
+  lua_pushnumber(L, status);
+
+  return 1;
+}
+
 void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int mods) noexcept {
   // Recover main VM state
   lua_State *L{global_lua_states::get().at(0).get()};

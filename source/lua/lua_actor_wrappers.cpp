@@ -7,8 +7,8 @@ auto surge::lua_new_actor(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 2) {
-    glog<log_event::warning>("Function new_actor expected 2 arguments and instead got {} "
+  if (nargs != 12) {
+    glog<log_event::warning>("Function new_actor expected 13 arguments and instead got {} "
                              "arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
@@ -16,18 +16,50 @@ auto surge::lua_new_actor(lua_State *L) noexcept -> int {
   }
 
   if (!(lua_isstring(L, 1) || lua_isstring(L, 2))) {
-    glog<log_event::warning>("Fucntion new_actor expects 2 string arguments. Returning nil");
+    glog<log_event::warning>(
+        "Fucntion new_actor expects arguents 1 and 2 to be strings. Returning nil");
     lua_pushnil(L);
     return 1;
+  }
+
+  if (!lua_isnumber(L, 3)) {
+    glog<log_event::warning>(
+        "Fucntion new_actor expects argument 3 to be an integer. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  for (int i = 4; i <= 12; i++) {
+    if (!lua_isnumber(L, i)) {
+      glog<log_event::warning>(
+          "Function new_actor expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
   }
 
   // Argument extraction
   const char *sheet_path_str{lua_tostring(L, 1)};
   const char *sad_path_str{lua_tostring(L, 2)};
+  const auto anim_idx{static_cast<std::uint32_t>(lua_tointeger(L, 3))};
+
+  const auto anchor_x{static_cast<float>(lua_tonumber(L, 4))};
+  const auto anchor_y{static_cast<float>(lua_tonumber(L, 5))};
+  const auto anchor_z{static_cast<float>(lua_tonumber(L, 6))};
+
+  const auto pos_x{static_cast<float>(lua_tonumber(L, 7))};
+  const auto pos_y{static_cast<float>(lua_tonumber(L, 8))};
+  const auto pos_z{static_cast<float>(lua_tonumber(L, 9))};
+
+  const auto scale_x{static_cast<float>(lua_tonumber(L, 10))};
+  const auto scale_y{static_cast<float>(lua_tonumber(L, 11))};
+  const auto scale_z{static_cast<float>(lua_tonumber(L, 12))};
 
   // Internal call
   auto actor_buffer{mi_malloc(sizeof(actor))};
-  actor *actor_ptr{new (actor_buffer) actor(sheet_path_str, sad_path_str)};
+  actor *actor_ptr{new (actor_buffer) actor(
+      sheet_path_str, sad_path_str, anim_idx, glm::vec3{anchor_x, anchor_y, anchor_z},
+      glm::vec3{pos_x, pos_y, pos_z}, glm::vec3{scale_x, scale_y, scale_z})};
 
   // Pass this pointer to the Lua VM as userdata
   auto vm_actor_ptr{static_cast<actor **>(lua_newuserdata(L, sizeof(void *)))};
@@ -106,43 +138,6 @@ auto surge::lua_draw_actor(lua_State *L) noexcept -> int {
   return 0;
 }
 
-auto surge::lua_set_actor_animation(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 2) {
-    glog<log_event::warning>("Function set_actor_animation expected 2 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!is_actor(L, "set_actor_animation")) {
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function set_actor_animation expected argument 2 to be a number. Returning nil");
-    lua_pushnil(L);
-    return 1;
-  }
-
-  // Data recovery
-  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
-  auto actor_ptr{*vm_actor_ptr};
-  const auto index{static_cast<std::uint32_t>(lua_tonumber(L, 2))};
-
-  // Internal call
-  actor_ptr->select_animation(index);
-
-  lua_pop(L, 1);
-
-  return 0;
-}
-
 auto surge::lua_set_actor_geometry(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
@@ -181,77 +176,6 @@ auto surge::lua_set_actor_geometry(lua_State *L) noexcept -> int {
                 static_cast<float>(lua_tonumber(L, 7))},
       glm::vec3{static_cast<float>(lua_tonumber(L, 8)), static_cast<float>(lua_tonumber(L, 9)),
                 static_cast<float>(lua_tonumber(L, 10))});
-
-  lua_pop(L, 1);
-
-  return 0;
-}
-
-auto surge::lua_advance_actor_frame(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 1) {
-    glog<log_event::warning>("Function advance_actor_frame expected 1 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!is_actor(L, "advance_actor_frame")) {
-    lua_pushnil(L);
-    return 1;
-  }
-
-  // Data recovery
-  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
-  auto actor_ptr{*vm_actor_ptr};
-
-  // Internal call
-  actor_ptr->advance_frame();
-
-  lua_pop(L, 1);
-
-  return 0;
-}
-
-auto surge::lua_play_actor_animation(lua_State *L) noexcept -> int {
-  const auto nargs{lua_gettop(L)};
-
-  // Argument count and type validation
-  if (nargs != 3) {
-    glog<log_event::warning>("Function play_actor_animation expected 3 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
-    lua_pushnil(L);
-    return 1;
-  }
-
-  if (!is_actor(L, "play_actor_animation")) {
-    lua_pushnil(L);
-    return 1;
-  }
-
-  for (int i = 2; i <= 3; i++) {
-    if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function play_actor_animation expected argument {} to be a number. Returning nil", i);
-      lua_pushnil(L);
-      return 1;
-    }
-  }
-
-  // Data recovery
-  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
-  auto actor_ptr{*vm_actor_ptr};
-
-  const auto animation_frame_dt{static_cast<double>(lua_tonumber(L, 2))};
-  const auto index{static_cast<std::uint32_t>(lua_tonumber(L, 3))};
-
-  // Internal call
-  actor_ptr->select_animation(index);
-  actor_ptr->play_animation(animation_frame_dt);
 
   lua_pop(L, 1);
 
@@ -396,20 +320,19 @@ auto surge::lua_actor_toggle_v_flip(lua_State *L) noexcept -> int {
   return 0;
 }
 
-auto surge::lua_get_actor_anchor_coords(lua_State *L) noexcept -> int {
+auto surge::lua_get_actor_anchor_pos(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
   if (nargs != 1) {
-    glog<log_event::warning>(
-        "Function get_actor_anchor_coords expected 1 arguments and instead got "
-        "{} arguments. Returning nil",
-        nargs);
+    glog<log_event::warning>("Function get_actor_anchor_pos expected 1 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
     lua_pushnil(L);
     return 1;
   }
 
-  if (!is_actor(L, "get_actor_anchor_coords")) {
+  if (!is_actor(L, "get_actor_anchor_pos")) {
     lua_pushnil(L);
     return 1;
   }
@@ -428,27 +351,65 @@ auto surge::lua_get_actor_anchor_coords(lua_State *L) noexcept -> int {
   return 3;
 }
 
-auto surge::lua_compute_actor_heading(lua_State *L) noexcept -> int {
+auto surge::lua_update_actor_animations(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 4) {
-    glog<log_event::warning>("Function compute_actor_heading expected 4 arguments and instead got "
+  if (nargs != 2) {
+    glog<log_event::warning>(
+        "Function update_actor_animations expected 2 arguments and instead got "
+        "{} arguments. Returning nil",
+        nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "update_actor_animations")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function update_actor_animations expected argument 2 to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+  const auto anim_dt{static_cast<double>(lua_tonumber(L, 2))};
+
+  // Internal call
+  actor_ptr->update_animations(anim_dt);
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
+auto surge::lua_actor_walk_to(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 6) {
+    glog<log_event::warning>("Function actor_walk_to expected 6 arguments and instead got "
                              "{} arguments. Returning nil",
                              nargs);
     lua_pushnil(L);
     return 1;
   }
 
-  if (!is_actor(L, "compute_actor_heading")) {
+  if (!is_actor(L, "actor_walk_to")) {
     lua_pushnil(L);
     return 1;
   }
 
-  for (int i = 2; i <= 4; i++) {
+  for (int i = 2; i <= 6; i++) {
     if (!lua_isnumber(L, i)) {
       glog<log_event::warning>(
-          "Function compute_actor_heading expected argument {} to be a number. Returning nil", i);
+          "Function scale_actor actor_walk_to argument {} to be a number. Returning nil", i);
       lua_pushnil(L);
       return 1;
     }
@@ -457,12 +418,13 @@ auto surge::lua_compute_actor_heading(lua_State *L) noexcept -> int {
   // Data recovery
   auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
   auto actor_ptr{*vm_actor_ptr};
-  const auto x{static_cast<float>(lua_tonumber(L, 2))}, y{static_cast<float>(lua_tonumber(L, 3))},
+  auto x{static_cast<float>(lua_tonumber(L, 2))}, y{static_cast<float>(lua_tonumber(L, 3))},
       z{static_cast<float>(lua_tonumber(L, 4))};
+  auto speed{static_cast<float>(lua_tonumber(L, 5))};
+  auto threshold{static_cast<float>(lua_tonumber(L, 6))};
 
   // Internal call
-  const auto heading{actor_ptr->compute_heading(glm::vec3{x, y, z})};
-  (void)heading;
+  actor_ptr->walk_to(glm::vec3{x, y, z}, speed, threshold);
 
   lua_pop(L, 1);
 
