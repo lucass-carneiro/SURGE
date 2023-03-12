@@ -39,6 +39,6 @@ function surge.draw()
 end
 
 function surge.update(dt)
+    surge.actor_walk_to(sophia_actor, click_x, click_y, click_z, 3.0, 2.0)
     surge.update_actor_animations(sophia_actor, 0.1)
-    surge.actor_walk_to(sophia_actor, click_x, click_y, click_z, 2.0, 1.0)
 end

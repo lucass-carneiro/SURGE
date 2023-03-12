@@ -1,6 +1,7 @@
 #include "entities/actor.hpp"
 
 #include "allocator.hpp"
+#include "safe_ops.hpp"
 #include "window.hpp"
 
 #include <cmath>
@@ -17,8 +18,8 @@ surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
   if (sad_file.has_value()) {
     const auto animation{get_animation(sad_file.value(), first_anim_idx)};
     if (animation.has_value()) {
-      push_anim_to_queue(animation.value());
-      set_front_anim_as_current();
+      current_animation = *animation;
+      activate_current_animation();
     } else {
       glog<log_event::error>("Unable to recover animation index {} from sad file {}",
                              first_anim_idx, sad_file_path.c_str());
@@ -27,7 +28,6 @@ surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
     glog<log_event::error>("Unable to load sad file {}", sad_file_path.c_str());
   }
 
-  // Place the actor at it's initial position and zero it's displacement vector
   set_geometry(std::forward<glm::vec3>(anchor), std::forward<glm::vec3>(position),
                std::forward<glm::vec3>(scale));
 }
@@ -67,8 +67,8 @@ void surge::actor::set_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
 
   current_quad.anchor = anchor * scale;
 
-  current_quad.dims = glm::vec3{static_cast<float>(anim_queue_Sw.front()) * scale[0],
-                                static_cast<float>(anim_queue_Sh.front()) * scale[1], 0.0};
+  current_quad.dims = glm::vec3{static_cast<float>(current_animation.Sw) * scale[0],
+                                static_cast<float>(current_animation.Sh) * scale[1], 0.0};
 
   current_quad.corner = position - current_quad.anchor;
 
@@ -79,20 +79,21 @@ void surge::actor::set_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
 
 void surge::actor::toggle_h_flip() noexcept {
   actor_sprite.toggle_h_flip(global_engine_window::get().get_shader_program());
+  current_animation_h_flipped = !current_animation_h_flipped;
 }
 
 void surge::actor::toggle_v_flip() noexcept {
   actor_sprite.toggle_v_flip(global_engine_window::get().get_shader_program());
+  current_animation_v_flipped = !current_animation_v_flipped;
 }
 
 [[nodiscard]] auto surge::actor::get_anchor_coords() const noexcept -> glm::vec3 {
   return current_quad.corner + current_quad.anchor;
 }
 
-[[nodiscard]] auto surge::actor::compute_heading(const glm::vec3 &target) const noexcept
+[[nodiscard]] auto surge::actor::compute_heading(const glm::vec3 &displacement) const noexcept
     -> actor_heading {
-  const auto anchor_coords{get_anchor_coords()};
-  const auto displacement{target - anchor_coords};
+
   const auto phi{std::numbers::pi + std::atan2(displacement[1], displacement[0])};
   const auto dphi{std::numbers::pi / 8};
 
@@ -115,37 +116,33 @@ void surge::actor::toggle_v_flip() noexcept {
   }
 }
 
-void surge::actor::push_anim_to_queue(const animation_data &data) noexcept {
-  anim_queue_index.push(data.index);
-  anim_queue_x.push(data.x);
-  anim_queue_y.push(data.y);
-  anim_queue_Sw.push(data.Sw);
-  anim_queue_Sh.push(data.Sh);
-  anim_queue_rows.push(data.rows);
-  anim_queue_cols.push(data.cols);
+void surge::actor::swtich_to_animation(std::uint32_t idx) noexcept {
+  if (sad_file.has_value()) {
+    const auto animation{get_animation(sad_file.value(), idx)};
+    if (animation.has_value()) {
+      current_animation = *animation;
+      current_alpha = 0;
+      current_beta = 0;
+      activate_current_animation();
+    } else {
+      glog<log_event::error>("Unable to recover animation index {} from sad file", idx);
+    }
+  } else {
+    glog<log_event::error>("Unable to load sad file");
+  }
 }
 
-void surge::actor::pop_anim_from_queue() noexcept {
-  anim_queue_index.pop();
-  anim_queue_x.pop();
-  anim_queue_y.pop();
-  anim_queue_Sw.pop();
-  anim_queue_Sh.pop();
-  anim_queue_rows.pop();
-  anim_queue_cols.pop();
-}
-
-void surge::actor::set_front_anim_as_current() noexcept {
-  actor_sprite.sheet_set_offset(glm::ivec2{anim_queue_x.front(), anim_queue_y.front()});
-  actor_sprite.sheet_set_dimentions(glm::ivec2{anim_queue_Sw.front(), anim_queue_Sh.front()});
+void surge::actor::activate_current_animation() noexcept {
+  actor_sprite.sheet_set_offset(glm::ivec2{current_animation.x, current_animation.y});
+  actor_sprite.sheet_set_dimentions(glm::ivec2{current_animation.Sw, current_animation.Sh});
   actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
 }
 
 void surge::actor::advance_current_anim_frame() noexcept {
-  if ((current_beta + 1) < anim_queue_cols.front()) {
+  if ((current_beta + 1) < current_animation.cols) {
     current_beta = current_beta + 1;
   } else {
-    current_alpha = (current_alpha + 1) % anim_queue_rows.front();
+    current_alpha = (current_alpha + 1) % current_animation.rows;
     current_beta = 0;
   }
 
@@ -163,15 +160,139 @@ void surge::actor::update_animations(double animation_frame_dt) noexcept {
   }
 }
 
+constexpr static const auto heading_north{static_cast<lua_Integer>(surge::actor_heading::north)};
+constexpr static const auto heading_south{static_cast<lua_Integer>(surge::actor_heading::south)};
+constexpr static const auto heading_east{static_cast<lua_Integer>(surge::actor_heading::east)};
+constexpr static const auto heading_west{static_cast<lua_Integer>(surge::actor_heading::west)};
+constexpr static const auto heading_north_east{
+    static_cast<lua_Integer>(surge::actor_heading::north_east)};
+constexpr static const auto heading_north_west{
+    static_cast<lua_Integer>(surge::actor_heading::north_west)};
+constexpr static const auto heading_south_east{
+    static_cast<lua_Integer>(surge::actor_heading::south_east)};
+constexpr static const auto heading_south_west{
+    static_cast<lua_Integer>(surge::actor_heading::south_west)};
+
 void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noexcept {
-
-  // const auto dt{static_cast<float>(global_engine_window::get().get_frame_dt())};
-
   const auto current_anchor{get_anchor_coords()};
   const auto current_displacement{target - current_anchor};
   const auto current_displacement_length{glm::length(current_displacement)};
 
   if (current_displacement_length > threshold) {
-    move(speed * glm::normalize(current_displacement));
+    const auto normalized_displacement{glm::normalize(current_displacement)};
+    const auto heading_direction{static_cast<lua_Integer>(compute_heading(current_displacement))};
+
+    switch (heading_direction) {
+
+    case heading_north:
+      if (current_animation.index != 0)
+        swtich_to_animation(0);
+      break;
+
+    case heading_south:
+      if (current_animation.index != 1)
+        swtich_to_animation(1);
+      break;
+
+    case heading_east:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    case heading_west:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (!current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    case heading_north_east:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    case heading_north_west:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (!current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    case heading_south_east:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    case heading_south_west:
+      if (current_animation.index != 6) {
+        swtich_to_animation(6);
+      }
+      if (!current_animation_h_flipped) {
+        toggle_h_flip();
+      }
+      break;
+
+    default:
+      break;
+    }
+    move(speed * normalized_displacement);
+
+  } else {
+
+    const auto heading_direction{static_cast<lua_Integer>(compute_heading(current_displacement))};
+
+    switch (heading_direction) {
+
+    case heading_north:
+      swtich_to_animation(3);
+      break;
+
+    case heading_south:
+      swtich_to_animation(4);
+      break;
+
+    case heading_east:
+      swtich_to_animation(5);
+      break;
+
+    case heading_west:
+      swtich_to_animation(5);
+      break;
+
+    case heading_north_east:
+      swtich_to_animation(5);
+      break;
+
+    case heading_north_west:
+      swtich_to_animation(5);
+      break;
+
+    case heading_south_east:
+      swtich_to_animation(5);
+      break;
+
+    case heading_south_west:
+      swtich_to_animation(5);
+      break;
+
+    default:
+      break;
+    }
   }
 }

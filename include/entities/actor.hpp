@@ -48,11 +48,10 @@ public:
 
   [[nodiscard]] auto get_anchor_coords() const noexcept -> glm::vec3;
 
-  [[nodiscard]] auto compute_heading(const glm::vec3 &target) const noexcept -> actor_heading;
+  [[nodiscard]] auto compute_heading(const glm::vec3 &displacement) const noexcept -> actor_heading;
 
-  void push_anim_to_queue(const animation_data &data) noexcept;
-  void pop_anim_from_queue() noexcept;
-  void set_front_anim_as_current() noexcept;
+  void swtich_to_animation(std::uint32_t idx) noexcept;
+  void activate_current_animation() noexcept;
   void advance_current_anim_frame() noexcept;
 
   void update_animations(double animation_frame_dt) noexcept;
@@ -64,17 +63,9 @@ private:
 
   actor_quad_info current_quad{};
 
-  using alloc_t = mi_stl_allocator<std::uint32_t>;
-  using deque_t = std::deque<std::uint32_t, alloc_t>;
-  using anim_data_queue = std::queue<std::uint32_t, deque_t>;
-
-  anim_data_queue anim_queue_index;
-  anim_data_queue anim_queue_x;
-  anim_data_queue anim_queue_y;
-  anim_data_queue anim_queue_Sw;
-  anim_data_queue anim_queue_Sh;
-  anim_data_queue anim_queue_rows;
-  anim_data_queue anim_queue_cols;
+  animation_data current_animation{};
+  bool current_animation_h_flipped{false};
+  bool current_animation_v_flipped{false};
 
   std::uint32_t current_alpha{0};
   std::uint32_t current_beta{0};

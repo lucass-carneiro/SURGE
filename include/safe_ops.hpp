@@ -3,11 +3,11 @@
 
 #include "log.hpp"
 
+#include <concepts>
+#include <limits>
 #include <optional>
 
 namespace surge {
-
-enum class cast_error { missing_input_type, target_type_too_small, negative_to_unsigned_undefined };
 
 template <std::integral target_type, std::integral original_type>
 [[nodiscard]] constexpr inline auto safe_cast(original_type value) noexcept
@@ -31,6 +31,15 @@ template <std::integral target_type, std::integral original_type>
                            value);
     return {};
   }
+}
+
+template <std::floating_point T> [[nodiscard]] constexpr auto isapprox(T x, T y, T atol = T{0})
+    -> bool {
+  const auto rtol{atol > T{0} ? T{0} : std::sqrt(std::numeric_limits<T>::epsilon())};
+  const auto abs_x{std::abs(x)};
+  const auto abs_y{std::abs(y)};
+  const auto abs_x_m_y{std::abs(x - y)};
+  return abs_x_m_y <= std::max(atol, rtol * std::max(abs_x, abs_y));
 }
 
 } // namespace surge
