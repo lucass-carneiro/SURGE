@@ -9,10 +9,10 @@
 # Build instructions
 
 1. Install `git` and `cmake`
-2. Clone the repository `git clone https://github.com/lucass-carneiro/SURGE`
-3. Initialize submodules `git submodule init`
-4. Update submodules `git submodule update`
-5. Choose your build parameters
+2. Clone the repository: `git clone https://github.com/lucass-carneiro/SURGE`
+3. Initialize submodules: `git submodule init`
+4. Update submodules: `git submodule update`
+5. Choose your build parameters and configuration
 
 | Build types | [Build argument] |
 |:-----------:|:----------------:|
@@ -35,13 +35,15 @@
 | -DSURGE_DEBUG_MEMORY               | Enable custom allocators debug facilities.                 | OFF/ON          | ON (Debug), OFF(Release) |
 | -DSURGE_ENABLE_THREADS             | Enables multithreading.                                    | OFF/ON          | ON                       |
 
-6. Install dependencies and create build system `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments] -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake`
+6. Install dependencies and create build system: `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments]`
+
 Example for building a Debug build with compiler commands exporting:
 ```
-cmake -B Debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake -B Debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build Debug -j20
 ```
-7. Build `cmake --build [Build argument]`
+
+7. Build: `cmake --build [Build argument]`
 
 # Tasks
 
