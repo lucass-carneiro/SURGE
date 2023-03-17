@@ -45,7 +45,7 @@
 Example for building a Debug build with compiler commands exporting:
 
 ```
-git clone https://github.com/lucass-carneiro/SURGE
+git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
 git submodule init
 git submodule update
 cmake -B Debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
