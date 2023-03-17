@@ -35,15 +35,20 @@
 | -DSURGE_DEBUG_MEMORY               | Enable custom allocators debug facilities.                 | OFF/ON          | ON (Debug), OFF(Release) |
 | -DSURGE_ENABLE_THREADS             | Enables multithreading.                                    | OFF/ON          | ON                       |
 
-6. Install dependencies and create build system: `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments]`
+6. Install dependencies and create build system:
+`cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments]`
+
+7. Build: `cmake --build [Build argument]`
 
 Example for building a Debug build with compiler commands exporting:
+
 ```
+git clone https://github.com/lucass-carneiro/SURGE
+git submodule init
+git submodule update
 cmake -B Debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build Debug -j20
 ```
-
-7. Build: `cmake --build [Build argument]`
 
 # Tasks
 
