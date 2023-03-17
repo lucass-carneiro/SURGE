@@ -50,13 +50,6 @@ find_package(implot CONFIG REQUIRED)
 # Size options
 # -----------------------------------------
 
-if(NOT DEFINED SURGE_STACK_FREE_RECORD_SIZE)
-  set(SURGE_STACK_FREE_RECORD_SIZE 16)
-elseif(SURGE_STACK_FREE_RECORD_SIZE LESS 16)
-  message(WARNING "The variable SURGE_STACK_FREE_RECORD_SIZE should be set to at least 16. It will be automatically set to this value.")
-  set(SURGE_STACK_FREE_RECORD_SIZE 16)
-endif()
-
 if(NOT DEFINED SURGE_OPENGL_ERROR_BUFFER_SIZE)
   set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
 elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
@@ -65,7 +58,7 @@ elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
 endif()
 
 if(NOT DEFINED SURGE_FPS_COUNTER_SAMPLE_SIZE)
-  set(SURGE_FPS_COUNTER_SAMPLE_SIZE 1000)
+  set(SURGE_FPS_COUNTER_SAMPLE_SIZE 1024)
 endif()
 
 # -----------------------------------------
@@ -271,6 +264,7 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(Surge PRIVATE
+  OpenGL::GL
   mimalloc-static  
   fmt::fmt-header-only
   docopt_s
