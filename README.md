@@ -40,6 +40,8 @@
 
 7. Build: `cmake --build [Build argument]`
 
+## Example Debug build
+
 Example for building a Debug build with compiler commands exporting:
 
 ```
