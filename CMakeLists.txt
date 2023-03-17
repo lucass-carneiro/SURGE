@@ -1,7 +1,17 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-# vcpkg configs
+# -----------------------------------------
+# Vcpkg configuration
+# -----------------------------------------
+
 set(CMAKE_TOOLCHAIN_FILE vcpkg/scripts/buildsystems/vcpkg.cmake)
+set(VCPKG_OVERLAY_TRIPLETS triplets)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(VCPKG_TARGET_TRIPLET x64-static-linux-release-clang) #implot fails on a debug build :(
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(VCPKG_TARGET_TRIPLET x64-static-linux-release-clang)
+endif()
 
 # -----------------------------------------
 # Project
@@ -233,8 +243,8 @@ endif()
 
 if(SURGE_ENABLE_LTO)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(Surge PUBLIC -flto -fuse-linker-plugin)
-    target_link_options(Surge PUBLIC -flto -fuse-linker-plugin)
+    target_compile_options(Surge PUBLIC -flto)
+    target_link_options(Surge PUBLIC -flto)
   else()
     # TODO
   endif()

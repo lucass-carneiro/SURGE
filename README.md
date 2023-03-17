@@ -42,13 +42,13 @@
 
 ## Example Debug build
 
-Example for building a Debug build with compiler commands exporting:
+Example for building a Debug build with compiler commands exporting using clang:
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
 git submodule init
 git submodule update
-cmake -B Debug -S . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -B Debug -S . -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build Debug -j20
 ```
 

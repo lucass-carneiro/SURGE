@@ -14,7 +14,7 @@
 
 #define SURGE_SYSTEM_Linux
 #define SURGE_SYSTEM_IS_POSIX
-#define SURGE_COMPILER_GNU
+#define SURGE_COMPILER_Clang
 
 #define SURGE_USE_LOG
 #define SURGE_USE_LOG_COLOR
