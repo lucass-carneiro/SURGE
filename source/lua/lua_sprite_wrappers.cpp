@@ -3,7 +3,7 @@
 #include "lua/lua_wrappers.hpp"
 #include "window.hpp"
 
-auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
+auto surge::lua_new_sprite(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
@@ -35,8 +35,8 @@ auto surge::lua_load_sprite(lua_State *L) noexcept -> int {
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "sprite_meta");
-  lua_setmetatable(L, -3);
-  lua_pop(L, 1);
+  lua_setmetatable(L, -4);
+  lua_pop(L, 2);
 
   return 1;
 }

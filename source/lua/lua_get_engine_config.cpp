@@ -6,6 +6,7 @@ auto surge::lua_get_engine_config(lua_State *L) noexcept -> std::optional<lua_en
   const auto stack_top{lua_gettop(L)};
 
   lua_getglobal(L, "surge");
+  lua_getfield(L, -1, "config");
 
   lua_getfield(L, -1, "window_width");
   if (!lua_isnumber(L, -1)) {

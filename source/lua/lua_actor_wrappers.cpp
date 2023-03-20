@@ -66,9 +66,10 @@ auto surge::lua_new_actor(lua_State *L) noexcept -> int {
   *vm_actor_ptr = actor_ptr;
 
   lua_getglobal(L, "surge");
+  lua_getfield(L, -1, "actor");
   lua_getfield(L, -1, "actor_meta");
-  lua_setmetatable(L, -3);
-  lua_pop(L, 1);
+  lua_setmetatable(L, -4);
+  lua_pop(L, 2);
 
   return 1;
 }

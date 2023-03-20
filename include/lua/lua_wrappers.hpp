@@ -8,7 +8,7 @@
 
 namespace surge {
 
-auto lua_load_sprite(lua_State *L) noexcept -> int;
+auto lua_new_sprite(lua_State *L) noexcept -> int;
 auto lua_drop_sprite(lua_State *L) noexcept -> int;
 auto lua_draw_sprite(lua_State *L) noexcept -> int;
 auto lua_scale_sprite(lua_State *L) noexcept -> int;
