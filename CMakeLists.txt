@@ -58,6 +58,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
+find_package(EASTL CONFIG REQUIRED)
 
 # -----------------------------------------
 # Size options
@@ -289,6 +290,7 @@ target_link_libraries(Surge PRIVATE
   glfw
   imgui::imgui
   implot::implot
+  EASTL
 )
 
 target_include_directories(

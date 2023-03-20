@@ -5,11 +5,11 @@
 
 // clang-format off
 #include <luajit/lua.hpp>
+#include <EASTL/vector.h>
 // clang-format on
 
 #include <filesystem>
 #include <memory>
-#include <vector>
 
 namespace surge {
 
@@ -21,7 +21,7 @@ class global_lua_states {
 public:
   using lua_state_ptr = std::unique_ptr<lua_State, void (*)(lua_State *)>;
   using stl_allocator_t = mi_stl_allocator<lua_state_ptr>;
-  using state_vec_t = std::vector<lua_state_ptr, stl_allocator_t>;
+  using state_vec_t = eastl::vector<lua_state_ptr, eastl_allocator>;
 
   static inline auto get() -> global_lua_states & {
     static global_lua_states states;
@@ -52,7 +52,7 @@ public:
 private:
   global_lua_states() = default;
 
-  state_vec_t state_array;
+  state_vec_t state_array{eastl_allocator::get()};
 };
 
 } // namespace surge

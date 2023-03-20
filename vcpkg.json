@@ -27,6 +27,7 @@
                 "opengl3-binding"
             ]
         },
-        "implot"
+        "implot",
+        "eastl"
     ]
 }
