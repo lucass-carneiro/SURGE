@@ -40,7 +40,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // Retrieve, parse and cast configuration values from config script using the main thread VM
   lua_State *L{global_lua_states::get().at(0).get()};
-  engine_config = get_lua_engine_config(L);
+  engine_config = lua_get_engine_config(L);
 
   if (!engine_config) {
     window_init_success = false;

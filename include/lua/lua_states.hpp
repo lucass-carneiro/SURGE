@@ -28,7 +28,7 @@ public:
     return states;
   }
 
-  void init() noexcept;
+  auto init() noexcept -> bool;
   auto configure(const std::filesystem::path &path) noexcept -> bool;
 
   [[nodiscard]] auto at(std::size_t i) noexcept -> lua_state_ptr &;

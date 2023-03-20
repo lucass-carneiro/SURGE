@@ -21,20 +21,12 @@ struct lua_engine_config {
   std::filesystem::path root_dir{"/home/surge/"};
 };
 
-/**
- * @brief Pushes the engine configuration table in the specified VM of the global_lua_states array
- *
- * @param i The index in the global_lua_states array to push to.
- */
-void push_engine_config_at(std::size_t i) noexcept;
+void lua_add_engine_context(lua_State *L, std::size_t i) noexcept;
 
-auto get_lua_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
+auto lua_get_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
 
-auto do_file_at(std::size_t i, const std::filesystem::path &path) noexcept -> bool;
-
-auto lua_reader(lua_State *L, void *user_data, std::size_t *chunck_size) noexcept -> const char *;
-
-auto lua_message_handler(lua_State *L) noexcept -> int;
+auto do_file_at(lua_State *L, const std::filesystem::path &path) noexcept -> bool;
+auto do_file_at_idx(std::size_t i, const std::filesystem::path &path) noexcept -> bool;
 
 } // namespace surge
 

@@ -42,7 +42,8 @@ class global_task_executor {
 public:
   inline static auto get() noexcept -> tf::Executor & {
     try {
-      static tf::Executor executor(global_num_threads::get().count());
+      static tf::Executor executor(
+          global_num_threads::get().count() > 1 ? global_num_threads::get().count() : 1);
       return executor;
     } catch (const std::exception &e) {
       glog<log_event::error>("Global taskflow executor returned an exception: {}", e.what());

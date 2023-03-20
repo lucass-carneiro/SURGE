@@ -180,7 +180,9 @@ set(
 
   "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_get_engine_config.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_add_engine_context.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_sprite_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"

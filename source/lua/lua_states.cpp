@@ -1,9 +1,10 @@
 #include "lua/lua_states.hpp"
 
+#include "allocator.hpp"
 #include "lua/lua_utils.hpp"
 #include "task_executor.hpp"
 
-void surge::global_lua_states::init() noexcept {
+auto surge::global_lua_states::init() noexcept -> bool {
   glog<log_event::message>("Starting up Lua states");
 
   const auto num_threads{global_num_threads::get().count()};
@@ -13,23 +14,28 @@ void surge::global_lua_states::init() noexcept {
 
   // Setep 2: Allocate each state and store the pointer. Do initializations
   for (unsigned int i = 0; i < num_threads; i++) {
-    state_array.push_back(lua_state_ptr{luaL_newstate(), lua_close});
+    auto L{luaL_newstate()};
 
-    // Initialize state with libs
-    luaL_openlibs(state_array[i].get());
+    if (L == nullptr) {
+      glog<log_event::error>("Failed to initialize lua state {}", i);
+      return false;
+    }
 
-    // Turn JIT on globally
-    luaJIT_setmode(state_array[i].get(), 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
+    luaL_openlibs(L);
+    luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
-    // Add engine context
-    push_engine_config_at(i);
+    global_task_executor::get().async(lua_add_engine_context, L, i);
+
+    state_array.push_back(lua_state_ptr{L, lua_close});
   }
+
+  global_task_executor::get().wait_for_all();
+  return true;
 }
 
 auto surge::global_lua_states::configure(const std::filesystem::path &path) noexcept -> bool {
-  for (std::size_t i = 0; i < state_array.size(); i++) {
-    const auto succes{do_file_at(i, path)};
-    if (!succes) {
+  for (auto &lua_state_ptr : state_array) {
+    if (!do_file_at(lua_state_ptr.get(), path)) {
       return false;
     }
   }

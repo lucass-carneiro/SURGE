@@ -47,9 +47,8 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Init parallel job system
-  const auto num_workers{*num_threads > 1 ? *num_threads - 1 : *num_threads};
-  glog<log_event::message>("Initializing job system with {} workers", num_workers);
-  global_num_threads::get().init(num_workers);
+  glog<log_event::message>("Initializing job system with {} total threads", *num_threads);
+  global_num_threads::get().init(*num_threads);
   global_task_executor::get();
 
   /* Init Lua VM states
@@ -58,7 +57,9 @@ auto main(int argc, char **argv) noexcept -> int {
    * XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
    * future if possible
    */
-  global_lua_states::get().init();
+  if (!global_lua_states::get().init()) {
+    return EXIT_FAILURE;
+  }
 
   // Init all VMs with the engine configuration
   if (!global_lua_states::get().configure(*config_script_path)) {
@@ -66,7 +67,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Do the startup file in VM 0 (main thread)
-  if (!do_file_at(0, *startup_script_path)) {
+  if (!do_file_at_idx(0, *startup_script_path)) {
     return EXIT_FAILURE;
   }
 
