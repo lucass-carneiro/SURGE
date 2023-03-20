@@ -52,7 +52,7 @@ public:
 private:
   global_lua_states() = default;
 
-  state_vec_t state_array{eastl_allocator::get()};
+  state_vec_t state_array{mimalloc_eastl_allocator::get()};
 };
 
 } // namespace surge

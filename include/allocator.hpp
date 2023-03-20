@@ -13,11 +13,6 @@ public:
   eastl_allocator(const char *) noexcept {}
   eastl_allocator(const eastl_allocator &a, const char *) noexcept : eastl_allocator(a) {}
 
-  static inline auto get() noexcept -> eastl_allocator & {
-    static eastl_allocator alloc(nullptr);
-    return alloc;
-  }
-
   [[nodiscard]] auto allocate(size_t n, int flags = 0) const noexcept -> void *;
   [[nodiscard]] auto allocate(size_t n, size_t alignment, size_t, int flags = 0) const noexcept
       -> void *;
@@ -29,6 +24,28 @@ public:
 
 [[nodiscard]] auto operator==(const eastl_allocator &, const eastl_allocator &) noexcept -> bool;
 [[nodiscard]] auto operator!=(const eastl_allocator &, const eastl_allocator &) noexcept -> bool;
+
+class mimalloc_eastl_allocator {
+public:
+  static inline auto get() noexcept -> eastl_allocator & {
+    static eastl_allocator alloc(nullptr);
+    return alloc;
+  }
+
+  mimalloc_eastl_allocator(const mimalloc_eastl_allocator &) = delete;
+  mimalloc_eastl_allocator(mimalloc_eastl_allocator &&) = delete;
+
+  auto operator=(mimalloc_eastl_allocator) -> mimalloc_eastl_allocator & = delete;
+
+  auto operator=(const mimalloc_eastl_allocator &) -> mimalloc_eastl_allocator & = delete;
+
+  auto operator=(mimalloc_eastl_allocator &&) -> mimalloc_eastl_allocator & = delete;
+
+  ~mimalloc_eastl_allocator() = default;
+
+private:
+  mimalloc_eastl_allocator() = default;
+};
 
 } // namespace surge
 

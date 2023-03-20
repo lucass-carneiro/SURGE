@@ -12,7 +12,7 @@ auto main(int argc, char **argv) noexcept -> int {
 
   // Init allocator subsystem
   init_mimalloc();
-  eastl_allocator::get();
+  mimalloc_eastl_allocator::get();
 
   // Init log subsystem
   global_log_manager::get().init("log.txt");
