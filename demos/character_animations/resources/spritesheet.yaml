@@ -1,0 +1,66 @@
+---
+animation_count: 7
+
+sophia_back_walk:
+  index: 0
+  x0: 0
+  y0: 151
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 5
+
+sophia_front_walk:
+  index: 1
+  x0: 0
+  y0: 101
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 6
+
+sophia_hair_flex:
+  index: 2
+  x0: 0
+  y0: 0
+  Sw: 30
+  Sh: 51
+  rows: 1
+  cols: 12
+
+sophia_idle_back:
+  index: 3
+  x0: 264
+  y0: 51
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 2
+
+sophia_idle_front:
+  index: 4
+  x0: 198
+  y0: 101
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 3
+
+sophia_idle_side:
+  index: 5
+  x0: 297
+  y0: 101
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 1
+
+sophia_side_walk:
+  index: 6
+  x0: 0
+  y0: 51
+  Sw: 33
+  Sh: 50
+  rows: 1
+  cols: 8
+

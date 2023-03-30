@@ -73,6 +73,7 @@ cmake --build Debug -j20
 * [ ] Make shaders read SPIRV files (available in OpenGL 4.6)
 * [ ] Find out safer way to provide VM index from the lua state.
 * [ ] Add parallel task synchronization. Review parallel task system?
+* [ ] Color lookup for animations [see here](https://www.youtube.com/watch?v=HsOKwUwL1bE)
 
 ## Main Done
 * [x] Review file loading to memory functions. Implement: load to buffer, ~load given allocator~
