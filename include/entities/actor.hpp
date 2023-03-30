@@ -34,8 +34,6 @@ public:
         std::uint32_t first_anim_idx, glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
         const char *sprite_sheet_ext = ".png") noexcept;
 
-  void drop_sad_file() noexcept;
-
   void draw() const noexcept;
 
   void move(glm::vec3 &&vec) noexcept;
@@ -59,11 +57,11 @@ public:
 
 private:
   sprite actor_sprite;
-  load_file_return_t sad_file;
+  std::optional<sad_file_contents> sad_file;
 
   actor_quad_info current_quad{};
 
-  animation_data current_animation{};
+  std::uint32_t current_animation{0};
   bool current_animation_h_flipped{false};
   bool current_animation_v_flipped{false};
 

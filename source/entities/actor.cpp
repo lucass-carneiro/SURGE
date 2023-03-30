@@ -14,12 +14,10 @@ surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
     : actor_sprite{sprite_sheet_path, sprite_sheet_ext, buffer_usage_hint::static_draw},
       sad_file{load_sad_file(sad_file_path)} {
 
-  // Add the animation 0 to the animation queue and set it as the current sprite
+  // Add the animation first_anim_idx to the animation queue and set it as the current sprite
   if (sad_file.has_value()) {
-    const auto animation{get_animation(sad_file.value(), first_anim_idx)};
-    if (animation.has_value()) {
-      current_animation = *animation;
-      activate_current_animation();
+    if (first_anim_idx < sad_file->x.size()) {
+      current_animation = first_anim_idx;
     } else {
       glog<log_event::error>("Unable to recover animation index {} from sad file {}",
                              first_anim_idx, sad_file_path.c_str());
@@ -30,13 +28,6 @@ surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
 
   set_geometry(std::forward<glm::vec3>(anchor), std::forward<glm::vec3>(position),
                std::forward<glm::vec3>(scale));
-}
-
-void surge::actor::drop_sad_file() noexcept {
-  if (sad_file.has_value()) {
-    mi_free(sad_file->data());
-  }
-  sad_file = load_file_return_t{};
 }
 
 void surge::actor::draw() const noexcept {
@@ -67,8 +58,9 @@ void surge::actor::set_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
 
   current_quad.anchor = anchor * scale;
 
-  current_quad.dims = glm::vec3{static_cast<float>(current_animation.Sw) * scale[0],
-                                static_cast<float>(current_animation.Sh) * scale[1], 0.0};
+  current_quad.dims
+      = glm::vec3{static_cast<float>(sad_file->Sw[current_animation]) * scale[0],
+                  static_cast<float>(sad_file->Sh[current_animation]) * scale[1], 0.0};
 
   current_quad.corner = position - current_quad.anchor;
 
@@ -118,35 +110,41 @@ void surge::actor::toggle_v_flip() noexcept {
 
 void surge::actor::swtich_to_animation(std::uint32_t idx) noexcept {
   if (sad_file.has_value()) {
-    const auto animation{get_animation(sad_file.value(), idx)};
-    if (animation.has_value()) {
-      current_animation = *animation;
+    if (idx < sad_file->x.size()) {
+      current_animation = idx;
       current_alpha = 0;
       current_beta = 0;
       activate_current_animation();
     } else {
-      glog<log_event::error>("Unable to recover animation index {} from sad file", idx);
+      glog<log_event::error>("Unable to recover animation index {} from sad file {}", idx,
+                             sad_file->path.c_str());
     }
   } else {
-    glog<log_event::error>("Unable to load sad file");
+    glog<log_event::error>("Unable to switch to animation {} because no sad file is loaded.", idx);
   }
 }
 
 void surge::actor::activate_current_animation() noexcept {
-  actor_sprite.sheet_set_offset(glm::ivec2{current_animation.x, current_animation.y});
-  actor_sprite.sheet_set_dimentions(glm::ivec2{current_animation.Sw, current_animation.Sh});
+  actor_sprite.sheet_set_offset(
+      glm::ivec2{sad_file->x[current_animation], sad_file->y[current_animation]});
+  actor_sprite.sheet_set_dimentions(
+      glm::ivec2{sad_file->Sw[current_animation], sad_file->Sh[current_animation]});
   actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
 }
 
 void surge::actor::advance_current_anim_frame() noexcept {
-  if ((current_beta + 1) < current_animation.cols) {
-    current_beta = current_beta + 1;
-  } else {
-    current_alpha = (current_alpha + 1) % current_animation.rows;
-    current_beta = 0;
-  }
+  if (sad_file.has_value()) {
+    if ((current_beta + 1) < sad_file->cols[current_animation]) {
+      current_beta = current_beta + 1;
+    } else {
+      current_alpha = (current_alpha + 1) % sad_file->rows[current_animation];
+      current_beta = 0;
+    }
 
-  actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
+    actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
+  } else {
+    glog<log_event::error>("Unable to advance frame because no sad file is loaded.");
+  }
 }
 
 void surge::actor::update_animations(double animation_frame_dt) noexcept {
@@ -185,17 +183,17 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
     switch (heading_direction) {
 
     case heading_north:
-      if (current_animation.index != 0)
+      if (current_animation != 0)
         swtich_to_animation(0);
       break;
 
     case heading_south:
-      if (current_animation.index != 1)
+      if (current_animation != 1)
         swtich_to_animation(1);
       break;
 
     case heading_east:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (current_animation_h_flipped) {
@@ -204,7 +202,7 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
       break;
 
     case heading_west:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (!current_animation_h_flipped) {
@@ -213,7 +211,7 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
       break;
 
     case heading_north_east:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (current_animation_h_flipped) {
@@ -222,7 +220,7 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
       break;
 
     case heading_north_west:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (!current_animation_h_flipped) {
@@ -231,7 +229,7 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
       break;
 
     case heading_south_east:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (current_animation_h_flipped) {
@@ -240,7 +238,7 @@ void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noe
       break;
 
     case heading_south_west:
-      if (current_animation.index != 6) {
+      if (current_animation != 6) {
         swtich_to_animation(6);
       }
       if (!current_animation_h_flipped) {

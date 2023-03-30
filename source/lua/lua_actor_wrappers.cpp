@@ -80,7 +80,6 @@ auto surge::lua_drop_actor(lua_State *L) noexcept -> int {
   auto actor_ptr{*vm_actor_ptr};
 
   // Data cleanup
-  actor_ptr->drop_sad_file();
   mi_free(actor_ptr);
 
   return 0;
