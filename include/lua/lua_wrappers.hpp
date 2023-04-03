@@ -24,6 +24,7 @@ auto lua_draw_actor(lua_State *L) noexcept -> int;
 auto lua_move_actor(lua_State *L) noexcept -> int;
 auto lua_scale_actor(lua_State *L) noexcept -> int;
 auto lua_update_actor(lua_State *L) noexcept -> int;
+auto lua_change_actor_anim(lua_State *L) noexcept -> int;
 
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;

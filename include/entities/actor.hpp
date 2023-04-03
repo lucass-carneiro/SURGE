@@ -17,9 +17,12 @@ public:
         const char *sprite_sheet_ext = ".png") noexcept;
 
   void draw() noexcept;
+  void update(double frame_update_delay) noexcept;
+
   void move(glm::vec3 &&vec) noexcept;
   void scale(glm::vec3 &&vec) noexcept;
-  void update(double frame_update_delay) noexcept;
+
+  void change_current_animation_to(std::uint32_t index, bool loops = true) noexcept;
 
 private:
   // OpenGL Buffers and texture containing the sprite sheet
@@ -63,8 +66,6 @@ private:
   void reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
                       const glm::vec3 &scale) noexcept;
   void reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
-
-  void change_current_animation_to(std::uint32_t index, bool loops = true) noexcept;
 
   void toggle_h_flip() noexcept;
   void toggle_v_flip() noexcept;

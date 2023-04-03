@@ -67,6 +67,7 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
       lua_add_table_field<lua_String, lua_CFunction>(L, "move", lua_move_actor);
       lua_add_table_field<lua_String, lua_CFunction>(L, "scale", lua_scale_actor);
       lua_add_table_field<lua_String, lua_CFunction>(L, "update", lua_update_actor);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "change_anim", lua_change_actor_anim);
     }
     lua_setfield(L, -2, "actor");
     // end actor table
@@ -143,16 +144,16 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
           lua_add_table_field<lua_String, lua_Integer>(L, "MINUS", 45);
           lua_add_table_field<lua_String, lua_Integer>(L, "PERIOD", 46);
           lua_add_table_field<lua_String, lua_Integer>(L, "SLASH", 47);
-          lua_add_table_field<lua_String, lua_Integer>(L, "0", 48);
-          lua_add_table_field<lua_String, lua_Integer>(L, "1", 49);
-          lua_add_table_field<lua_String, lua_Integer>(L, "2", 50);
-          lua_add_table_field<lua_String, lua_Integer>(L, "3", 51);
-          lua_add_table_field<lua_String, lua_Integer>(L, "4", 52);
-          lua_add_table_field<lua_String, lua_Integer>(L, "5", 53);
-          lua_add_table_field<lua_String, lua_Integer>(L, "6", 54);
-          lua_add_table_field<lua_String, lua_Integer>(L, "7", 55);
-          lua_add_table_field<lua_String, lua_Integer>(L, "8", 56);
-          lua_add_table_field<lua_String, lua_Integer>(L, "9", 57);
+          lua_add_table_field<lua_String, lua_Integer>(L, "ZERO", 48);
+          lua_add_table_field<lua_String, lua_Integer>(L, "ONE", 49);
+          lua_add_table_field<lua_String, lua_Integer>(L, "TWO", 50);
+          lua_add_table_field<lua_String, lua_Integer>(L, "THREE", 51);
+          lua_add_table_field<lua_String, lua_Integer>(L, "FOUR", 52);
+          lua_add_table_field<lua_String, lua_Integer>(L, "FIVE", 53);
+          lua_add_table_field<lua_String, lua_Integer>(L, "SIX", 54);
+          lua_add_table_field<lua_String, lua_Integer>(L, "SEVEN", 55);
+          lua_add_table_field<lua_String, lua_Integer>(L, "EIGHT", 56);
+          lua_add_table_field<lua_String, lua_Integer>(L, "NINE", 57);
           lua_add_table_field<lua_String, lua_Integer>(L, "SEMICOLON", 59);
           lua_add_table_field<lua_String, lua_Integer>(L, "EQUAL", 61);
           lua_add_table_field<lua_String, lua_Integer>(L, "A", 65);

@@ -253,3 +253,48 @@ auto surge::lua_update_actor(lua_State *L) noexcept -> int {
 
   return 0;
 }
+
+auto surge::lua_change_actor_anim(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 3) {
+    glog<log_event::warning>("Function change_animation_to expected 3 arguments and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "change_animation_to")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isnumber(L, 2)) {
+    glog<log_event::warning>(
+        "Function change_animation_to expected argument 2 to be a integer. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!lua_isboolean(L, 3)) {
+    glog<log_event::warning>(
+        "Function change_animation_to expected argument 3 to be a boolean. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+  const auto index{static_cast<std::uint32_t>(lua_tonumber(L, 2))};
+  const auto loops{static_cast<bool>(lua_toboolean(L, 3))};
+
+  // Internal call
+  actor_ptr->change_current_animation_to(index, loops);
+
+  lua_pop(L, 1);
+
+  return 0;
+}
