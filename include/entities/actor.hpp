@@ -10,67 +10,70 @@
 
 namespace surge {
 
-struct actor_quad_info {
-  glm::vec3 corner{0.0f};
-  glm::vec3 dims{0.0f};
-  glm::vec3 anchor{0.0f}; // Holds pixel coordinates
-};
-
-enum class actor_heading : std::ptrdiff_t {
-  north = 0,
-  south = 1,
-  east = 2,
-  west = 3,
-  north_east = 4,
-  north_west = 5,
-  south_east = 6,
-  south_west = 7,
-  none = 8
-};
-
 class actor {
 public:
-  actor(const std::filesystem::path &sprite_sheet_path, const std::filesystem::path &sad_file_path,
+  actor(const std::filesystem::path &sprite_set_path, const std::filesystem::path &sad_file_path,
         std::uint32_t first_anim_idx, glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
         const char *sprite_sheet_ext = ".png") noexcept;
 
-  void draw() const noexcept;
-
+  void draw() noexcept;
   void move(glm::vec3 &&vec) noexcept;
   void scale(glm::vec3 &&vec) noexcept;
+  void update(double frame_update_delay) noexcept;
 
-  void set_geometry(glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
+private:
+  // OpenGL Buffers and texture containing the sprite sheet
+  const GLuint VAO{0}, VBO{0}, EBO{0};
+
+  glm::mat4 model_matrix{1.0f};
+
+  struct actor_quad_info {
+    glm::vec3 corner{0.0f};
+    glm::vec3 dims{0.0f};
+    glm::vec3 anchor{0.0f}; // Holds pixel coordinates
+  } current_quad{};
+
+  // Data and corresponding OpenGL texture for the spriteset
+  const struct spriteset_data {
+    glm::vec2 set_dimentions{0.0f};
+    GLuint gl_texture_idx{0};
+  } spriteset{};
+
+  // The associated animation data file
+  const std::optional<sad_file_contents> sad_file{};
+
+  struct animation_data {
+    std::uint32_t animation_index{0};
+    std::uint32_t linearized_animation_frame_index{0};
+    std::uint32_t spritesheet_size{0};
+    bool loops{true};
+    bool h_flip{false};
+    bool v_flip{false};
+  } current_animation_data{};
+
+  // Generate OpenGL Buffers
+  [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
+  [[nodiscard]] auto gen_vao() const noexcept -> GLuint;
+
+  [[nodiscard]] auto load_spriteset(const std::filesystem::path &p, const char *ext) const noexcept
+      -> spriteset_data;
+
+  void create_quad() noexcept;
+
+  void reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
+                      const glm::vec3 &scale) noexcept;
+  void reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
+
+  void change_current_animation_to(std::uint32_t index, bool loops = true) noexcept;
 
   void toggle_h_flip() noexcept;
   void toggle_v_flip() noexcept;
 
-  [[nodiscard]] auto get_anchor_coords() const noexcept -> glm::vec3;
+  [[nodiscard]] auto delinearize_animation_frame_index() const noexcept -> glm::vec2;
 
-  [[nodiscard]] auto compute_heading(const glm::vec3 &displacement) const noexcept -> actor_heading;
-
-  void swtich_to_animation(std::uint32_t idx) noexcept;
-  void activate_current_animation() noexcept;
-  void advance_current_anim_frame() noexcept;
-
-  void update_animations(double animation_frame_dt) noexcept;
-  void walk_to(glm::vec3 &&target, float speed, float threshold) noexcept;
-
-private:
-  sprite actor_sprite;
-  std::optional<sad_file_contents> sad_file;
-
-  actor_quad_info current_quad{};
-
-  std::uint32_t current_animation{0};
-  bool current_animation_h_flipped{false};
-  bool current_animation_v_flipped{false};
-
-  std::uint32_t current_alpha{0};
-  std::uint32_t current_beta{0};
-
-  void set_zero_animation() noexcept;
+  void update_animation_frame() noexcept;
 };
 
 } // namespace surge
 
-#endif
+#endif // SURGE_ACTOR_HPP

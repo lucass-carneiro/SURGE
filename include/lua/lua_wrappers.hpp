@@ -21,15 +21,9 @@ auto lua_sheet_set_dimentions(lua_State *L) noexcept -> int;
 auto lua_new_actor(lua_State *L) noexcept -> int;
 auto lua_drop_actor(lua_State *L) noexcept -> int;
 auto lua_draw_actor(lua_State *L) noexcept -> int;
-
-auto lua_set_actor_geometry(lua_State *L) noexcept -> int;
-auto lua_update_actor_animations(lua_State *L) noexcept -> int;
 auto lua_move_actor(lua_State *L) noexcept -> int;
 auto lua_scale_actor(lua_State *L) noexcept -> int;
-auto lua_actor_toggle_h_flip(lua_State *L) noexcept -> int;
-auto lua_actor_toggle_v_flip(lua_State *L) noexcept -> int;
-auto lua_get_actor_anchor_pos(lua_State *L) noexcept -> int;
-auto lua_actor_walk_to(lua_State *L) noexcept -> int;
+auto lua_update_actor(lua_State *L) noexcept -> int;
 
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;

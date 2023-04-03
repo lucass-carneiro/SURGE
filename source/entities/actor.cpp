@@ -1,44 +1,185 @@
 #include "entities/actor.hpp"
 
-#include "allocator.hpp"
-#include "safe_ops.hpp"
+#include "image_loader.hpp"
+#include "log.hpp"
 #include "window.hpp"
 
-#include <cmath>
-#include <numbers>
-
-surge::actor::actor(const std::filesystem::path &sprite_sheet_path,
-                    const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
-                    glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
-                    const char *sprite_sheet_ext) noexcept
-    : actor_sprite{sprite_sheet_path, sprite_sheet_ext, buffer_usage_hint::static_draw},
-      sad_file{load_sad_file(sad_file_path)} {
-
-  // Add the animation first_anim_idx to the animation queue and set it as the current sprite
-  if (sad_file.has_value()) {
-    if (first_anim_idx < sad_file->x.size()) {
-      current_animation = first_anim_idx;
-    } else {
-      glog<log_event::error>("Unable to recover animation index {} from sad file {}",
-                             first_anim_idx, sad_file_path.c_str());
-    }
-  } else {
-    glog<log_event::error>("Unable to load sad file {}", sad_file_path.c_str());
-  }
-
-  set_geometry(std::forward<glm::vec3>(anchor), std::forward<glm::vec3>(position),
-               std::forward<glm::vec3>(scale));
+auto surge::actor::gen_buff() const noexcept -> GLuint {
+  GLuint tmp{0};
+  glGenBuffers(1, &tmp);
+  return tmp;
 }
 
-void surge::actor::draw() const noexcept {
-  actor_sprite.draw(global_engine_window::get().get_shader_program());
-};
+auto surge::actor::gen_vao() const noexcept -> GLuint {
+  GLuint tmp{0};
+  glGenVertexArrays(1, &tmp);
+  return tmp;
+}
+
+auto surge::actor::load_spriteset(const std::filesystem::path &p, const char *ext) const noexcept
+    -> spriteset_data {
+  // When passing images to OpenGL they must be flipped.
+  stbi_set_flip_vertically_on_load(static_cast<int>(true));
+
+  auto image{load_image(p, ext)};
+  if (!image) {
+    stbi_set_flip_vertically_on_load(static_cast<int>(false));
+    glog<log_event::error>("Unable to load spritesheet image file {}", p.c_str());
+    return {};
+  }
+
+  stbi_set_flip_vertically_on_load(static_cast<int>(false));
+
+  GLuint texture{0};
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  // Warpping
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  // Filtering. TODO: Set via configs ?
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  const int format{image->channels_in_file == 4 ? GL_RGBA : GL_RGB};
+
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image->width, image->height, 0, format, GL_UNSIGNED_BYTE,
+               image->data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  spriteset_data sd{glm::vec2{image->width, image->height}, texture};
+  stbi_image_free(image->data);
+
+  return sd;
+}
+
+void surge::actor::create_quad() noexcept {
+  const std::array<float, 20> vertex_attributes{
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+  };
+
+  const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
+
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, vertex_attributes.size() * sizeof(float), vertex_attributes.data(),
+               GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, draw_indices.size() * sizeof(GLuint), draw_indices.data(),
+               GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+  glEnableVertexAttribArray(0);
+
+  // NOLINTNEXTLINE
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), buffer_offset<3, float>());
+  glEnableVertexAttribArray(1);
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindVertexArray(0);
+}
+
+void surge::actor::reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
+                                  const glm::vec3 &scale) noexcept {
+  current_quad.anchor = anchor * scale;
+
+  if (sad_file.has_value()) {
+    current_quad.dims = glm::vec3{
+        static_cast<float>(sad_file->Sw[current_animation_data.animation_index]) * scale[0],
+        static_cast<float>(sad_file->Sh[current_animation_data.animation_index]) * scale[1], 0.0};
+  } else {
+    current_quad.dims = glm::vec3{0.0, 0.0, 0.0};
+    glog<log_event::error>("Unable to reset geometry. No sad file currently loaded");
+  }
+
+  current_quad.corner = position - current_quad.anchor;
+
+  model_matrix = glm::mat4{1.0f};
+  model_matrix = glm::translate(model_matrix, current_quad.corner);
+  model_matrix = glm::scale(model_matrix, current_quad.dims);
+
+  set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
+}
+
+void surge::actor::reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
+                                  glm::vec3 &&scale) noexcept {
+  reset_geometry(anchor, position, scale);
+}
+
+void surge::actor::change_current_animation_to(std::uint32_t index, bool loops) noexcept {
+  if (sad_file.has_value()) {
+    if (index < sad_file->x.size()) {
+      animation_data new_data{};
+      new_data.animation_index = index;
+      new_data.spritesheet_size = sad_file->rows[index] * sad_file->cols[index];
+      new_data.loops = loops;
+      current_animation_data = new_data;
+    } else {
+      glog<log_event::error>("Unable to recover animation index {}.", index);
+    }
+  } else {
+    glog<log_event::error>("Unable to reset current animation. No sad file currently loaded");
+  }
+}
+
+void surge::actor::toggle_h_flip() noexcept {
+  current_animation_data.h_flip = !current_animation_data.h_flip;
+  set_uniform(global_engine_window::get().get_shader_program(), "h_flip",
+              static_cast<GLboolean>(current_animation_data.h_flip));
+}
+
+void surge::actor::toggle_v_flip() noexcept {
+  current_animation_data.v_flip = !current_animation_data.v_flip;
+  set_uniform(global_engine_window::get().get_shader_program(), "v_flip",
+              static_cast<GLboolean>(current_animation_data.v_flip));
+}
+
+void surge::actor::draw() noexcept {
+  const auto &shader_program{global_engine_window::get().get_shader_program()};
+
+  set_uniform(shader_program, "txt_0", GLint{0});
+  set_uniform(shader_program, "model", model_matrix);
+
+  set_uniform(shader_program, "sheet_set_dimentions", spriteset.set_dimentions);
+
+  if (sad_file.has_value()) {
+    set_uniform(shader_program, "sheet_offsets",
+                glm::vec2{sad_file->x[current_animation_data.animation_index],
+                          sad_file->y[current_animation_data.animation_index]});
+
+    set_uniform(shader_program, "sheet_dimentions",
+                glm::vec2{sad_file->Sw[current_animation_data.animation_index],
+                          sad_file->Sh[current_animation_data.animation_index]});
+  } else {
+    set_uniform(shader_program, "sheet_offsets", glm::vec2{0, 0});
+    set_uniform(shader_program, "sheet_dimentions", glm::vec2{0, 0});
+    glog<log_event::error>("Unable to set spritesheet offsets and dimentions in shader programs. "
+                           "No sad file currently loaded");
+  }
+
+  // TODO: Send linearized index to gpu
+  set_uniform(shader_program, "sheet_indices", delinearize_animation_frame_index());
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, spriteset.gl_texture_idx);
+
+  glBindVertexArray(VAO);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+  glBindVertexArray(0);
+}
 
 void surge::actor::move(glm::vec3 &&vec) noexcept {
   current_quad.corner += vec;
-  actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
-                            std::forward<glm::vec3>(current_quad.corner),
-                            std::forward<glm::vec3>(current_quad.dims));
+
+  model_matrix = glm::translate(model_matrix, vec);
+  set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
 }
 
 void surge::actor::scale(glm::vec3 &&vec) noexcept {
@@ -48,249 +189,66 @@ void surge::actor::scale(glm::vec3 &&vec) noexcept {
   current_quad.dims = current_quad.dims * vec;
   current_quad.corner = position - current_quad.anchor;
 
-  actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
-                            std::forward<glm::vec3>(current_quad.corner),
-                            std::forward<glm::vec3>(current_quad.dims));
+  model_matrix = glm::mat4{1.0};
+  model_matrix = glm::translate(model_matrix, current_quad.corner);
+  model_matrix = glm::scale(model_matrix, current_quad.dims);
+  set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
 }
 
-void surge::actor::set_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
-                                glm::vec3 &&scale) noexcept {
-
-  current_quad.anchor = anchor * scale;
-
-  current_quad.dims
-      = glm::vec3{static_cast<float>(sad_file->Sw[current_animation]) * scale[0],
-                  static_cast<float>(sad_file->Sh[current_animation]) * scale[1], 0.0};
-
-  current_quad.corner = position - current_quad.anchor;
-
-  actor_sprite.set_geometry(global_engine_window::get().get_shader_program(),
-                            std::forward<glm::vec3>(current_quad.corner),
-                            std::forward<glm::vec3>(current_quad.dims));
-}
-
-void surge::actor::toggle_h_flip() noexcept {
-  actor_sprite.toggle_h_flip(global_engine_window::get().get_shader_program());
-  current_animation_h_flipped = !current_animation_h_flipped;
-}
-
-void surge::actor::toggle_v_flip() noexcept {
-  actor_sprite.toggle_v_flip(global_engine_window::get().get_shader_program());
-  current_animation_v_flipped = !current_animation_v_flipped;
-}
-
-[[nodiscard]] auto surge::actor::get_anchor_coords() const noexcept -> glm::vec3 {
-  return current_quad.corner + current_quad.anchor;
-}
-
-[[nodiscard]] auto surge::actor::compute_heading(const glm::vec3 &displacement) const noexcept
-    -> actor_heading {
-
-  const auto phi{std::numbers::pi + std::atan2(displacement[1], displacement[0])};
-  const auto dphi{std::numbers::pi / 8};
-
-  if (dphi < phi && phi < 3 * dphi) {
-    return actor_heading::north_west;
-  } else if (3 * dphi < phi && phi < 5 * dphi) {
-    return actor_heading::north;
-  } else if (5 * dphi < phi && phi < 7 * dphi) {
-    return actor_heading::north_east;
-  } else if (7 * dphi < phi && phi < 9 * dphi) {
-    return actor_heading::east;
-  } else if (9 * dphi < phi && phi < 11 * dphi) {
-    return actor_heading::south_east;
-  } else if (11 * dphi < phi && phi < 13 * dphi) {
-    return actor_heading::south;
-  } else if (13 * dphi < phi && phi < 15 * dphi) {
-    return actor_heading::south_west;
-  } else {
-    return actor_heading::west;
-  }
-}
-
-void surge::actor::swtich_to_animation(std::uint32_t idx) noexcept {
+auto surge::actor::delinearize_animation_frame_index() const noexcept -> glm::vec2 {
   if (sad_file.has_value()) {
-    if (idx < sad_file->x.size()) {
-      current_animation = idx;
-      current_alpha = 0;
-      current_beta = 0;
-      activate_current_animation();
-    } else {
-      glog<log_event::error>("Unable to recover animation index {} from sad file {}", idx,
-                             sad_file->path.c_str());
-    }
+    const auto cols{sad_file->cols[current_animation_data.animation_index]};
+    const auto index{current_animation_data.linearized_animation_frame_index};
+    return glm::vec2{index / cols, index % cols};
   } else {
-    glog<log_event::error>("Unable to switch to animation {} because no sad file is loaded.", idx);
+    return glm::vec2{0, 0};
   }
 }
 
-void surge::actor::activate_current_animation() noexcept {
-  actor_sprite.sheet_set_offset(
-      glm::ivec2{sad_file->x[current_animation], sad_file->y[current_animation]});
-  actor_sprite.sheet_set_dimentions(
-      glm::ivec2{sad_file->Sw[current_animation], sad_file->Sh[current_animation]});
-  actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
+void surge::actor::update_animation_frame() noexcept {
+  current_animation_data.linearized_animation_frame_index++;
+
+  if (current_animation_data.loops) {
+    current_animation_data.linearized_animation_frame_index
+        %= current_animation_data.spritesheet_size;
+  } else if (current_animation_data.linearized_animation_frame_index
+             == current_animation_data.spritesheet_size) {
+    current_animation_data.linearized_animation_frame_index--;
+  }
 }
 
-void surge::actor::advance_current_anim_frame() noexcept {
-  if (sad_file.has_value()) {
-    if ((current_beta + 1) < sad_file->cols[current_animation]) {
-      current_beta = current_beta + 1;
-    } else {
-      current_alpha = (current_alpha + 1) % sad_file->rows[current_animation];
-      current_beta = 0;
-    }
+void surge::actor::update(double frame_update_delay) noexcept {
+  const auto dt{global_engine_window::get().get_frame_dt()};
+  static double elapsed{dt};
 
-    actor_sprite.sheet_set_indices(glm::ivec2{current_alpha, current_beta});
+  if (elapsed < frame_update_delay) {
+    elapsed += dt;
   } else {
-    glog<log_event::error>("Unable to advance frame because no sad file is loaded.");
+    elapsed = 0.0;
+    update_animation_frame();
   }
 }
 
-void surge::actor::update_animations(double animation_frame_dt) noexcept {
-  // Handle animations
-  static double frame_time{0};
-  frame_time = frame_time + global_engine_window::get().get_frame_dt();
+surge::actor::actor(const std::filesystem::path &sprite_set_path,
+                    const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
+                    glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
+                    const char *sprite_sheet_ext) noexcept
+    : VAO{gen_vao()},
+      VBO{gen_buff()},
+      EBO{gen_buff()},
+      spriteset{load_spriteset(sprite_set_path, sprite_sheet_ext)},
+      sad_file{load_sad_file(sad_file_path)} {
 
-  if (frame_time > animation_frame_dt) {
-    frame_time = 0.0;
-    advance_current_anim_frame();
-  }
-}
+  create_quad();
 
-constexpr static const auto heading_north{static_cast<lua_Integer>(surge::actor_heading::north)};
-constexpr static const auto heading_south{static_cast<lua_Integer>(surge::actor_heading::south)};
-constexpr static const auto heading_east{static_cast<lua_Integer>(surge::actor_heading::east)};
-constexpr static const auto heading_west{static_cast<lua_Integer>(surge::actor_heading::west)};
-constexpr static const auto heading_north_east{
-    static_cast<lua_Integer>(surge::actor_heading::north_east)};
-constexpr static const auto heading_north_west{
-    static_cast<lua_Integer>(surge::actor_heading::north_west)};
-constexpr static const auto heading_south_east{
-    static_cast<lua_Integer>(surge::actor_heading::south_east)};
-constexpr static const auto heading_south_west{
-    static_cast<lua_Integer>(surge::actor_heading::south_west)};
+  change_current_animation_to(first_anim_idx);
 
-void surge::actor::walk_to(glm::vec3 &&target, float speed, float threshold) noexcept {
-  const auto current_anchor{get_anchor_coords()};
-  const auto current_displacement{target - current_anchor};
-  const auto current_displacement_length{glm::length(current_displacement)};
+  reset_geometry(std::forward<glm::vec3>(anchor), std::forward<glm::vec3>(position),
+                 std::forward<glm::vec3>(scale));
 
-  if (current_displacement_length > threshold) {
-    const auto normalized_displacement{glm::normalize(current_displacement)};
-    const auto heading_direction{static_cast<lua_Integer>(compute_heading(current_displacement))};
-
-    switch (heading_direction) {
-
-    case heading_north:
-      if (current_animation != 0)
-        swtich_to_animation(0);
-      break;
-
-    case heading_south:
-      if (current_animation != 1)
-        swtich_to_animation(1);
-      break;
-
-    case heading_east:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    case heading_west:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (!current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    case heading_north_east:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    case heading_north_west:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (!current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    case heading_south_east:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    case heading_south_west:
-      if (current_animation != 6) {
-        swtich_to_animation(6);
-      }
-      if (!current_animation_h_flipped) {
-        toggle_h_flip();
-      }
-      break;
-
-    default:
-      break;
-    }
-    move(speed * normalized_displacement);
-
-  } else {
-
-    const auto heading_direction{static_cast<lua_Integer>(compute_heading(current_displacement))};
-
-    switch (heading_direction) {
-
-    case heading_north:
-      swtich_to_animation(3);
-      break;
-
-    case heading_south:
-      swtich_to_animation(4);
-      break;
-
-    case heading_east:
-      swtich_to_animation(5);
-      break;
-
-    case heading_west:
-      swtich_to_animation(5);
-      break;
-
-    case heading_north_east:
-      swtich_to_animation(5);
-      break;
-
-    case heading_north_west:
-      swtich_to_animation(5);
-      break;
-
-    case heading_south_east:
-      swtich_to_animation(5);
-      break;
-
-    case heading_south_west:
-      swtich_to_animation(5);
-      break;
-
-    default:
-      break;
-    }
-  }
+  // Set initial flips to false
+  set_uniform(global_engine_window::get().get_shader_program(), "v_flip",
+              static_cast<GLboolean>(current_animation_data.v_flip));
+  set_uniform(global_engine_window::get().get_shader_program(), "h_flip",
+              static_cast<GLboolean>(current_animation_data.h_flip));
 }
