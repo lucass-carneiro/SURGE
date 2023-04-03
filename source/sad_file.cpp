@@ -90,17 +90,5 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   mi_free(file_data.value().data());
   glog<log_event::message>("Loaded {} with {} animations.", p.c_str(), animation_count);
 
-  for (std::size_t i = 0; i < file_contents.x.size(); i++) {
-    glog<log_event::warning>("  i = {}\n"
-                             "  x = {}\n"
-                             "  y = {}\n"
-                             "  Sw = {}\n"
-                             "  Sh = {}\n"
-                             "  rows = {}\n"
-                             "  cols = {}\n",
-                             i, file_contents.x[i], file_contents.y[i], file_contents.Sw[i],
-                             file_contents.Sh[i], file_contents.rows[i], file_contents.cols[i]);
-  }
-
   return file_contents;
 }
