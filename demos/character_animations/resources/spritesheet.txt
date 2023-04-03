@@ -1,9 +1,0 @@
-# Animation count:  7
-# 1:name 2:index 3:x0 4:y0 5:Sw 6:Sh 7:rows 8:cols
-sophia_back_walk    0    0    151    33    50    1    5
-sophia_front_walk    1    0    101    33    50    1    6
-sophia_hair_flex    2    0    0    30    51    1    12
-sophia_idle_back    3    264    51    33    50    1    2
-sophia_idle_front    4    198    101    33    50    1    3
-sophia_idle_side    5    297    101    33    50    1    1
-sophia_side_walk    6    0    51    33    50    1    8
