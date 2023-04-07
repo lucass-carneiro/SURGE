@@ -282,19 +282,29 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     lua_setfield(L, -2, "input");
     // end input table
 
-    // Actor heading
+    // Begin geometry table
     lua_newtable(L);
-    lua_add_table_field<lua_String, lua_Integer>(L, "N", 0);
-    lua_add_table_field<lua_String, lua_Integer>(L, "S", 1);
-    lua_add_table_field<lua_String, lua_Integer>(L, "E", 2);
-    lua_add_table_field<lua_String, lua_Integer>(L, "W", 3);
-    lua_add_table_field<lua_String, lua_Integer>(L, "NE", 4);
-    lua_add_table_field<lua_String, lua_Integer>(L, "NE", 5);
-    lua_add_table_field<lua_String, lua_Integer>(L, "SE", 6);
-    lua_add_table_field<lua_String, lua_Integer>(L, "SW", 7);
-    lua_add_table_field<lua_String, lua_Integer>(L, "NONE", 8);
-    lua_setfield(L, -2, "actor_heading");
-    // end Actor heading
+    {
+      // begin heading table
+      lua_newtable(L);
+      {
+        lua_add_table_field<lua_String, lua_Integer>(L, "N", 0);
+        lua_add_table_field<lua_String, lua_Integer>(L, "S", 1);
+        lua_add_table_field<lua_String, lua_Integer>(L, "E", 2);
+        lua_add_table_field<lua_String, lua_Integer>(L, "W", 3);
+        lua_add_table_field<lua_String, lua_Integer>(L, "NE", 4);
+        lua_add_table_field<lua_String, lua_Integer>(L, "NE", 5);
+        lua_add_table_field<lua_String, lua_Integer>(L, "SE", 6);
+        lua_add_table_field<lua_String, lua_Integer>(L, "SW", 7);
+        lua_add_table_field<lua_String, lua_Integer>(L, "NONE", 8);
+      }
+      lua_setfield(L, -2, "heading");
+      // end heading table
+
+      lua_add_table_field<lua_String, lua_CFunction>(L, "compute_heading", lua_compute_heading);
+    }
+    lua_setfield(L, -2, "geometry");
+    // end geometry table;
   }
   lua_setglobal(L, "surge");
 }

@@ -160,6 +160,7 @@ set(
   "${Surge_SOURCE_DIR}/include/allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
+  "${Surge_SOURCE_DIR}/include/geometry_utils.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/options.hpp"
@@ -180,6 +181,7 @@ set(
 
   "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_geometry_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_get_engine_config.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_add_engine_context.cpp"
@@ -197,6 +199,7 @@ set(
   "${Surge_SOURCE_DIR}/source/allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"
   "${Surge_SOURCE_DIR}/source/file.cpp"
+  "${Surge_SOURCE_DIR}/source/geometry_utils.cpp"
   "${Surge_SOURCE_DIR}/source/image_loader.cpp"
   "${Surge_SOURCE_DIR}/source/main.cpp"
   "${Surge_SOURCE_DIR}/source/sad_file.cpp"

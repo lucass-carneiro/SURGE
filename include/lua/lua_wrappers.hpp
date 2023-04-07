@@ -36,6 +36,8 @@ void lua_update_callback(lua_State *L) noexcept;
 auto lua_get_cursor_pos(lua_State *L) noexcept -> int;
 auto lua_get_key_state(lua_State *L) noexcept -> int;
 
+auto lua_compute_heading(lua_State *L) noexcept -> int;
+
 } // namespace surge
 
 #endif // SURGE_LUA_WRAPPERS_HPP

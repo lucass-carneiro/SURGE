@@ -12,6 +12,8 @@ function surge.pre_loop()
         surge.config.window_width / 2.0,  surge.config.window_height / 2.0, 0.0, -- Position
         5.0, 5.0, 1.0                                                            -- Scale
     )
+
+    print(surge.geometry.compute_heading(1.0, 1.0, 0.0))
 end
 
 function surge.key_event(key, action, mods)
