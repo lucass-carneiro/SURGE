@@ -68,6 +68,10 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
       lua_add_table_field<lua_String, lua_CFunction>(L, "scale", lua_scale_actor);
       lua_add_table_field<lua_String, lua_CFunction>(L, "update", lua_update_actor);
       lua_add_table_field<lua_String, lua_CFunction>(L, "change_anim", lua_change_actor_anim);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "get_anchor_coords",
+                                                     lua_get_actor_anchor_coords);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_h_flip", lua_actor_toggle_h_flip);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_v_flip", lua_actor_toggle_v_flip);
     }
     lua_setfield(L, -2, "actor");
     // end actor table

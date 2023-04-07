@@ -119,6 +119,8 @@ void surge::actor::change_current_animation_to(std::uint32_t index, bool loops) 
       new_data.animation_index = index;
       new_data.spritesheet_size = sad_file->rows[index] * sad_file->cols[index];
       new_data.loops = loops;
+      new_data.h_flip = current_animation_data.h_flip;
+      new_data.v_flip = current_animation_data.v_flip;
       current_animation_data = new_data;
     } else {
       glog<log_event::error>("Unable to recover animation index {}.", index);
@@ -131,13 +133,13 @@ void surge::actor::change_current_animation_to(std::uint32_t index, bool loops) 
 void surge::actor::toggle_h_flip() noexcept {
   current_animation_data.h_flip = !current_animation_data.h_flip;
   set_uniform(global_engine_window::get().get_shader_program(), "h_flip",
-              static_cast<GLboolean>(current_animation_data.h_flip));
+              current_animation_data.h_flip);
 }
 
 void surge::actor::toggle_v_flip() noexcept {
   current_animation_data.v_flip = !current_animation_data.v_flip;
   set_uniform(global_engine_window::get().get_shader_program(), "v_flip",
-              static_cast<GLboolean>(current_animation_data.v_flip));
+              current_animation_data.v_flip);
 }
 
 void surge::actor::draw() noexcept {
@@ -227,6 +229,10 @@ void surge::actor::update(double frame_update_delay) noexcept {
     elapsed = 0.0;
     update_animation_frame();
   }
+}
+
+auto surge::actor::get_anchor_coordinates() const noexcept -> glm::vec3 {
+  return current_quad.corner + current_quad.anchor;
 }
 
 surge::actor::actor(const std::filesystem::path &sprite_set_path,

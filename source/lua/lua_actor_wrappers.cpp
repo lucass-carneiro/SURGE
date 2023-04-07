@@ -298,3 +298,88 @@ auto surge::lua_change_actor_anim(lua_State *L) noexcept -> int {
 
   return 0;
 }
+
+auto surge::lua_get_actor_anchor_coords(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function get_anchor_coords expected 1 argument and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "get_anchor_coords")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  const auto anchor_coords{actor_ptr->get_anchor_coordinates()};
+
+  lua_pushnumber(L, anchor_coords[0]);
+  lua_pushnumber(L, anchor_coords[1]);
+  lua_pushnumber(L, anchor_coords[2]);
+
+  return 3;
+}
+
+auto surge::lua_actor_toggle_h_flip(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function toggle_h_flip expected 1 argument and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "toggle_h_flip")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  actor_ptr->toggle_h_flip();
+
+  return 0;
+}
+
+auto surge::lua_actor_toggle_v_flip(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    glog<log_event::warning>("Function toggle_v_flip expected 1 argument and instead got "
+                             "{} arguments. Returning nil",
+                             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_actor(L, "toggle_v_flip")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
+  auto actor_ptr{*vm_actor_ptr};
+
+  // Internal call
+  actor_ptr->toggle_v_flip();
+
+  return 0;
+}

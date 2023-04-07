@@ -13,8 +13,8 @@ uniform vec2 sheet_offsets;
 uniform vec2 sheet_dimentions;
 uniform vec2 sheet_indices;
 
-uniform bool h_flip = false;
-uniform bool v_flip = false;
+uniform bool h_flip;
+uniform bool v_flip;
 
 mat3 sprite_corner_matrix() {
   const float Sw = sheet_set_dimentions.x;

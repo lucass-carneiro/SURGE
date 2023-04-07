@@ -24,6 +24,11 @@ public:
 
   void change_current_animation_to(std::uint32_t index, bool loops = true) noexcept;
 
+  [[nodiscard]] auto get_anchor_coordinates() const noexcept -> glm::vec3;
+
+  void toggle_h_flip() noexcept;
+  void toggle_v_flip() noexcept;
+
 private:
   // OpenGL Buffers and texture containing the sprite sheet
   const GLuint VAO{0}, VBO{0}, EBO{0};
@@ -66,9 +71,6 @@ private:
   void reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
                       const glm::vec3 &scale) noexcept;
   void reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
-
-  void toggle_h_flip() noexcept;
-  void toggle_v_flip() noexcept;
 
   [[nodiscard]] auto delinearize_animation_frame_index() const noexcept -> glm::vec2;
 

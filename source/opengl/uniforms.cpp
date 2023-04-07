@@ -1,7 +1,7 @@
 #include "opengl/uniforms.hpp"
 
 void surge::set_uniform(GLuint program_handle, const char *uniform_name, bool value) noexcept {
-  glUniform1i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLint>(value));
+  glUniform1i(glGetUniformLocation(program_handle, uniform_name), static_cast<GLboolean>(value));
 }
 
 void surge::set_uniform(GLuint program_handle, const char *uniform_name, GLint value) noexcept {
