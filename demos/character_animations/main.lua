@@ -20,6 +20,8 @@ function surge.key_event(key, action, mods)
     elseif key == surge.input.keyboard.key.PAGE_DOWN and action == surge.input.action.PRESS then
         sophia:scale(1.0/1.5, 1.0/1.5, 0.0)
     end
+    
+    sophia:detect_arrows_released(key, action, scale)
 end
 
 function surge.mouse_button_event(button, action, mods)

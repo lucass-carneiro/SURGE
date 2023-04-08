@@ -62,9 +62,11 @@ cmake --build Debug -j20
 * [x] Implement FPS counter
 * [x] ~Implement memory visualizer~
 
+## Character movement with arrows demo
+* [ ] Fix bugs with multiple input
+* [ ] Sometimes, the horizontal animation flips get inverted. Why?
+
 ##  Main TODO
-* [ ] Add queue or stack of animation commands to perform to actors.
-* [ ] Finish character animation with P&C movement demo
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
 * [ ] Add show/hide to debug windows triggered by customized key
@@ -112,6 +114,7 @@ cmake --build Debug -j20
 * [x] Anchor point relative motion
 * [x] Track actor heading.
 * [x] Review allocator system.
+* [x] Finish character animation with arrow movement demo
 
 
 # References
