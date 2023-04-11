@@ -63,10 +63,12 @@ cmake --build Debug -j20
 * [x] ~Implement memory visualizer~
 
 ## Character movement with arrows demo
-* [ ] Fix bugs with multiple input
-* [ ] Sometimes, the horizontal animation flips get inverted. Why?
+* [ ] Handle multiple input more gracefully
+* [x] Sometimes, the horizontal animation flips get inverted. Why?
 
 ##  Main TODO
+* [ ] Review Sprite API exposed to Lua
+* [ ] Fix hot reloading
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
 * [ ] Add show/hide to debug windows triggered by customized key

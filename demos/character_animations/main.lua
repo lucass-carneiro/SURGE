@@ -7,7 +7,7 @@ function surge.pre_loop()
     sophia = keyboard_motion_actor:new(
         "character_animations/resources/spritesheet.png",                        -- Sprite sheet image file
         "character_animations/resources/spritesheet.sad",                        -- Animations file
-        5,                                                                       -- First animation index
+        4,                                                                       -- First animation index
         16.0, 48.0, 0.0,                                                         -- Anchor
         surge.config.window_width / 2.0,  surge.config.window_height / 2.0, 0.0, -- Position
         5.0, 5.0, 1.0                                                            -- Scale

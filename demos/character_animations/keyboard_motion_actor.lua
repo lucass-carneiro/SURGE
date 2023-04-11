@@ -15,7 +15,10 @@ function keyboard_motion_actor:new(sprite_image_file, animations_file, first_ani
    )
 
    actr.moving = false
-   actr.heading = surge.geometry.heading.E
+   actr.flipped = false
+
+   actr.v_h = 1.4
+   actr.v_v = 1.0
 
    return actr
 end
@@ -42,86 +45,72 @@ function keyboard_motion_actor:update(dt, fps)
 
     if right_exclusive_press then
 
-        if self.heading ~= surge.geometry.heading.E then
+        if self.flipped then
             surge.actor.toggle_h_flip(self.surge_actor_object)
-            self.heading = surge.geometry.heading.E
+            self.flipped = false
         end
 
         if self.moving == false then
-            surge.actor.change_anim(self.surge_actor_object, 6, true)
+            surge.actor.change_anim(self.surge_actor_object, 5, true)
             self.moving = true
         end
 
-        surge.actor.move(self.surge_actor_object, 1.3 * dt, 0.0, 0.0)
+        surge.actor.move(self.surge_actor_object, self.v_h * dt, 0.0, 0.0)
         
     elseif left_exclusive_press then
 
-        if self.heading ~= surge.geometry.heading.W then
+        if not self.flipped then
             surge.actor.toggle_h_flip(self.surge_actor_object)
-            self.heading = surge.geometry.heading.W
+            self.flipped = true
         end
 
         if self.moving == false then
-            surge.actor.change_anim(self.surge_actor_object, 6, true)
+            surge.actor.change_anim(self.surge_actor_object, 5, true)
             self.moving = true
         end
 
-        surge.actor.move(self.surge_actor_object, -1.3 * dt, 0.0, 0.0)
+        surge.actor.move(self.surge_actor_object, -self.v_h * dt, 0.0, 0.0)
 
     elseif up_exclusive_press then
-
-        if self.heading ~= surge.geometry.heading.N then
-            self.heading = surge.geometry.heading.N
-        end
 
         if self.moving == false then
             surge.actor.change_anim(self.surge_actor_object, 0, true)
             self.moving = true
         end
 
-        surge.actor.move(self.surge_actor_object, 0.0, -1.0 * dt, 0.0)
+        surge.actor.move(self.surge_actor_object, 0.0, -self.v_v * dt, 0.0)
 
     elseif down_exclusive_press then
-
-        if self.heading ~= surge.geometry.heading.S then
-            self.heading = surge.geometry.heading.S
-        end
 
         if self.moving == false then
             surge.actor.change_anim(self.surge_actor_object, 1, true)
             self.moving = true
         end
 
-        surge.actor.move(self.surge_actor_object, 0.0, 1.0 * dt, 0.0)
+        surge.actor.move(self.surge_actor_object, 0.0, self.v_v * dt, 0.0)
+    else
+        -- do something here to ignore multiple key presses
     end
 
     surge.actor.update(self.surge_actor_object, fps)
 end
 
-function keyboard_motion_actor:scale(x, y, z)
-    surge.actor.scale(self.surge_actor_object, x, y, z)
-end
-
-function keyboard_motion_actor:move(x, y, z)
-    surge.actor.move(self.surge_actor_object, x, y, z)
-end
-
 function keyboard_motion_actor:detect_arrows_released(key, action, mods)
     if key == surge.input.keyboard.key.RIGHT and action == surge.input.action.RELEASE then
         self.moving = false
-        surge.actor.change_anim(self.surge_actor_object, 5, false)
+        surge.actor.change_anim(self.surge_actor_object, 4, false)
 
     elseif key == surge.input.keyboard.key.LEFT and action == surge.input.action.RELEASE then
         self.moving = false
-        surge.actor.change_anim(self.surge_actor_object, 5, false)
+        surge.actor.change_anim(self.surge_actor_object, 4, false)
 
     elseif key == surge.input.keyboard.key.UP and action == surge.input.action.RELEASE then
         self.moving = false
-        surge.actor.change_anim(self.surge_actor_object, 3, false)
+        surge.actor.change_anim(self.surge_actor_object, 2, false)
 
     elseif key == surge.input.keyboard.key.DOWN and action == surge.input.action.RELEASE then
         self.moving = false
-        surge.actor.change_anim(self.surge_actor_object, 4, false)
+        surge.actor.change_anim(self.surge_actor_object, 3, false)
     end
 end
 
