@@ -102,7 +102,7 @@ auto main(int argc, char **argv) noexcept -> int {
      * Hot reload startup script. TODO: Maybe this should be better, like user controlled?
      */
     if (global_engine_window::get().get_key(GLFW_KEY_F5) == GLFW_PRESS) {
-      if (!do_file_at(0, *startup_script_path)) {
+      if (!do_file_at_idx(0, *startup_script_path)) {
         return EXIT_FAILURE;
       }
     }

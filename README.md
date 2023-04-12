@@ -68,7 +68,6 @@ cmake --build Debug -j20
 
 ##  Main TODO
 * [ ] Review Sprite API exposed to Lua
-* [ ] Fix hot reloading
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
 * [ ] Add show/hide to debug windows triggered by customized key
@@ -117,6 +116,7 @@ cmake --build Debug -j20
 * [x] Track actor heading.
 * [x] Review allocator system.
 * [x] Finish character animation with arrow movement demo
+* [x] Fix hot reloading
 
 
 # References
