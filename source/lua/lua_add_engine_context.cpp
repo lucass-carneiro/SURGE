@@ -32,23 +32,26 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
       // begin sprite_meta table
       lua_newtable(L);
       {
-        lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::sprite");
-        lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_sprite);
+        lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::animated_sprite");
+        lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_animated_sprite);
       }
-      lua_setfield(L, -2, "sprite_meta");
+      lua_setfield(L, -2, "animated_sprite_meta");
       // end sprite_meta table
 
-      lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_sprite);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_sprite);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "scale", lua_scale_sprite);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "move", lua_move_sprite);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "set_geometry", lua_set_sprite_geometry);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "set_sheet_indices", lua_sheet_set_indices);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "set_sheet_offsets", lua_sheet_set_offsets);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "set_sheet_dimentions",
-                                                     lua_sheet_set_dimentions);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_animated_sprite);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_animated_sprite);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "move", lua_move_animated_sprite);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "scale", lua_scale_animated_sprite);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "update", lua_update_animated_sprite);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "change_anim",
+                                                     lua_change_animated_sprite_anim);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_h_flip",
+                                                     lua_animated_sprite_toggle_h_flip);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_v_flip",
+                                                     lua_animated_sprite_toggle_v_flip);
     }
-    lua_setfield(L, -1, "sprite");
+    lua_setfield(L, -2, "animated_sprite");
+    // end sprite table
 
     // begin actor table
     lua_newtable(L);

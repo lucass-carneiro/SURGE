@@ -1,22 +1,19 @@
 #ifndef SURGE_LUA_WRAPPERS_HPP
 #define SURGE_LUA_WRAPPERS_HPP
 
-#include <filesystem>
-#include <glm/mat4x4.hpp>
 #include <luajit/lua.hpp>
-#include <optional>
 
 namespace surge {
 
-auto lua_new_sprite(lua_State *L) noexcept -> int;
-auto lua_drop_sprite(lua_State *L) noexcept -> int;
-auto lua_draw_sprite(lua_State *L) noexcept -> int;
-auto lua_scale_sprite(lua_State *L) noexcept -> int;
-auto lua_move_sprite(lua_State *L) noexcept -> int;
-auto lua_set_sprite_geometry(lua_State *L) noexcept -> int;
-auto lua_sheet_set_indices(lua_State *L) noexcept -> int;
-auto lua_sheet_set_offsets(lua_State *L) noexcept -> int;
-auto lua_sheet_set_dimentions(lua_State *L) noexcept -> int;
+auto lua_new_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_drop_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_draw_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_move_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_scale_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_update_animated_sprite(lua_State *L) noexcept -> int;
+auto lua_change_animated_sprite_anim(lua_State *L) noexcept -> int;
+auto lua_animated_sprite_toggle_h_flip(lua_State *L) noexcept -> int;
+auto lua_animated_sprite_toggle_v_flip(lua_State *L) noexcept -> int;
 
 auto lua_new_actor(lua_State *L) noexcept -> int;
 auto lua_drop_actor(lua_State *L) noexcept -> int;

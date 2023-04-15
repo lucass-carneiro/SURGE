@@ -368,14 +368,6 @@ def link_sheets(verbose, arguments, sheet_data_list):
     log(verbose, logging.info, "Packing")
     pack(verbose, sheet_data_list, arguments["--output"])
 
-    # Delete temporary
-    if arguments["--keep"]:
-        log(verbose, logging.info, "Keeping intermediate data")
-    else:
-        log(verbose, logging.info, "Removing intermediate data")
-        for data in sheet_data_list:
-            os.remove(data.name + ".png")
-
 
 def save_set_data_binary(arguments, data_list):
     with open(os.path.splitext(arguments["--output"])[0] + ".sad", "wb") as file:

@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <glm/mat4x4.hpp>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
 #include <optional>

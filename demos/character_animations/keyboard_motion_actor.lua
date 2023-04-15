@@ -27,6 +27,10 @@ function keyboard_motion_actor:draw()
     surge.actor.draw(self.surge_actor_object)
 end
 
+function keyboard_motion_actor:scale(sx, sy, sz)
+    surge.actor.scale(self.surge_actor_object, sx, sy, sz)
+end
+
 function keyboard_motion_actor:update(dt, fps)
     local is_pressed_right = surge.input.keyboard.get_key_state(surge.input.keyboard.key.RIGHT) == surge.input.action.PRESS
     local is_pressed_left = surge.input.keyboard.get_key_state(surge.input.keyboard.key.LEFT) == surge.input.action.PRESS

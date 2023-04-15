@@ -1,4 +1,4 @@
-#include "entities/actor.hpp"
+#include "entities/animated_sprite.hpp"
 
 #include "image_loader.hpp"
 #include "log.hpp"
@@ -16,20 +16,20 @@ template <std::size_t i, typename T> [[nodiscard]] static inline auto buffer_off
   return reinterpret_cast<const void *>(i * sizeof(T));
 }
 
-auto surge::actor::gen_buff() const noexcept -> GLuint {
+auto surge::animated_sprite::gen_buff() const noexcept -> GLuint {
   GLuint tmp{0};
   glGenBuffers(1, &tmp);
   return tmp;
 }
 
-auto surge::actor::gen_vao() const noexcept -> GLuint {
+auto surge::animated_sprite::gen_vao() const noexcept -> GLuint {
   GLuint tmp{0};
   glGenVertexArrays(1, &tmp);
   return tmp;
 }
 
-auto surge::actor::load_spriteset(const std::filesystem::path &p, const char *ext) const noexcept
-    -> spriteset_data {
+auto surge::animated_sprite::load_spriteset(const std::filesystem::path &p,
+                                            const char *ext) const noexcept -> spriteset_data {
   // When passing images to OpenGL they must be flipped.
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
 
@@ -66,7 +66,7 @@ auto surge::actor::load_spriteset(const std::filesystem::path &p, const char *ex
   return sd;
 }
 
-void surge::actor::create_quad() noexcept {
+void surge::animated_sprite::create_quad() noexcept {
   const std::array<float, 20> vertex_attributes{
       0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
       1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
@@ -97,9 +97,8 @@ void surge::actor::create_quad() noexcept {
   glBindVertexArray(0);
 }
 
-void surge::actor::reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
-                                  const glm::vec3 &scale) noexcept {
-  current_quad.anchor = anchor * scale;
+void surge::animated_sprite::reset_geometry(const glm::vec3 &position,
+                                            const glm::vec3 &scale) noexcept {
 
   if (sad_file.has_value()) {
     current_quad.dims = glm::vec3{
@@ -110,7 +109,7 @@ void surge::actor::reset_geometry(const glm::vec3 &anchor, const glm::vec3 &posi
     glog<log_event::error>("Unable to reset geometry. No sad file currently loaded");
   }
 
-  current_quad.corner = position - current_quad.anchor;
+  current_quad.corner = position;
 
   model_matrix = glm::mat4{1.0f};
   model_matrix = glm::translate(model_matrix, current_quad.corner);
@@ -119,12 +118,11 @@ void surge::actor::reset_geometry(const glm::vec3 &anchor, const glm::vec3 &posi
   set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
 }
 
-void surge::actor::reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
-                                  glm::vec3 &&scale) noexcept {
-  reset_geometry(anchor, position, scale);
+void surge::animated_sprite::reset_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept {
+  reset_geometry(position, scale);
 }
 
-void surge::actor::change_current_animation_to(std::uint32_t index, bool loops) noexcept {
+void surge::animated_sprite::change_current_animation_to(std::uint32_t index, bool loops) noexcept {
   if (sad_file.has_value()) {
     if (index < sad_file->x.size()) {
       animation_data new_data{};
@@ -142,15 +140,15 @@ void surge::actor::change_current_animation_to(std::uint32_t index, bool loops) 
   }
 }
 
-void surge::actor::toggle_h_flip() noexcept {
+void surge::animated_sprite::toggle_h_flip() noexcept {
   current_animation_data.h_flip = !current_animation_data.h_flip;
 }
 
-void surge::actor::toggle_v_flip() noexcept {
+void surge::animated_sprite::toggle_v_flip() noexcept {
   current_animation_data.v_flip = !current_animation_data.v_flip;
 }
 
-void surge::actor::draw() noexcept {
+void surge::animated_sprite::draw() noexcept {
   const auto &shader_program{global_engine_window::get().get_shader_program()};
 
   set_uniform(shader_program, "txt_0", GLint{0});
@@ -190,19 +188,18 @@ void surge::actor::draw() noexcept {
   glBindVertexArray(0);
 }
 
-void surge::actor::move(glm::vec3 &&vec) noexcept {
+void surge::animated_sprite::move(glm::vec3 &&vec) noexcept {
   current_quad.corner += vec;
 
   model_matrix = glm::translate(model_matrix, vec);
   set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
 }
 
-void surge::actor::scale(glm::vec3 &&vec) noexcept {
-  const glm::vec3 position = current_quad.corner + current_quad.anchor;
+void surge::animated_sprite::scale(glm::vec3 &&vec) noexcept {
+  const glm::vec3 position = current_quad.corner;
 
-  current_quad.anchor = current_quad.anchor * vec;
   current_quad.dims = current_quad.dims * vec;
-  current_quad.corner = position - current_quad.anchor;
+  current_quad.corner = position;
 
   model_matrix = glm::mat4{1.0};
   model_matrix = glm::translate(model_matrix, current_quad.corner);
@@ -210,7 +207,7 @@ void surge::actor::scale(glm::vec3 &&vec) noexcept {
   set_uniform(global_engine_window::get().get_shader_program(), "model", model_matrix);
 }
 
-auto surge::actor::delinearize_animation_frame_index() const noexcept -> glm::vec2 {
+auto surge::animated_sprite::delinearize_animation_frame_index() const noexcept -> glm::vec2 {
   if (sad_file.has_value()) {
     const auto cols{sad_file->cols[current_animation_data.animation_index]};
     const auto index{current_animation_data.linearized_animation_frame_index};
@@ -220,7 +217,7 @@ auto surge::actor::delinearize_animation_frame_index() const noexcept -> glm::ve
   }
 }
 
-void surge::actor::update_animation_frame() noexcept {
+void surge::animated_sprite::update_animation_frame() noexcept {
   current_animation_data.linearized_animation_frame_index++;
 
   if (current_animation_data.loops) {
@@ -232,7 +229,7 @@ void surge::actor::update_animation_frame() noexcept {
   }
 }
 
-void surge::actor::update(double frame_update_delay) noexcept {
+void surge::animated_sprite::update(double frame_update_delay) noexcept {
   const auto dt{global_engine_window::get().get_frame_dt()};
   static double elapsed{dt};
 
@@ -244,14 +241,10 @@ void surge::actor::update(double frame_update_delay) noexcept {
   }
 }
 
-auto surge::actor::get_anchor_coordinates() const noexcept -> glm::vec3 {
-  return current_quad.corner + current_quad.anchor;
-}
-
-surge::actor::actor(const std::filesystem::path &sprite_set_path,
-                    const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
-                    glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
-                    const char *sprite_sheet_ext) noexcept
+surge::animated_sprite::animated_sprite(const std::filesystem::path &sprite_set_path,
+                                        const std::filesystem::path &sad_file_path,
+                                        std::uint32_t first_anim_idx, glm::vec3 &&position,
+                                        glm::vec3 &&scale, const char *sprite_sheet_ext) noexcept
     : VAO{gen_vao()},
       VBO{gen_buff()},
       EBO{gen_buff()},
@@ -262,8 +255,7 @@ surge::actor::actor(const std::filesystem::path &sprite_set_path,
 
   change_current_animation_to(first_anim_idx);
 
-  reset_geometry(std::forward<glm::vec3>(anchor), std::forward<glm::vec3>(position),
-                 std::forward<glm::vec3>(scale));
+  reset_geometry(std::forward<glm::vec3>(position), std::forward<glm::vec3>(scale));
 
   // Set initial flips to false
   set_uniform(global_engine_window::get().get_shader_program(), "v_flip",

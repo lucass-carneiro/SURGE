@@ -1,0 +1,12 @@
+---
+animation_count: 1
+
+background:
+  index: 0
+  x0: 0
+  y0: 0
+  Sw: 1280
+  Sh: 288
+  rows: 1
+  cols: 3
+

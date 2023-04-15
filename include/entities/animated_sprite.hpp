@@ -1,5 +1,5 @@
-#ifndef SURGE_ACTOR_HPP
-#define SURGE_ACTOR_HPP
+#ifndef SURGE_ANIMATED_SPRITE_HPP
+#define SURGE_ANIMATED_SPRITE_HPP
 
 #include "allocator.hpp"
 #include "sad_file.hpp"
@@ -13,11 +13,12 @@
 
 namespace surge {
 
-class actor {
+class animated_sprite {
 public:
-  actor(const std::filesystem::path &sprite_set_path, const std::filesystem::path &sad_file_path,
-        std::uint32_t first_anim_idx, glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
-        const char *sprite_sheet_ext = ".png") noexcept;
+  animated_sprite(const std::filesystem::path &sprite_set_path,
+                  const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
+                  glm::vec3 &&position, glm::vec3 &&scale,
+                  const char *sprite_sheet_ext = ".png") noexcept;
 
   void draw() noexcept;
   void update(double frame_update_delay) noexcept;
@@ -26,8 +27,6 @@ public:
   void scale(glm::vec3 &&vec) noexcept;
 
   void change_current_animation_to(std::uint32_t index, bool loops = true) noexcept;
-
-  [[nodiscard]] auto get_anchor_coordinates() const noexcept -> glm::vec3;
 
   void toggle_h_flip() noexcept;
   void toggle_v_flip() noexcept;
@@ -38,10 +37,9 @@ private:
 
   glm::mat4 model_matrix{1.0f};
 
-  struct actor_quad_info {
+  struct quad_info {
     glm::vec3 corner{0.0f};
     glm::vec3 dims{0.0f};
-    glm::vec3 anchor{0.0f}; // Holds pixel coordinates
   } current_quad{};
 
   // Data and corresponding OpenGL texture for the spriteset
@@ -71,9 +69,8 @@ private:
 
   void create_quad() noexcept;
 
-  void reset_geometry(const glm::vec3 &anchor, const glm::vec3 &position,
-                      const glm::vec3 &scale) noexcept;
-  void reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale) noexcept;
+  void reset_geometry(const glm::vec3 &position, const glm::vec3 &scale) noexcept;
+  void reset_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept;
 
   [[nodiscard]] auto delinearize_animation_frame_index() const noexcept -> glm::vec2;
 
@@ -82,4 +79,4 @@ private:
 
 } // namespace surge
 
-#endif // SURGE_ACTOR_HPP
+#endif // SURGE_ANIMATED_SPRITE_HPP

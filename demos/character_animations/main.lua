@@ -5,12 +5,20 @@ local keyboard_motion_actor = require("character_animations/keyboard_motion_acto
 function surge.pre_loop()
     -- Load actor
     sophia = keyboard_motion_actor:new(
-        "character_animations/resources/spritesheet.png",                        -- Sprite sheet image file
-        "character_animations/resources/spritesheet.sad",                        -- Animations file
-        4,                                                                       -- First animation index
-        16.0, 48.0, 0.0,                                                         -- Anchor
-        surge.config.window_width / 2.0,  surge.config.window_height / 2.0, 0.0, -- Position
-        5.0, 5.0, 1.0                                                            -- Scale
+        "character_animations/resources/sophia/sophia.png", -- Sprite sheet image file
+        "character_animations/resources/sophia/sophia.sad", -- Animations file
+        4,                                                  -- First animation index
+        16.0,  48.0,  0.0,                                  -- Anchor
+        548.0, 715.0, 0.0,                                  -- Position
+        5.0,   5.0,   1.0                                   -- Scale
+    )
+
+     gemni_rain = surge.animated_sprite.new(
+         "character_animations/resources/background/background.png",                 -- Sprite sheet image file
+         "character_animations/resources/background/background.sad",                 -- Animations file
+         0,                                                                          -- First animation index
+         0.0, 0.0, -0.4,                                                             -- Position
+         surge.config.window_height / 400.0, surge.config.window_height / 288.0, 1.0 --Scale
     )
 end
 
@@ -26,7 +34,8 @@ end
 
 function surge.mouse_button_event(button, action, mods)
     if button == surge.input.mouse.button.RIGHT and action == surge.input.action.PRESS then
-        click_x, click_y, click_z = surge.input.mouse.get_cursor_position()
+        local click_x, click_y, click_z = surge.input.mouse.get_cursor_position()
+        surge.log.message("(", click_x, ",", click_y, ",", click_z, ")")
     end
 end
 
@@ -35,9 +44,11 @@ function surge.mouse_scroll_event(xoffset, yoffset)
 end
 
 function surge.draw()
+    surge.animated_sprite.draw(gemni_rain)
     sophia:draw()
 end
 
 function surge.update(dt)
     sophia:update(dt, 0.08)
+    surge.animated_sprite.update(gemni_rain, 0.08)
 end

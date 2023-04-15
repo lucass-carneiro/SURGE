@@ -67,7 +67,6 @@ cmake --build Debug -j20
 * [x] Sometimes, the horizontal animation flips get inverted. Why?
 
 ##  Main TODO
-* [ ] Review Sprite API exposed to Lua
 * [ ] Finish state changes demo
 * [ ] Fix paths in scripts
 * [ ] Add show/hide to debug windows triggered by customized key
@@ -77,6 +76,7 @@ cmake --build Debug -j20
 * [ ] Find out safer way to provide VM index from the lua state.
 * [ ] Add parallel task synchronization. Review parallel task system?
 * [ ] Color lookup for animations [see here](https://www.youtube.com/watch?v=HsOKwUwL1bE)
+* [ ] Make `actor` entity use `animated_sprite` entity (compose objects)
 
 ## Main Done
 * [x] Review file loading to memory functions. Implement: load to buffer, ~load given allocator~
@@ -117,6 +117,7 @@ cmake --build Debug -j20
 * [x] Review allocator system.
 * [x] Finish character animation with arrow movement demo
 * [x] Fix hot reloading
+* [x] Review Sprite API exposed to Lua
 
 
 # References
