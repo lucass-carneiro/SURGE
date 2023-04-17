@@ -59,6 +59,25 @@ private:
 #endif
 };
 
+#ifdef SURGE_SYSTEM_Windows
+
+template <typename... Args> void log_info(spdlog::wformat_string_t<Args...> fmt, Args &&...args) {
+  global_stdout_log_manager::get().get_logger()->log(spdlog::level::info, fmt,
+                                                     std::forward<Args>(args)...);
+}
+
+template <typename... Args> void log_error(spdlog::wformat_string_t<Args...> fmt, Args &&...args) {
+  global_stdout_log_manager::get().get_logger()->log(spdlog::level::err, fmt,
+                                                     std::forward<Args>(args)...);
+}
+
+template <typename... Args> void log_warn(spdlog::wformat_string_t<Args...> fmt, Args &&...args) {
+  global_stdout_log_manager::get().get_logger()->log(spdlog::level::warn, fmt,
+                                                     std::forward<Args>(args)...);
+}
+
+#endif
+
 template <typename... Args> void log_info(spdlog::format_string_t<Args...> fmt, Args &&...args) {
   global_stdout_log_manager::get().get_logger()->log(spdlog::level::info, fmt,
                                                      std::forward<Args>(args)...);

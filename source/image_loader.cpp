@@ -3,15 +3,23 @@
 #include "allocator.hpp"
 #include "file.hpp"
 #include "log.hpp"
+#include "options.hpp"
 
 auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
     -> std::optional<image> {
-
+#ifdef SURGE_SYSTEM_Windows
+  log_info(L"Loading image file {}", p.c_str());
+#else
   log_info("Loading image file {}", p.c_str());
+#endif
 
-  auto file{load_file(p, ext)};
+  auto file{load_file(p, ext, false)};
   if (!file) {
+#ifdef SURGE_SYSTEM_Windows
+    log_error(L"Unable to load image file {}", p.c_str());
+#else
     log_error("Unable to load image file {}", p.c_str());
+#endif
     return {};
   }
 
@@ -21,8 +29,13 @@ auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
                             file.value().size(), &x, &y, &channels_in_file, 0)};
 
   if (img_data == nullptr) {
+#ifdef SURGE_SYSTEM_Windows
+    log_error(L"Unable to load image file {} due to stbi error.", p.c_str());
+    log_error("stbi error: {}", stbi_failure_reason());
+#else
     log_error("Unable to load image file {} due to stbi error: {}", p.c_str(),
               stbi_failure_reason());
+#endif
     mi_free(file.value().data());
     return {};
   }

@@ -8,6 +8,7 @@
 // clang-format on
 
 #include "file.hpp"
+#include "options.hpp"
 #include "safe_ops.hpp"
 
 struct lua_file_handle {
@@ -22,17 +23,27 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
   // See example implementation from the Lua interpreter here:
   // https://www.lua.org/source/5.4/lua.c.html#msghandler
 
+#ifdef SURGE_SYSTEM_Windows
+  log_info(L"Doing Lua script {} at VM {:#x}", path.c_str(), reinterpret_cast<std::uintptr_t>(L));
+#else
   log_info("Doing Lua script {} at VM {:#x}", path.c_str(), reinterpret_cast<std::uintptr_t>(L));
+#endif
 
   // Step 1: load file and construct a lua_file_handle object to pass to
   // lua_reader
-  lua_file_handle handle{load_file(path, ".lua"), false};
+  lua_file_handle handle{load_file(path, ".lua", false), false};
   if (!handle.opt_file_span) {
     return false;
   }
 
-  // Step 2: Load Lua chunk
+// Step 2: Load Lua chunk
+#ifdef SURGE_SYSTEM_Windows
+  const auto lua_laod_stats{
+      lua_load(L, &lua_reader, static_cast<void *>(&handle), path.string().c_str())};
+#else
   const auto lua_laod_stats{lua_load(L, &lua_reader, static_cast<void *>(&handle), path.c_str())};
+#endif
+
   if (lua_laod_stats != 0) {
     log_error("Error while loading Lua script: {}", lua_tostring(L, -1));
 

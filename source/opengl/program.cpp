@@ -47,7 +47,11 @@ auto surge::load_and_compile(const char *shader_source, const char *shader_name,
 auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type) noexcept
     -> std::optional<GLuint> {
 
+#ifdef SURGE_SYSTEM_Windows
+  log_info(L"Loading shader file {}", p.c_str());
+#else
   log_info("Loading shader file {}", p.c_str());
+#endif
 
   load_file_return_t file{};
 
@@ -63,7 +67,11 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
   }
 
   if (!file) {
+#ifdef SURGE_SYSTEM_Windows
+    log_error(L"Unable to load shader file {}", p.c_str());
+#else
     log_error("Unable to load shader file {}", p.c_str());
+#endif
     return {};
   }
 
@@ -99,12 +107,21 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
+#ifdef SURGE_SYSTEM_Windows
+    log_error(L"Shader \"{}\" handle {} compilation failed:", p.c_str(), shader_handle_tmp);
+    log_error("Shader compilation error: {}", info_log.data());
+#else
     log_error("Shader \"{}\" handle {} compilation failed:\n  {}", p.c_str(), shader_handle_tmp,
               info_log.data());
+#endif
 
     return {};
   } else {
+#ifdef SURGE_SYSTEM_Windows
+    log_info(L"Shader \"{}\" handle {} compilation succesfull", p.c_str(), shader_handle_tmp);
+#else
     log_info("Shader \"{}\" handle {} compilation succesfull", p.c_str(), shader_handle_tmp);
+#endif
     return shader_handle_tmp;
   }
 }

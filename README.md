@@ -52,6 +52,12 @@ cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang+
 cmake --build Debug -j20
 ```
 
+On Windows, use,
+```
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
+on the 4th step.
+
 # Tasks
 
 ## GUI TODO

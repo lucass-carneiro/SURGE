@@ -160,9 +160,15 @@ auto surge::global_engine_window::init() noexcept -> bool {
   if (!(std::filesystem::exists(engine_config->root_dir)
         && std::filesystem::is_directory(engine_config->root_dir))) {
 
+#ifdef SURGE_SYSTEM_Windows
+    log_error(
+        L"The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
+        engine_config->root_dir.c_str());
+#else
     log_error(
         "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
         engine_config->root_dir.c_str());
+#endif
 
     window.reset();
     glfwTerminate();

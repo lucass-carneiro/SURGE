@@ -28,8 +28,8 @@ using load_file_span = std::span<std::byte>;
 
 using load_file_return_t = std::optional<load_file_span>;
 
-auto load_file(const std::filesystem::path &p, const char *ext,
-               bool append_null_byte = false) noexcept -> load_file_return_t;
+auto load_file(const std::filesystem::path &p, const char *ext, bool append_null_byte) noexcept
+    -> load_file_return_t;
 
 } // namespace surge
 

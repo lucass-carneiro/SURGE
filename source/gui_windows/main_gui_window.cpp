@@ -45,7 +45,7 @@ void surge::show_main_gui_window(bool *open) noexcept {
       // SURGE debug apps
       if (BeginMenu("Apps")) {
         MenuItem("FPS counter", nullptr, &show_fps_counter);
-        EndMenu();
+        ImGui::EndMenu();
       }
 
       // DearImGui debug apps
@@ -55,7 +55,7 @@ void surge::show_main_gui_window(bool *open) noexcept {
         MenuItem("Stack Tool", nullptr, &show_app_stack_tool);
         MenuItem("Style Editor", nullptr, &show_app_style_editor);
         MenuItem("About Dear ImGui", nullptr, &show_app_about);
-        EndMenu();
+        ImGui::EndMenu();
       }
 
       EndMenuBar();

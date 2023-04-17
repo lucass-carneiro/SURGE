@@ -273,7 +273,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
     target_link_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
   else()
-    # TODO:
+  # Dependencies and main program build type must match. If building dependencies static-debug, then /MTd must be used.
+  # See the link bellow for further information
+  # https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/2kzt1wy3(v=vs.110)?redirectedfrom=MSDN
+  target_compile_options(Surge PUBLIC /MP /MTd)
   endif()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   message(STATUS "Generating a Release build system")

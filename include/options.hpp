@@ -12,9 +12,9 @@
 #define SURGE_OPENGL_ERROR_BUFFER_SIZE 1024 // NOLINT(cppcoreguidelines-macro-usage)
 #define SURGE_FPS_COUNTER_SAMPLE_SIZE 1024 // NOLINT(cppcoreguidelines-macro-usage)
 
-#define SURGE_SYSTEM_Linux
-#define SURGE_SYSTEM_IS_POSIX
-#define SURGE_COMPILER_Clang
+#define SURGE_SYSTEM_Windows
+#define SURGE_SYSTEM_NOT_POSIX
+#define SURGE_COMPILER_MSVC
 
 #define SURGE_USE_LOG
 #define SURGE_USE_LOG_COLOR

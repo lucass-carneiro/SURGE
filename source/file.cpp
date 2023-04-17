@@ -2,36 +2,54 @@
 
 #include "allocator.hpp"
 #include "log.hpp"
+#include "options.hpp"
 
 #ifdef SURGE_SYSTEM_IS_POSIX
 #  include <fcntl.h>
+#elif defined(SURGE_SYSTEM_Windows)
+#  include <fcntl.h>
+#  include <io.h>
 #endif
 
-#include <iostream>
+#include <cstdio>
+#include <cstring>
 
 auto surge::validate_path(const std::filesystem::path &path,
                           const char *expected_extension) noexcept -> bool {
 
   try {
     if (!std::filesystem::exists(path)) {
-      log_error("The path {} does not exist.", path.string());
+#ifdef SURGE_SYSTEM_Windows
+      log_error(L"The path {} does not exist.", path.c_str());
+#else
+      log_error("The path {} does not exist.", path.c_str());
+#endif
       return false;
     }
 
     if (!std::filesystem::is_regular_file(path)) {
-      log_error("The path {} does not point to a regular file.", path.string());
+#ifdef SURGE_SYSTEM_Windows
+      log_error(L"The path {} does not point to a regular file.", path.c_str());
+#else
+      log_error("The path {} does not point to a regular file.", path.c_str());
+#endif
       return false;
     }
 
     if (path.extension() != expected_extension) {
-      log_error("The path {} does not point to a \"{}\" file.", path.string(), expected_extension);
+#ifdef SURGE_SYSTEM_Windows
+      log_error(L"The path {} does not point to a file with the correct extension.", path.c_str());
+      log_error("Expected extension: {}", expected_extension);
       return false;
+#else
+      log_error("The path {} does not point to a \"{}\" file.", path.c_str(), expected_extension);
+#endif
     }
 
     return true;
 
   } catch (const std::exception &e) {
-    std::cout << "Error while validating file path : " << e.what() << std::endl;
+    std::printf("Error while validating file path: %s\n", e.what());
 
     return false;
   }
@@ -39,7 +57,11 @@ auto surge::validate_path(const std::filesystem::path &path,
 
 auto surge::load_file(const std::filesystem::path &p, const char *ext,
                       bool append_null_byte) noexcept -> load_file_return_t {
+#ifdef SURGE_SYSTEM_Windows
+  log_info(L"Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
+#else
   log_info("Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
+#endif
 
   const auto path_validation_result{validate_path(p, ext)};
 
@@ -54,9 +76,14 @@ auto surge::load_file(const std::filesystem::path &p, const char *ext,
       return std::filesystem::file_size(p);
   }()};
   void *buffer{mi_malloc(file_size)};
+  std::memset(buffer, 0, file_size);
 
   if (buffer == nullptr) {
+#ifdef SURGE_SYSTEM_Windows
+    log_error(L"Unable to allocate memory to hold file {}", p.c_str());
+#else
     log_error("Unable to allocate memory to hold file {}", p.c_str());
+#endif
     return {};
   }
 
@@ -98,5 +125,13 @@ auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
 }
 
 #else
-#  error "No os_open_read implementation for this system is available. Please implement it here"
+
+// TODO: Error check
+auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
+                         std::uintmax_t file_size) noexcept -> bool {
+  auto file{std::fopen(p.string().c_str(), "rb")};
+  std::fread(buffer, 1, file_size, file);
+  return true;
+}
+
 #endif

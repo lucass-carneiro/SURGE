@@ -29,7 +29,10 @@
         "implot",
         "eastl",
         {
-            "name": "spdlog"
+            "name": "spdlog",
+            "features": [
+                "wchar"
+            ]
         }
     ]
 }
