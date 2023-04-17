@@ -21,14 +21,13 @@ template <std::integral target_type, std::integral original_type>
       return static_cast<target_type>(value);
 
     } else {
-      glog<log_event::error>("Attempt to cast {} to a target type to small to "
-                             "hold the original value.",
-                             value);
+      log_error("Attempt to cast {} to a target type to small to "
+                "hold the original value.",
+                value);
       return {};
     }
   } else {
-    glog<log_event::error>("Casting a negative number ({}) to a unsigned type is undefined.",
-                           value);
+    log_error("Casting a negative number ({}) to a unsigned type is undefined.", value);
     return {};
   }
 }

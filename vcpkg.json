@@ -6,7 +6,6 @@
     "dependencies": [
         "opengl",
         "mimalloc",
-        "fmt",
         "docopt",
         "gsl-lite",
         "taskflow",
@@ -28,6 +27,9 @@
             ]
         },
         "implot",
-        "eastl"
+        "eastl",
+        {
+            "name": "spdlog"
+        }
     ]
 }

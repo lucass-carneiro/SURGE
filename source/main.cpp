@@ -9,14 +9,14 @@
 
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
+  draw_logo();
 
   // Init allocator subsystem
   init_mimalloc();
   mimalloc_eastl_allocator::get();
 
   // Init log subsystem
-  global_log_manager::get().init("log.txt");
-  draw_logo();
+  global_stdout_log_manager::get();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
@@ -31,8 +31,7 @@ auto main(int argc, char **argv) noexcept -> int {
 
   const auto hardware_concurrency{std::thread::hardware_concurrency()};
   if (*num_threads < 0 || *num_threads > hardware_concurrency) {
-    glog<log_event::error>("The number of threads must be in the range [{},{}]", 0,
-                           hardware_concurrency);
+    log_error("The number of threads must be in the range [{},{}]", 0, hardware_concurrency);
     return EXIT_FAILURE;
   }
 
@@ -47,7 +46,7 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Init parallel job system
-  glog<log_event::message>("Initializing job system with {} total threads", *num_threads);
+  log_info("Initializing job system with {} total threads", *num_threads);
   global_num_threads::get().init(*num_threads);
   global_task_executor::get();
 

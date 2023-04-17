@@ -4,6 +4,8 @@
 #include "log.hpp"
 #include "options.hpp"
 
+#include <cstdio>
+
 /**
  * The program help/usage message that is also used to generate the command line
  * parser.
@@ -40,7 +42,13 @@ static constexpr const char *LOGO =
   " `Y8888P ,88P'    `Y88888P'   8 8888     `88.      `8888888P'    8 888888888888\n";
 // clang-format on
 
-void surge::draw_logo() noexcept { glog<log_event::logo>(LOGO); }
+void surge::draw_logo() noexcept {
+#ifdef SURGE_USE_LOG_COLOR
+  std::printf("\033[1;38;2;220;20;60m%s\033[0m", LOGO);
+#else
+  std::printf("%s", LOGO);
+#endif
+}
 
 auto surge::parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd_opts> {
   try {
@@ -51,26 +59,26 @@ auto surge::parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd
     return cmd_line_args;
 
   } catch (const docopt::DocoptExitHelp &) {
-    std::cout << USAGE << std::endl;
+    std::printf("%s\n", USAGE);
     return {};
 
   } catch (const docopt::DocoptExitVersion &) {
-    std::cout << VERSION_STRING << std::endl;
+    std::printf("%s\n", VERSION_STRING);
     return {};
 
   } catch (const docopt::DocoptLanguageError &) {
-    glog<log_event::error>("Internal problem: a syntax error ocurred in the "
-                           "USAGE string. Please contact a "
-                           "developper");
+    log_error("Internal problem: a syntax error ocurred in the "
+              "USAGE string. Please contact a "
+              "developper");
     return {};
 
   } catch (const docopt::DocoptArgumentError &) {
-    glog<log_event::message>("Unrecognized arguments passed. Rerun with the --help option "
-                             "for usage instructions.");
+    log_info("Unrecognized arguments passed. Rerun with the --help option "
+             "for usage instructions.");
     return {};
 
   } catch (const std::exception &error) {
-    glog<log_event::error>("Unhandled exception while running Docopt {}", error.what());
+    log_error("Unhandled exception while running Docopt {}", error.what());
     return {};
   }
 }
@@ -80,7 +88,7 @@ auto surge::get_arg_string(const cmd_opts &opts, const char *arg) noexcept
   try {
     return opts.at(arg).asString().c_str();
   } catch (const std::exception &error) {
-    glog<log_event::error>("Unable to interpret the command line argument {} as a string", arg);
+    log_error("Unable to interpret the command line argument {} as a string", arg);
     return {};
   }
 }
@@ -89,7 +97,7 @@ auto surge::get_arg_long(const cmd_opts &opts, const char *arg) noexcept -> std:
   try {
     return opts.at(arg).asLong();
   } catch (const std::exception &error) {
-    glog<log_event::error>("Unable to interpret the command line argument {} as a long", arg);
+    log_error("Unable to interpret the command line argument {} as a long", arg);
     return {};
   }
 }

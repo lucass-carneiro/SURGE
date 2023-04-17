@@ -7,7 +7,7 @@
 auto surge::load_and_compile(const char *shader_source, const char *shader_name,
                              GLenum shader_type) noexcept -> std::optional<GLuint> {
 
-  glog<log_event::message>("Compiling shader {}", shader_name);
+  log_info("Compiling shader {}", shader_name);
 
   // Create an empty shader handle
   const GLuint shader_handle_tmp = glCreateShader(shader_type);
@@ -35,11 +35,11 @@ auto surge::load_and_compile(const char *shader_source, const char *shader_name,
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    glog<log_event::error>("Shader \"{}\" compilation failed:\n  {}", shader_name, info_log.data());
+    log_error("Shader \"{}\" compilation failed:\n  {}", shader_name, info_log.data());
 
     return {};
   } else {
-    glog<log_event::error>("Shader \"{}\" compilation succesfull", shader_name);
+    log_error("Shader \"{}\" compilation succesfull", shader_name);
     return shader_handle_tmp;
   }
 }
@@ -47,7 +47,7 @@ auto surge::load_and_compile(const char *shader_source, const char *shader_name,
 auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type) noexcept
     -> std::optional<GLuint> {
 
-  glog<log_event::message>("Loading shader file {}", p.c_str());
+  log_info("Loading shader file {}", p.c_str());
 
   load_file_return_t file{};
 
@@ -58,12 +58,12 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
     file = load_file(p, ".frag", true);
 
   } else {
-    glog<log_event::error>("Unrecognized shader type {}", shader_type);
+    log_error("Unrecognized shader type {}", shader_type);
     return {};
   }
 
   if (!file) {
-    glog<log_event::error>("Unable to load shader file {}", p.c_str());
+    log_error("Unable to load shader file {}", p.c_str());
     return {};
   }
 
@@ -99,13 +99,12 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-    glog<log_event::error>("Shader \"{}\" handle {} compilation failed:\n  {}", p.c_str(),
-                           shader_handle_tmp, info_log.data());
+    log_error("Shader \"{}\" handle {} compilation failed:\n  {}", p.c_str(), shader_handle_tmp,
+              info_log.data());
 
     return {};
   } else {
-    glog<log_event::message>("Shader \"{}\" handle {} compilation succesfull", p.c_str(),
-                             shader_handle_tmp);
+    log_info("Shader \"{}\" handle {} compilation succesfull", p.c_str(), shader_handle_tmp);
     return shader_handle_tmp;
   }
 }
@@ -113,8 +112,7 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
 auto surge::link_shader_program(GLuint vertex_shader_handle, GLuint fragment_shader_handle,
                                 bool destroy_shaders) noexcept -> std::optional<GLuint> {
 
-  glog<log_event::message>("Linking shader handles {} and {}.", vertex_shader_handle,
-                           fragment_shader_handle);
+  log_info("Linking shader handles {} and {}.", vertex_shader_handle, fragment_shader_handle);
 
   // Get a program object.
   GLuint program_handle_tmp{glCreateProgram()};
@@ -145,8 +143,8 @@ auto surge::link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
     glDetachShader(program_handle_tmp, fragment_shader_handle);
     glDeleteProgram(program_handle_tmp);
 
-    glog<log_event::message>("Failed to link shader handles {} and {} to create program:\n  {}",
-                             vertex_shader_handle, fragment_shader_handle, info_log.data());
+    log_info("Failed to link shader handles {} and {} to create program:\n  {}",
+             vertex_shader_handle, fragment_shader_handle, info_log.data());
     return {};
 
   } else {
@@ -155,14 +153,14 @@ auto surge::link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
     glDetachShader(program_handle_tmp, fragment_shader_handle);
 
     if (destroy_shaders) {
-      glog<log_event::message>("Destroying shaders handles {} and {}", vertex_shader_handle,
-                               fragment_shader_handle);
+      log_info("Destroying shaders handles {} and {}", vertex_shader_handle,
+               fragment_shader_handle);
       glDeleteShader(vertex_shader_handle);
       glDeleteShader(fragment_shader_handle);
     }
 
-    glog<log_event::message>("Shader handles {} and {} linked succesfully. Program handle: {}",
-                             vertex_shader_handle, fragment_shader_handle, program_handle_tmp);
+    log_info("Shader handles {} and {} linked succesfully. Program handle: {}",
+             vertex_shader_handle, fragment_shader_handle, program_handle_tmp);
 
     return program_handle_tmp;
   }

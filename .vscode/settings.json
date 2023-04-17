@@ -1,0 +1,12 @@
+{
+    "clang-tidy.checks": [
+        "modernize*",
+        "cppcoreguidelines*",
+        "-cppcoreguidelines-avoid-magic-numbers",
+        "clang-diagnostic-*",
+        "clang-analyzer-*",
+        "bugprone*",
+        "performance"
+    ],
+    "editor.formatOnSave": true
+}

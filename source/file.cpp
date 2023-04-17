@@ -7,23 +7,24 @@
 #  include <fcntl.h>
 #endif
 
+#include <iostream>
+
 auto surge::validate_path(const std::filesystem::path &path,
                           const char *expected_extension) noexcept -> bool {
 
   try {
     if (!std::filesystem::exists(path)) {
-      glog<log_event::error>("The path {} does not exist.", path.string());
+      log_error("The path {} does not exist.", path.string());
       return false;
     }
 
     if (!std::filesystem::is_regular_file(path)) {
-      glog<log_event::error>("The path {} does not point to a regular file.", path.string());
+      log_error("The path {} does not point to a regular file.", path.string());
       return false;
     }
 
     if (path.extension() != expected_extension) {
-      glog<log_event::error>("The path {} does not point to a \"{}\" file.", path.string(),
-                             expected_extension);
+      log_error("The path {} does not point to a \"{}\" file.", path.string(), expected_extension);
       return false;
     }
 
@@ -38,8 +39,7 @@ auto surge::validate_path(const std::filesystem::path &path,
 
 auto surge::load_file(const std::filesystem::path &p, const char *ext,
                       bool append_null_byte) noexcept -> load_file_return_t {
-  glog<log_event::message>("Loading raw data for file {}. Appending null byte: {}", p.c_str(),
-                           append_null_byte);
+  log_info("Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
 
   const auto path_validation_result{validate_path(p, ext)};
 
@@ -56,7 +56,7 @@ auto surge::load_file(const std::filesystem::path &p, const char *ext,
   void *buffer{mi_malloc(file_size)};
 
   if (buffer == nullptr) {
-    glog<log_event::error>("Unable to allocate memory to hold file {}", p.c_str());
+    log_error("Unable to allocate memory to hold file {}", p.c_str());
     return {};
   }
 
@@ -82,12 +82,12 @@ auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
   int fd = open(p.c_str(), O_RDONLY);
 
   if (fd == -1) {
-    glog<log_event::error>("Error while oppening file: {}", std::strerror(errno));
+    log_error("Error while oppening file: {}", std::strerror(errno));
     return false;
   }
 
   if (read(fd, buffer, file_size) == -1) {
-    glog<log_event::error>("Uanable to read the file {}: {}", p.c_str(), std::strerror(errno));
+    log_error("Uanable to read the file {}: {}", p.c_str(), std::strerror(errno));
     close(fd);
     return false;
   }

@@ -19,7 +19,7 @@
 #include <sstream>
 
 surge::global_engine_window::~global_engine_window() {
-  glog<log_event::message>("Deleting window.");
+  log_info("Deleting window.");
 
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
@@ -36,7 +36,7 @@ surge::global_engine_window::~global_engine_window() {
 }
 
 auto surge::global_engine_window::init() noexcept -> bool {
-  glog<log_event::message>("Initializing window");
+  log_info("Initializing window");
 
   // Retrieve, parse and cast configuration values from config script using the main thread VM
   lua_State *L{global_lua_states::get().at(0).get()};
@@ -68,14 +68,14 @@ auto surge::global_engine_window::init() noexcept -> bool {
   }
 
   if (engine_config->window_monitor_index >= monitors.value().second) {
-    glog<log_event::warning>("Unable to set window monitor to {} because there are only {} "
-                             "monitors. Using default monitor index 0",
-                             engine_config->window_monitor_index, monitors.value().second);
+    log_warn("Unable to set window monitor to {} because there are only {} "
+             "monitors. Using default monitor index 0",
+             engine_config->window_monitor_index, monitors.value().second);
     engine_config->window_monitor_index = 0;
   }
 
   // GLFW window creation
-  glog<log_event::message>("Initializing engine window");
+  log_info("Initializing engine window");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -136,7 +136,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    glog<log_event::error>("Failed to initialize GLAD");
+    log_error("Failed to initialize GLAD");
     window.reset();
     glfwTerminate();
     window_init_success = false;
@@ -160,7 +160,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
   if (!(std::filesystem::exists(engine_config->root_dir)
         && std::filesystem::is_directory(engine_config->root_dir))) {
 
-    glog<log_event::error>(
+    log_error(
         "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
         engine_config->root_dir.c_str());
 
@@ -217,7 +217,7 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
     return {};
   }
 
-  glog<log_event::message>("Monitors detected: {}", count);
+  log_info("Monitors detected: {}", count);
 
   for (int i = 0; i < count; i++) {
     int width = 0, height = 0;
@@ -244,7 +244,7 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
     }
 
     // clang-format off
-    glog<log_event::message>(
+    log_info(
         "Properties of monitor {}:\n"
         "  Monitor name: {}.\n"
         "  Physical size (width, height): {}, {}.\n"
@@ -271,7 +271,7 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
 }
 
 void surge::glfw_error_callback(int code, const char *description) noexcept {
-  glog<log_event::error>("GLFW error code {}: {}", code, description);
+  log_error("GLFW error code {}: {}", code, description);
 }
 
 void surge::framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {

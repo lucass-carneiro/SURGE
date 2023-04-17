@@ -7,11 +7,11 @@
 auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
     -> std::optional<image> {
 
-  glog<log_event::message>("Loading image file {}", p.c_str());
+  log_info("Loading image file {}", p.c_str());
 
   auto file{load_file(p, ext)};
   if (!file) {
-    glog<log_event::error>("Unable to load image file {}", p.c_str());
+    log_error("Unable to load image file {}", p.c_str());
     return {};
   }
 
@@ -21,8 +21,8 @@ auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
                             file.value().size(), &x, &y, &channels_in_file, 0)};
 
   if (img_data == nullptr) {
-    glog<log_event::error>("Unable to load image file {} due to stbi error: {}", p.c_str(),
-                           stbi_failure_reason());
+    log_error("Unable to load image file {} due to stbi error: {}", p.c_str(),
+              stbi_failure_reason());
     mi_free(file.value().data());
     return {};
   }

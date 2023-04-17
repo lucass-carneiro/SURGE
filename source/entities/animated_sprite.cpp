@@ -36,7 +36,7 @@ auto surge::animated_sprite::load_spriteset(const std::filesystem::path &p,
   auto image{load_image(p, ext)};
   if (!image) {
     stbi_set_flip_vertically_on_load(static_cast<int>(false));
-    glog<log_event::error>("Unable to load spritesheet image file {}", p.c_str());
+    log_error("Unable to load spritesheet image file {}", p.c_str());
     return {};
   }
 
@@ -106,7 +106,7 @@ void surge::animated_sprite::reset_geometry(const glm::vec3 &position,
         static_cast<float>(sad_file->Sh[current_animation_data.animation_index]) * scale[1], 0.0};
   } else {
     current_quad.dims = glm::vec3{0.0, 0.0, 0.0};
-    glog<log_event::error>("Unable to reset geometry. No sad file currently loaded");
+    log_error("Unable to reset geometry. No sad file currently loaded");
   }
 
   current_quad.corner = position;
@@ -133,10 +133,10 @@ void surge::animated_sprite::change_current_animation_to(std::uint32_t index, bo
       new_data.v_flip = current_animation_data.v_flip;
       current_animation_data = new_data;
     } else {
-      glog<log_event::error>("Unable to recover animation index {}.", index);
+      log_error("Unable to recover animation index {}.", index);
     }
   } else {
-    glog<log_event::error>("Unable to reset current animation. No sad file currently loaded");
+    log_error("Unable to reset current animation. No sad file currently loaded");
   }
 }
 
@@ -172,8 +172,8 @@ void surge::animated_sprite::draw() noexcept {
   } else {
     set_uniform(shader_program, "sheet_offsets", glm::vec2{0, 0});
     set_uniform(shader_program, "sheet_dimentions", glm::vec2{0, 0});
-    glog<log_event::error>("Unable to set spritesheet offsets and dimentions in shader programs. "
-                           "No sad file currently loaded");
+    log_error("Unable to set spritesheet offsets and dimentions in shader programs. "
+              "No sad file currently loaded");
   }
 
   // TODO: Send linearized index to gpu

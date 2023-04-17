@@ -8,32 +8,29 @@ auto surge::lua_new_animated_sprite(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 9) {
-    glog<log_event::warning>(
-        "Function new_animated_sprite expected 12 arguments and instead got {} "
-        "arguments. Returning nil",
-        nargs);
+    log_warn("Function new_animated_sprite expected 12 arguments and instead got {} "
+             "arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
 
   if (!(lua_isstring(L, 1) || lua_isstring(L, 2))) {
-    glog<log_event::warning>(
-        "Fucntion new_animated_sprite expects arguents 1 and 2 to be strings. Returning nil");
+    log_warn("Fucntion new_animated_sprite expects arguents 1 and 2 to be strings. Returning nil");
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isnumber(L, 3)) {
-    glog<log_event::warning>(
-        "Fucntion new_animated_sprite expects argument 3 to be an integer. Returning nil");
+    log_warn("Fucntion new_animated_sprite expects argument 3 to be an integer. Returning nil");
     lua_pushnil(L);
     return 1;
   }
 
   for (int i = 4; i <= 9; i++) {
     if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function new_animated_sprite expected argument {} to be a number. Returning nil", i);
+      log_warn("Function new_animated_sprite expected argument {} to be a number. Returning nil",
+               i);
       lua_pushnil(L);
       return 1;
     }
@@ -84,13 +81,12 @@ auto surge::lua_drop_animated_sprite(lua_State *L) noexcept -> int {
 
 [[nodiscard]] static auto is_animated_sprite(lua_State *L, const char *func_name) noexcept -> bool {
   if (!lua_isuserdata(L, 1)) {
-    surge::glog<surge::log_event::warning>(
-        "Function {} expected 1 user data argument. Returning nil", func_name);
+    surge::log_warn("Function {} expected 1 user data argument. Returning nil", func_name);
     return false;
   }
 
   if (!lua_getmetatable(L, 1)) {
-    surge::glog<surge::log_event::warning>("User data does not have a metatable");
+    surge::log_warn("User data does not have a metatable");
     return false;
   }
 
@@ -98,8 +94,7 @@ auto surge::lua_drop_animated_sprite(lua_State *L) noexcept -> int {
   const auto name{lua_tostring(L, -1)};
 
   if (std::strcmp(name, "surge::animated_sprite") != 0) {
-    surge::glog<surge::log_event::warning>(
-        "Expected surge::animated_sprite userdata and recieved {}", name);
+    surge::log_warn("Expected surge::animated_sprite userdata and recieved {}", name);
     return false;
   }
 
@@ -112,10 +107,9 @@ auto surge::lua_draw_animated_sprite(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 1) {
-    glog<log_event::warning>(
-        "Function draw_animated_sprite expected 1 user data arguments and instead got "
-        "{} arguments. Returning nil",
-        nargs);
+    log_warn("Function draw_animated_sprite expected 1 user data arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -142,9 +136,9 @@ auto surge::lua_move_animated_sprite(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 4) {
-    glog<log_event::warning>("Function move_animated_sprite expected 4 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function move_animated_sprite expected 4 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -156,8 +150,8 @@ auto surge::lua_move_animated_sprite(lua_State *L) noexcept -> int {
 
   for (int i = 2; i <= 4; i++) {
     if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function move_animated_sprite expected argument {} to be a number. Returning nil", i);
+      log_warn("Function move_animated_sprite expected argument {} to be a number. Returning nil",
+               i);
       lua_pushnil(L);
       return 1;
     }
@@ -182,9 +176,9 @@ auto surge::lua_scale_animated_sprite(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 4) {
-    glog<log_event::warning>("Function scale_animated_sprite expected 4 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function scale_animated_sprite expected 4 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -196,8 +190,8 @@ auto surge::lua_scale_animated_sprite(lua_State *L) noexcept -> int {
 
   for (int i = 2; i <= 4; i++) {
     if (!lua_isnumber(L, i)) {
-      glog<log_event::warning>(
-          "Function scale_animated_sprite expected argument {} to be a number. Returning nil", i);
+      log_warn("Function scale_animated_sprite expected argument {} to be a number. Returning nil",
+               i);
       lua_pushnil(L);
       return 1;
     }
@@ -222,9 +216,9 @@ auto surge::lua_update_animated_sprite(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 2) {
-    glog<log_event::warning>("Function update expected 2 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function update expected 2 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -235,7 +229,7 @@ auto surge::lua_update_animated_sprite(lua_State *L) noexcept -> int {
   }
 
   if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>("Function update expected argument 2 to be a number. Returning nil");
+    log_warn("Function update expected argument 2 to be a number. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -258,9 +252,9 @@ auto surge::lua_change_animated_sprite_anim(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 3) {
-    glog<log_event::warning>("Function change_animation_to expected 3 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function change_animation_to expected 3 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -271,15 +265,13 @@ auto surge::lua_change_animated_sprite_anim(lua_State *L) noexcept -> int {
   }
 
   if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function change_animation_to expected argument 2 to be a integer. Returning nil");
+    log_warn("Function change_animation_to expected argument 2 to be a integer. Returning nil");
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isboolean(L, 3)) {
-    glog<log_event::warning>(
-        "Function change_animation_to expected argument 3 to be a boolean. Returning nil");
+    log_warn("Function change_animation_to expected argument 3 to be a boolean. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -303,9 +295,9 @@ auto surge::lua_animated_sprite_toggle_h_flip(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 1) {
-    glog<log_event::warning>("Function toggle_h_flip expected 1 argument and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function toggle_h_flip expected 1 argument and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
@@ -330,9 +322,9 @@ auto surge::lua_animated_sprite_toggle_v_flip(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 1) {
-    glog<log_event::warning>("Function toggle_v_flip expected 1 argument and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function toggle_v_flip expected 1 argument and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }

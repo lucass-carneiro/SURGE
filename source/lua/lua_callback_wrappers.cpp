@@ -9,7 +9,7 @@ auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
   const auto pcall_result{lua_pcall(L, 0, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.pre_loop: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.pre_loop: {}", lua_tostring(L, -1));
     lua_pop(L, 2);
     return false;
   } else {
@@ -25,7 +25,7 @@ void surge::lua_draw_callback(lua_State *L) noexcept {
   const auto pcall_result{lua_pcall(L, 0, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.draw: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.draw: {}", lua_tostring(L, -1));
     lua_pop(L, 2);
   } else {
     lua_pop(L, 1);
@@ -40,7 +40,7 @@ void surge::lua_update_callback(lua_State *L) noexcept {
   const auto pcall_result{lua_pcall(L, 1, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.update: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.update: {}", lua_tostring(L, -1));
     lua_pop(L, 3);
   } else {
     lua_pop(L, 1);
@@ -61,7 +61,7 @@ void surge::glfw_key_callback(GLFWwindow *, int key, int, int action, int mods) 
   const auto pcall_result{lua_pcall(L, 3, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.key_event: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.key_event: {}", lua_tostring(L, -1));
     lua_pop(L, 5);
   } else {
     lua_pop(L, 1);
@@ -81,16 +81,15 @@ auto surge::lua_get_key_state(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 1) {
-    glog<log_event::warning>("Function get_key_state expected 1 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function get_key_state expected 1 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isnumber(L, 1)) {
-    glog<log_event::warning>(
-        "Function get_key_state expected argument 1 to be a number. Returning nil");
+    log_warn("Function get_key_state expected argument 1 to be a number. Returning nil");
     lua_pushnil(L);
     return 1;
   }
@@ -119,7 +118,7 @@ void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int
   const auto pcall_result{lua_pcall(L, 3, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.mouse_button_event: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.mouse_button_event: {}", lua_tostring(L, -1));
     lua_pop(L, 5);
   } else {
     lua_pop(L, 1);
@@ -138,7 +137,7 @@ void surge::glfw_scroll_callback(GLFWwindow *, double xoffset, double yoffset) n
   const auto pcall_result{lua_pcall(L, 2, 0, 0)};
 
   if (pcall_result != 0) {
-    glog<log_event::error>("Unable to call surge.mouse_scroll_event: {}", lua_tostring(L, -1));
+    log_error("Unable to call surge.mouse_scroll_event: {}", lua_tostring(L, -1));
     lua_pop(L, 5);
   } else {
     lua_pop(L, 1);

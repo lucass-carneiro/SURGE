@@ -12,7 +12,7 @@ auto surge::load_texture(const std::filesystem::path &p, const char *ext) noexce
   auto image{load_image(p, ext)};
   if (!image) {
     stbi_set_flip_vertically_on_load(static_cast<int>(false));
-    glog<log_event::error>("Unable to load texture {}", p.c_str());
+    log_error("Unable to load texture {}", p.c_str());
     return {};
   }
 

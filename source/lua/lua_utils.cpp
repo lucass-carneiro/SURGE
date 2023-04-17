@@ -10,7 +10,7 @@
 #include "file.hpp"
 #include "safe_ops.hpp"
 
-struct file_handle {
+struct lua_file_handle {
   surge::load_file_return_t opt_file_span;
   bool file_read{false};
 };
@@ -22,12 +22,11 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
   // See example implementation from the Lua interpreter here:
   // https://www.lua.org/source/5.4/lua.c.html#msghandler
 
-  glog<log_event::message>("Doing Lua script {} at VM {:#x}", path.c_str(),
-                           reinterpret_cast<std::uintptr_t>(L));
+  log_info("Doing Lua script {} at VM {:#x}", path.c_str(), reinterpret_cast<std::uintptr_t>(L));
 
-  // Step 1: load file and construct a file_handle object to pass to
+  // Step 1: load file and construct a lua_file_handle object to pass to
   // lua_reader
-  file_handle handle{load_file(path, ".lua"), false};
+  lua_file_handle handle{load_file(path, ".lua"), false};
   if (!handle.opt_file_span) {
     return false;
   }
@@ -35,7 +34,7 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
   // Step 2: Load Lua chunk
   const auto lua_laod_stats{lua_load(L, &lua_reader, static_cast<void *>(&handle), path.c_str())};
   if (lua_laod_stats != 0) {
-    glog<log_event::error>("Error while loading Lua script: {}", lua_tostring(L, -1));
+    log_error("Error while loading Lua script: {}", lua_tostring(L, -1));
 
     // Step 2.1: free allocated file
     mi_free(static_cast<void *>((*handle.opt_file_span).data()));
@@ -53,7 +52,7 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
   lua_remove(L, stack_base);
 
   if (lua_pcall_stats != 0) {
-    glog<log_event::error>("Error while executing Lua script:\n{}", lua_tostring(L, -1));
+    log_error("Error while executing Lua script:\n{}", lua_tostring(L, -1));
 
     // Step 4.1: free allocated file
     mi_free(static_cast<void *>((*handle.opt_file_span).data()));
@@ -68,7 +67,7 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
 }
 
 auto lua_reader(lua_State *, void *user_data, std::size_t *chunck_size) noexcept -> const char * {
-  auto handle{static_cast<file_handle *>(user_data)};
+  auto handle{static_cast<lua_file_handle *>(user_data)};
 
   if (!handle->file_read) {
     *chunck_size = handle->opt_file_span.value().size();

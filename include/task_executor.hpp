@@ -46,7 +46,7 @@ public:
           global_num_threads::get().count() > 1 ? global_num_threads::get().count() : 1);
       return executor;
     } catch (const std::exception &e) {
-      glog<log_event::error>("Global taskflow executor returned an exception: {}", e.what());
+      log_error("Global taskflow executor returned an exception: {}", e.what());
       std::terminate();
     }
   }

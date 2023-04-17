@@ -28,13 +28,13 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
 
   // Check if the IO operation succeeded
   if (!file_data) {
-    glog<log_event::error>("Unable to load sad file {}.", p.c_str());
+    log_error("Unable to load sad file {}.", p.c_str());
     return {};
   }
 
   // Check if the size is plausible
   if (file_data.value().size() < sad_file_header_size) {
-    glog<log_event::error>("The file {} is too short to contain valid animation data.", p.c_str());
+    log_error("The file {} is too short to contain valid animation data.", p.c_str());
 
     mi_free(file_data.value().data());
     return {};
@@ -44,7 +44,7 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   const auto header{static_cast<const char *>(
       static_cast<void *>(file_data.value().subspan(0, sad_file_id_string_size).data()))};
   if (std::strcmp(header, sad_file_id_string.data()) != 0) {
-    glog<log_event::error>("The file {} does not contain a SAD file header.", p.c_str());
+    log_error("The file {} does not contain a SAD file header.", p.c_str());
 
     mi_free(file_data.value().data());
     return {};
@@ -57,8 +57,8 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   // Check the total file size
   if (file_data.value().size()
       != (animation_count * sad_file_animation_data_size + sad_file_header_size)) {
-    glog<log_event::error>("The SAD file {} cannot store {} animations. {}", p.c_str(),
-                           animation_count, file_data.value().size());
+    log_error("The SAD file {} cannot store {} animations. {}", p.c_str(), animation_count,
+              file_data.value().size());
 
     mi_free(file_data.value().data());
     return {};
@@ -88,7 +88,7 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   }
 
   mi_free(file_data.value().data());
-  glog<log_event::message>("Loaded {} with {} animations.", p.c_str(), animation_count);
+  log_info("Loaded {} with {} animations.", p.c_str(), animation_count);
 
   return file_contents;
 }

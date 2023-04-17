@@ -5,7 +5,7 @@
 #include "task_executor.hpp"
 
 auto surge::global_lua_states::init() noexcept -> bool {
-  glog<log_event::message>("Starting up Lua states");
+  surge::log_info("Starting up Lua states");
 
   const auto num_threads{global_num_threads::get().count()};
 
@@ -17,7 +17,7 @@ auto surge::global_lua_states::init() noexcept -> bool {
     auto L{luaL_newstate()};
 
     if (L == nullptr) {
-      glog<log_event::error>("Failed to initialize lua state {}", i);
+      log_error("Failed to initialize lua state {}", i);
       return false;
     }
 
@@ -43,17 +43,14 @@ auto surge::global_lua_states::configure(const std::filesystem::path &path) noex
   return true;
 }
 
-surge::global_lua_states::~global_lua_states() noexcept {
-  glog<log_event::message>("Closing Lua states");
-}
+surge::global_lua_states::~global_lua_states() noexcept { surge::log_info("Closing Lua states"); }
 
 auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
   try {
     return state_array.at(i);
   } catch (const std::exception &e) {
-    glog<log_event::error>(
-        "Uanble to acess global lua VM array at index {}: {}. Returning main thread VM.", i,
-        e.what());
+    log_error("Uanble to acess global lua VM array at index {}: {}. Returning main thread VM.", i,
+              e.what());
   }
   return state_array[0];
 }

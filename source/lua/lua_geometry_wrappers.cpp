@@ -7,30 +7,27 @@ auto surge::lua_compute_heading(lua_State *L) noexcept -> int {
 
   // Argument count and type validation
   if (nargs != 3) {
-    glog<log_event::warning>("Function compute_heading expected 3 arguments and instead got "
-                             "{} arguments. Returning nil",
-                             nargs);
+    log_warn("Function compute_heading expected 3 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function compute_heading expected argument 1 to be a float. Returning nil");
+    log_warn("Function compute_heading expected argument 1 to be a float. Returning nil");
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isnumber(L, 2)) {
-    glog<log_event::warning>(
-        "Function compute_heading expected argument 2 to be a float. Returning nil");
+    log_warn("Function compute_heading expected argument 2 to be a float. Returning nil");
     lua_pushnil(L);
     return 1;
   }
 
   if (!lua_isnumber(L, 3)) {
-    glog<log_event::warning>(
-        "Function compute_heading expected argument 3 to be a float. Returning nil");
+    log_warn("Function compute_heading expected argument 3 to be a float. Returning nil");
     lua_pushnil(L);
     return 1;
   }

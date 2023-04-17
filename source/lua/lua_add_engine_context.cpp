@@ -5,8 +5,7 @@
 #include "safe_ops.hpp"
 
 void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
-  glog<log_event::message>("Adding engine context to VM {} ({:#x})", i,
-                           reinterpret_cast<std::uintptr_t>(L));
+  log_info("Adding engine context to VM {} ({:#x})", i, reinterpret_cast<std::uintptr_t>(L));
 
   // begin surge table
   lua_newtable(L);
