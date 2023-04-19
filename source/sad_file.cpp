@@ -32,7 +32,7 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
 #ifdef SURGE_SYSTEM_Windows
     log_error(L"Unable to load sad file {}.", p.c_str());
 #else
-    log_error(L"Unable to load sad file {}.", p.c_str());
+    log_error("Unable to load sad file {}.", p.c_str());
 #endif
     return {};
   }

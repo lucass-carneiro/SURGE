@@ -10,3 +10,5 @@ compile_commands.json
 
 vcpkg/*
 vcpkg_installed/*
+
+include/options.hpp

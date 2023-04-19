@@ -40,7 +40,7 @@ auto surge::actor::load_spriteset(const std::filesystem::path &p, const char *ex
 #ifdef SURGE_SYSTEM_Windows
     log_error(L"Unable to load spritesheet image file {}", p.c_str());
 #else
-    log_error(L"Unable to load spritesheet image file {}", p.c_str());
+    log_error("Unable to load spritesheet image file {}", p.c_str());
 #endif
     return {};
   }

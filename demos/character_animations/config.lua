@@ -23,5 +23,5 @@ surge.config.clear_color[3] = 0.3
 surge.config.clear_color[4] = 1.0
 
 -- Folder structure
--- surge.config.engine_root_dir = "/home/lucas/SURGE/"
-surge.config.engine_root_dir = "D:\\SURGE\\"
+surge.config.engine_root_dir = "/home/lucas/SURGE/"
+--surge.config.engine_root_dir = "D:\\SURGE\\"
