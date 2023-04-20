@@ -185,6 +185,15 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
+  background_shader = create_program(engine_config->root_dir / "shaders/background.vert",
+                                     engine_config->root_dir / "shaders/background.frag");
+  if (!background_shader) {
+    window.reset();
+    glfwTerminate();
+    window_init_success = false;
+    return window_init_success;
+  }
+
   glUseProgram(*sprite_shader);
 
   /*******************************
@@ -195,10 +204,13 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   projection_matrix
       = glm::ortho(0.0f, static_cast<float>(engine_config->window_width),
-                   static_cast<float>(engine_config->window_height), 0.0f, -1.0f, 1.0f);
+                   static_cast<float>(engine_config->window_height), 0.0f, 0.0f, 1.0f);
 
   set_uniform(*sprite_shader, "view", view_matrix);
   set_uniform(*sprite_shader, "projection", projection_matrix);
+
+  set_uniform(*background_shader, "view", view_matrix);
+  set_uniform(*background_shader, "projection", projection_matrix);
 
   /*******************************
    *           CURSORS           *

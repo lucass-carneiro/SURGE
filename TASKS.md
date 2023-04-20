@@ -11,6 +11,10 @@
 ## Character movement with arrows demo
 * [ ] Handle multiple input more gracefully
 * [x] Sometimes, the horizontal animation flips get inverted. Why?
+### Add dedicated background entity
+* [x] Rename global get shader to get sprite shader
+* [x] Add another shader in the window class
+* [x] Use `glUseProgram(*sprite_shader);` whenever necessary, and not globally.
 
 ##  Main TODO
 * [ ] Finish state changes demo

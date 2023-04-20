@@ -9,7 +9,7 @@ function surge.pre_loop()
         "character_animations/resources/sophia/sophia.sad", -- Animations file
         4,                                                  -- First animation index
         16.0,  48.0,  0.0,                                  -- Anchor
-        548.0, 715.0, 0.0,                                  -- Position
+        548.0, 715.0, 0.1,                                  -- Position
         5.0,   5.0,   1.0                                   -- Scale
     )
 
@@ -17,7 +17,7 @@ function surge.pre_loop()
          "character_animations/resources/background/background.png",                 -- Sprite sheet image file
          "character_animations/resources/background/background.sad",                 -- Animations file
          0,                                                                          -- First animation index
-         0.0, 0.0, -0.4,                                                             -- Position
+         0.0, 0.0, 0.0,                                                              -- Position
          surge.config.window_height / 400.0, surge.config.window_height / 288.0, 1.0 --Scale
     )
 end

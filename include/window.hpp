@@ -78,8 +78,14 @@ public:
     return glfwGetKey(window.get(), key);
   };
 
-  [[nodiscard]] inline auto get_shader_program() const noexcept -> GLuint {
+  [[nodiscard]] inline auto get_sprite_shader() const noexcept -> GLuint {
+    glUseProgram(sprite_shader.value_or(0));
     return sprite_shader.value_or(0);
+  }
+
+  [[nodiscard]] inline auto get_background_shader() const noexcept -> GLuint {
+    glUseProgram(background_shader.value_or(0));
+    return background_shader.value_or(0);
   }
 
   [[nodiscard]] inline auto get_projection() const noexcept -> const glm::mat4 & {
@@ -117,6 +123,7 @@ private:
   double frame_dt{0};
 
   std::optional<GLuint> sprite_shader{};
+  std::optional<GLuint> background_shader{};
   glm::mat4 view_matrix{1.0f}, projection_matrix{1.0f};
 
   /**
