@@ -13,12 +13,8 @@ function surge.pre_loop()
         5.0,   5.0,   1.0                                   -- Scale
     )
 
-     gemni_rain = surge.animated_sprite.new(
-         "character_animations/resources/background/background.png",                 -- Sprite sheet image file
-         "character_animations/resources/background/background.sad",                 -- Animations file
-         0,                                                                          -- First animation index
-         0.0, 0.0, 0.0,                                                              -- Position
-         surge.config.window_height / 400.0, surge.config.window_height / 288.0, 1.0 --Scale
+     new_york = surge.background.new(
+        "character_animations/resources/background/background.png"
     )
 end
 
@@ -44,11 +40,10 @@ function surge.mouse_scroll_event(xoffset, yoffset)
 end
 
 function surge.draw()
-    surge.animated_sprite.draw(gemni_rain)
+    surge.background.draw(new_york)
     sophia:draw()
 end
 
 function surge.update(dt)
     sophia:update(dt, 0.08)
-    surge.animated_sprite.update(gemni_rain, 0.08)
 end

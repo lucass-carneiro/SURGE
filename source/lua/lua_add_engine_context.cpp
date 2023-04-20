@@ -78,6 +78,24 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     lua_setfield(L, -2, "actor");
     // end actor table
 
+    // begin actor table
+    lua_newtable(L);
+    {
+      // begin background_meta table
+      lua_newtable(L);
+      {
+        lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::background");
+        lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_background);
+      }
+      lua_setfield(L, -2, "background_meta");
+      // end background_meta table
+
+      lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_background);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_background);
+    }
+    lua_setfield(L, -2, "background");
+    // end actor table
+
     // begin log table
     lua_newtable(L);
     {

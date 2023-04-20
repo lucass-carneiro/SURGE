@@ -26,6 +26,10 @@ auto lua_get_actor_anchor_coords(lua_State *L) noexcept -> int;
 auto lua_actor_toggle_h_flip(lua_State *L) noexcept -> int;
 auto lua_actor_toggle_v_flip(lua_State *L) noexcept -> int;
 
+auto lua_new_background(lua_State *L) noexcept -> int;
+auto lua_drop_background(lua_State *L) noexcept -> int;
+auto lua_draw_background(lua_State *L) noexcept -> int;
+
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;
 
