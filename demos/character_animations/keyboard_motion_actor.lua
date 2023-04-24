@@ -1,5 +1,6 @@
 local keyboard_motion_actor = {}
 keyboard_motion_actor.__index = keyboard_motion_actor
+keyboard_motion_actor.__name = "surge::KMA"
 
 function keyboard_motion_actor:new(sprite_image_file, animations_file, first_anim, anchor_x,anchor_y,anchor_z, position_x,position_y,position_z, scale_x, scale_y, scale_z)
    local actr = {}
@@ -29,6 +30,10 @@ end
 
 function keyboard_motion_actor:scale(sx, sy, sz)
     surge.actor.scale(self.surge_actor_object, sx, sy, sz)
+end
+
+function keyboard_motion_actor:move(x, y, z)
+    surge.actor.scale(self.surge_actor_object, x, y, z)
 end
 
 function keyboard_motion_actor:update(dt, fps)
