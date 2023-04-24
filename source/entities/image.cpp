@@ -1,4 +1,4 @@
-#include "entities/background.hpp"
+#include "entities/image.hpp"
 
 #include "image_loader.hpp"
 #include "log.hpp"
@@ -16,20 +16,20 @@ template <std::size_t i, typename T> [[nodiscard]] static inline auto buffer_off
   return reinterpret_cast<const void *>(i * sizeof(T));
 }
 
-auto surge::background::gen_buff() const noexcept -> GLuint {
+auto surge::image_entity::gen_buff() const noexcept -> GLuint {
   GLuint tmp{0};
   glGenBuffers(1, &tmp);
   return tmp;
 }
 
-auto surge::background::gen_vao() const noexcept -> GLuint {
+auto surge::image_entity::gen_vao() const noexcept -> GLuint {
   GLuint tmp{0};
   glGenVertexArrays(1, &tmp);
   return tmp;
 }
 
-auto surge::background::load_spriteset(const std::filesystem::path &p,
-                                       const char *ext) const noexcept -> spriteset_data {
+auto surge::image_entity::load_texture(const std::filesystem::path &p,
+                                       const char *ext) const noexcept -> texture_data {
   // When passing images to OpenGL they must be flipped.
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
 
@@ -64,23 +64,25 @@ auto surge::background::load_spriteset(const std::filesystem::path &p,
                image->data);
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  spriteset_data sd{glm::vec2{image->width, image->height}, texture};
+  texture_data td{glm::vec2{image->width, image->height}, texture};
   stbi_image_free(image->data);
 
-  return sd;
+  return td;
 }
 
-void surge::background::create_quad() noexcept {
-  const auto config{global_engine_window::get().get_config()};
+void surge::image_entity::create_quad(glm::vec3 &position, glm::vec3 &scale) noexcept {
+  const auto px{position[0]};
+  const auto py{position[1]};
+  const auto pz{position[2]};
 
-  const auto ww{static_cast<float>(config->window_width)};
-  const auto wh{static_cast<float>(config->window_height)};
+  const auto tw{texture.dimentions[0] * scale[0]};
+  const auto th{texture.dimentions[1] * scale[1]};
 
   const std::array<float, 20> vertex_attributes{
-      0.0f, wh,   0.0f, 0.0f, 0.0f, // bottom left
-      ww,   wh,   0.0f, 1.0f, 0.0f, // bottom right
-      ww,   0.0f, 0.0f, 1.0f, 1.0f, // top right
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+      px,      py + th, pz, 0.0f, 0.0f, // bottom left
+      px + tw, py + th, pz, 1.0f, 0.0f, // bottom right
+      px + tw, py,      pz, 1.0f, 1.0f, // top right
+      px,      py,      pz, 0.0f, 1.0f, // top left
   };
 
   const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
@@ -106,14 +108,21 @@ void surge::background::create_quad() noexcept {
   glBindVertexArray(0);
 }
 
-void surge::background::draw() noexcept {
-  const auto &shader_program{global_engine_window::get().get_background_shader()};
+void surge::image_entity::toggle_h_flip() noexcept { current_h_flip = !current_h_flip; }
+
+void surge::image_entity::toggle_v_flip() noexcept { current_v_flip = !current_v_flip; }
+
+void surge::image_entity::draw() noexcept {
+  const auto &shader_program{global_engine_window::get().get_image_shader()};
 
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
 
+  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_h_flip);
+  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
+
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, spriteset.gl_texture_idx);
+  glBindTexture(GL_TEXTURE_2D, texture.gl_texture_idx);
 
   glBindVertexArray(VAO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -121,12 +130,17 @@ void surge::background::draw() noexcept {
   glBindVertexArray(0);
 }
 
-surge::background::background(const std::filesystem::path &sprite_set_path,
-                              const char *sprite_sheet_ext) noexcept
+surge::image_entity::image_entity(const std::filesystem::path &sprite_set_path,
+                                  glm::vec3 &&position, glm::vec3 &&scale,
+                                  const char *sprite_sheet_ext) noexcept
     : VAO{gen_vao()},
       VBO{gen_buff()},
       EBO{gen_buff()},
-      spriteset{load_spriteset(sprite_set_path, sprite_sheet_ext)} {
+      texture{load_texture(sprite_set_path, sprite_sheet_ext)} {
 
-  create_quad();
+  create_quad(position, scale);
+
+  // Set initial flips to false
+  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
+  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_v_flip);
 }

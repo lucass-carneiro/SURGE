@@ -13,8 +13,10 @@ function surge.pre_loop()
         5.0,   5.0,   1.0                                   -- Scale
     )
 
-     new_york = surge.background.new(
-        "character_animations/resources/background/background.png"
+     new_york = surge.image.new(
+        "character_animations/resources/background/background.png",
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0
     )
 end
 
@@ -40,7 +42,7 @@ function surge.mouse_scroll_event(xoffset, yoffset)
 end
 
 function surge.draw()
-    surge.background.draw(new_york)
+    surge.image.draw(new_york)
     sophia:draw()
 end
 

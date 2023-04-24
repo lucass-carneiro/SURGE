@@ -81,19 +81,21 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     // begin actor table
     lua_newtable(L);
     {
-      // begin background_meta table
+      // begin image_meta table
       lua_newtable(L);
       {
-        lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::background");
-        lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_background);
+        lua_add_table_field<lua_String, lua_String>(L, "__name", "surge::image");
+        lua_add_table_field<lua_String, lua_CFunction>(L, "__gc", lua_drop_image);
       }
-      lua_setfield(L, -2, "background_meta");
-      // end background_meta table
+      lua_setfield(L, -2, "image_meta");
+      // end image_meta table
 
-      lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_background);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_background);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_image);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_image);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_h_flip", lua_image_toggle_h_flip);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_v_flip", lua_image_toggle_v_flip);
     }
-    lua_setfield(L, -2, "background");
+    lua_setfield(L, -2, "image");
     // end actor table
 
     // begin log table

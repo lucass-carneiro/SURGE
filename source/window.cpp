@@ -187,9 +187,9 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
-  background_shader = create_program(engine_config->root_dir / "shaders/background.vert",
-                                     engine_config->root_dir / "shaders/background.frag");
-  if (!background_shader) {
+  image_shader = create_program(engine_config->root_dir / "shaders/image.vert",
+                                engine_config->root_dir / "shaders/image.frag");
+  if (!image_shader) {
     window.reset();
     glfwTerminate();
     window_init_success = false;
@@ -199,20 +199,20 @@ auto surge::global_engine_window::init() noexcept -> bool {
   /*******************************
    *       VIEW/PROJECTION       *
    *******************************/
-  view_matrix = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f),
+  view_matrix = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                             glm::vec3(0.0f, 1.0f, 0.0f));
 
   projection_matrix
       = glm::ortho(0.0f, static_cast<float>(engine_config->window_width),
-                   static_cast<float>(engine_config->window_height), 0.0f, 0.0f, 1.0f);
+                   static_cast<float>(engine_config->window_height), 0.0f, 0.0f, 1.1f);
 
   glUseProgram(*sprite_shader);
   set_uniform(*sprite_shader, "view", view_matrix);
   set_uniform(*sprite_shader, "projection", projection_matrix);
 
-  glUseProgram(*background_shader);
-  set_uniform(*background_shader, "view", view_matrix);
-  set_uniform(*background_shader, "projection", projection_matrix);
+  glUseProgram(*image_shader);
+  set_uniform(*image_shader, "view", view_matrix);
+  set_uniform(*image_shader, "projection", projection_matrix);
 
   /*******************************
    *           CURSORS           *

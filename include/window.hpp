@@ -83,9 +83,9 @@ public:
     return sprite_shader.value_or(0);
   }
 
-  [[nodiscard]] inline auto get_background_shader() const noexcept -> GLuint {
-    glUseProgram(background_shader.value_or(0));
-    return background_shader.value_or(0);
+  [[nodiscard]] inline auto get_image_shader() const noexcept -> GLuint {
+    glUseProgram(image_shader.value_or(0));
+    return image_shader.value_or(0);
   }
 
   [[nodiscard]] inline auto get_projection() const noexcept -> const glm::mat4 & {
@@ -123,7 +123,7 @@ private:
   double frame_dt{0};
 
   std::optional<GLuint> sprite_shader{};
-  std::optional<GLuint> background_shader{};
+  std::optional<GLuint> image_shader{};
   glm::mat4 view_matrix{1.0f}, projection_matrix{1.0f};
 
   /**

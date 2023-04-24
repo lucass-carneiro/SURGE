@@ -140,7 +140,7 @@ set(
   SURGE_HEADER_LIST
   "${Surge_SOURCE_DIR}/include/entities/actor.hpp"
   "${Surge_SOURCE_DIR}/include/entities/animated_sprite.hpp"
-  "${Surge_SOURCE_DIR}/include/entities/background.hpp"
+  "${Surge_SOURCE_DIR}/include/entities/image.hpp"
 
   "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
 
@@ -177,13 +177,13 @@ set(
   SURGE_SOURCE_LIST
   "${Surge_SOURCE_DIR}/source/entities/actor.cpp"
   "${Surge_SOURCE_DIR}/source/entities/animated_sprite.cpp"
-  "${Surge_SOURCE_DIR}/source/entities/background.cpp"
+  "${Surge_SOURCE_DIR}/source/entities/image.cpp"
 
   "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
   "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
 
   "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_background_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_image_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_geometry_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_get_engine_config.cpp"
