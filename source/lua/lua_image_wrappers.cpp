@@ -121,6 +121,45 @@ auto surge::lua_draw_image(lua_State *L) noexcept -> int {
   return 0;
 }
 
+auto surge::lua_draw_image_region(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 5) {
+    log_warn("Function draw_region expected 5 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_image(L, "draw_region")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  for (int i = 2; i <= 5; i++) {
+    if (!lua_isnumber(L, i)) {
+      log_warn("Function draw_region expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  // Data recovery
+  auto vm_image_ptr{static_cast<image_entity **>(lua_touserdata(L, 1))};
+  auto img_ptr{*vm_image_ptr};
+  const auto x0{static_cast<float>(lua_tonumber(L, 2))}, y0{static_cast<float>(lua_tonumber(L, 3))},
+      w{static_cast<float>(lua_tonumber(L, 4))}, h{static_cast<float>(lua_tonumber(L, 5))};
+
+  // Internal call
+  img_ptr->draw_region(glm::vec2{x0, y0}, glm::vec2{w, h});
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
 auto surge::lua_image_toggle_h_flip(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 

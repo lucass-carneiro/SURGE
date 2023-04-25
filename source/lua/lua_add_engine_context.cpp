@@ -92,6 +92,7 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
 
       lua_add_table_field<lua_String, lua_CFunction>(L, "new", lua_new_image);
       lua_add_table_field<lua_String, lua_CFunction>(L, "draw", lua_draw_image);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "draw_region", lua_draw_image_region);
       lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_h_flip", lua_image_toggle_h_flip);
       lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_v_flip", lua_image_toggle_v_flip);
     }

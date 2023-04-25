@@ -64,25 +64,36 @@ auto surge::image_entity::load_texture(const std::filesystem::path &p,
                image->data);
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  texture_data td{glm::vec2{image->width, image->height}, texture};
+  texture_data td{glm::vec2{image->width, image->height}, texture,
+                  glm::vec2{1.0f / image->width, 1.0f / image->height}};
   stbi_image_free(image->data);
 
   return td;
 }
 
-void surge::image_entity::create_quad(glm::vec3 &position, glm::vec3 &scale) noexcept {
-  const auto px{position[0]};
-  const auto py{position[1]};
-  const auto pz{position[2]};
+void surge::image_entity::reset_geometry(const glm::vec3 &position,
+                                         const glm::vec3 &scale) noexcept {
 
-  const auto tw{texture.dimentions[0] * scale[0]};
-  const auto th{texture.dimentions[1] * scale[1]};
+  current_quad.dims = scale;
+  current_quad.corner = position;
 
+  model_matrix = glm::mat4{1.0f};
+  model_matrix = glm::translate(model_matrix, current_quad.corner);
+  model_matrix = glm::scale(model_matrix, current_quad.dims);
+
+  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+}
+
+void surge::image_entity::reset_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept {
+  reset_geometry(position, scale);
+}
+
+void surge::image_entity::create_quad() noexcept {
   const std::array<float, 20> vertex_attributes{
-      px,      py + th, pz, 0.0f, 0.0f, // bottom left
-      px + tw, py + th, pz, 1.0f, 0.0f, // bottom right
-      px + tw, py,      pz, 1.0f, 1.0f, // top right
-      px,      py,      pz, 0.0f, 1.0f, // top left
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
   };
 
   const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
@@ -117,6 +128,30 @@ void surge::image_entity::draw() noexcept {
 
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
+  set_uniform(shader_program, "ds", texture.ds);
+  set_uniform(shader_program, "r0", glm::vec2{0.0f, 0.0f});
+  set_uniform(shader_program, "dims", texture.dimentions);
+
+  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_h_flip);
+  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture.gl_texture_idx);
+
+  glBindVertexArray(VAO);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+  glBindVertexArray(0);
+}
+
+void surge::image_entity::draw_region(glm::vec2 &&origin, glm::vec2 &&dims) noexcept {
+  const auto &shader_program{global_engine_window::get().get_image_shader()};
+
+  set_uniform(shader_program, "txt_0", GLint{0});
+  set_uniform(shader_program, "model", model_matrix);
+  set_uniform(shader_program, "ds", texture.ds);
+  set_uniform(shader_program, "r0", origin);
+  set_uniform(shader_program, "dims", dims);
 
   set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_h_flip);
   set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
@@ -138,7 +173,9 @@ surge::image_entity::image_entity(const std::filesystem::path &sprite_set_path,
       EBO{gen_buff()},
       texture{load_texture(sprite_set_path, sprite_sheet_ext)} {
 
-  create_quad(position, scale);
+  create_quad();
+
+  reset_geometry(std::forward<glm::vec3>(position), std::forward<glm::vec3>(scale));
 
   // Set initial flips to false
   set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);

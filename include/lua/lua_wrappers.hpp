@@ -29,6 +29,7 @@ auto lua_actor_toggle_v_flip(lua_State *L) noexcept -> int;
 auto lua_new_image(lua_State *L) noexcept -> int;
 auto lua_drop_image(lua_State *L) noexcept -> int;
 auto lua_draw_image(lua_State *L) noexcept -> int;
+auto lua_draw_image_region(lua_State *L) noexcept -> int;
 auto lua_image_toggle_h_flip(lua_State *L) noexcept -> int;
 auto lua_image_toggle_v_flip(lua_State *L) noexcept -> int;
 
