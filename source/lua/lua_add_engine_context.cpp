@@ -95,6 +95,8 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
       lua_add_table_field<lua_String, lua_CFunction>(L, "draw_region", lua_draw_image_region);
       lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_h_flip", lua_image_toggle_h_flip);
       lua_add_table_field<lua_String, lua_CFunction>(L, "toggle_v_flip", lua_image_toggle_v_flip);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "move", lua_image_move);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "get_corner", lua_image_get_corner_coords);
     }
     lua_setfield(L, -2, "image");
     // end actor table

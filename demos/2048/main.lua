@@ -1,26 +1,29 @@
 -- 2048 Main file
 
-local ww = surge.config.window_width
-local wh = surge.config.window_height
+local board = require("2048/board")
 
 function surge.pre_loop()
     -- Load board
-    board = surge.image.new(
-        "2048/resources/board.png",
-        0.0, 0.0, 0.0,
-        ww , wh , 1.0
-    )
-
-    -- Load pieces
-    piece = surge.image.new(
-       "2048/resources/pieces.png",
-       18.0,  18.0, 0.1,
-       214, 214, 1.0
-   )
+    b = board:new()
 end
 
 function surge.key_event(key, action, mods)
-    -- do nothing
+    -- Reset game
+    if key == surge.input.keyboard.key.R and action == surge.input.action.PRESS then
+        b:reset()
+
+    elseif key == surge.input.keyboard.key.DOWN and action == surge.input.action.PRESS then
+        b:compress_down()
+        -- b:merge_down()
+        --b:compress_down()
+        --b:new_piece()
+    elseif key == surge.input.keyboard.key.UP and action == surge.input.action.PRESS then
+        b:compress_up()
+    elseif key == surge.input.keyboard.key.RIGHT and action == surge.input.action.PRESS then
+        b:compress_right()
+    elseif key == surge.input.keyboard.key.LEFT and action == surge.input.action.PRESS then
+        b:compress_left()
+    end
 end
 
 function surge.mouse_button_event(button, action, mods)
@@ -32,11 +35,9 @@ function surge.mouse_scroll_event(xoffset, yoffset)
 end
 
 function surge.draw()
-    surge.image.draw(board)
-    --surge.image.draw(piece)
-    surge.image.draw_region(piece, 214.0, 214.0, 214.0, 214.0)
+    b:draw()
 end
 
 function surge.update(dt)
-    -- do nothing
+    b:update(dt)
 end

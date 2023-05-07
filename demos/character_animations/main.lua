@@ -4,11 +4,9 @@ local keyboard_motion_actor = require("character_animations/keyboard_motion_acto
 
 local z_level_0 = 0.0
 local z_level_1 = 0.1
-local z_level_2 = 0.2
 
 local z_level_0_list = {}
 local z_level_1_list = {}
-local z_level_2_list = {}
 
 -- Draws entity based on it's type (call appropriate draw function)
 function draw_entity(entity)
@@ -24,18 +22,12 @@ end
 function surge.pre_loop()
     -- Load background
     local bkg_sx = surge.config.window_width / 500.0
-    local bkg_sy = surge.config.window_height / 288.0
+    local bkg_sy = 1.0
     
     new_york_0 = surge.image.new(
         "character_animations/resources/background/background-0.png",
-        0.0   , 0.0   , z_level_0,
-        bkg_sx, bkg_sy, 1.0
-    )
-
-    new_york_1 = surge.image.new(
-        "character_animations/resources/background/background-1.png",
-        388.0 * bkg_sx, 153.0 * bkg_sy, z_level_2,
-        bkg_sx        , bkg_sy        , 1.0
+        0.0                               , 0.0                       , z_level_0,
+        bkg_sx * surge.config.window_width, surge.config.window_height, 1.0
     )
 
     -- Load actor
@@ -44,14 +36,13 @@ function surge.pre_loop()
         "character_animations/resources/sophia/sophia.sad", -- Animations file
         4,                                                  -- First animation index
         16.0,  48.0,  0.0      ,                            -- Anchor
-        600.0, 705.0, z_level_1,                            -- Position
+        474.0, 720.0, z_level_1,                            -- Position
         5.0,   5.0,   1.0                                   -- Scale
     )
 
     -- Add entities to z level lists
     table.insert(z_level_0_list, new_york_0)
     table.insert(z_level_1_list, sophia)
-    table.insert(z_level_2_list, new_york_1)
 end
 
 function surge.key_event(key, action, mods)
@@ -71,15 +62,11 @@ end
 
 function surge.draw()
     for _, entity in ipairs(z_level_0_list) do
-        draw_entity(entity)
+       draw_entity(entity)
     end
 
     for _, entity in ipairs(z_level_1_list) do
-        draw_entity(entity)
-    end
-
-    for _, entity in ipairs(z_level_2_list) do
-        draw_entity(entity)
+       draw_entity(entity)
     end
 end
 

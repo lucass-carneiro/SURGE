@@ -7,7 +7,11 @@
 #include "task_executor.hpp"
 #include "window.hpp"
 
+#include <tracy/Tracy.hpp>
+
 auto main(int argc, char **argv) noexcept -> int {
+  ZoneScoped;
+
   using namespace surge;
   draw_logo();
 
@@ -134,6 +138,8 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Poll IO events
     global_engine_window::get().poll_events();
+
+    FrameMark;
   }
 
   return EXIT_SUCCESS;

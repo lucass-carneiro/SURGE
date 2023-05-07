@@ -88,6 +88,20 @@ void surge::image_entity::reset_geometry(glm::vec3 &&position, glm::vec3 &&scale
   reset_geometry(position, scale);
 }
 
+void surge::image_entity::reset_position(const glm::vec3 &position) noexcept {
+  current_quad.corner = position;
+
+  model_matrix = glm::mat4{1.0f};
+  model_matrix = glm::translate(model_matrix, current_quad.corner);
+  model_matrix = glm::scale(model_matrix, current_quad.dims);
+
+  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+}
+
+void surge::image_entity::reset_position(glm::vec3 &&position) noexcept {
+  reset_position(position);
+}
+
 void surge::image_entity::create_quad() noexcept {
   const std::array<float, 20> vertex_attributes{
       0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
@@ -163,6 +177,15 @@ void surge::image_entity::draw_region(glm::vec2 &&origin, glm::vec2 &&dims) noex
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
   glBindVertexArray(0);
+}
+
+void surge::image_entity::move(glm::vec3 &&vec) noexcept {
+  current_quad.corner += vec;
+  reset_position(current_quad.corner);
+}
+
+auto surge::image_entity::get_corner_coordinates() const noexcept -> glm::vec3 {
+  return current_quad.corner;
 }
 
 surge::image_entity::image_entity(const std::filesystem::path &sprite_set_path,

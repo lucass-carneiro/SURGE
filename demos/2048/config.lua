@@ -1,6 +1,6 @@
 -- Window geometry
-surge.config.window_width  = 944
-surge.config.window_height = 946
+surge.config.window_width  = 453
+surge.config.window_height = 453
 
 -- Window name
 surge.config.window_name   = "2048 - SURGE"

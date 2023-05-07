@@ -32,6 +32,8 @@ auto lua_draw_image(lua_State *L) noexcept -> int;
 auto lua_draw_image_region(lua_State *L) noexcept -> int;
 auto lua_image_toggle_h_flip(lua_State *L) noexcept -> int;
 auto lua_image_toggle_v_flip(lua_State *L) noexcept -> int;
+auto lua_image_move(lua_State *L) noexcept -> int;
+auto lua_image_get_corner_coords(lua_State *L) noexcept -> int;
 
 auto lua_send_task_to(lua_State *L) noexcept -> int;
 auto lua_run_task_at(lua_State *L) noexcept -> int;

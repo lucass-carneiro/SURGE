@@ -217,3 +217,73 @@ auto surge::lua_image_toggle_v_flip(lua_State *L) noexcept -> int {
 
   return 0;
 }
+
+auto surge::lua_image_move(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 4) {
+    log_warn("Function move expected 4 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_image(L, "move")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  for (int i = 2; i <= 4; i++) {
+    if (!lua_isnumber(L, i)) {
+      log_warn("Function move expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  // Data recovery
+  auto vm_image_ptr{static_cast<image_entity **>(lua_touserdata(L, 1))};
+  auto img_ptr{*vm_image_ptr};
+  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
+      mz{static_cast<float>(lua_tonumber(L, 4))};
+
+  // Internal call
+  img_ptr->move(glm::vec3{mx, my, mz});
+
+  lua_pop(L, 1);
+
+  return 0;
+}
+
+auto surge::lua_image_get_corner_coords(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 1) {
+    log_warn("Function get_corner expected 1 argument and instead got "
+             "{} arguments. Returning nil",
+             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_image(L, "get_corner")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  // Data recovery
+  auto vm_img_ptr{static_cast<image_entity **>(lua_touserdata(L, 1))};
+  auto img_ptr{*vm_img_ptr};
+
+  // Internal call
+  const auto corner_coords{img_ptr->get_corner_coordinates()};
+
+  lua_pushnumber(L, corner_coords[0]);
+  lua_pushnumber(L, corner_coords[1]);
+  lua_pushnumber(L, corner_coords[2]);
+
+  return 3;
+}
