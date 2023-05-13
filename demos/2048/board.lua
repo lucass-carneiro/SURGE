@@ -1,5 +1,5 @@
-local piece = require("2048/piece")
---local inspect = require("2048/inspect")
+local piece, states = require("2048/piece")
+local states = require("2048/piece_states")
 
 local board = {}
 board.__index = board
@@ -102,10 +102,11 @@ function board:compress_down()
         local this_piece = self.occupation_matrix[k][j]
         local next_piece = self.occupation_matrix[k + 1][j]
     
-        if this_piece ~= nil and next_piece == nil then
+        if this_piece ~= nil and next_piece == nil and (this_piece.state == nil or this_piece.state == states.compress_down) then
           self.occupation_matrix[k][j] = nil
           self.occupation_matrix[k + 1][j] = this_piece
           this_piece:shift_down()
+          this_piece.state = states.compress_down
         end
       end
     end
@@ -119,10 +120,11 @@ function board:compress_up()
         local this_piece = self.occupation_matrix[k][j]
         local next_piece = self.occupation_matrix[k - 1][j]
     
-        if this_piece ~= nil and next_piece == nil then
+        if this_piece ~= nil and next_piece == nil and (this_piece.state == nil or this_piece.state == states.compress_up) then
           self.occupation_matrix[k][j] = nil
           self.occupation_matrix[k - 1][j] = this_piece
           this_piece:shift_up()
+          this_piece.state = states.compress_up
         end
       end
     end
@@ -136,10 +138,11 @@ function board:compress_right()
         local this_piece = self.occupation_matrix[i][k]
         local next_piece = self.occupation_matrix[i][k + 1]
     
-        if this_piece ~= nil and next_piece == nil then
+        if this_piece ~= nil and next_piece == nil and (this_piece.state == nil or this_piece.state == states.compress_right) then
           self.occupation_matrix[i][k] = nil
           self.occupation_matrix[i][k + 1] = this_piece
           this_piece:shift_right()
+          this_piece.state = states.compress_right
         end
       end
     end
@@ -153,10 +156,11 @@ function board:compress_left()
         local this_piece = self.occupation_matrix[i][k]
         local next_piece = self.occupation_matrix[i][k - 1]
     
-        if this_piece ~= nil and next_piece == nil then
+        if this_piece ~= nil and next_piece == nil and (this_piece.state == nil or this_piece.state == states.compress_left) then
           self.occupation_matrix[i][k] = nil
           self.occupation_matrix[i][k - 1] = this_piece
           this_piece:shift_left()
+          this_piece.state = states.compress_left
         end
       end
     end

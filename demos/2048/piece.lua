@@ -1,3 +1,5 @@
+local states = require("2048/piece_states")
+
 local piece = {}
 piece.__index = piece
 piece.__name = "2048_piece"
@@ -29,8 +31,10 @@ function piece:new(slot_x, slot_y, slot_size, slot_delta, exponent)
   p.shift_speed = 5.0 * slot_delta
 
   p.motion_threshold = 1.5
+
+  p.state = nil
  
-   return p
+  return p
 end
 
 function piece:draw()
@@ -50,7 +54,7 @@ function piece:shift_up()
 end
 
 function piece:shift_down()
-  self.target_slot_y = self.target_slot_y + self.slot_delta  
+  self.target_slot_y = self.target_slot_y + self.slot_delta
 end
 
 function piece:shift_right()
@@ -72,30 +76,36 @@ function piece:moving()
   end
 end
 
-function piece:update_motion(dt)
-  local dx = self.target_slot_x - self.curent_slot_x
-  local abs_dx = math.abs(dx)
-  local dx_norm = dx / abs_dx
-
-  local dy = self.target_slot_y - self.curent_slot_y
-  local abs_dy = math.abs(dy)
-  local dy_norm = dy / abs_dy  
-
-   -- Horizontal motion
-   if abs_dx > self.motion_threshold then
-    surge.image.move(self.surge_image_object, dx_norm * self.shift_speed * dt, 0.0, 0.0)
-    self.curent_slot_x = self.curent_slot_x + dx_norm * self.shift_speed * dt
-  else
-    self.curent_slot_x = self.target_slot_x
-  end
-  
+function piece:update(dt)
   -- Vertical motion
-  if abs_dy > self.motion_threshold then
-    surge.image.move(self.surge_image_object, 0.0, dy_norm * self.shift_speed * dt, 0.0)
-    self.curent_slot_y = self.curent_slot_y + dy_norm * self.shift_speed * dt
-  else
-    self.curent_slot_y = self.target_slot_y
+  if self.state == states.compress_up or self.state == states.compress_down then
+    local dy = self.target_slot_y - self.curent_slot_y
+    local abs_dy = math.abs(dy)
+    local dy_norm = dy / abs_dy  
+    
+    if abs_dy > self.motion_threshold then
+      surge.image.move(self.surge_image_object, 0.0, dy_norm * self.shift_speed * dt, 0.0)
+      self.curent_slot_y = self.curent_slot_y + dy_norm * self.shift_speed * dt
+    else
+      self.curent_slot_y = self.target_slot_y
+      self.state = nil
+    end
+  end
+
+  -- Horizontal motion
+  if self.state == states.compress_left or self.state == states.compress_right then
+    local dx = self.target_slot_x - self.curent_slot_x
+    local abs_dx = math.abs(dx)
+    local dx_norm = dx / abs_dx  
+    
+    if abs_dx > self.motion_threshold then
+      surge.image.move(self.surge_image_object, dx_norm * self.shift_speed * dt, 0.0, 0.0)
+      self.curent_slot_x = self.curent_slot_x + dx_norm * self.shift_speed * dt
+    else
+      self.curent_slot_x = self.target_slot_x
+      self.state = nil
+    end
   end
 end
 
-return piece
+return piece, states
