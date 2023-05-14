@@ -28,6 +28,9 @@ public:
 
   [[nodiscard]] auto get_corner_coordinates() const noexcept -> glm::vec3;
 
+  void reset_position(const glm::vec3 &position) noexcept;
+  void reset_position(glm::vec3 &&position) noexcept;
+
 private:
   // OpenGL Buffers and texture containing the sprite sheet
   const GLuint VAO{0}, VBO{0}, EBO{0};
@@ -60,9 +63,6 @@ private:
 
   void reset_geometry(const glm::vec3 &position, const glm::vec3 &scale) noexcept;
   void reset_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept;
-
-  void reset_position(const glm::vec3 &position) noexcept;
-  void reset_position(glm::vec3 &&position) noexcept;
 };
 
 } // namespace surge

@@ -92,6 +92,9 @@ auto main(int argc, char **argv) noexcept -> int {
   while ((global_engine_window::get().frame_timer_reset_and_start(),
           !global_engine_window::get().should_close())) {
 
+    // Poll IO events
+    global_engine_window::get().poll_events();
+
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -135,9 +138,6 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Compute elapsed time
     global_engine_window::get().frame_timmer_compute_dt();
-
-    // Poll IO events
-    global_engine_window::get().poll_events();
 
     FrameMark;
   }

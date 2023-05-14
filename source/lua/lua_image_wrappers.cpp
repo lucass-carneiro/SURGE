@@ -71,7 +71,8 @@ auto surge::lua_drop_image(lua_State *L) noexcept -> int {
 
 [[nodiscard]] static auto is_image(lua_State *L, const char *func_name) noexcept -> bool {
   if (!lua_isuserdata(L, 1)) {
-    surge::log_warn("Function {} expected 1 user data argument. Returning nil", func_name);
+    surge::log_warn("Function {} expected first argument to be user data. Returning nil",
+                    func_name);
     return false;
   }
 
@@ -286,4 +287,43 @@ auto surge::lua_image_get_corner_coords(lua_State *L) noexcept -> int {
   lua_pushnumber(L, corner_coords[2]);
 
   return 3;
+}
+
+auto surge::lua_image_reset_position(lua_State *L) noexcept -> int {
+  const auto nargs{lua_gettop(L)};
+
+  // Argument count and type validation
+  if (nargs != 4) {
+    log_warn("Function reset_position expected 4 arguments and instead got "
+             "{} arguments. Returning nil",
+             nargs);
+    lua_pushnil(L);
+    return 1;
+  }
+
+  if (!is_image(L, "reset_position")) {
+    lua_pushnil(L);
+    return 1;
+  }
+
+  for (int i = 2; i <= 4; i++) {
+    if (!lua_isnumber(L, i)) {
+      log_warn("Function reset_position expected argument {} to be a number. Returning nil", i);
+      lua_pushnil(L);
+      return 1;
+    }
+  }
+
+  // Data recovery
+  auto vm_image_ptr{static_cast<image_entity **>(lua_touserdata(L, 1))};
+  auto img_ptr{*vm_image_ptr};
+  const auto mx{static_cast<float>(lua_tonumber(L, 2))}, my{static_cast<float>(lua_tonumber(L, 3))},
+      mz{static_cast<float>(lua_tonumber(L, 4))};
+
+  // Internal call
+  img_ptr->reset_position(glm::vec3{mx, my, mz});
+
+  lua_pop(L, 1);
+
+  return 0;
 }
