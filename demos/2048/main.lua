@@ -11,20 +11,16 @@ function surge.pre_loop()
 end
 
 function surge.key_event(key, action, mods)
-  if key == surge.input.keyboard.key.R and action == surge.input.action.PRESS and b:is_idle() then
-    -- todo
+  if key == surge.input.keyboard.key.C and action == surge.input.action.PRESS and b:is_idle() then
+    -- TODO:
   elseif key == surge.input.keyboard.key.UP and action == surge.input.action.PRESS and b:is_idle() then
-    b:compress_up()
-    b.merge_on_next_idle = true
+    b:game_move_up()
   elseif key == surge.input.keyboard.key.DOWN and action == surge.input.action.PRESS and b:is_idle() then
-    b:compress_down()
-    b.merge_on_next_idle = true
+    b:game_move_down()
   elseif key == surge.input.keyboard.key.LEFT and action == surge.input.action.PRESS and b:is_idle() then
-    b:compress_left()
-    b.merge_on_next_idle = true
+    b:game_move_left()
   elseif key == surge.input.keyboard.key.RIGHT and action == surge.input.action.PRESS and b:is_idle() then
-    b:compress_right()
-    b.merge_on_next_idle = true
+    b:game_move_right()
   end
 end
 

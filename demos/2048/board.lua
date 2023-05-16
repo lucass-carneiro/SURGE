@@ -1,4 +1,5 @@
 piece = require("2048/piece")
+local inspect = require("2048/inspect")
 
 local board = {}
 board.__index = board
@@ -21,6 +22,8 @@ function board:new()
     {nil, nil, nil, nil}
   }
 
+  b.add_new_piece = false
+
   return b
 end
 
@@ -37,9 +40,14 @@ end
 
 function board:update(dt)
   for _,rows in pairs(self.occupation_matrix) do
-    for _,p in pairs(rows) do
-      p:update(dt)
+    for _,p in pairs(rows, self.occupation_matrix) do
+        p:update(dt, self.occupation_matrix)
     end
+  end
+
+  if self.add_new_piece and self:is_idle() then
+    self:new_piece()
+    self.add_new_piece = false
   end
 end
 
@@ -129,13 +137,14 @@ end
 
 function board:merge_down()
   for j=1,4,1 do
-    for i=1,3,2 do
+    for i=4,2,-1 do
       local this_piece = self.occupation_matrix[i][j]
-      local next_piece = self.occupation_matrix[i + 1][j]
+      local next_piece = self.occupation_matrix[i - 1][j]
       
       if this_piece ~= nil and next_piece ~= nil and this_piece.exponent == next_piece.exponent then
-        self.occupation_matrix[i][j] = nil
-        self.occupation_matrix[i + 1][j].state:push_back(states.merge_down)
+        next_piece:move_down()
+        next_piece:double_exponent()
+        next_piece:sync_down()
       end
     end
   end
@@ -146,11 +155,39 @@ function board:is_idle()
 
   for _,rows in pairs(self.occupation_matrix) do
     for _,p in pairs(rows) do
-      idle = idle and (p.state == piece.states.idle)
+      idle = idle and p.command_queue:front() == nil
     end
   end
 
   return idle
+end
+
+function board:game_move_up()
+  self:compress_up()
+  --self:merge_up()
+  --self:compress_up()
+  self.add_new_piece = true
+end
+
+function board:game_move_down()
+  self:compress_down()
+  self:merge_down()
+  self:compress_down()
+  self.add_new_piece = true
+end
+
+function board:game_move_left()
+  self:compress_left()
+  --self:merge_left()
+  --self:compress_left()
+  self.add_new_piece = true
+end
+
+function board:game_move_right()
+  self:compress_right()
+  --self:merge_right()
+  --self:compress_right()
+  self.add_new_piece = true
 end
 
 return board
