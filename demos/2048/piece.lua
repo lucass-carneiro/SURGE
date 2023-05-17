@@ -24,7 +24,10 @@ piece.commands = {
   move_d = 13,
   move_l = 14,
   move_r = 15,
-  sync_down = 16
+  sync_up = 16,
+  sync_down = 17,
+  sync_left = 18,
+  sync_right = 19
 }
 
 function piece:load_texture()
@@ -73,8 +76,20 @@ function piece:double_exponent()
   self.command_queue:push_back(self.exponent + 1)
 end
 
+function piece:sync_up()
+  self.command_queue:push_back(piece.commands.sync_up)
+end
+
 function piece:sync_down()
   self.command_queue:push_back(piece.commands.sync_down)
+end
+
+function piece:sync_left()
+  self.command_queue:push_back(piece.commands.sync_left)
+end
+
+function piece:sync_right()
+  self.command_queue:push_back(piece.commands.sync_right)
 end
 
 function piece:draw()
@@ -94,9 +109,30 @@ function piece:update(dt, occupation_matrix)
   local command = self.command_queue:front()
 
   -- Sync ccupation matrix
+  if command == piece.commands.sync_up then
+    self.command_queue:pop_front()
+    occupation_matrix[self.i + 1][self.j] = nil
+    occupation_matrix[self.i][self.j] = self
+    return
+  end
+
   if command == piece.commands.sync_down then
     self.command_queue:pop_front()
     occupation_matrix[self.i - 1][self.j] = nil
+    occupation_matrix[self.i][self.j] = self
+    return
+  end
+
+  if command == piece.commands.sync_left then
+    self.command_queue:pop_front()
+    occupation_matrix[self.i][self.j + 1] = nil
+    occupation_matrix[self.i][self.j] = self
+    return
+  end
+
+  if command == piece.commands.sync_right then
+    self.command_queue:pop_front()
+    occupation_matrix[self.i][self.j - 1] = nil
     occupation_matrix[self.i][self.j] = self
     return
   end

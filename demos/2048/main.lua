@@ -11,8 +11,10 @@ function surge.pre_loop()
 end
 
 function surge.key_event(key, action, mods)
-  if key == surge.input.keyboard.key.C and action == surge.input.action.PRESS and b:is_idle() then
-    -- TODO:
+  if key == surge.input.keyboard.key.R and action == surge.input.action.PRESS and b:is_idle() then
+    b:reset()
+    b:new_piece()
+    b:new_piece()
   elseif key == surge.input.keyboard.key.UP and action == surge.input.action.PRESS and b:is_idle() then
     b:game_move_up()
   elseif key == surge.input.keyboard.key.DOWN and action == surge.input.action.PRESS and b:is_idle() then

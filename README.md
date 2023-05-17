@@ -2,9 +2,13 @@
 
  A prototype game engine made for fun (and profit ?).
 
-# Demo
+# Demos
 
-![](demos/demo.gif)
+## 2048
+![](demos/demo_1.gif)
+
+## Character motion
+![](demos/demo_2.gif)
 
 # Build instructions
 

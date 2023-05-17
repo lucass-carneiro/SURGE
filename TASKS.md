@@ -1,20 +1,8 @@
 # Tasks
 
 ## GUI TODO
-* [ ] Integrate tracy profiler
-* [ ] Create animation debugger
-
-## GUI Done
-* [x] Implement FPS counter
-* [x] ~Implement memory visualizer~
-
-## Character movement with arrows demo
-* [ ] Handle multiple input more gracefully
-* [x] Sometimes, the horizontal animation flips get inverted. Why?
-### Add dedicated background entity
-* [x] Rename global get shader to get sprite shader
-* [x] Add another shader in the window class
-* [x] Use `glUseProgram(*sprite_shader);` whenever necessary, and not globally.
+* [ ] Instrument Tracy profiles
+* [ ] Add a way for the GUI to introspect game states and objects
 
 ##  Main TODO
 * [ ] Finish state changes demo
@@ -68,3 +56,11 @@
 * [x] Finish character animation with arrow movement demo
 * [x] Fix hot reloading
 * [x] Review Sprite API exposed to Lua
+* [x] Rename global get shader to get sprite shader
+* [x] Add another shader in the window class
+* [x] Use `glUseProgram(*sprite_shader);` whenever necessary, and not globally.
+
+## GUI Done
+* [x] Implement FPS counter
+* [x] ~Implement memory visualizer~
+* [x] Integrate tracy profiler

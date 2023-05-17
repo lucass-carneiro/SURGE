@@ -27,6 +27,17 @@ function board:new()
   return b
 end
 
+function board:reset()
+  self.occupation_matrix = {
+    {nil, nil, nil, nil},
+    {nil, nil, nil, nil},
+    {nil, nil, nil, nil},
+    {nil, nil, nil, nil}
+  }
+
+  self.add_new_piece = false
+end
+
 function board:draw()
   surge.image.draw(self.image_object)
 
@@ -135,6 +146,21 @@ function board:compress_right()
   end
 end
 
+function board:merge_up()
+  for j=1,4,1 do
+    for i=1,3,1 do
+      local this_piece = self.occupation_matrix[i][j]
+      local next_piece = self.occupation_matrix[i + 1][j]
+      
+      if this_piece ~= nil and next_piece ~= nil and this_piece.exponent == next_piece.exponent then
+        next_piece:move_up()
+        next_piece:double_exponent()
+        next_piece:sync_up()
+      end
+    end
+  end
+end
+
 function board:merge_down()
   for j=1,4,1 do
     for i=4,2,-1 do
@@ -145,6 +171,36 @@ function board:merge_down()
         next_piece:move_down()
         next_piece:double_exponent()
         next_piece:sync_down()
+      end
+    end
+  end
+end
+
+function board:merge_left()
+  for i=1,4,1 do
+    for j=1,3,1 do
+      local this_piece = self.occupation_matrix[i][j]
+      local next_piece = self.occupation_matrix[i][j + 1]
+      
+      if this_piece ~= nil and next_piece ~= nil and this_piece.exponent == next_piece.exponent then
+        next_piece:move_left()
+        next_piece:double_exponent()
+        next_piece:sync_left()
+      end
+    end
+  end
+end
+
+function board:merge_right()
+  for i=1,4,1 do
+    for j=4,2,-1 do
+      local this_piece = self.occupation_matrix[i][j]
+      local next_piece = self.occupation_matrix[i][j - 1]
+      
+      if this_piece ~= nil and next_piece ~= nil and this_piece.exponent == next_piece.exponent then
+        next_piece:move_right()
+        next_piece:double_exponent()
+        next_piece:sync_right()
       end
     end
   end
@@ -164,8 +220,8 @@ end
 
 function board:game_move_up()
   self:compress_up()
-  --self:merge_up()
-  --self:compress_up()
+  self:merge_up()
+  self:compress_up()
   self.add_new_piece = true
 end
 
@@ -178,15 +234,15 @@ end
 
 function board:game_move_left()
   self:compress_left()
-  --self:merge_left()
-  --self:compress_left()
+  self:merge_left()
+  self:compress_left()
   self.add_new_piece = true
 end
 
 function board:game_move_right()
   self:compress_right()
-  --self:merge_right()
-  --self:compress_right()
+  self:merge_right()
+  self:compress_right()
   self.add_new_piece = true
 end
 

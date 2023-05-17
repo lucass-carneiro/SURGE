@@ -129,7 +129,7 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();
-    show_main_gui_window();
+    // show_main_gui_window();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
