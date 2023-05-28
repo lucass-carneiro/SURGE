@@ -38,6 +38,7 @@
 | -DSURGE_ENABLE_TUNING              | Compiles code with architecture tuning.                    | OFF/ON          | OFF (Debug), ON(Release) |
 | -DSURGE_DEBUG_MEMORY               | Enable custom allocators debug facilities.                 | OFF/ON          | ON (Debug), OFF(Release) |
 | -DSURGE_ENABLE_THREADS             | Enables multithreading.                                    | OFF/ON          | ON                       |
+| -DSURGE_ENABLE_TRACY               | Enables profiling via Tracy.                               | OFF/ON          | OFF                      |
 
 6. Install dependencies and create build system:
 `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments]`
@@ -52,13 +53,13 @@ Example for building a Debug build with compiler commands exporting using clang:
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
 git submodule init
 git submodule update
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug -j20
 ```
 
 On Windows, use,
 ```
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Debug
 ```
 on the 4th step.
 

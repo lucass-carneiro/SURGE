@@ -1,3 +1,4 @@
+.include/options.hpp
 .cache/*
 
 Debug/*
@@ -10,5 +11,7 @@ compile_commands.json
 
 vcpkg/*
 vcpkg_installed/*
+
+tracy/*
 
 include/options.hpp

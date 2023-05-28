@@ -28,12 +28,6 @@
         },
         "implot",
         "eastl",
-        "spdlog",
-        {
-            "name": "tracy",
-            "features": [
-                "gui-tools"
-            ]
-        }
+        "spdlog"
     ]
 }

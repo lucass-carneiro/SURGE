@@ -6,14 +6,6 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 set(CMAKE_TOOLCHAIN_FILE vcpkg/scripts/buildsystems/vcpkg.cmake)
 
-# TODO: Change triplet usage
-#set(VCPKG_OVERLAY_TRIPLETS triplets)
-#if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#  set(VCPKG_TARGET_TRIPLET x64-static-linux-release-clang) #implot fails on a debug build :(
-#elseif(CMAKE_BUILD_TYPE STREQUAL "Release" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#  set(VCPKG_TARGET_TRIPLET x64-static-linux-release-clang)
-#endif()
-
 # -----------------------------------------
 # Project
 # -----------------------------------------
@@ -60,7 +52,6 @@ find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
-find_package(Tracy CONFIG REQUIRED)
 
 # -----------------------------------------
 # Size options
@@ -126,7 +117,13 @@ endif()
 # -----------------------------------------
 
 option(SURGE_ENABLE_THREADS "Enables multithreading" ON)
-option(TRACY_ENABLE "Enables tracy profiling" OFF)
+option(SURGE_ENABLE_TRACY "Eneblas profiling via Tacy" OFF)
+
+if(SURGE_ENABLE_TRACY)
+  option(TRACY_ENABLE "Enables tracy profiling" ON)
+else()
+  option(TRACY_ENABLE "Enables tracy profiling" OFF)
+endif()
 
 # -----------------------------------------
 # Option file
@@ -285,7 +282,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   message(STATUS "Generating a Release build system")
-  if(TRACY_ENABLE)
+  if(SURGE_ENABLE_TRACY)
+    add_subdirectory(tracy)
+    target_link_libraries(Surge PRIVATE Tracy::TracyClient)
     if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
       target_compile_options(Surge PUBLIC -g3)
       target_link_options(Surge PUBLIC -g3)
@@ -313,7 +312,6 @@ target_link_libraries(Surge PRIVATE
   imgui::imgui
   implot::implot
   EASTL
-  Tracy::TracyClient
 )
 
 target_include_directories(

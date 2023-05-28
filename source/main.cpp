@@ -7,10 +7,14 @@
 #include "task_executor.hpp"
 #include "window.hpp"
 
-#include <tracy/Tracy.hpp>
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
 
 auto main(int argc, char **argv) noexcept -> int {
+#ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
+#endif
 
   using namespace surge;
   draw_logo();
@@ -139,7 +143,9 @@ auto main(int argc, char **argv) noexcept -> int {
     // Compute elapsed time
     global_engine_window::get().frame_timmer_compute_dt();
 
+#ifdef SURGE_ENABLE_TRACY
     FrameMark;
+#endif
   }
 
   return EXIT_SUCCESS;
