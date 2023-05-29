@@ -1,11 +1,9 @@
-vcpkg.json
-
-.include/options.hpp
 .cache/*
 
 Debug/*
 Release/*
 
+include/options.hpp
 demos/log.txt
 demos/imgui.ini
 
@@ -13,7 +11,4 @@ compile_commands.json
 
 vcpkg/*
 vcpkg_installed/*
-
-tracy/*
-
-include/options.hpp
+vcpkg.json
