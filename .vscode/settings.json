@@ -8,5 +8,6 @@
         "bugprone*",
         "performance"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "cmake.configureOnOpen": false
 }

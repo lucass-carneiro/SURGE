@@ -1,1 +1,44 @@
-vcpkg.json.linux
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "name": "surge",
+    "version": "1.0.0",
+    "builtin-baseline": "223d33be7d3ec6c3d64381ca37f501b8c87dda6a",
+    "dependencies": [
+        "opengl",
+        "mimalloc",
+        "docopt",
+        "gsl-lite",
+        "taskflow",
+        "luajit",
+        "glm",
+        "glfw3",
+        {
+            "name": "glad",
+            "features": [
+                "loader",
+                "gl-api-latest"
+            ]
+        },
+        {
+            "name": "imgui",
+            "features": [
+                "glfw-binding",
+                "opengl3-binding"
+            ]
+        },
+        "implot",
+        "eastl",
+        {
+            "name": "spdlog",
+            "features": [
+                "wchar"
+            ]
+        },
+        {
+            "name": "tracy",
+            "features": [
+                "gui-tools"
+            ]
+        }
+    ]
+}

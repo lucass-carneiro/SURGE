@@ -16,7 +16,8 @@
 2. Clone the repository: `git clone https://github.com/lucass-carneiro/SURGE`
 3. Initialize submodules: `git submodule init`
 4. Update submodules: `git submodule update`
-5. Choose your build parameters and configuration
+5. Copy `vcpkg.json.[OS NAME]` to `vcpkg.json`
+6. Choose your build parameters and configuration
 
 | Build types | [Build argument] |
 |:-----------:|:----------------:|
@@ -40,28 +41,36 @@
 | -DSURGE_ENABLE_THREADS             | Enables multithreading.                                    | OFF/ON          | ON                       |
 | -DSURGE_ENABLE_TRACY               | Enables profiling via Tracy.                               | OFF/ON          | OFF                      |
 
-6. Install dependencies and create build system:
+7. Install dependencies and create build system:
 `cmake -B [Build argument] -S . -DCMAKE_BUILD_TYPE=[Build argument] [Other arguments]`
 
-7. Build: `cmake --build [Build argument]`
+8. Build: `cmake --build [Build argument]`
 
 ## Example Debug build
 
-Example for building a Debug build with compiler commands exporting using clang:
+Example for building a Debug build with compiler commands exporting using clang on Linux:
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
 git submodule init
 git submodule update
+cp vcpkg.json.linux vcpkg.json
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
-cmake --build Debug -j20
+cmake --build Debug
 ```
 
 On Windows, use,
 ```
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_BUILD_TYPE=Debug
+cp vcpkg.json.windows vcpkg.json
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static-md-debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build Debug --config Debug
 ```
-on the 4th step.
+on the 4th onward. If doing a `Release` build on Windows, use
+
+```
+cmake -B Release -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static-md-release -DCMAKE_BUILD_TYPE=Release
+cmake --build Release --config Release
+```
 
 # References
 https://www.lua.org/manual/5.3/manual.html

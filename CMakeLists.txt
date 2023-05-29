@@ -237,7 +237,7 @@ if(SURGE_ENABLE_OPTIMIZATIONS)
     target_compile_options(Surge PUBLIC -O2)
     target_link_options(Surge PUBLIC -O2)
   else()
-    # TODO
+    target_compile_options(Surge PUBLIC /O2)
   endif()
 endif()
 
@@ -268,30 +268,37 @@ if(SURGE_ENABLE_FAST_MATH)
   endif()
 endif()
 
+# Dependencies and main program build type must match. If building dependencies static-debug, then /MTd must be used.
+# See the link bellow for further information
+# https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/2kzt1wy3(v=vs.110)?redirectedfrom=MSDN
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Generating a Debug build system")
+
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
     target_link_options(Surge PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
   else()
-  # Dependencies and main program build type must match. If building dependencies static-debug, then /MTd must be used.
-  # See the link bellow for further information
-  # https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/2kzt1wy3(v=vs.110)?redirectedfrom=MSDN
-  target_compile_options(Surge PUBLIC /MP /MTd)
+    target_compile_options(Surge PUBLIC /MP /MDd)
   endif()
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
   message(STATUS "Generating a Release build system")
+
   if(SURGE_ENABLE_TRACY)
-    add_subdirectory(tracy)
+    find_package(Tracy CONFIG REQUIRED)
     target_link_libraries(Surge PRIVATE Tracy::TracyClient)
-    if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-      target_compile_options(Surge PUBLIC -g3)
-      target_link_options(Surge PUBLIC -g3)
-    else()
-      # TODO
-    endif()
   endif()
+
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(Surge PUBLIC -g3)
+    target_link_options(Surge PUBLIC -g3)
+  else()
+    target_compile_options(Surge PUBLIC /MP /MD)
+  endif()
+
 endif()
 
 # -----------------------------------------

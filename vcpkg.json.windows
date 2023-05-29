@@ -33,6 +33,12 @@
             "features": [
                 "wchar"
             ]
+        },
+        {
+            "name": "tracy",
+            "features": [
+                "gui-tools"
+            ]
         }
     ]
 }

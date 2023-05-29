@@ -1,3 +1,5 @@
+vcpkg.json
+
 .include/options.hpp
 .cache/*
 
