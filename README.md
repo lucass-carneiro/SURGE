@@ -52,8 +52,7 @@ Example for building a Debug build with compiler commands exporting using clang 
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
-git submodule init
-git submodule update
+git submodule init && git submodule update
 cp vcpkg.json.linux vcpkg.json
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug
