@@ -69,7 +69,7 @@ game_data.game_state_queue = queue:new()
 game_data.piece_removal_queue = queue:new()
 
 -- Dump piece movement data and use debug board
-game_data.debug = true
+game_data.debug = false
 game_data.debug_file = game_data.debug and io.open("2048_debug_log.txt", "w") or
                            nil
 
