@@ -140,12 +140,12 @@ auto main(int argc, char **argv) noexcept -> int {
     // Present rendering
     global_engine_window::get().swap_buffers();
 
-    // Compute elapsed time
-    global_engine_window::get().frame_timmer_compute_dt();
-
 #ifdef SURGE_ENABLE_TRACY
     FrameMark;
 #endif
+
+    // Compute elapsed time
+    global_engine_window::get().frame_timmer_compute_dt();
   }
 
   return EXIT_SUCCESS;

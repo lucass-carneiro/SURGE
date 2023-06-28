@@ -4,6 +4,10 @@
 #include "log.hpp"
 #include "options.hpp"
 
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
+
 #include <cstdio>
 
 /**
@@ -43,6 +47,10 @@ static constexpr const char *LOGO =
 // clang-format on
 
 void surge::draw_logo() noexcept {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
 #ifdef SURGE_USE_LOG_COLOR
   std::printf("\033[1;38;2;220;20;60m%s\033[0m", LOGO);
 #else
@@ -51,6 +59,10 @@ void surge::draw_logo() noexcept {
 }
 
 auto surge::parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd_opts> {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   try {
     auto cmd_line_args
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -94,6 +106,10 @@ auto surge::get_arg_string(const cmd_opts &opts, const char *arg) noexcept
 }
 
 auto surge::get_arg_long(const cmd_opts &opts, const char *arg) noexcept -> std::optional<long> {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   try {
     return opts.at(arg).asLong();
   } catch (const std::exception &error) {
@@ -104,6 +120,9 @@ auto surge::get_arg_long(const cmd_opts &opts, const char *arg) noexcept -> std:
 
 auto surge::get_file_path(const cmd_opts &opts, const char *arg, const char *ext) noexcept
     -> std::optional<std::filesystem::path> {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
 
   const auto arg_string{get_arg_string(opts, arg)};
   if (!arg_string.has_value()) {

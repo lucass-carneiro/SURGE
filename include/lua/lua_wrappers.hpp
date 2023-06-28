@@ -48,6 +48,8 @@ auto lua_get_key_state(lua_State *L) noexcept -> int;
 
 auto lua_compute_heading(lua_State *L) noexcept -> int;
 
+auto lua_prealloc_table(lua_State *L) noexcept -> int;
+
 } // namespace surge
 
 #endif // SURGE_LUA_WRAPPERS_HPP

@@ -2,9 +2,9 @@ local queue = {}
 queue.__index = queue
 queue.__name = "queue"
 
-function queue:new ()
+function queue:new()
   local q = {}
-  setmetatable(q, queue)    
+  setmetatable(q, queue)
 
   q.first = 0
   q.last = -1
@@ -14,7 +14,7 @@ end
 
 function queue:size()
   if self.first <= self.last then
-    return self.last
+    return self.last + 1
   else
     return 0
   end
@@ -29,14 +29,12 @@ end
 function queue:pop_front()
   local first = self.first
 
-  if first > self.last then
-    return nil
-  end
-  
+  if first > self.last then return nil end
+
   local value = self[first]
   self[first] = nil
   self.first = first + 1
-  
+
   return value
 end
 
@@ -49,9 +47,7 @@ function queue:front()
 end
 
 function queue:replace_front(new_value)
-  if self.first <= self.last then
-    self[self.first] = new_value
-  end
+  if self.first <= self.last then self[self.first] = new_value end
 end
 
 return queue

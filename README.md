@@ -26,7 +26,7 @@
 
 | Argument                           | Effect                                                     | Possible values | Default value            |
 |------------------------------------|------------------------------------------------------------|-----------------|--------------------------|
-| -DCMAKE_EXPORT_COMPILE_COMMANDS=ON | Exports `compile_commands.json` file for usage in IDEs.    | OFF/ON          | OFF                      |
+| -DCMAKE_EXPORT_COMPILE_COMMANDS=ON | Exports `compile_commands.json` file for usage in IDEs.    | OFF/ON          | ON                       |
 | -DSURGE_OPENGL_ERROR_BUFFER_SIZE   | Size of the static buffer used to capture OpenGL messages  | >=1024          | 1024                     |
 | -DSURGE_OPENGL_ERROR_BUFFER_SIZE   | Number of samples in the FPS counter (2)                   | Integer         | 1024                     |
 | -DSURGE_USE_LOG                    | Enable log messages.                                       | OFF/ON          | ON                       |
@@ -48,7 +48,7 @@
 
 ## Example Debug build
 
-Example for building a Debug build with compiler commands exporting using clang on Linux:
+Example for building a Debug build using clang on Linux:
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE

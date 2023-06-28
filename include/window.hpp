@@ -20,6 +20,10 @@
 #include <implot.h>
 // clang-format on
 
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
+
 #include <algorithm>
 #include <cstddef>
 #include <glm/mat4x4.hpp>
@@ -62,19 +66,32 @@ public:
 
   [[nodiscard]] inline auto get_frame_dt() const noexcept -> double { return frame_dt; };
 
-  inline auto poll_events() const noexcept { glfwPollEvents(); }
+  inline auto poll_events() const noexcept {
+#ifdef SURGE_ENABLE_TRACY
+    ZoneScoped;
+#endif
+    glfwPollEvents();
+  }
 
   inline void frame_timer_reset_and_start() const noexcept { glfwSetTime(double{0}); }
 
   inline void frame_timmer_compute_dt() noexcept { frame_dt = glfwGetTime(); }
 
   inline void clear_framebuffer() noexcept {
+#ifdef SURGE_ENABLE_TRACY
+    ZoneScoped;
+#endif
+
     glClearColor(engine_config->clear_color[0], engine_config->clear_color[1],
                  engine_config->clear_color[2], engine_config->clear_color[3]);
     glClear(GL_COLOR_BUFFER_BIT);
   }
 
   [[nodiscard]] inline auto get_key(int key) const noexcept -> int {
+#ifdef SURGE_ENABLE_TRACY
+    ZoneScoped;
+#endif
+
     return glfwGetKey(window.get(), key);
   };
 

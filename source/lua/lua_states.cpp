@@ -22,6 +22,7 @@ auto surge::global_lua_states::init() noexcept -> bool {
     }
 
     luaL_openlibs(L);
+    luaopen_jit(L);
     luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
     global_task_executor::get().async(lua_add_engine_context, L, i);

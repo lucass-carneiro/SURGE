@@ -9,6 +9,10 @@
 
 #include "options.hpp"
 
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
+
 #define SPDLOG_LEVEL_NAMES                                                                         \
   { "MY TRACE", "MY DEBUG", "SURGE Info", "SURGE Warning", "SURGE Error", "MY CRITICAL", "OFF" }
 #include "spdlog/sinks/basic_file_sink.h"
@@ -79,16 +83,28 @@ template <typename... Args> void log_warn(spdlog::wformat_string_t<Args...> fmt,
 #endif
 
 template <typename... Args> void log_info(spdlog::format_string_t<Args...> fmt, Args &&...args) {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   global_stdout_log_manager::get().get_logger()->log(spdlog::level::info, fmt,
                                                      std::forward<Args>(args)...);
 }
 
 template <typename... Args> void log_error(spdlog::format_string_t<Args...> fmt, Args &&...args) {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   global_stdout_log_manager::get().get_logger()->log(spdlog::level::err, fmt,
                                                      std::forward<Args>(args)...);
 }
 
 template <typename... Args> void log_warn(spdlog::format_string_t<Args...> fmt, Args &&...args) {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   global_stdout_log_manager::get().get_logger()->log(spdlog::level::warn, fmt,
                                                      std::forward<Args>(args)...);
 }

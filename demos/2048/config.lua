@@ -1,12 +1,12 @@
 -- Window geometry
-surge.config.window_width  = 453
+surge.config.window_width = 453
 surge.config.window_height = 453
 
 -- Window name
-surge.config.window_name   = "2048 - SURGE"
+surge.config.window_name = "2048 - SURGE"
 
 -- Window borders and output monitor
-surge.config.windowed = true          -- true for windowed, false for fullscreen
+surge.config.windowed = true -- true for windowed, false for fullscreen
 surge.config.window_monitor_index = 1
 
 -- Show/hide window cursor
@@ -24,4 +24,4 @@ surge.config.clear_color[4] = 1.0
 
 -- Folder structure
 surge.config.engine_root_dir = "/home/lucas/SURGE/"
---surge.config.engine_root_dir = "D:\\SURGE\\"
+-- surge.config.engine_root_dir = "D:\\SURGE\\"

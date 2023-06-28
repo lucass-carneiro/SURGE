@@ -11,6 +11,10 @@
 #include "options.hpp"
 #include "safe_ops.hpp"
 
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
+
 struct lua_file_handle {
   surge::load_file_return_t opt_file_span;
   bool file_read{false};
@@ -115,6 +119,10 @@ auto lua_message_handler(lua_State *L) noexcept -> int {
 }
 
 auto surge::do_file_at_idx(std::size_t i, const std::filesystem::path &path) noexcept -> bool {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   auto &lua_state{surge::global_lua_states::get().at(i)};
   return do_file_at(lua_state.get(), path);
 }

@@ -1,141 +1,96 @@
-board_data = require("2048/board_data")
-queue = require("2048/queue")
+local queue = require("2048/queue")
 
 local piece = {}
 piece.__index = piece
 piece.__name = "2048_piece"
 
--- Origins for the textures of each number within the piece texture image
-piece.texture_origin_x = {1.0, 104.0, 207.0, 310.0, 1.0, 104.0, 207.0, 310.0, 1.0, 104.0, 207.0}
-piece.texture_origin_y = {1.0, 1.0, 1.0, 1.0, 104.0, 104.0, 104.0, 104.0, 207.0, 207.0, 207.0}
-
--- Threshold for using when determining if a piece reached a target
-piece.motion_threshold = 1.5
-
--- The speed at which a piece moves through the board
-piece.shift_speed = 5.0 * board_data.slot_delta
-
--- The piece image object, shared for all pieces
-piece.image_object = nil
-
--- The commands a piece can execute. 1-11 are Reserved for exponents
-piece.commands = {
-  move_u = 12,
-  move_d = 13,
-  move_l = 14,
-  move_r = 15,
-  sync_up = 16,
-  sync_down = 17,
-  sync_left = 18,
-  sync_right = 19
-}
-
-function piece:load_texture()
-  piece.image_object = surge.image.new(
-    "2048/resources/pieces.png",
-    board_data.slots_x_pos[1], board_data.slots_y_pos[1], 0.1,
-    board_data.slot_size     , board_data.slot_size     , 1.0
-  )
+function piece:__tostring()
+  return "| exponent = " .. tostring(self.exponent) .. " | value = " ..
+             tostring(2 ^ self.exponent) .. " | pos = (" .. tostring(self.i) ..
+             "," .. tostring(self.j) .. "," .. tostring(self.I) .. ") |"
 end
 
-function piece:new(i, j, exponent)
+function piece:new(i, j, exponent, game_data)
   local p = {}
   setmetatable(p, piece)
 
   p.i = i
   p.j = j
   p.I = ((p.i - 1) * 4 + (p.j - 1)) + 1
-  
+
+  p.target_i = p.i
+  p.target_j = p.j
+  p.target_I = p.I
+
   p.exponent = exponent
 
-  p.curent_slot_x = board_data.slots_x_pos[p.I]
-  p.curent_slot_y = board_data.slots_y_pos[p.I]
-  
+  p.curent_slot_x = game_data.slots_x_pos[p.I]
+  p.curent_slot_y = game_data.slots_y_pos[p.I]
+
   p.command_queue = queue:new()
- 
+
+  game_data.piece_list[p.I] = p
+
   return p
 end
 
-function piece:move_up()
-  self.command_queue:push_back(piece.commands.move_u)
+function piece:draw(game_data)
+  surge.image.reset_position(game_data.piece_image_object, self.curent_slot_x,
+                             self.curent_slot_y, 0.1)
+  surge.image.draw_region(game_data.piece_image_object,
+
+                          game_data.texture_origin_x[self.exponent],
+                          game_data.texture_origin_y[self.exponent],
+
+                          game_data.slot_size, game_data.slot_size)
 end
 
-function piece:move_down()
-  self.command_queue:push_back(piece.commands.move_d)
+function piece:move_up(game_data, slots)
+  slots = slots or 1
+
+  if slots == 0 then return end
+
+  self.target_i = self.i - slots
+  self.target_I = ((self.target_i - 1) * 4 + (self.j - 1)) + 1
+
+  self.command_queue:push_back(game_data.commands.move_v)
 end
 
-function piece:move_left()
-  self.command_queue:push_back(piece.commands.move_l)
+function piece:move_down(game_data, slots)
+  slots = slots or 1
+
+  if slots == 0 then return end
+
+  self.target_i = self.i + slots
+  self.target_I = ((self.target_i - 1) * 4 + (self.j - 1)) + 1
+
+  self.command_queue:push_back(game_data.commands.move_v)
 end
 
-function piece:move_right()
-  self.command_queue:push_back(piece.commands.move_r)
+function piece:move_left(game_data, slots)
+  slots = slots or 1
+
+  if slots == 0 then return end
+
+  self.target_j = self.j - slots
+  self.target_I = ((self.i - 1) * 4 + (self.target_j - 1)) + 1
+
+  self.command_queue:push_back(game_data.commands.move_h)
 end
 
-function piece:double_exponent()
-  self.command_queue:push_back(self.exponent + 1)
+function piece:move_right(game_data, slots)
+  slots = slots or 1
+
+  if slots == 0 then return end
+
+  self.target_j = self.j + slots
+  self.target_I = ((self.i - 1) * 4 + (self.target_j - 1)) + 1
+
+  self.command_queue:push_back(game_data.commands.move_h)
 end
 
-function piece:sync_up()
-  self.command_queue:push_back(piece.commands.sync_up)
-end
-
-function piece:sync_down()
-  self.command_queue:push_back(piece.commands.sync_down)
-end
-
-function piece:sync_left()
-  self.command_queue:push_back(piece.commands.sync_left)
-end
-
-function piece:sync_right()
-  self.command_queue:push_back(piece.commands.sync_right)
-end
-
-function piece:draw()
-  surge.image.reset_position(piece.image_object, self.curent_slot_x, self.curent_slot_y, 0.1)
-  surge.image.draw_region(
-    piece.image_object,
-       
-    piece.texture_origin_x[self.exponent],
-    piece.texture_origin_y[self.exponent],
-        
-    board_data.slot_size,
-    board_data.slot_size
-  )
-end
-
-function piece:update(dt, occupation_matrix)
+function piece:update(dt, game_data)
   local command = self.command_queue:front()
-
-  -- Sync ccupation matrix
-  if command == piece.commands.sync_up then
-    self.command_queue:pop_front()
-    occupation_matrix[self.i + 1][self.j] = nil
-    occupation_matrix[self.i][self.j] = self
-    return
-  end
-
-  if command == piece.commands.sync_down then
-    self.command_queue:pop_front()
-    occupation_matrix[self.i - 1][self.j] = nil
-    occupation_matrix[self.i][self.j] = self
-    return
-  end
-
-  if command == piece.commands.sync_left then
-    self.command_queue:pop_front()
-    occupation_matrix[self.i][self.j + 1] = nil
-    occupation_matrix[self.i][self.j] = self
-    return
-  end
-
-  if command == piece.commands.sync_right then
-    self.command_queue:pop_front()
-    occupation_matrix[self.i][self.j - 1] = nil
-    occupation_matrix[self.i][self.j] = self
-    return
-  end
 
   -- Piece exponent changes
   if command ~= nil and 1 <= command and command <= 11 then
@@ -145,88 +100,41 @@ function piece:update(dt, occupation_matrix)
   end
 
   -- Piece motions
-  if command == piece.commands.move_u then
-    local target_i = self.i - 1
-    local target_I = ((target_i - 1) * 4 + (self.j - 1)) + 1
-    
-    local target_y = board_data.slots_y_pos[target_I]
+  if command == game_data.commands.move_v then
+    local target_y = game_data.slots_y_pos[self.target_I]
 
     local dy = target_y - self.curent_slot_y
     local abs_dy = math.abs(dy)
     local dy_norm = dy / abs_dy
 
-    if abs_dy > self.motion_threshold then
-      surge.image.move(piece.image_object, 0.0, dy_norm * self.shift_speed * dt, 0.0)
-      self.curent_slot_y = self.curent_slot_y + dy_norm * self.shift_speed * dt
+    if abs_dy > game_data.motion_threshold then
+      surge.image.move(game_data.piece_image_object, 0.0,
+                       dy_norm * game_data.shift_speed * dt, 0.0)
+      self.curent_slot_y =
+          self.curent_slot_y + dy_norm * game_data.shift_speed * dt
     else
-      self.i = target_i
-      self.I = target_I
+      self.i = self.target_i
+      self.I = self.target_I
 
       self.curent_slot_y = target_y
 
       self.command_queue:pop_front()
     end
-
-  elseif command == piece.commands.move_d then
-    local target_i = self.i + 1
-    local target_I = ((target_i - 1) * 4 + (self.j - 1)) + 1
-    
-    local target_y = board_data.slots_y_pos[target_I]
-
-    local dy = target_y - self.curent_slot_y
-    local abs_dy = math.abs(dy)
-    local dy_norm = dy / abs_dy
-
-    if abs_dy > self.motion_threshold then
-      surge.image.move(piece.image_object, 0.0, dy_norm * self.shift_speed * dt, 0.0)
-      self.curent_slot_y = self.curent_slot_y + dy_norm * self.shift_speed * dt
-    else
-      self.i = target_i
-      self.I = target_I
-
-      self.curent_slot_y = target_y
-
-      self.command_queue:pop_front()
-    end
-
-  elseif command == piece.commands.move_l then
-    local target_j = self.j - 1
-    local target_I = ((self.i - 1) * 4 + (target_j - 1)) + 1
-    
-    local target_x = board_data.slots_x_pos[target_I]
+  elseif command == game_data.commands.move_h then
+    local target_x = game_data.slots_x_pos[self.target_I]
 
     local dx = target_x - self.curent_slot_x
     local abs_dx = math.abs(dx)
     local dx_norm = dx / abs_dx
 
-    if abs_dx > self.motion_threshold then
-      surge.image.move(piece.image_object, dx_norm * self.shift_speed * dt, 0.0, 0.0)
-      self.curent_slot_x = self.curent_slot_x + dx_norm * self.shift_speed * dt
+    if abs_dx > game_data.motion_threshold then
+      surge.image.move(game_data.piece_image_object,
+                       dx_norm * game_data.shift_speed * dt, 0.0, 0.0)
+      self.curent_slot_x =
+          self.curent_slot_x + dx_norm * game_data.shift_speed * dt
     else
-      self.j = target_j
-      self.I = target_I
-
-      self.curent_slot_x = target_x
-
-      self.command_queue:pop_front()
-    end
-
-  elseif command == piece.commands.move_r then
-    local target_j = self.j + 1
-    local target_I = ((self.i - 1) * 4 + (target_j - 1)) + 1
-    
-    local target_x = board_data.slots_x_pos[target_I]
-
-    local dx = target_x - self.curent_slot_x
-    local abs_dx = math.abs(dx)
-    local dx_norm = dx / abs_dx
-
-    if abs_dx > self.motion_threshold then
-      surge.image.move(piece.image_object, dx_norm * self.shift_speed * dt, 0.0, 0.0)
-      self.curent_slot_x = self.curent_slot_x + dx_norm * self.shift_speed * dt
-    else
-      self.j = target_j
-      self.I = target_I
+      self.j = self.target_j
+      self.I = self.target_I
 
       self.curent_slot_x = target_x
 

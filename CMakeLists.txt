@@ -165,6 +165,7 @@ set(
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
   "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/options.hpp"
+  "${Surge_SOURCE_DIR}/include/profile_mimalloc.h"
   "${Surge_SOURCE_DIR}/include/sad_file.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
@@ -191,6 +192,7 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_animated_sprite_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_util_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
 
   "${Surge_SOURCE_DIR}/source/opengl/program.cpp"

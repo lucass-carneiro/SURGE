@@ -2,7 +2,15 @@
 #include "lua/lua_wrappers.hpp"
 #include "window.hpp"
 
+#ifdef SURGE_ENABLE_TRACY
+#  include <tracy/Tracy.hpp>
+#endif
+
 auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "pre_loop");
 
@@ -19,6 +27,10 @@ auto surge::lua_pre_loop_callback(lua_State *L) noexcept -> bool {
 }
 
 void surge::lua_draw_callback(lua_State *L) noexcept {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "draw");
 
@@ -33,6 +45,10 @@ void surge::lua_draw_callback(lua_State *L) noexcept {
 }
 
 void surge::lua_update_callback(lua_State *L) noexcept {
+#ifdef SURGE_ENABLE_TRACY
+  ZoneScoped;
+#endif
+
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "update");
   lua_pushnumber(L, global_engine_window::get().get_frame_dt());

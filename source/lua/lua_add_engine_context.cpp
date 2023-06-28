@@ -113,9 +113,20 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     lua_setfield(L, -2, "log");
     // end log table
 
-    // Tasker functions
-    lua_add_table_field<lua_String, lua_CFunction>(L, "send_task_to", lua_send_task_to);
-    lua_add_table_field<lua_String, lua_CFunction>(L, "run_task_at", lua_run_task_at);
+    // begin task table
+    lua_newtable(L);
+    {
+      lua_add_table_field<lua_String, lua_CFunction>(L, "send_to", lua_send_task_to);
+      lua_add_table_field<lua_String, lua_CFunction>(L, "run_at", lua_run_task_at);
+    }
+    lua_setfield(L, -2, "tasks");
+    // end task table
+
+    // begin utils table
+    lua_newtable(L);
+    { lua_add_table_field<lua_String, lua_CFunction>(L, "prealloc_table", lua_prealloc_table); }
+    lua_setfield(L, -2, "util");
+    // end utils table
 
     // begin input table
     lua_newtable(L);
