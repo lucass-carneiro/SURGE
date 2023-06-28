@@ -1,6 +1,6 @@
 #include "allocator.hpp"
 #include "entities/animated_sprite.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "lua/lua_wrappers.hpp"
 
 auto surge::lua_new_animated_sprite(lua_State *L) noexcept -> int {

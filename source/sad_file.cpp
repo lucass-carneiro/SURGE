@@ -1,7 +1,7 @@
 #include "sad_file.hpp"
 
 #include "allocator.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
 #include <cstring>

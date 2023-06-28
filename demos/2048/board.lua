@@ -5,6 +5,7 @@ function board.print_piece_list(game_data)
     for _, p in pairs(game_data.piece_list) do
       game_data.debug_file:write(tostring(p))
       game_data.debug_file:write("\n")
+      surge.log.log_info(tostring(p))
     end
   end
 end
@@ -62,6 +63,7 @@ function board.add_random_piece(piece, game_data)
       game_data.debug_file:write("Hit I = ")
       game_data.debug_file:write(tostring(I))
       game_data.debug_file:write("\n")
+      surge.log.log_info("Hit I = " .. tostring(I))
     end
 
     I = math.random(1, 16)
@@ -78,6 +80,7 @@ function board.add_random_piece(piece, game_data)
     game_data.debug_file:write("Added ")
     game_data.debug_file:write(tostring(p))
     game_data.debug_file:write("\n")
+    surge.log.log_info("Added " .. tostring(p))
   end
 end
 

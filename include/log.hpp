@@ -15,11 +15,11 @@
 
 #define SPDLOG_LEVEL_NAMES                                                                         \
   { "MY TRACE", "MY DEBUG", "SURGE Info", "SURGE Warning", "SURGE Error", "MY CRITICAL", "OFF" }
-#include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/spdlog.h"
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
 
 #ifdef SURGE_USE_LOG_COLOR
-#  include "spdlog/sinks/stdout_color_sinks.h"
+#  include <spdlog/sinks/stdout_color_sinks.h>
 #else
 #  include "spdlog/sinks/stdout_sinks.h"
 #endif

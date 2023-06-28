@@ -2,7 +2,7 @@
 
 #include "allocator.hpp"
 #include "file.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 
 auto surge::load_and_compile(const char *shader_source, const char *shader_name,
                              GLenum shader_type) noexcept -> std::optional<GLuint> {

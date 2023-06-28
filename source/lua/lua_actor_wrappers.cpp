@@ -1,6 +1,6 @@
 #include "allocator.hpp"
 #include "entities/actor.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "lua/lua_wrappers.hpp"
 
 auto surge::lua_new_actor(lua_State *L) noexcept -> int {

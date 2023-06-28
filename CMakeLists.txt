@@ -52,6 +52,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # -----------------------------------------
 # Size options
@@ -132,7 +133,7 @@ endif()
 configure_file("${Surge_SOURCE_DIR}/include/options_in.txt" "${Surge_SOURCE_DIR}/include/options.hpp")
 
 # -----------------------------------------
-# Source files
+#  Main Source files
 # -----------------------------------------
 
 set(
@@ -144,7 +145,6 @@ set(
   "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
 
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
-  "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_utils.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
@@ -163,7 +163,6 @@ set(
   "${Surge_SOURCE_DIR}/include/file.hpp"
   "${Surge_SOURCE_DIR}/include/geometry_utils.hpp"
   "${Surge_SOURCE_DIR}/include/image_loader.hpp"
-  "${Surge_SOURCE_DIR}/include/log.hpp"
   "${Surge_SOURCE_DIR}/include/options.hpp"
   "${Surge_SOURCE_DIR}/include/profile_mimalloc.h"
   "${Surge_SOURCE_DIR}/include/sad_file.hpp"
@@ -187,7 +186,6 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_geometry_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_get_engine_config.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_add_engine_context.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_animated_sprite_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
@@ -212,12 +210,53 @@ set(
 )
 
 # -----------------------------------------
+#  Logging system Source files
+# -----------------------------------------
+
+set(
+  SURGE_LOGGING_SYSTEM_HEADER_LIST
+  "${Surge_SOURCE_DIR}/include/logging_system/logging_system.hpp"
+  "${Surge_SOURCE_DIR}/include/logging_system/logging_system_bindings.hpp"
+)
+
+set(
+  SURGE_LOGGING_SYSTEM_SOURCE_LIST
+  "${Surge_SOURCE_DIR}/source/logging_system/logging_system_bindings.cpp"
+)
+
+# -----------------------------------------
+# Add engine library targets
+# -----------------------------------------
+
+add_library(
+  SurgeLoggingSystem
+  SHARED
+  ${SURGE_LOGGING_SYSTEM_SOURCE_LIST}
+)
+
+target_link_libraries(SurgeLoggingSystem PRIVATE spdlog::spdlog_header_only)
+
+target_compile_features(SurgeLoggingSystem PRIVATE cxx_std_20)
+set_target_properties(SurgeLoggingSystem PROPERTIES OUTPUT_NAME "surge_logging")
+set_target_properties(SurgeLoggingSystem PROPERTIES PUBLIC_HEADER ${Surge_SOURCE_DIR}/include/logging_system/logging_system_bindings.hpp)
+
+target_include_directories(
+  SurgeLoggingSystem PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
+
+# -----------------------------------------
 # Executable engine target
 # -----------------------------------------
 
 add_executable(Surge ${SURGE_HEADER_LIST} ${SURGE_SOURCE_LIST})
 target_compile_features(Surge PRIVATE cxx_std_20)
 set_target_properties(Surge PROPERTIES OUTPUT_NAME "surge")
+
+target_include_directories(
+  Surge PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
 
 # -----------------------------------------
 # Compilers flags and options
@@ -321,9 +360,6 @@ target_link_libraries(Surge PRIVATE
   imgui::imgui
   implot::implot
   EASTL
-)
-
-target_include_directories(
-  Surge PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+  spdlog::spdlog_header_only
+  SurgeLoggingSystem
 )

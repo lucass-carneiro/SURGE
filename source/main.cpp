@@ -1,7 +1,6 @@
 #include "allocator.hpp"
 #include "cli.hpp"
 #include "gui_windows/gui_windows.hpp"
-#include "log.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "task_executor.hpp"
@@ -24,7 +23,7 @@ auto main(int argc, char **argv) noexcept -> int {
   mimalloc_eastl_allocator::get();
 
   // Init log subsystem
-  global_stdout_log_manager::get();
+  log_manager::get();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);

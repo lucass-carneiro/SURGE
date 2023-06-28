@@ -1,7 +1,7 @@
 #ifndef SURGE_LUA_BINDINGS_HPP
 #define SURGE_LUA_BINDINGS_HPP
 
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "lua_states.hpp"
 
 #include <optional>

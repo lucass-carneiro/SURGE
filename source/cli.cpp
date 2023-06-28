@@ -1,7 +1,7 @@
 #include "cli.hpp"
 
 #include "file.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
 #ifdef SURGE_ENABLE_TRACY

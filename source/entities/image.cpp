@@ -1,7 +1,7 @@
 #include "entities/image.hpp"
 
 #include "image_loader.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "window.hpp"
 
 // clang-format off

@@ -2,7 +2,7 @@
 
 #include "allocator.hpp"
 #include "file.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
 auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept

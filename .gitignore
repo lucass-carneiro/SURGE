@@ -3,11 +3,9 @@
 Debug/*
 Release/*
 
-include/options.hpp
+staging_Debug/*
 
-demos/log.txt
-demos/imgui.ini
-demos/2048_debug_log.txt
+include/options.hpp
 
 compile_commands.json
 

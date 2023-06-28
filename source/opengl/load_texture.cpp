@@ -1,7 +1,7 @@
 #include "opengl/load_texture.hpp"
 
 #include "image_loader.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 
 auto surge::load_texture(const std::filesystem::path &p, const char *ext) noexcept
     -> std::optional<GLuint> {

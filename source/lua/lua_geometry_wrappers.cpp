@@ -1,5 +1,5 @@
 #include "geometry_utils.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "lua/lua_wrappers.hpp"
 
 auto surge::lua_compute_heading(lua_State *L) noexcept -> int {

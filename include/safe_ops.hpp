@@ -1,7 +1,7 @@
 #ifndef SURGE_SAFE_OPS_HPP
 #define SURGE_SAFE_OPS_HPP
 
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 
 #include <concepts>
 #include <limits>

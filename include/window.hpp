@@ -5,7 +5,6 @@
 
 // clang-format off
 #include "lua/lua_bindings.hpp"
-#include "lua/lua_logs.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "lua/lua_wrappers.hpp"

@@ -1,4 +1,4 @@
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "lua/lua_wrappers.hpp"

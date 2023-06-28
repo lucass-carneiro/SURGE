@@ -1,7 +1,7 @@
 #include "file.hpp"
 
 #include "allocator.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
 #ifdef SURGE_SYSTEM_IS_POSIX

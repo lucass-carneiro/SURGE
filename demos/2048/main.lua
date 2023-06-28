@@ -86,7 +86,11 @@ function surge.update(dt)
   local pieces_idle = board.pieces_idle(game_data)
 
   if game_state == game_data.game_states.compress_up and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("compress up\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Compress up\n")
+      surge.log.log_info("Compress up")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.compress_up(game_data) then
@@ -96,7 +100,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.compress_down and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("compress down\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Compress down\n")
+      surge.log.log_info("Compress down")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.compress_down(game_data) then
@@ -106,7 +114,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.compress_left and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("compress left\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Compress left\n")
+      surge.log.log_info("Compress left")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.compress_left(game_data) then
@@ -116,7 +128,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.compress_right and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("compress right\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Compress right\n")
+      surge.log.log_info("Compress right")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.compress_right(game_data) then
@@ -126,7 +142,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.merge_up and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("merge up\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Merge up\n")
+      surge.log.log_info("Merge up")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.merge_up(game_data) then
@@ -136,7 +156,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.merge_down and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("merge down\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Merge down\n")
+      surge.log.log_info("Merge down")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.merge_down(game_data) then
@@ -146,7 +170,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.merge_left and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("merge left\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Merge left\n")
+      surge.log.log_info("Merge left")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.merge_left(game_data) then
@@ -156,7 +184,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.merge_right and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("merge right\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Merge right\n")
+      surge.log.log_info("Merge right")
+    end
+
     board.sync_piece_list(game_data)
 
     if board.merge_right(game_data) then
@@ -166,7 +198,10 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.piece_removal and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("remove piece\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Remove piece\n")
+      surge.log.log_info("Remove piece")
+    end
 
     while game_data.piece_removal_queue:size() ~= 0 do
       local I = game_data.piece_removal_queue:pop_front()
@@ -176,7 +211,11 @@ function surge.update(dt)
     game_data.game_state_queue:pop_front()
 
   elseif game_state == game_data.game_states.add_piece and pieces_idle then
-    if game_data.debug then game_data.debug_file:write("add piece\n") end
+    if game_data.debug then
+      game_data.debug_file:write("Add piece\n")
+      surge.log.log_info("Add piece")
+    end
+
     board.sync_piece_list(game_data)
     board.add_random_piece(piece, game_data)
 

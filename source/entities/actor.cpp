@@ -1,7 +1,7 @@
 #include "entities/actor.hpp"
 
 #include "image_loader.hpp"
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 #include "options.hpp"
 #include "window.hpp"
 

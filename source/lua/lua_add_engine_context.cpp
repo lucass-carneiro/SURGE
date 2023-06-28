@@ -1,5 +1,4 @@
 #include "lua/lua_bindings.hpp"
-#include "lua/lua_logs.hpp"
 #include "lua/lua_utils.hpp"
 #include "lua/lua_wrappers.hpp"
 #include "safe_ops.hpp"
@@ -101,17 +100,6 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     }
     lua_setfield(L, -2, "image");
     // end actor table
-
-    // begin log table
-    lua_newtable(L);
-    {
-      lua_add_table_field<lua_String, lua_CFunction>(L, "message", lua_log_message);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "warning", lua_log_warning);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "error", lua_log_error);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "memory", lua_log_memory);
-    }
-    lua_setfield(L, -2, "log");
-    // end log table
 
     // begin task table
     lua_newtable(L);

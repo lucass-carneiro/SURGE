@@ -1,7 +1,7 @@
 #ifndef SURGE_THREAD_POOL_HPP
 #define SURGE_THREAD_POOL_HPP
 
-#include "log.hpp"
+#include "logging_system/logging_system.hpp"
 
 // clang-format off
 #include <taskflow/core/executor.hpp>
