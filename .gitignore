@@ -4,8 +4,10 @@ Debug/*
 Release/*
 
 include/options.hpp
+
 demos/log.txt
 demos/imgui.ini
+demos/2048_debug_log.txt
 
 compile_commands.json
 
