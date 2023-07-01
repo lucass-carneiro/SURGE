@@ -18,20 +18,18 @@ namespace surge {
 
 class log_manager {
 public:
-  static auto get() -> log_manager & {
+  inline static auto get() -> log_manager & {
     static log_manager log;
     return log;
   }
 
-  [[nodiscard]] auto get_logger() -> std::shared_ptr<spdlog::logger> & { return logger; }
+  [[nodiscard]] auto get_logger() noexcept -> std::shared_ptr<spdlog::logger> & { return logger; }
 
   log_manager(const log_manager &) = delete;
   log_manager(log_manager &&) = delete;
 
   auto operator=(log_manager) -> log_manager & = delete;
-
   auto operator=(const log_manager &) -> log_manager & = delete;
-
   auto operator=(log_manager &&) -> log_manager & = delete;
 
   ~log_manager() = default;
@@ -39,18 +37,7 @@ public:
 private:
   std::shared_ptr<spdlog::logger> logger;
 
-#ifdef SURGE_USE_LOG_COLOR
-  log_manager() : logger{spdlog::stdout_color_mt("surge_stdout_logger")} {
-    logger->set_pattern("\033[38;2;70;130;180m[%m-%d-%Y %H:%M:%S] "
-                        "\033[38;2;127;255;212m[thread %t] "
-                        "\033[1m%^%l:%$ "
-                        "\033[0m%v");
-  }
-#else
-  log_manager() : logger{spdlog::stdout_logger_mt("surge_stdout_logger")} {
-    logger->set_pattern("[%m-%d-%Y %H:%M:%S] [thread %t] %^%l:%$ %v");
-  }
-#endif
+  log_manager();
 };
 
 #ifdef SURGE_SYSTEM_Windows

@@ -11,11 +11,13 @@
 #endif
 
 auto main(int argc, char **argv) noexcept -> int {
+  using namespace surge;
+  using std::printf;
+
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
 #endif
 
-  using namespace surge;
   draw_logo();
 
   // Init allocator subsystem
@@ -23,7 +25,13 @@ auto main(int argc, char **argv) noexcept -> int {
   mimalloc_eastl_allocator::get();
 
   // Init log subsystem
-  log_manager::get();
+  try {
+    log_manager::get();
+  } catch (const std::exception &e) {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+    printf("Unable to initialize logging system: %s", e.what());
+    return EXIT_FAILURE;
+  }
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
