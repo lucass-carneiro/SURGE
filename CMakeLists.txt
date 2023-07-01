@@ -42,7 +42,6 @@ find_package(OpenGL REQUIRED)
 
 find_package(mimalloc CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-find_package(docopt CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
 pkg_search_module(LUAJIT REQUIRED IMPORTED_TARGET luajit)
@@ -337,7 +336,6 @@ target_link_libraries(Surge PRIVATE
   OpenGL::GL
   mimalloc-static  
   fmt::fmt-header-only
-  docopt_s
   gsl::gsl-lite
   Taskflow::Taskflow
   PkgConfig::LUAJIT

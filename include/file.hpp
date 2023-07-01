@@ -14,8 +14,7 @@
 
 namespace surge {
 
-auto validate_path(const std::filesystem::path &path, const char *expected_extension) noexcept
-    -> bool;
+auto validate_path(const char *path, const char *expected_extension) noexcept -> bool;
 
 auto os_open_read(const std::filesystem::path &p, void *buffer, std::uintmax_t file_size) noexcept
     -> bool;

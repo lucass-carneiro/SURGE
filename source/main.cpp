@@ -39,30 +39,10 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  const auto num_threads{get_arg_long(*cmd_line_args, "--num-threads")};
-  if (!num_threads) {
-    return EXIT_FAILURE;
-  }
-
-  const auto hardware_concurrency{std::thread::hardware_concurrency()};
-  if (*num_threads < 0 || *num_threads > hardware_concurrency) {
-    log_error("The number of threads must be in the range [{},{}]", 0, hardware_concurrency);
-    return EXIT_FAILURE;
-  }
-
-  const auto config_script_path = get_file_path(*cmd_line_args, "<config-script>", ".lua");
-  if (!config_script_path) {
-    return EXIT_FAILURE;
-  }
-
-  const auto startup_script_path = get_file_path(*cmd_line_args, "<startup-script>", ".lua");
-  if (!startup_script_path) {
-    return EXIT_FAILURE;
-  }
+  const auto [config_script_path, startup_script_path] = cmd_line_args.value();
 
   // Init parallel job system
-  log_info("Initializing job system with {} total threads", *num_threads);
-  global_num_threads::get().init(*num_threads);
+  global_num_threads::get().init(1);
   global_task_executor::get();
 
   /* Init Lua VM states
@@ -76,12 +56,12 @@ auto main(int argc, char **argv) noexcept -> int {
   }
 
   // Init all VMs with the engine configuration
-  if (!global_lua_states::get().configure(*config_script_path)) {
+  if (!global_lua_states::get().configure(config_script_path)) {
     return EXIT_FAILURE;
   }
 
   // Do the startup file in VM 0 (main thread)
-  if (!do_file_at_idx(0, *startup_script_path)) {
+  if (!do_file_at_idx(0, startup_script_path)) {
     return EXIT_FAILURE;
   }
 
@@ -119,7 +99,7 @@ auto main(int argc, char **argv) noexcept -> int {
      * Hot reload startup script. TODO: Maybe this should be better, like user controlled?
      */
     if (global_engine_window::get().get_key(GLFW_KEY_F5) == GLFW_PRESS) {
-      if (!do_file_at_idx(0, *startup_script_path)) {
+      if (!do_file_at_idx(0, startup_script_path)) {
         return EXIT_FAILURE;
       }
     }

@@ -14,43 +14,32 @@
 #include <cstdio>
 #include <cstring>
 
-auto surge::validate_path(const std::filesystem::path &path,
-                          const char *expected_extension) noexcept -> bool {
+auto surge::validate_path(const char *path, const char *expected_extension) noexcept -> bool {
+  using std::printf;
 
   try {
-    if (!std::filesystem::exists(path)) {
-#ifdef SURGE_SYSTEM_Windows
-      log_error(L"The path {} does not exist.", path.c_str());
-#else
-      log_error("The path {} does not exist.", path.c_str());
-#endif
+    const std::filesystem::path fs_opath{path};
+
+    if (!std::filesystem::exists(fs_opath)) {
+      log_error("The path {} does not exist.", path);
       return false;
     }
 
-    if (!std::filesystem::is_regular_file(path)) {
-#ifdef SURGE_SYSTEM_Windows
-      log_error(L"The path {} does not point to a regular file.", path.c_str());
-#else
-      log_error("The path {} does not point to a regular file.", path.c_str());
-#endif
+    if (!std::filesystem::is_regular_file(fs_opath)) {
+      log_error("The path {} does not point to a regular file.", path);
       return false;
     }
 
-    if (path.extension() != expected_extension) {
-#ifdef SURGE_SYSTEM_Windows
-      log_error(L"The path {} does not point to a file with the correct extension.", path.c_str());
-      log_error("Expected extension: {}", expected_extension);
+    if (fs_opath.extension() != expected_extension) {
+      log_error("The path {} does not point to a {} file.", path, expected_extension);
       return false;
-#else
-      log_error("The path {} does not point to a \"{}\" file.", path.c_str(), expected_extension);
-#endif
     }
 
     return true;
 
   } catch (const std::exception &e) {
-    std::printf("Error while validating file path: %s\n", e.what());
-
+    // NOLINTNEXTLINE(ppcoreguidelines-pro-type-vararg)
+    printf("Error while validating file path: %s\n", e.what());
     return false;
   }
 }
@@ -63,7 +52,7 @@ auto surge::load_file(const std::filesystem::path &p, const char *ext,
   log_info("Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
 #endif
 
-  const auto path_validation_result{validate_path(p, ext)};
+  const auto path_validation_result{validate_path(p.c_str(), ext)};
 
   if (path_validation_result == false) {
     return {};

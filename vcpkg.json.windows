@@ -6,7 +6,6 @@
     "dependencies": [
         "opengl",
         "mimalloc",
-        "docopt",
         "gsl-lite",
         "taskflow",
         "luajit",

@@ -4,28 +4,20 @@
 #include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
-#ifdef SURGE_ENABLE_TRACY
-#  include <tracy/Tracy.hpp>
-#endif
-
 #include <cstdio>
+#include <cstring>
 
-/**
- * The program help/usage message that is also used to generate the command line
- * parser.
- */
 static constexpr const char *USAGE =
     R"(SURGE engine.
 
     Usage:
-      surge [options] <config-script> <startup-script>
+      surge <config-script> <startup-script>
       surge (-h | --help)
       surge --version
 
     Options:
-      -h --help                                 Show this screen.
-      --version                                 Show version.
-      --num-threads=<num>                       The total number of threads to use. If negative, use all available threads. [default: 2]
+      -h --help           Show this screen.
+      --version           Show version.
 )";
 
 static constexpr const char *VERSION_STRING
@@ -47,94 +39,45 @@ static constexpr const char *LOGO =
 // clang-format on
 
 void surge::draw_logo() noexcept {
-#ifdef SURGE_ENABLE_TRACY
-  ZoneScoped;
-#endif
-
+  using std::printf;
 #ifdef SURGE_USE_LOG_COLOR
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   std::printf("\033[1;38;2;220;20;60m%s\033[0m", LOGO);
 #else
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   std::printf("%s", LOGO);
 #endif
 }
 
-auto surge::parse_arguments(int argc, char **argv) noexcept -> std::optional<cmd_opts> {
-#ifdef SURGE_ENABLE_TRACY
-  ZoneScoped;
-#endif
-
-  try {
-    auto cmd_line_args
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-        = docopt::docopt_parse(USAGE, {argv + 1, argv + argc}, true, true, false);
-
-    return cmd_line_args;
-
-  } catch (const docopt::DocoptExitHelp &) {
-    std::printf("%s\n", USAGE);
-    return {};
-
-  } catch (const docopt::DocoptExitVersion &) {
-    std::printf("%s\n", VERSION_STRING);
-    return {};
-
-  } catch (const docopt::DocoptLanguageError &) {
-    log_error("Internal problem: a syntax error ocurred in the "
-              "USAGE string. Please contact a "
-              "developper");
-    return {};
-
-  } catch (const docopt::DocoptArgumentError &) {
-    log_info("Unrecognized arguments passed. Rerun with the --help option "
-             "for usage instructions.");
-    return {};
-
-  } catch (const std::exception &error) {
-    log_error("Unhandled exception while running Docopt {}", error.what());
-    return {};
-  }
+void print_help() noexcept {
+  using std::printf;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  printf("%s\n", USAGE);
 }
 
-auto surge::get_arg_string(const cmd_opts &opts, const char *arg) noexcept
-    -> std::optional<const char *> {
-  try {
-    return opts.at(arg).asString().c_str();
-  } catch (const std::exception &error) {
-    log_error("Unable to interpret the command line argument {} as a string", arg);
-    return {};
-  }
+void print_version() noexcept {
+  using std::printf;
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+  printf("%s\n", VERSION_STRING);
 }
 
-auto surge::get_arg_long(const cmd_opts &opts, const char *arg) noexcept -> std::optional<long> {
-#ifdef SURGE_ENABLE_TRACY
-  ZoneScoped;
-#endif
+auto surge::parse_arguments(int argc, char **argv) noexcept -> cmd_args_t {
+  using std::strcmp;
 
-  try {
-    return opts.at(arg).asLong();
-  } catch (const std::exception &error) {
-    log_error("Unable to interpret the command line argument {} as a long", arg);
+  if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+    print_help();
     return {};
-  }
-}
-
-auto surge::get_file_path(const cmd_opts &opts, const char *arg, const char *ext) noexcept
-    -> std::optional<std::filesystem::path> {
-#ifdef SURGE_ENABLE_TRACY
-  ZoneScoped;
-#endif
-
-  const auto arg_string{get_arg_string(opts, arg)};
-  if (!arg_string.has_value()) {
+  } else if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+    print_version();
     return {};
-  }
-
-  std::filesystem::path candidate_path(arg_string.value());
-
-  const auto validate_result{validate_path(candidate_path, ext)};
-  if (validate_result == true) {
-    return candidate_path;
+  } else if (argc == 3) {
+    if (validate_path(argv[1], ".lua") && validate_path(argv[2], ".lua")) {
+      return {std::make_tuple(argv[1], argv[2])};
+    } else {
+      return {};
+    }
   } else {
+    print_help();
     return {};
   }
 }
