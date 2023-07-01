@@ -1,0 +1,3 @@
+#!/bin/zsh
+
+./surge ./minimal/config.lua ./minimal/main.lua

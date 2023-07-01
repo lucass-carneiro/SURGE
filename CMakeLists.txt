@@ -145,6 +145,7 @@ set(
   "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
 
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
+  "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_utils.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_wrappers.hpp"
@@ -183,6 +184,7 @@ set(
 
   "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_image_wrappers.cpp"
+  "${Surge_SOURCE_DIR}/source/lua/lua_logs.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_callback_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_geometry_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_get_engine_config.cpp"
@@ -210,35 +212,20 @@ set(
 )
 
 # -----------------------------------------
-#  Logging system Source files
-# -----------------------------------------
-
-set(
-  SURGE_LOGGING_SYSTEM_HEADER_LIST
-  "${Surge_SOURCE_DIR}/include/logging_system/logging_system.hpp"
-  "${Surge_SOURCE_DIR}/include/logging_system/logging_system_bindings.hpp"
-)
-
-set(
-  SURGE_LOGGING_SYSTEM_SOURCE_LIST
-  "${Surge_SOURCE_DIR}/source/logging_system/logging_system_bindings.cpp"
-)
-
-# -----------------------------------------
-# Add engine library targets
+# Library targets
 # -----------------------------------------
 
 add_library(
   SurgeLoggingSystem
   SHARED
-  ${SURGE_LOGGING_SYSTEM_SOURCE_LIST}
+  "${Surge_SOURCE_DIR}/source/logging_system/logging_system.cpp"
 )
 
-target_link_libraries(SurgeLoggingSystem PRIVATE spdlog::spdlog_header_only)
+target_link_libraries(SurgeLoggingSystem PRIVATE fmt::fmt-header-only spdlog::spdlog_header_only)
 
 target_compile_features(SurgeLoggingSystem PRIVATE cxx_std_20)
 set_target_properties(SurgeLoggingSystem PROPERTIES OUTPUT_NAME "surge_logging")
-set_target_properties(SurgeLoggingSystem PROPERTIES PUBLIC_HEADER ${Surge_SOURCE_DIR}/include/logging_system/logging_system_bindings.hpp)
+set_target_properties(SurgeLoggingSystem PROPERTIES PUBLIC_HEADER ${Surge_SOURCE_DIR}/include/logging_system/logging_system.hpp)
 
 target_include_directories(
   SurgeLoggingSystem PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

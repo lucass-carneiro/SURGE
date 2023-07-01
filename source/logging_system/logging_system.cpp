@@ -1,10 +1,8 @@
-#include "logging_system/logging_system_bindings.hpp"
-
 #include "logging_system/logging_system.hpp"
 
 #include <cstdio>
 
-extern "C" void log_info(const char *msg) noexcept {
+extern "C" void info(const char *msg) noexcept {
   try {
     surge::log_info("{}", msg);
   } catch (std::exception &e) {
@@ -12,7 +10,7 @@ extern "C" void log_info(const char *msg) noexcept {
   }
 }
 
-extern "C" void log_error(const char *msg) noexcept {
+extern "C" void error(const char *msg) noexcept {
   try {
     surge::log_error("{}", msg);
   } catch (std::exception &e) {
@@ -20,7 +18,7 @@ extern "C" void log_error(const char *msg) noexcept {
   }
 }
 
-extern "C" void log_warn(const char *msg) noexcept {
+extern "C" void warn(const char *msg) noexcept {
   try {
     surge::log_warn("{}", msg);
   } catch (std::exception &e) {
@@ -28,7 +26,7 @@ extern "C" void log_warn(const char *msg) noexcept {
   }
 }
 
-extern "C" void log_debug(const char *msg) noexcept {
+extern "C" void debug(const char *msg) noexcept {
   try {
     surge::log_debug("{}", msg);
   } catch (std::exception &e) {
