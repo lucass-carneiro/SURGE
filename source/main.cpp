@@ -54,7 +54,10 @@ auto main(int argc, char **argv) noexcept -> int {
    * XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
    * future if possible
    */
-  if (!global_lua_states::get().init()) {
+  try {
+    global_lua_states::get();
+  } catch (const std::exception &e) {
+    log_error("Unable to initialize lua states {}", e.what());
     return EXIT_FAILURE;
   }
 

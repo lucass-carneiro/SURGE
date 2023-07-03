@@ -28,7 +28,6 @@ public:
     return states;
   }
 
-  auto init() noexcept -> bool;
   auto configure(const char *path) noexcept -> bool;
 
   [[nodiscard]] auto at(std::size_t i) noexcept -> lua_state_ptr &;
@@ -50,7 +49,7 @@ public:
   auto operator=(global_lua_states &&) -> global_lua_states & = delete;
 
 private:
-  global_lua_states() = default;
+  global_lua_states();
 
   state_vec_t state_array{eastl_allocator()};
 };

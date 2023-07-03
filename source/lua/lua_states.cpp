@@ -4,7 +4,7 @@
 #include "lua/lua_utils.hpp"
 #include "task_executor.hpp"
 
-auto surge::global_lua_states::init() noexcept -> bool {
+surge::global_lua_states::global_lua_states() {
   surge::log_info("Starting up Lua states");
 
   const auto num_threads{std::thread::hardware_concurrency()};
@@ -18,11 +18,12 @@ auto surge::global_lua_states::init() noexcept -> bool {
 
     if (L == nullptr) {
       log_error("Failed to initialize lua state {}", i);
-      return false;
+      throw std::runtime_error("Unable to initialize lua states");
     }
 
     luaL_openlibs(L);
     luaopen_jit(L);
+    luaopen_ffi(L);
     luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
     job_system::get().executor().async(lua_add_engine_context, L, i);
@@ -31,7 +32,6 @@ auto surge::global_lua_states::init() noexcept -> bool {
   }
 
   job_system::get().executor().wait_for_all();
-  return true;
 }
 
 auto surge::global_lua_states::configure(const char *path) noexcept -> bool {
