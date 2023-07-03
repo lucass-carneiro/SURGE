@@ -44,58 +44,59 @@ auto surge::validate_path(const char *path, const char *expected_extension) noex
   }
 }
 
-auto surge::load_file(const std::filesystem::path &p, const char *ext,
-                      bool append_null_byte) noexcept -> load_file_return_t {
-#ifdef SURGE_SYSTEM_Windows
-  log_info(L"Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
-#else
-  log_info("Loading raw data for file {}. Appending null byte: {}", p.c_str(), append_null_byte);
-#endif
+auto surge::load_file(const char *path, const char *ext, bool append_null_byte) noexcept
+    -> load_file_return_t {
 
-  const auto path_validation_result{validate_path(p.c_str(), ext)};
+  try {
+    log_info("Loading raw data for file {}. Appending null byte: {}", path, append_null_byte);
 
-  if (path_validation_result == false) {
-    return {};
-  }
+    const auto path_validation_result{validate_path(path, ext)};
 
-  const auto file_size{[&]() {
-    if (append_null_byte)
-      return (std::filesystem::file_size(p) + 1);
-    else
-      return std::filesystem::file_size(p);
-  }()};
-  void *buffer{mi_malloc(file_size)};
-  std::memset(buffer, 0, file_size);
+    if (path_validation_result == false) {
+      return {};
+    }
 
-  if (buffer == nullptr) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to allocate memory to hold file {}", p.c_str());
-#else
-    log_error("Unable to allocate memory to hold file {}", p.c_str());
-#endif
-    return {};
-  }
+    const auto file_size{[&]() {
+      if (append_null_byte) {
+        return (std::filesystem::file_size(path) + 1);
+      } else {
+        return std::filesystem::file_size(path);
+      }
+    }()};
 
-  auto byte_buffer{static_cast<std::byte *>(buffer)};
+    void *buffer{mi_malloc(file_size)};
+    std::memset(buffer, 0, file_size);
 
-  if (append_null_byte) {
-    byte_buffer[file_size - 1] = std::byte{0};
-  }
+    if (buffer == nullptr) {
+      log_error("Unable to allocate memory to hold file {}", path);
+      return {};
+    }
 
-  if (os_open_read(p, buffer, file_size)) {
-    return load_file_return_t{load_file_span{byte_buffer, file_size}};
-  } else {
-    mi_free(buffer);
+    auto byte_buffer{static_cast<std::byte *>(buffer)};
+
+    if (append_null_byte) {
+      byte_buffer[file_size - 1] = std::byte{0};
+    }
+
+    if (os_open_read(path, buffer, file_size)) {
+      return load_file_return_t{load_file_span{byte_buffer, file_size}};
+    } else {
+      mi_free(buffer);
+      return {};
+    }
+
+  } catch (const std::exception &e) {
+    log_error("Unable to load file {}: {}", path, e.what());
     return {};
   }
 }
 
 #ifdef SURGE_SYSTEM_IS_POSIX
 
-auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
-                         std::uintmax_t file_size) noexcept -> bool {
+auto surge::os_open_read(const char *path, void *buffer, std::uintmax_t file_size) noexcept
+    -> bool {
   // NOLINTNEXTLINE
-  int fd = open(p.c_str(), O_RDONLY);
+  int fd = open(path, O_RDONLY);
 
   if (fd == -1) {
     log_error("Error while oppening file: {}", std::strerror(errno));
@@ -103,7 +104,7 @@ auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
   }
 
   if (read(fd, buffer, file_size) == -1) {
-    log_error("Uanable to read the file {}: {}", p.c_str(), std::strerror(errno));
+    log_error("Uanable to read the file {}: {}", path, std::strerror(errno));
     close(fd);
     return false;
   }

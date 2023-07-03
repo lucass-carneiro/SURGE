@@ -29,7 +29,7 @@ public:
   }
 
   auto init() noexcept -> bool;
-  auto configure(const std::filesystem::path &path) noexcept -> bool;
+  auto configure(const char *path) noexcept -> bool;
 
   [[nodiscard]] auto at(std::size_t i) noexcept -> lua_state_ptr &;
   [[nodiscard]] auto back() noexcept -> lua_state_ptr &;

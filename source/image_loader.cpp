@@ -5,21 +5,12 @@
 #include "logging_system/logging_system.hpp"
 #include "options.hpp"
 
-auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
-    -> std::optional<image> {
-#ifdef SURGE_SYSTEM_Windows
-  log_info(L"Loading image file {}", p.c_str());
-#else
-  log_info("Loading image file {}", p.c_str());
-#endif
+auto surge::load_image(const char *p, const char *ext) noexcept -> std::optional<image> {
+  log_info("Loading image file {}", p);
 
   auto file{load_file(p, ext, false)};
   if (!file) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load image file {}", p.c_str());
-#else
-    log_error("Unable to load image file {}", p.c_str());
-#endif
+    log_error("Unable to load image file {}", p);
     return {};
   }
 
@@ -29,13 +20,7 @@ auto surge::load_image(const std::filesystem::path &p, const char *ext) noexcept
                             file.value().size(), &x, &y, &channels_in_file, 0)};
 
   if (img_data == nullptr) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load image file {} due to stbi error.", p.c_str());
-    log_error("stbi error: {}", stbi_failure_reason());
-#else
-    log_error("Unable to load image file {} due to stbi error: {}", p.c_str(),
-              stbi_failure_reason());
-#endif
+    log_error("Unable to load image file {} due to stbi error: {}", p, stbi_failure_reason());
     mi_free(file.value().data());
     return {};
   }

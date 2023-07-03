@@ -8,8 +8,7 @@
 
 namespace surge {
 
-[[nodiscard]] auto load_texture(const std::filesystem::path &p, const char *ext) noexcept
-    -> std::optional<GLuint>;
+[[nodiscard]] auto load_texture(const char *p, const char *ext) noexcept -> std::optional<GLuint>;
 
 } // namespace surge
 

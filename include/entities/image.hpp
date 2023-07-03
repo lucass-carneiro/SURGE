@@ -15,8 +15,8 @@ namespace surge {
 
 class image_entity {
 public:
-  image_entity(const std::filesystem::path &sprite_set_path, glm::vec3 &&position,
-               glm::vec3 &&scale, const char *sprite_sheet_ext = ".png") noexcept;
+  image_entity(const char *sprite_set_path, glm::vec3 &&position, glm::vec3 &&scale,
+               const char *sprite_sheet_ext = ".png") noexcept;
 
   void draw() noexcept;
   void draw_region(glm::vec2 &&origin, glm::vec2 &&dims) noexcept;
@@ -56,8 +56,7 @@ private:
   [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
   [[nodiscard]] auto gen_vao() const noexcept -> GLuint;
 
-  [[nodiscard]] auto load_texture(const std::filesystem::path &p, const char *ext) const noexcept
-      -> texture_data;
+  [[nodiscard]] auto load_texture(const char *p, const char *ext) const noexcept -> texture_data;
 
   void create_quad() noexcept;
 

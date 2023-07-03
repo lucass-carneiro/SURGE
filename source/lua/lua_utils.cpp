@@ -22,15 +22,10 @@ struct lua_file_handle {
 auto lua_reader(lua_State *, void *user_data, std::size_t *chunck_size) noexcept -> const char *;
 auto lua_message_handler(lua_State *L) noexcept -> int;
 
-auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept -> bool {
+auto surge::do_file_at(lua_State *L, const char *path) noexcept -> bool {
   // See example implementation from the Lua interpreter here:
   // https://www.lua.org/source/5.4/lua.c.html#msghandler
-
-#ifdef SURGE_SYSTEM_Windows
-  log_info(L"Doing Lua script {} at VM {:#x}", path.c_str(), reinterpret_cast<std::uintptr_t>(L));
-#else
-  log_info("Doing Lua script {} at VM {:#x}", path.c_str(), reinterpret_cast<std::uintptr_t>(L));
-#endif
+  log_info("Doing Lua script {} at VM {:#x}", path, reinterpret_cast<std::uintptr_t>(L));
 
   // Step 1: load file and construct a lua_file_handle object to pass to
   // lua_reader
@@ -39,13 +34,8 @@ auto surge::do_file_at(lua_State *L, const std::filesystem::path &path) noexcept
     return false;
   }
 
-// Step 2: Load Lua chunk
-#ifdef SURGE_SYSTEM_Windows
-  const auto lua_laod_stats{
-      lua_load(L, &lua_reader, static_cast<void *>(&handle), path.string().c_str())};
-#else
-  const auto lua_laod_stats{lua_load(L, &lua_reader, static_cast<void *>(&handle), path.c_str())};
-#endif
+  // Step 2: Load Lua chunk
+  const auto lua_laod_stats{lua_load(L, &lua_reader, static_cast<void *>(&handle), path)};
 
   if (lua_laod_stats != 0) {
     log_error("Error while loading Lua script: {}", lua_tostring(L, -1));
@@ -117,7 +107,7 @@ auto lua_message_handler(lua_State *L) noexcept -> int {
   return 1;
 }
 
-auto surge::do_file_at_idx(std::size_t i, const std::filesystem::path &path) noexcept -> bool {
+auto surge::do_file_at_idx(std::size_t i, const char *path) noexcept -> bool {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
 #endif

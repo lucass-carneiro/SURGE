@@ -3,8 +3,7 @@
 #include "image_loader.hpp"
 #include "logging_system/logging_system.hpp"
 
-auto surge::load_texture(const std::filesystem::path &p, const char *ext) noexcept
-    -> std::optional<GLuint> {
+auto surge::load_texture(const char *p, const char *ext) noexcept -> std::optional<GLuint> {
 
   // When passing images to OpenGL they must be flipped.
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
@@ -12,11 +11,7 @@ auto surge::load_texture(const std::filesystem::path &p, const char *ext) noexce
   auto image{load_image(p, ext)};
   if (!image) {
     stbi_set_flip_vertically_on_load(static_cast<int>(false));
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load texture {}", p.c_str());
-#else
-    log_error("Unable to load texture {}", p.c_str());
-#endif
+    log_error("Unable to load texture {}", p);
     return {};
   }
 

@@ -160,15 +160,9 @@ auto surge::global_engine_window::init() noexcept -> bool {
   if (!(std::filesystem::exists(engine_config->root_dir)
         && std::filesystem::is_directory(engine_config->root_dir))) {
 
-#ifdef SURGE_SYSTEM_Windows
-    log_error(
-        L"The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
-        engine_config->root_dir.c_str());
-#else
     log_error(
         "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
-        engine_config->root_dir.c_str());
-#endif
+        engine_config->root_dir);
 
     window.reset();
     glfwTerminate();
@@ -178,8 +172,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
 
   log_info("Compiling shaders");
 
-  sprite_shader = create_program(engine_config->root_dir / "shaders/sprite.vert",
-                                 engine_config->root_dir / "shaders/sprite.frag");
+  sprite_shader = create_program("shaders/sprite.vert", "shaders/sprite.frag");
   if (!sprite_shader) {
     window.reset();
     glfwTerminate();
@@ -187,8 +180,7 @@ auto surge::global_engine_window::init() noexcept -> bool {
     return window_init_success;
   }
 
-  image_shader = create_program(engine_config->root_dir / "shaders/image.vert",
-                                engine_config->root_dir / "shaders/image.frag");
+  image_shader = create_program("shaders/image.vert", "shaders/image.frag");
   if (!image_shader) {
     window.reset();
     glfwTerminate();

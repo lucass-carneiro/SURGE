@@ -18,15 +18,15 @@ struct lua_engine_config {
   bool show_cursor{true};
   lua_Integer show_debug_objects{0};
   std::array<lua_Number, 4> clear_color{0, 0, 0, 1};
-  std::filesystem::path root_dir{"/home/surge/"};
+  const char *root_dir{"/home/surge/"};
 };
 
 void lua_add_engine_context(lua_State *L, std::size_t i) noexcept;
 
 auto lua_get_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
 
-auto do_file_at(lua_State *L, const std::filesystem::path &path) noexcept -> bool;
-auto do_file_at_idx(std::size_t i, const std::filesystem::path &path) noexcept -> bool;
+auto do_file_at(lua_State *L, const char *path) noexcept -> bool;
+auto do_file_at_idx(std::size_t i, const char *path) noexcept -> bool;
 
 } // namespace surge
 

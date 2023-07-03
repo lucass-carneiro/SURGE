@@ -34,7 +34,7 @@ auto surge::global_lua_states::init() noexcept -> bool {
   return true;
 }
 
-auto surge::global_lua_states::configure(const std::filesystem::path &path) noexcept -> bool {
+auto surge::global_lua_states::configure(const char *path) noexcept -> bool {
   for (auto &lua_state_ptr : state_array) {
     if (!do_file_at(lua_state_ptr.get(), path)) {
       return false;

@@ -22,27 +22,22 @@ static constexpr const std::size_t sad_file_header_size{sad_file_id_string_size
                                                         + sizeof(std::uint32_t)};
 static constexpr const std::size_t sad_file_animation_data_size{sizeof(animation_data)};
 
-auto surge::load_sad_file(const std::filesystem::path &p) noexcept
-    -> std::optional<sad_file_contents> {
+auto surge::load_sad_file(const char *p) noexcept -> std::optional<sad_file_contents> {
 
   const auto file_data{load_file(p, ".sad", false)};
 
   // Check if the IO operation succeeded
   if (!file_data) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load sad file {}.", p.c_str());
-#else
-    log_error("Unable to load sad file {}.", p.c_str());
-#endif
+    log_error("Unable to load sad file {}.", p);
     return {};
   }
 
   // Check if the size is plausible
   if (file_data.value().size() < sad_file_header_size) {
 #ifdef SURGE_SYSTEM_Windows
-    log_error(L"The file {} is too short to contain valid animation data.", p.c_str());
+    log_error(L"The file {} is too short to contain valid animation data.", p);
 #else
-    log_error("The file {} is too short to contain valid animation data.", p.c_str());
+    log_error("The file {} is too short to contain valid animation data.", p);
 #endif
 
     mi_free(file_data.value().data());
@@ -53,11 +48,7 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   const auto header{static_cast<const char *>(
       static_cast<void *>(file_data.value().subspan(0, sad_file_id_string_size).data()))};
   if (std::strcmp(header, sad_file_id_string.data()) != 0) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"The file {} does not contain a SAD file header.", p.c_str());
-#else
-    log_error("The file {} does not contain a SAD file header.", p.c_str());
-#endif
+    log_error("The file {} does not contain a SAD file header.", p);
 
     mi_free(file_data.value().data());
     return {};
@@ -70,13 +61,8 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   // Check the total file size
   if (file_data.value().size()
       != (animation_count * sad_file_animation_data_size + sad_file_header_size)) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"The SAD file {} cannot store {} animations. {}", p.c_str(), animation_count,
+    log_error("The SAD file {} cannot store {} animations. {}", p, animation_count,
               file_data.value().size());
-#else
-    log_error("The SAD file {} cannot store {} animations. {}", p.c_str(), animation_count,
-              file_data.value().size());
-#endif
 
     mi_free(file_data.value().data());
     return {};
@@ -106,11 +92,7 @@ auto surge::load_sad_file(const std::filesystem::path &p) noexcept
   }
 
   mi_free(file_data.value().data());
-#ifdef SURGE_SYSTEM_Windows
-  log_info(L"Loaded {} with {} animations.", p.c_str(), animation_count);
-#else
-  log_info("Loaded {} with {} animations.", p.c_str(), animation_count);
-#endif
+  log_info("Loaded {} with {} animations.", p, animation_count);
 
   return file_contents;
 }

@@ -16,9 +16,6 @@ namespace surge {
 
 auto validate_path(const char *path, const char *expected_extension) noexcept -> bool;
 
-auto os_open_read(const std::filesystem::path &p, void *buffer, std::uintmax_t file_size) noexcept
-    -> bool;
-
 #ifdef SURGE_DEBUG_MEMORY
 using load_file_span = gsl::span<std::byte>;
 #else
@@ -27,8 +24,10 @@ using load_file_span = std::span<std::byte>;
 
 using load_file_return_t = std::optional<load_file_span>;
 
-auto load_file(const std::filesystem::path &p, const char *ext, bool append_null_byte) noexcept
+auto load_file(const char *path, const char *ext, bool append_null_byte) noexcept
     -> load_file_return_t;
+
+auto os_open_read(const char *path, void *buffer, std::uintmax_t file_size) noexcept -> bool;
 
 } // namespace surge
 

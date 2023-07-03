@@ -11,7 +11,7 @@
 namespace surge {
 
 struct sad_file_contents {
-  std::filesystem::path path;
+  const char *path;
   eastl::vector<std::uint32_t, eastl_allocator> x;
   eastl::vector<std::uint32_t, eastl_allocator> y;
   eastl::vector<std::uint32_t, eastl_allocator> Sw;
@@ -28,7 +28,7 @@ struct sad_file_contents {
         cols{mimalloc_eastl_allocator::get()} {}
 };
 
-auto load_sad_file(const std::filesystem::path &p) noexcept -> std::optional<sad_file_contents>;
+auto load_sad_file(const char *p) noexcept -> std::optional<sad_file_contents>;
 
 } // namespace surge
 

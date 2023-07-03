@@ -28,19 +28,15 @@ auto surge::image_entity::gen_vao() const noexcept -> GLuint {
   return tmp;
 }
 
-auto surge::image_entity::load_texture(const std::filesystem::path &p,
-                                       const char *ext) const noexcept -> texture_data {
+auto surge::image_entity::load_texture(const char *p, const char *ext) const noexcept
+    -> texture_data {
   // When passing images to OpenGL they must be flipped.
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
 
   auto image{load_image(p, ext)};
   if (!image) {
     stbi_set_flip_vertically_on_load(static_cast<int>(false));
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load spritesheet image file {}", p.c_str());
-#else
-    log_error("Unable to load spritesheet image file {}", p.c_str());
-#endif
+    log_error("Unable to load spritesheet image file {}", p);
     return {};
   }
 
@@ -188,9 +184,8 @@ auto surge::image_entity::get_corner_coordinates() const noexcept -> glm::vec3 {
   return current_quad.corner;
 }
 
-surge::image_entity::image_entity(const std::filesystem::path &sprite_set_path,
-                                  glm::vec3 &&position, glm::vec3 &&scale,
-                                  const char *sprite_sheet_ext) noexcept
+surge::image_entity::image_entity(const char *sprite_set_path, glm::vec3 &&position,
+                                  glm::vec3 &&scale, const char *sprite_sheet_ext) noexcept
     : VAO{gen_vao()},
       VBO{gen_buff()},
       EBO{gen_buff()},

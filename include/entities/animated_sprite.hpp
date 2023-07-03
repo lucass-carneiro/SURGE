@@ -15,9 +15,8 @@ namespace surge {
 
 class animated_sprite {
 public:
-  animated_sprite(const std::filesystem::path &sprite_set_path,
-                  const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
-                  glm::vec3 &&position, glm::vec3 &&scale,
+  animated_sprite(const char *sprite_set_path, const char *sad_file_path,
+                  std::uint32_t first_anim_idx, glm::vec3 &&position, glm::vec3 &&scale,
                   const char *sprite_sheet_ext = ".png") noexcept;
 
   void draw() noexcept;
@@ -64,7 +63,7 @@ private:
   [[nodiscard]] auto gen_buff() const noexcept -> GLuint;
   [[nodiscard]] auto gen_vao() const noexcept -> GLuint;
 
-  [[nodiscard]] auto load_spriteset(const std::filesystem::path &p, const char *ext) const noexcept
+  [[nodiscard]] auto load_spriteset(const char *p, const char *ext) const noexcept
       -> spriteset_data;
 
   void create_quad() noexcept;

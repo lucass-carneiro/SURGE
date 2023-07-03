@@ -137,7 +137,7 @@ template <typename T> [[nodiscard]] inline auto lua_get_field(lua_State *L, cons
       lua_pop(L, 2);
       return value;
     }
-  } else if constexpr (std::is_same<T, std::filesystem::path>::value) {
+  } else if constexpr (std::is_same<T, const char *>::value) {
     if (!lua_isstring(L, -1)) {
       lua_pop(L, 2);
       log_error("path string field {} not found", field_name);

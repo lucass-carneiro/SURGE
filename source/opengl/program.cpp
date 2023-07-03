@@ -44,14 +44,8 @@ auto surge::load_and_compile(const char *shader_source, const char *shader_name,
   }
 }
 
-auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type) noexcept
-    -> std::optional<GLuint> {
-
-#ifdef SURGE_SYSTEM_Windows
-  log_info(L"Loading shader file {}", p.c_str());
-#else
-  log_info("Loading shader file {}", p.c_str());
-#endif
+auto surge::load_and_compile(const char *p, GLenum shader_type) noexcept -> std::optional<GLuint> {
+  log_info("Loading shader file {}", p);
 
   load_file_return_t file{};
 
@@ -67,11 +61,7 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
   }
 
   if (!file) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load shader file {}", p.c_str());
-#else
-    log_error("Unable to load shader file {}", p.c_str());
-#endif
+    log_error("Unable to load shader file {}", p);
     return {};
   }
 
@@ -107,21 +97,12 @@ auto surge::load_and_compile(const std::filesystem::path &p, GLenum shader_type)
     // We don't need the shader anymore.
     glDeleteShader(shader_handle_tmp);
 
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Shader \"{}\" handle {} compilation failed:", p.c_str(), shader_handle_tmp);
-    log_error("Shader compilation error: {}", info_log.data());
-#else
-    log_error("Shader \"{}\" handle {} compilation failed:\n  {}", p.c_str(), shader_handle_tmp,
+    log_error("Shader \"{}\" handle {} compilation failed:\n  {}", p, shader_handle_tmp,
               info_log.data());
-#endif
 
     return {};
   } else {
-#ifdef SURGE_SYSTEM_Windows
-    log_info(L"Shader \"{}\" handle {} compilation succesfull", p.c_str(), shader_handle_tmp);
-#else
-    log_info("Shader \"{}\" handle {} compilation succesfull", p.c_str(), shader_handle_tmp);
-#endif
+    log_info("Shader \"{}\" handle {} compilation succesfull", p, shader_handle_tmp);
     return shader_handle_tmp;
   }
 }
@@ -183,9 +164,8 @@ auto surge::link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
   }
 }
 
-auto surge::create_program(const std::filesystem::path &vertex_shader_path,
-                           const std::filesystem::path &fragment_shader_path) noexcept
-    -> std::optional<GLuint> {
+auto surge::create_program(const char *vertex_shader_path,
+                           const char *fragment_shader_path) noexcept -> std::optional<GLuint> {
 
   const auto vertex_shader_handle{load_and_compile(vertex_shader_path, GL_VERTEX_SHADER)};
   const auto fragment_shader_handle{load_and_compile(fragment_shader_path, GL_FRAGMENT_SHADER)};

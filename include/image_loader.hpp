@@ -15,7 +15,7 @@ struct image {
   stbi_uc *data{nullptr};
 };
 
-auto load_image(const std::filesystem::path &p, const char *ext) noexcept -> std::optional<image>;
+auto load_image(const char *p, const char *ext) noexcept -> std::optional<image>;
 
 } // namespace surge
 

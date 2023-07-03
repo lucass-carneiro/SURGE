@@ -29,19 +29,14 @@ auto surge::actor::gen_vao() const noexcept -> GLuint {
   return tmp;
 }
 
-auto surge::actor::load_spriteset(const std::filesystem::path &p, const char *ext) const noexcept
-    -> spriteset_data {
+auto surge::actor::load_spriteset(const char *p, const char *ext) const noexcept -> spriteset_data {
   // When passing images to OpenGL they must be flipped.
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
 
   auto image{load_image(p, ext)};
   if (!image) {
     stbi_set_flip_vertically_on_load(static_cast<int>(false));
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"Unable to load spritesheet image file {}", p.c_str());
-#else
-    log_error("Unable to load spritesheet image file {}", p.c_str());
-#endif
+    log_error("Unable to load spritesheet image file {}", p);
     return {};
   }
 
@@ -253,10 +248,9 @@ auto surge::actor::get_anchor_coordinates() const noexcept -> glm::vec3 {
   return current_quad.corner + current_quad.anchor;
 }
 
-surge::actor::actor(const std::filesystem::path &sprite_set_path,
-                    const std::filesystem::path &sad_file_path, std::uint32_t first_anim_idx,
-                    glm::vec3 &&anchor, glm::vec3 &&position, glm::vec3 &&scale,
-                    const char *sprite_sheet_ext) noexcept
+surge::actor::actor(const char *sprite_set_path, const char *sad_file_path,
+                    std::uint32_t first_anim_idx, glm::vec3 &&anchor, glm::vec3 &&position,
+                    glm::vec3 &&scale, const char *sprite_sheet_ext) noexcept
     : VAO{gen_vao()},
       VBO{gen_buff()},
       EBO{gen_buff()},
