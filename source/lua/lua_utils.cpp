@@ -19,12 +19,47 @@ struct lua_file_handle {
   bool file_read{false};
 };
 
-auto lua_reader(lua_State *, void *user_data, std::size_t *chunck_size) noexcept -> const char *;
-auto lua_message_handler(lua_State *L) noexcept -> int;
+auto lua_reader(lua_State *, void *user_data, std::size_t *chunck_size) noexcept -> const char * {
+  auto handle{static_cast<lua_file_handle *>(user_data)};
+
+  if (!handle->file_read && handle->opt_file_span) {
+    *chunck_size = handle->opt_file_span.value().size();
+    handle->file_read = true;
+    return static_cast<const char *>(static_cast<void *>(handle->opt_file_span.value().data()));
+  } else {
+    *chunck_size = 0;
+    return nullptr;
+  }
+}
+
+// See https://www.lua.org/source/5.4/lua.c.html#msghandler
+auto lua_message_handler(lua_State *L) noexcept -> int {
+  const char *msg = lua_tostring(L, 1);
+
+  // is error object not a string?
+  if (msg == nullptr) {
+
+    // does it have a metamethod that produces a string?
+    if (luaL_callmeta(L, 1, "__tostring") && lua_type(L, -1) == LUA_TSTRING)
+
+      // that is the message
+      return 1;
+    else
+      // I have no other choice here.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
+      msg = lua_pushfstring(L, "(error object is a %s value)", luaL_typename(L, 1));
+  }
+
+  // append a standard traceback
+  luaL_traceback(L, L, msg, 1);
+
+  // return the traceback
+  return 1;
+}
 
 auto surge::do_file_at(lua_State *L, const char *path) noexcept -> bool {
-  // See example implementation from the Lua interpreter here:
-  // https://www.lua.org/source/5.4/lua.c.html#msghandler
+
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   log_info("Doing Lua script {} at VM {:#x}", path, reinterpret_cast<std::uintptr_t>(L));
 
   // Step 1: load file and construct a lua_file_handle object to pass to
@@ -70,48 +105,7 @@ auto surge::do_file_at(lua_State *L, const char *path) noexcept -> bool {
   return true;
 }
 
-auto lua_reader(lua_State *, void *user_data, std::size_t *chunck_size) noexcept -> const char * {
-  auto handle{static_cast<lua_file_handle *>(user_data)};
-
-  if (!handle->file_read) {
-    *chunck_size = handle->opt_file_span.value().size();
-    handle->file_read = true;
-    return static_cast<const char *>(static_cast<void *>(handle->opt_file_span.value().data()));
-  } else {
-    *chunck_size = 0;
-    return nullptr;
-  }
-}
-
-auto lua_message_handler(lua_State *L) noexcept -> int {
-  const char *msg = lua_tostring(L, 1);
-
-  // is error object not a string?
-  if (msg == nullptr) {
-
-    // does it have a metamethod that produces a string?
-    if (luaL_callmeta(L, 1, "__tostring") && lua_type(L, -1) == LUA_TSTRING)
-
-      // that is the message
-      return 1;
-    else
-      // I have no other choice here.
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-      msg = lua_pushfstring(L, "(error object is a %s value)", luaL_typename(L, 1));
-  }
-
-  // append a standard traceback
-  luaL_traceback(L, L, msg, 1);
-
-  // return the traceback
-  return 1;
-}
-
 auto surge::do_file_at_idx(std::size_t i, const char *path) noexcept -> bool {
-#ifdef SURGE_ENABLE_TRACY
-  ZoneScoped;
-#endif
-
   auto &lua_state{surge::global_lua_states::get().at(i)};
   return do_file_at(lua_state.get(), path);
 }
