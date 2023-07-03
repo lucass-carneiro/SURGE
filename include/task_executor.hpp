@@ -12,58 +12,30 @@
 
 namespace surge {
 
-class global_num_threads {
+class job_system {
 public:
-  inline static auto get() noexcept -> global_num_threads & {
-    static global_num_threads nt;
-    return nt;
+  inline static auto get() -> job_system & {
+    static job_system js;
+    return js;
   }
 
-  inline void init(long nt) noexcept { num_threads = nt; }
-  [[nodiscard]] inline auto count() const noexcept -> long { return num_threads; }
+  [[nodiscard]] inline auto executor() noexcept -> tf::Executor & { return exec; }
 
-  global_num_threads(const global_num_threads &) = delete;
-  global_num_threads(global_num_threads &&) = delete;
+  job_system(const job_system &) = delete;
+  job_system(job_system &&) = delete;
 
-  auto operator=(global_num_threads) -> global_num_threads & = delete;
+  auto operator=(job_system) -> job_system & = delete;
 
-  auto operator=(const global_num_threads &) -> global_num_threads & = delete;
+  auto operator=(const job_system &) -> job_system & = delete;
 
-  auto operator=(global_num_threads &&) -> global_num_threads & = delete;
+  auto operator=(job_system &&) -> job_system & = delete;
 
-  ~global_num_threads() = default;
-
-private:
-  global_num_threads() = default;
-  long num_threads{0};
-};
-
-class global_task_executor {
-public:
-  inline static auto get() noexcept -> tf::Executor & {
-    try {
-      static tf::Executor executor(
-          global_num_threads::get().count() > 1 ? global_num_threads::get().count() : 1);
-      return executor;
-    } catch (const std::exception &e) {
-      log_error("Global taskflow executor returned an exception: {}", e.what());
-      std::terminate();
-    }
-  }
-
-  global_task_executor(const global_task_executor &) = delete;
-  global_task_executor(global_task_executor &&) = delete;
-
-  auto operator=(global_task_executor) -> global_task_executor & = delete;
-
-  auto operator=(const global_task_executor &) -> global_task_executor & = delete;
-
-  auto operator=(global_task_executor &&) -> global_task_executor & = delete;
-
-  ~global_task_executor() = default;
+  ~job_system() = default;
 
 private:
-  global_task_executor() = default;
+  job_system() = default;
+
+  tf::Executor exec;
 };
 
 } // namespace surge

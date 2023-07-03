@@ -17,12 +17,8 @@ auto main(int argc, char **argv) noexcept -> int {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
 #endif
-
-  draw_logo();
-
   // Init allocator subsystem
   init_mimalloc();
-  mimalloc_eastl_allocator::get();
 
   // Init log subsystem
   try {
@@ -33,6 +29,9 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  // Logo
+  draw_logo();
+
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
   if (!cmd_line_args) {
@@ -42,8 +41,12 @@ auto main(int argc, char **argv) noexcept -> int {
   const auto [config_script_path, startup_script_path] = cmd_line_args.value();
 
   // Init parallel job system
-  global_num_threads::get().init(1);
-  global_task_executor::get();
+  try {
+    job_system::get();
+  } catch (const std::exception &e) {
+    log_error("Unable to initialize parallel job system {}", e.what());
+    return EXIT_FAILURE;
+  }
 
   /* Init Lua VM states
    * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,

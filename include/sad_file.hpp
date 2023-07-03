@@ -20,12 +20,12 @@ struct sad_file_contents {
   eastl::vector<std::uint32_t, eastl_allocator> cols;
 
   sad_file_contents()
-      : x{mimalloc_eastl_allocator::get()},
-        y{mimalloc_eastl_allocator::get()},
-        Sw{mimalloc_eastl_allocator::get()},
-        Sh{mimalloc_eastl_allocator::get()},
-        rows{mimalloc_eastl_allocator::get()},
-        cols{mimalloc_eastl_allocator::get()} {}
+      : x{eastl_allocator()},
+        y{eastl_allocator()},
+        Sw{eastl_allocator()},
+        Sh{eastl_allocator()},
+        rows{eastl_allocator()},
+        cols{eastl_allocator()} {}
 };
 
 auto load_sad_file(const char *p) noexcept -> std::optional<sad_file_contents>;

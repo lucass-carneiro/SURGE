@@ -92,7 +92,7 @@ auto surge::lua_run_task_at(lua_State *L) noexcept -> int {
   lua_State *worker{global_lua_states::get().at(target_vm_idx).get()};
 
   // Schedule task in another thread
-  global_task_executor::get().silent_async([=]() -> void {
+  job_system::get().executor().silent_async([=]() -> void {
     // Get remote task and ckeck for nil
     lua_getglobal(worker, "remote_task");
 

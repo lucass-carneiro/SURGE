@@ -7,7 +7,7 @@
 auto surge::global_lua_states::init() noexcept -> bool {
   surge::log_info("Starting up Lua states");
 
-  const auto num_threads{global_num_threads::get().count()};
+  const auto num_threads{std::thread::hardware_concurrency()};
 
   // Step 1: Allocate memory for the array of state pointers
   state_array.reserve(num_threads);
@@ -25,12 +25,12 @@ auto surge::global_lua_states::init() noexcept -> bool {
     luaopen_jit(L);
     luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
-    global_task_executor::get().async(lua_add_engine_context, L, i);
+    job_system::get().executor().async(lua_add_engine_context, L, i);
 
     state_array.push_back(lua_state_ptr{L, lua_close});
   }
 
-  global_task_executor::get().wait_for_all();
+  job_system::get().executor().wait_for_all();
   return true;
 }
 
