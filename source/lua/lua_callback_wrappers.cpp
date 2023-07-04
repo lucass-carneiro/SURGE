@@ -1,5 +1,6 @@
 #include "logging_system/logging_system.hpp"
 #include "lua/lua_wrappers.hpp"
+#include "timer_system/timer_system.hpp"
 #include "window.hpp"
 
 #ifdef SURGE_ENABLE_TRACY
@@ -51,7 +52,7 @@ void surge::lua_update_callback(lua_State *L) noexcept {
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "update");
-  lua_pushnumber(L, global_engine_window::get().get_frame_dt());
+  lua_pushnumber(L, frame_timer::get().dt());
 
   const auto pcall_result{lua_pcall(L, 1, 0, 0)};
 

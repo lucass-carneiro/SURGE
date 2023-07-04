@@ -8,4 +8,3 @@ ffi.cdef [[
 ]]
 
 return ffi.load(ffi.os == "Windows" and "TODO" or "./libsurge_logging.so")
-

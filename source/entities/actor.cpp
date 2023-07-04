@@ -3,6 +3,7 @@
 #include "image_loader.hpp"
 #include "logging_system/logging_system.hpp"
 #include "options.hpp"
+#include "timer_system/timer_system.hpp"
 #include "window.hpp"
 
 // clang-format off
@@ -233,7 +234,7 @@ void surge::actor::update_animation_frame() noexcept {
 }
 
 void surge::actor::update(double frame_update_delay) noexcept {
-  const auto dt{global_engine_window::get().get_frame_dt()};
+  const auto dt{frame_timer::get().dt()};
   static double elapsed{dt};
 
   if (elapsed < frame_update_delay) {

@@ -115,6 +115,9 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     do_file_at(L, "core_scripts/logging_system.lua");
     lua_setfield(L, -2, "log_ffi");
 
+    do_file_at(L, "core_scripts/timer_system.lua");
+    lua_setfield(L, -2, "timer");
+
     // begin task table
     lua_newtable(L);
     {

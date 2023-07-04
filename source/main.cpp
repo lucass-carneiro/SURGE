@@ -4,6 +4,7 @@
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "task_executor.hpp"
+#include "timer_system/timer_system.hpp"
 #include "window.hpp"
 
 #ifdef SURGE_ENABLE_TRACY
@@ -48,6 +49,14 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  // Init timer syste
+  try {
+    frame_timer::get();
+  } catch (const std::exception &e) {
+    log_error("Unable to start timer systems {}", e.what());
+    return EXIT_FAILURE;
+  }
+
   /* Init Lua VM states
    * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
    * LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
@@ -86,8 +95,7 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *          MAIN LOOP          *
    *******************************/
-  while ((global_engine_window::get().frame_timer_reset_and_start(),
-          !global_engine_window::get().should_close())) {
+  while ((frame_timer::get().begin_frame(), !global_engine_window::get().should_close())) {
 
     // Poll IO events
     global_engine_window::get().poll_events();
@@ -138,7 +146,7 @@ auto main(int argc, char **argv) noexcept -> int {
 #endif
 
     // Compute elapsed time
-    global_engine_window::get().frame_timmer_compute_dt();
+    frame_timer::get().end_frame();
   }
 
   return EXIT_SUCCESS;

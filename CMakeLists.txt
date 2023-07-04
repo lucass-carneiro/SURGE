@@ -157,7 +157,7 @@ set(
   "${Surge_SOURCE_DIR}/include/opengl/uniforms.hpp"
 
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
-
+  
   "${Surge_SOURCE_DIR}/include/allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
@@ -228,6 +228,21 @@ set_target_properties(SurgeLoggingSystem PROPERTIES PUBLIC_HEADER ${Surge_SOURCE
 
 target_include_directories(
   SurgeLoggingSystem PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
+
+add_library(
+  SurgeTimerSystem
+  SHARED
+  "${Surge_SOURCE_DIR}/source/timer_system/timer_system.cpp"
+)
+
+target_compile_features(SurgeTimerSystem PRIVATE cxx_std_20)
+set_target_properties(SurgeTimerSystem PROPERTIES OUTPUT_NAME "surge_timer")
+set_target_properties(SurgeTimerSystem PROPERTIES PUBLIC_HEADER ${Surge_SOURCE_DIR}/include/timer_system/timer_system.hpp)
+
+target_include_directories(
+  SurgeTimerSystem PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
@@ -347,4 +362,5 @@ target_link_libraries(Surge PRIVATE
   EASTL
   spdlog::spdlog_header_only
   SurgeLoggingSystem
+  SurgeTimerSystem
 )
