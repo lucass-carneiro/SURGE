@@ -116,10 +116,9 @@ auto surge::os_open_read(const char *path, void *buffer, std::uintmax_t file_siz
 
 #else
 
-// TODO: Error check
-auto surge::os_open_read(const std::filesystem::path &p, void *buffer,
-                         std::uintmax_t file_size) noexcept -> bool {
-  auto file{std::fopen(p.string().c_str(), "rb")};
+// TODO: Error check, unsafe on windows. Do better
+auto surge::os_open_read(const char *p, void *buffer, std::uintmax_t file_size) noexcept -> bool {
+  auto file{std::fopen(p, "rb")};
   std::fread(buffer, 1, file_size, file);
   return true;
 }

@@ -12,7 +12,7 @@ ffi.cdef [[
     int poll(struct pollfd *fds, unsigned long nfds, int timeout);
 ]]
 
-local surge_timer = ffi.load(ffi.os == "Windows" and "TODO" or
+local surge_timer = ffi.load(ffi.os == "Windows" and "surge_timer.dll" or
                                  "./libsurge_timer.so")
 
 local generic_timer_index = {

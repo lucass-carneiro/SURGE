@@ -7,4 +7,4 @@ ffi.cdef [[
   void debug(const char *);
 ]]
 
-return ffi.load(ffi.os == "Windows" and "TODO" or "./libsurge_logging.so")
+return ffi.load(ffi.os == "Windows" and "surge_logging.dll" or "./libsurge_logging.so")

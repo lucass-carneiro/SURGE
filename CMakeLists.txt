@@ -332,6 +332,6 @@ target_link_libraries(Surge PRIVATE
   implot::implot
   EASTL
   spdlog::spdlog_header_only
-  SurgeLoggingSystem
-  SurgeTimerSystem
+  SurgeLoggingSystem # On Windows, these lines should be removed. This is only used for static linking there.
+  SurgeTimerSystem # On Windows, these lines should be removed. This is only used for static linking there.
 )

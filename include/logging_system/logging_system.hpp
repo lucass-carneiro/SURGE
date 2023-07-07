@@ -23,7 +23,7 @@ public:
     return log;
   }
 
-  [[nodiscard]] auto get_logger() noexcept -> std::shared_ptr<spdlog::logger> & { return logger; }
+  [[nodiscard]] inline auto get_logger() noexcept -> std::shared_ptr<spdlog::logger> & { return logger; }
 
   log_manager(const log_manager &) = delete;
   log_manager(log_manager &&) = delete;
@@ -37,7 +37,22 @@ public:
 private:
   std::shared_ptr<spdlog::logger> logger;
 
-  log_manager();
+#ifdef SURGE_USE_LOG_COLOR
+  inline log_manager() : logger{spdlog::stdout_color_mt("surge_stdout_logger")} {
+    logger->set_pattern("\033[38;2;70;130;180m[%m-%d-%Y %H:%M:%S] "
+                        "\033[38;2;127;255;212m[thread %t] "
+                        "\033[1m%^%l:%$ "
+                        "\033[0m%v");
+  }
+
+#else
+
+  inline log_manager() : logger{spdlog::stdout_logger_mt("surge_stdout_logger")} {
+    logger->set_pattern("[%m-%d-%Y %H:%M:%S] [thread %t] %^%l:%$ %v");
+  }
+
+#endif
+
 };
 
 #ifdef SURGE_SYSTEM_Windows

@@ -34,12 +34,7 @@ auto surge::load_sad_file(const char *p) noexcept -> std::optional<sad_file_cont
 
   // Check if the size is plausible
   if (file_data.value().size() < sad_file_header_size) {
-#ifdef SURGE_SYSTEM_Windows
-    log_error(L"The file {} is too short to contain valid animation data.", p);
-#else
     log_error("The file {} is too short to contain valid animation data.", p);
-#endif
-
     mi_free(file_data.value().data());
     return {};
   }
