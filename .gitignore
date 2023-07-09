@@ -12,3 +12,6 @@ compile_commands.json
 vcpkg/*
 vcpkg_installed/*
 vcpkg.json
+
+staging_Debug/*
+staging_Release/*
