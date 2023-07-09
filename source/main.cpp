@@ -22,11 +22,7 @@ auto main(int argc, char **argv) noexcept -> int {
   init_mimalloc();
 
   // Init log subsystem
-  try {
-    log_manager::get();
-  } catch (const std::exception &e) {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-    printf("Unable to initialize logging system: %s", e.what());
+  if (!logger::init()) {
     return EXIT_FAILURE;
   }
 
