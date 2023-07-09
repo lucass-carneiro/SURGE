@@ -18,6 +18,10 @@ auto main(int argc, char **argv) noexcept -> int {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
 #endif
+
+  // Logo
+  draw_logo();
+
   // Init allocator subsystem
   init_mimalloc();
 
@@ -25,9 +29,6 @@ auto main(int argc, char **argv) noexcept -> int {
   if (!logger::init()) {
     return EXIT_FAILURE;
   }
-
-  // Logo
-  draw_logo();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
@@ -137,12 +138,12 @@ auto main(int argc, char **argv) noexcept -> int {
     // Present rendering
     global_engine_window::get().swap_buffers();
 
+    // Compute elapsed time
+    frame_timer::get().end_frame();
+
 #ifdef SURGE_ENABLE_TRACY
     FrameMark;
 #endif
-
-    // Compute elapsed time
-    frame_timer::get().end_frame();
   }
 
   return EXIT_SUCCESS;

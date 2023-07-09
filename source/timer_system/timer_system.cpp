@@ -17,7 +17,10 @@ auto generic_timer_new() noexcept -> surge::generic_timer * {
   }
 }
 
-void generic_timer_delete(surge::generic_timer *this_) noexcept { delete this_; }
+void generic_timer_delete(surge::generic_timer *this_) noexcept {
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  delete this_;
+}
 
 void generic_timer_start(surge::generic_timer *this_) noexcept { this_->start(); }
 

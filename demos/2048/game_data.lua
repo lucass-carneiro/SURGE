@@ -26,7 +26,7 @@ game_data.texture_origin_y = {
 }
 
 -- Threshold for using when determining if a piece reached a target
-game_data.motion_threshold = 1.5
+game_data.motion_threshold = 1
 
 -- The speed at which a piece moves through the board
 game_data.shift_speed = 5.0 * game_data.slot_delta

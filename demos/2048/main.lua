@@ -22,6 +22,7 @@ function surge.pre_loop()
                                                  game_data.slot_size, 1.0)
 
   board.add_random_piece(piece, game_data)
+  board.add_random_piece(piece, game_data)
 end
 
 function surge.key_event(key, action, mods)

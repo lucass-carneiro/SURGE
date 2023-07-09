@@ -107,7 +107,7 @@ function piece:update(dt, game_data)
     local abs_dy = math.abs(dy)
     local dy_norm = dy / abs_dy
 
-    if abs_dy > game_data.motion_threshold then
+    if math.floor(abs_dy) > game_data.motion_threshold then
       surge.image.move(game_data.piece_image_object, 0.0,
                        dy_norm * game_data.shift_speed * dt, 0.0)
       self.curent_slot_y =
@@ -127,7 +127,7 @@ function piece:update(dt, game_data)
     local abs_dx = math.abs(dx)
     local dx_norm = dx / abs_dx
 
-    if abs_dx > game_data.motion_threshold then
+    if math.floor(abs_dx) > game_data.motion_threshold then
       surge.image.move(game_data.piece_image_object,
                        dx_norm * game_data.shift_speed * dt, 0.0, 0.0)
       self.curent_slot_x =

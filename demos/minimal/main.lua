@@ -4,7 +4,7 @@ function surge.pre_loop()
   local t_c = 0
   local t_ffi = 0
 
-  local reps = 1000000
+  local reps = 1
 
   for _ = 1, reps, 1 do
     t:start()
@@ -25,6 +25,7 @@ function surge.pre_loop()
 end
 
 function surge.update(dt)
+  surge.log_ffi.info("dt = " .. tostring(dt))
   -- do nothing
 end
 
