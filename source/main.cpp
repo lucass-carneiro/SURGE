@@ -46,7 +46,7 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Init timer syste
+  // Init timer system
   try {
     frame_timer::get();
   } catch (const std::exception &e) {
@@ -92,6 +92,9 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *          MAIN LOOP          *
    *******************************/
+
+  auto dt_start{std::chrono::steady_clock::now()};
+
   while ((frame_timer::get().begin_frame(), !global_engine_window::get().should_close())) {
 
     // Poll IO events
@@ -118,7 +121,10 @@ auto main(int argc, char **argv) noexcept -> int {
     /*
      * Lua update callback
      */
-    lua_update_callback(global_lua_states::get().at(0).get());
+    lua_update_callback(
+        global_lua_states::get().at(0).get(),
+        std::chrono::duration<double>{std::chrono::steady_clock::now() - dt_start}.count());
+    dt_start = std::chrono::steady_clock::now();
 
     // Clear buffers
     global_engine_window::get().clear_framebuffer();

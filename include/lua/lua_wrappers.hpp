@@ -41,7 +41,7 @@ auto lua_run_task_at(lua_State *L) noexcept -> int;
 
 auto lua_pre_loop_callback(lua_State *L) noexcept -> bool;
 void lua_draw_callback(lua_State *L) noexcept;
-void lua_update_callback(lua_State *L) noexcept;
+void lua_update_callback(lua_State *L, double dt) noexcept;
 
 auto lua_get_cursor_pos(lua_State *L) noexcept -> int;
 auto lua_get_key_state(lua_State *L) noexcept -> int;

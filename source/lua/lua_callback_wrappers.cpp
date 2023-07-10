@@ -1,6 +1,5 @@
 #include "logging_system/logging_system.hpp"
 #include "lua/lua_wrappers.hpp"
-#include "timer_system/timer_system.hpp"
 #include "window.hpp"
 
 #ifdef SURGE_ENABLE_TRACY
@@ -45,14 +44,14 @@ void surge::lua_draw_callback(lua_State *L) noexcept {
   }
 }
 
-void surge::lua_update_callback(lua_State *L) noexcept {
+void surge::lua_update_callback(lua_State *L, double dt) noexcept {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
 #endif
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "update");
-  lua_pushnumber(L, frame_timer::get().dt());
+  lua_pushnumber(L, dt);
 
   const auto pcall_result{lua_pcall(L, 1, 0, 0)};
 
