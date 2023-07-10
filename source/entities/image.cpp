@@ -77,7 +77,7 @@ void surge::image_entity::reset_geometry(const glm::vec3 &position,
   model_matrix = glm::translate(model_matrix, current_quad.corner);
   model_matrix = glm::scale(model_matrix, current_quad.dims);
 
-  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+  set_uniform(default_shaders::sprite_shader, "model", model_matrix);
 }
 
 void surge::image_entity::reset_geometry(glm::vec3 &&position, glm::vec3 &&scale) noexcept {
@@ -91,7 +91,7 @@ void surge::image_entity::reset_position(const glm::vec3 &position) noexcept {
   model_matrix = glm::translate(model_matrix, current_quad.corner);
   model_matrix = glm::scale(model_matrix, current_quad.dims);
 
-  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+  set_uniform(default_shaders::sprite_shader, "model", model_matrix);
 }
 
 void surge::image_entity::reset_position(glm::vec3 &&position) noexcept {
@@ -134,7 +134,7 @@ void surge::image_entity::toggle_h_flip() noexcept { current_h_flip = !current_h
 void surge::image_entity::toggle_v_flip() noexcept { current_v_flip = !current_v_flip; }
 
 void surge::image_entity::draw() noexcept {
-  const auto &shader_program{global_engine_window::get().get_image_shader()};
+  const auto &shader_program{default_shaders::image_shader};
 
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
@@ -142,8 +142,8 @@ void surge::image_entity::draw() noexcept {
   set_uniform(shader_program, "r0", glm::vec2{0.0f, 0.0f});
   set_uniform(shader_program, "dims", texture.dimentions);
 
-  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_h_flip);
-  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
+  set_uniform(default_shaders::image_shader, "h_flip", current_h_flip);
+  set_uniform(default_shaders::image_shader, "v_flip", current_v_flip);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture.gl_texture_idx);
@@ -155,7 +155,7 @@ void surge::image_entity::draw() noexcept {
 }
 
 void surge::image_entity::draw_region(glm::vec2 &&origin, glm::vec2 &&dims) noexcept {
-  const auto &shader_program{global_engine_window::get().get_image_shader()};
+  const auto &shader_program{default_shaders::image_shader};
 
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
@@ -163,8 +163,8 @@ void surge::image_entity::draw_region(glm::vec2 &&origin, glm::vec2 &&dims) noex
   set_uniform(shader_program, "r0", origin);
   set_uniform(shader_program, "dims", dims);
 
-  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_h_flip);
-  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
+  set_uniform(default_shaders::image_shader, "h_flip", current_h_flip);
+  set_uniform(default_shaders::image_shader, "v_flip", current_v_flip);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture.gl_texture_idx);
@@ -196,6 +196,6 @@ surge::image_entity::image_entity(const char *sprite_set_path, glm::vec3 &&posit
   reset_geometry(std::forward<glm::vec3>(position), std::forward<glm::vec3>(scale));
 
   // Set initial flips to false
-  set_uniform(global_engine_window::get().get_image_shader(), "v_flip", current_v_flip);
-  set_uniform(global_engine_window::get().get_image_shader(), "h_flip", current_v_flip);
+  set_uniform(default_shaders::image_shader, "v_flip", current_v_flip);
+  set_uniform(default_shaders::image_shader, "h_flip", current_v_flip);
 }

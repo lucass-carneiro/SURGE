@@ -18,14 +18,6 @@
                 "gl-api-latest"
             ]
         },
-        {
-            "name": "imgui",
-            "features": [
-                "glfw-binding",
-                "opengl3-binding"
-            ]
-        },
-        "implot",
         "eastl",
         {
             "name": "spdlog",

@@ -1,6 +1,5 @@
 #include "allocator.hpp"
 #include "cli.hpp"
-#include "gui_windows/gui_windows.hpp"
 #include "job_system/job_system.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
@@ -13,7 +12,6 @@
 
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
-  using std::printf;
 
 #ifdef SURGE_ENABLE_TRACY
   ZoneScoped;
@@ -58,8 +56,14 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Initialize GLFW
-  if (!global_engine_window::get().init()) {
+  // Retrieve engine config
+  const auto engine_config = lua_get_engine_config(lua_states::at(0).get());
+  if (!engine_config) {
+    return EXIT_FAILURE;
+  }
+
+  // Initialize GLFW and game window
+  if (!engine_window::init(*engine_config)) {
     return EXIT_FAILURE;
   }
 
@@ -73,27 +77,15 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *          MAIN LOOP          *
    *******************************/
-
   auto dt_start{std::chrono::steady_clock::now()};
 
-  while ((frame_timer::begin(), !global_engine_window::get().should_close())) {
-
-    // Poll IO events
-    global_engine_window::get().poll_events();
-
-    // Start the Dear ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-
-    // This is required to fix a failed assartion in ImGui. Stupid, but works
-    ImGui::GetIO().DeltaTime = 1.0e-5;
-
-    ImGui::NewFrame();
+  while ((frame_timer::begin(), !glfwWindowShouldClose(engine_window::window.get()))) {
+    glfwPollEvents();
 
     /*
      * Hot reload startup script. TODO: Maybe this should be better, like user controlled?
      */
-    if (global_engine_window::get().get_key(GLFW_KEY_F5) == GLFW_PRESS) {
+    if (glfwGetKey(engine_window::window.get(), GLFW_KEY_F5) == GLFW_PRESS) {
       if (!do_file_at_idx(0, startup_script_path)) {
         return EXIT_FAILURE;
       }
@@ -108,7 +100,11 @@ auto main(int argc, char **argv) noexcept -> int {
     dt_start = std::chrono::steady_clock::now();
 
     // Clear buffers
-    global_engine_window::get().clear_framebuffer();
+    glClearColor(gsl::narrow_cast<GLfloat>(engine_config->clear_color[0]),
+                 gsl::narrow_cast<GLfloat>(engine_config->clear_color[1]),
+                 gsl::narrow_cast<GLfloat>(engine_config->clear_color[2]),
+                 gsl::narrow_cast<GLfloat>(engine_config->clear_color[3]));
+    glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     /*
@@ -116,22 +112,19 @@ auto main(int argc, char **argv) noexcept -> int {
      */
     lua_draw_callback(lua_states::at(0).get());
 
-    // Render Dear ImGui
-    // ImGui::ShowDemoWindow();
-    // show_main_gui_window();
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    // Present rendering
-    global_engine_window::get().swap_buffers();
-
     // Compute elapsed frame time
     frame_timer::end();
+
+    glfwSwapBuffers(engine_window::window.get());
 
 #ifdef SURGE_ENABLE_TRACY
     FrameMark;
 #endif
   }
+
+  log_info("Deleting window.");
+  engine_window::window.reset();
+  glfwTerminate();
 
   return EXIT_SUCCESS;
 }

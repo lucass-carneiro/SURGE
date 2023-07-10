@@ -117,7 +117,7 @@ void surge::actor::reset_geometry(const glm::vec3 &anchor, const glm::vec3 &posi
   model_matrix = glm::translate(model_matrix, current_quad.corner);
   model_matrix = glm::scale(model_matrix, current_quad.dims);
 
-  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+  set_uniform(default_shaders::sprite_shader, "model", model_matrix);
 }
 
 void surge::actor::reset_geometry(glm::vec3 &&anchor, glm::vec3 &&position,
@@ -152,17 +152,15 @@ void surge::actor::toggle_v_flip() noexcept {
 }
 
 void surge::actor::draw() noexcept {
-  const auto &shader_program{global_engine_window::get().get_sprite_shader()};
+  const auto &shader_program{default_shaders::sprite_shader};
 
   set_uniform(shader_program, "txt_0", GLint{0});
   set_uniform(shader_program, "model", model_matrix);
 
   set_uniform(shader_program, "sheet_set_dimentions", spriteset.set_dimentions);
 
-  set_uniform(global_engine_window::get().get_sprite_shader(), "h_flip",
-              current_animation_data.h_flip);
-  set_uniform(global_engine_window::get().get_sprite_shader(), "v_flip",
-              current_animation_data.v_flip);
+  set_uniform(default_shaders::sprite_shader, "h_flip", current_animation_data.h_flip);
+  set_uniform(default_shaders::sprite_shader, "v_flip", current_animation_data.v_flip);
 
   if (sad_file.has_value()) {
     set_uniform(shader_program, "sheet_offsets",
@@ -195,7 +193,7 @@ void surge::actor::move(glm::vec3 &&vec) noexcept {
   current_quad.corner += vec;
 
   model_matrix = glm::translate(model_matrix, vec);
-  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+  set_uniform(default_shaders::sprite_shader, "model", model_matrix);
 }
 
 void surge::actor::scale(glm::vec3 &&vec) noexcept {
@@ -208,7 +206,7 @@ void surge::actor::scale(glm::vec3 &&vec) noexcept {
   model_matrix = glm::mat4{1.0};
   model_matrix = glm::translate(model_matrix, current_quad.corner);
   model_matrix = glm::scale(model_matrix, current_quad.dims);
-  set_uniform(global_engine_window::get().get_sprite_shader(), "model", model_matrix);
+  set_uniform(default_shaders::sprite_shader, "model", model_matrix);
 }
 
 auto surge::actor::delinearize_animation_frame_index() const noexcept -> glm::vec2 {
@@ -266,8 +264,8 @@ surge::actor::actor(const char *sprite_set_path, const char *sad_file_path,
                  std::forward<glm::vec3>(scale));
 
   // Set initial flips to false
-  set_uniform(global_engine_window::get().get_sprite_shader(), "v_flip",
+  set_uniform(default_shaders::sprite_shader, "v_flip",
               static_cast<GLboolean>(current_animation_data.v_flip));
-  set_uniform(global_engine_window::get().get_sprite_shader(), "h_flip",
+  set_uniform(default_shaders::sprite_shader, "h_flip",
               static_cast<GLboolean>(current_animation_data.h_flip));
 }

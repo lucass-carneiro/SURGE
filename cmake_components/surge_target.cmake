@@ -8,8 +8,6 @@ set(
   "${Surge_SOURCE_DIR}/include/entities/animated_sprite.hpp"
   "${Surge_SOURCE_DIR}/include/entities/image.hpp"
 
-  "${Surge_SOURCE_DIR}/include/gui_windows/gui_windows.hpp"
-
   "${Surge_SOURCE_DIR}/include/lua/lua_bindings.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_logs.hpp"
   "${Surge_SOURCE_DIR}/include/lua/lua_states.hpp"
@@ -45,9 +43,6 @@ set(
   "${Surge_SOURCE_DIR}/source/entities/actor.cpp"
   "${Surge_SOURCE_DIR}/source/entities/animated_sprite.cpp"
   "${Surge_SOURCE_DIR}/source/entities/image.cpp"
-
-  "${Surge_SOURCE_DIR}/source/gui_windows/fps_counter_window.cpp"
-  "${Surge_SOURCE_DIR}/source/gui_windows/main_gui_window.cpp"
 
   "${Surge_SOURCE_DIR}/source/lua/lua_actor_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_image_wrappers.cpp"
@@ -197,8 +192,6 @@ target_link_libraries(Surge PRIVATE
   glm::glm
   glad::glad
   glfw
-  imgui::imgui
-  implot::implot
   EASTL
   spdlog::spdlog_header_only
   SurgeLoggingSystem # On Windows, these lines should be removed. This is only used for static linking there.

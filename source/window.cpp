@@ -15,37 +15,21 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <gsl/gsl-lite.hpp>
 #include <iostream>
 #include <sstream>
 
-surge::global_engine_window::~global_engine_window() {
-  log_info("Deleting window.");
+surge::engine_window::window_ptr_t surge::engine_window::window
+    = window_ptr_t{nullptr, glfwDestroyWindow};
 
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImPlot::DestroyContext();
-  ImGui::DestroyContext();
+GLuint surge::default_shaders::sprite_shader = 0;
+GLuint surge::default_shaders::image_shader = 0;
 
-  // Calling reset on the window* guarantees that it will be destroyed before
-  // glfwTerminate
-  window.reset();
-
-  if (window_init_success) {
-    glfwTerminate();
-  }
-}
-
-auto surge::global_engine_window::init() noexcept -> bool {
-  log_info("Initializing window");
-
-  // Retrieve, parse and cast configuration values from config script using the main thread VM
-  lua_State *L{lua_states::at(0).get()};
-  engine_config = lua_get_engine_config(L);
-
-  if (!engine_config) {
-    window_init_success = false;
-    return window_init_success;
-  }
+auto surge::engine_window::init(const lua_engine_config &engine_config) noexcept -> bool {
+  /*******************************
+   *     Initializing GLFW       *
+   *******************************/
+  log_info("Initializing GLFW");
 
   // Register GLFW error callback
   glfwSetErrorCallback(glfw_error_callback);
@@ -53,185 +37,24 @@ auto surge::global_engine_window::init() noexcept -> bool {
   // Initialize GLFW memory allocator structure;
   // TODO: This is only available in conan 3.4, which conan does not support yet
 
-  // Initialize glfw
   if (glfwInit() != GLFW_TRUE) {
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  // Validate monitor index
-  auto monitors = querry_available_monitors();
-  if (!monitors.has_value()) {
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  if (engine_config->window_monitor_index >= monitors.value().second) {
-    log_warn("Unable to set window monitor to {} because there are only {} "
-             "monitors. Using default monitor index 0",
-             engine_config->window_monitor_index, monitors.value().second);
-    engine_config->window_monitor_index = 0;
-  }
-
-  // GLFW window creation
-  log_info("Initializing engine window");
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef SURGE_SYSTEM_MacOSX // TODO: Is this macro name correct?
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-  if (engine_config->windowed) {
-    (void)window.release();
-    window.reset(glfwCreateWindow(engine_config->window_width, engine_config->window_height,
-                                  engine_config->window_name, nullptr, nullptr));
-  } else {
-    (void)window.release();
-    window.reset(glfwCreateWindow(
-        engine_config->window_width, engine_config->window_height, engine_config->window_name,
-        (monitors.value().first)[engine_config->window_monitor_index], nullptr));
-  }
-
-  if (window == nullptr) {
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
+    return false;
   }
 
   /*******************************
-   *       OpenGL Context        *
+   *    Validating monitors      *
    *******************************/
-
-  glfwMakeContextCurrent(window.get());
-  glfwSwapInterval(1); // TODO: Set vsync via code;
-
-  /*******************************
-   *      Input callbacks        *
-   *******************************/
-  glfwSetKeyCallback(window.get(), glfw_key_callback);
-  glfwSetMouseButtonCallback(window.get(), glfw_mouse_button_callback);
-  glfwSetScrollCallback(window.get(), glfw_scroll_callback);
-
-  /*******************************
-   *          DearImGui          *
-   *******************************/
-
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImPlot::CreateContext();
-  // ImGuiIO &io = ImGui::GetIO();
-  //   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-  //   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  // ImGui::StyleColorsLight();
-
-  // Setup Platform/Renderer backends
-  ImGui_ImplGlfw_InitForOpenGL(window.get(), true);
-  ImGui_ImplOpenGL3_Init("#version 130");
-
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    log_error("Failed to initialize GLAD");
-    window.reset();
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  // Resize callback and viewport creation.
-  glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
-
-  /*******************************
-   *       OpenGL Options        *
-   *******************************/
-  glEnable(GL_DEPTH_TEST);
-
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  /*******************************
-   *           SHADERS           *
-   *******************************/
-  if (!(std::filesystem::exists(engine_config->root_dir)
-        && std::filesystem::is_directory(engine_config->root_dir))) {
-
-    log_error(
-        "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
-        engine_config->root_dir);
-
-    window.reset();
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  log_info("Compiling shaders");
-
-  sprite_shader = create_program("shaders/sprite.vert", "shaders/sprite.frag");
-  if (!sprite_shader) {
-    window.reset();
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  image_shader = create_program("shaders/image.vert", "shaders/image.frag");
-  if (!image_shader) {
-    window.reset();
-    glfwTerminate();
-    window_init_success = false;
-    return window_init_success;
-  }
-
-  /*******************************
-   *       VIEW/PROJECTION       *
-   *******************************/
-  view_matrix = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                            glm::vec3(0.0f, 1.0f, 0.0f));
-
-  projection_matrix
-      = glm::ortho(0.0f, static_cast<float>(engine_config->window_width),
-                   static_cast<float>(engine_config->window_height), 0.0f, 0.0f, 1.1f);
-
-  glUseProgram(*sprite_shader);
-  set_uniform(*sprite_shader, "view", view_matrix);
-  set_uniform(*sprite_shader, "projection", projection_matrix);
-
-  glUseProgram(*image_shader);
-  set_uniform(*image_shader, "view", view_matrix);
-  set_uniform(*image_shader, "projection", projection_matrix);
-
-  /*******************************
-   *           CURSORS           *
-   *******************************/
-  if (engine_config->show_cursor) {
-    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  } else {
-    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-  }
-
-  window_init_success = true;
-  return window_init_success;
-}
-
-auto surge::global_engine_window::querry_available_monitors() noexcept
-    -> std::optional<std::pair<GLFWmonitor **, int>> {
-
-  int count = 0;
-  GLFWmonitor **monitors = glfwGetMonitors(&count);
+  int monitor_count = 0;
+  GLFWmonitor **monitors = glfwGetMonitors(&monitor_count);
 
   if (monitors == nullptr) {
-    return {};
+    glfwTerminate();
+    return false;
   }
 
-  log_info("Monitors detected: {}", count);
+  log_info("Monitors detected: {}", monitor_count);
 
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < monitor_count; i++) {
     int width = 0, height = 0;
     float xscale = 0, yscale = 0;
     int xpos = 0, ypos = 0;
@@ -251,41 +74,163 @@ auto surge::global_engine_window::querry_available_monitors() noexcept
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const char *name = glfwGetMonitorName(monitors[i]);
-    if (name == nullptr) {
-      return {};
-    }
 
-    // clang-format off
-    log_info(
-        "Properties of monitor {}:\n"
-        "  Monitor name: {}.\n"
-        "  Physical size (width, height): {}, {}.\n"
-        "  Content scale (x, y): {}, {}.\n"
-        "  Virtual position: (x, y): {}, {}.\n"
-        "  Work area (x, y, width, height): {}, {}, {}, {}.",
-        i,
-        name,
-        width,
-        height,
-        xscale,
-        yscale,
-        xpos,
-        ypos,
-        w_xpos,
-        w_ypos,
-        w_width,
-        w_height
-    );
-    // clang-format on
+    if (name == nullptr) {
+      log_error("Unnamed monitor {}", i);
+    } else {
+      // clang-format off
+      log_info(
+          "Properties of monitor {}:\n"
+          "  Monitor name: {}.\n"
+          "  Physical size (width, height): {}, {}.\n"
+          "  Content scale (x, y): {}, {}.\n"
+          "  Virtual position: (x, y): {}, {}.\n"
+          "  Work area (x, y, width, height): {}, {}, {}, {}.",
+          i,
+          name,
+          width,
+          height,
+          xscale,
+          yscale,
+          xpos,
+          ypos,
+          w_xpos,
+          w_ypos,
+          w_width,
+          w_height
+      );
+      // clang-format on
+    }
   }
 
-  return std::make_pair(monitors, count);
+  /*******************************
+   *       Window Creation       *
+   *******************************/
+  log_info("Initializing engine window");
+
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+// TODO: Is this macro name correct?
+#ifdef SURGE_SYSTEM_MacOSX
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+  if (engine_config.windowed) {
+    window.reset(glfwCreateWindow(gsl::narrow_cast<int>(engine_config.window_width),
+                                  gsl::narrow_cast<int>(engine_config.window_height),
+                                  engine_config.window_name, nullptr, nullptr));
+  } else {
+    window.reset(glfwCreateWindow(gsl::narrow_cast<int>(engine_config.window_width),
+                                  gsl::narrow_cast<int>(engine_config.window_height),
+                                  engine_config.window_name,
+
+                                  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+                                  monitors[engine_config.window_monitor_index < monitor_count
+                                               ? engine_config.window_monitor_index
+                                               : 0],
+                                  nullptr));
+  }
+
+  if (window == nullptr) {
+    glfwTerminate();
+    return false;
+  }
+
+  log_info("Engine window created");
+
+  /*******************************
+   *       OpenGL Context        *
+   ******************************/
+  glfwMakeContextCurrent(window.get());
+  glfwSwapInterval(1); // TODO: Set vsync via code;
+
+  /*******************************
+   *      Input callbacks        *
+   *******************************/
+  glfwSetKeyCallback(window.get(), glfw_key_callback);
+  glfwSetMouseButtonCallback(window.get(), glfw_mouse_button_callback);
+  glfwSetScrollCallback(window.get(), glfw_scroll_callback);
+
+  /*******************************
+   *             GLAD            *
+   *******************************/
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    log_error("Failed to initialize GLAD");
+    window.reset();
+    glfwTerminate();
+    return false;
+  }
+
+  // Resize callback and viewport creation.
+  glfwSetFramebufferSizeCallback(window.get(), framebuffer_size_callback);
+
+  /*******************************
+   *       OpenGL Options        *
+   *******************************/
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  /*******************************
+   *           SHADERS           *
+   *******************************/
+  if (!(std::filesystem::exists(engine_config.root_dir)
+        && std::filesystem::is_directory(engine_config.root_dir))) {
+    log_error(
+        "The path {} in the configuration value \"engine_root_dir\" is not a valid directory.",
+        engine_config.root_dir);
+
+    window.reset();
+    glfwTerminate();
+    return false;
+  }
+
+  log_info("Compiling shaders");
+
+  default_shaders::sprite_shader
+      = create_program("shaders/sprite.vert", "shaders/sprite.frag").value_or(0);
+  default_shaders::image_shader
+      = create_program("shaders/image.vert", "shaders/image.frag").value_or(0);
+
+  /*******************************
+   *       VIEW/PROJECTION       *
+   *******************************/
+  const auto view_matrix{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                                     glm::vec3(0.0f, 1.0f, 0.0f))};
+
+  const auto projection_matrix{glm::ortho(0.0f, gsl::narrow_cast<float>(engine_config.window_width),
+                                          gsl::narrow_cast<float>(engine_config.window_height),
+                                          0.0f, 0.0f, 1.1f)};
+
+  glUseProgram(default_shaders::sprite_shader);
+  set_uniform(default_shaders::sprite_shader, "view", view_matrix);
+  set_uniform(default_shaders::sprite_shader, "projection", projection_matrix);
+
+  glUseProgram(default_shaders::image_shader);
+  set_uniform(default_shaders::image_shader, "view", view_matrix);
+  set_uniform(default_shaders::image_shader, "projection", projection_matrix);
+
+  /*******************************
+   *           CURSORS           *
+   *******************************/
+  if (engine_config.show_cursor) {
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  } else {
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+  }
+
+  return true;
 }
 
-void surge::glfw_error_callback(int code, const char *description) noexcept {
+void surge::engine_window::glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW error code {}: {}", code, description);
 }
 
-void surge::framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
+void surge::engine_window::framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
