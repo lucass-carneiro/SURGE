@@ -1,8 +1,8 @@
+#include "job_system/job_system.hpp"
 #include "logging_system/logging_system.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "lua/lua_wrappers.hpp"
-#include "task_executor.hpp"
 
 auto surge::lua_send_task_to(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
@@ -29,14 +29,14 @@ auto surge::lua_send_task_to(lua_State *L) noexcept -> int {
 
   const auto target_vm_idx{static_cast<std::size_t>(lua_tointeger(L, 1))};
 
-  if (target_vm_idx == 0 || target_vm_idx >= global_lua_states::get().size()) {
+  if (target_vm_idx == 0 || target_vm_idx >= lua_states::state_array.size()) {
     log_warn("Cannot send to VM index {}. Returning nil", target_vm_idx);
     lua_pushnil(L);
     return 1;
   }
 
   // Get worker VM
-  lua_State *worker{global_lua_states::get().at(target_vm_idx).get()};
+  lua_State *worker{lua_states::at(target_vm_idx).get()};
 
   // Serialize the task
   lua_getglobal(L, "surge");
@@ -82,17 +82,17 @@ auto surge::lua_run_task_at(lua_State *L) noexcept -> int {
 
   const auto target_vm_idx{static_cast<std::size_t>(lua_tointeger(L, 1))};
 
-  if (target_vm_idx == 0 || target_vm_idx >= global_lua_states::get().size()) {
+  if (target_vm_idx == 0 || target_vm_idx >= lua_states::state_array.size()) {
     log_warn("Cannot run task in VM index {}. Returning nil", target_vm_idx);
     lua_pushnil(L);
     return 1;
   }
 
   // Get worker VM
-  lua_State *worker{global_lua_states::get().at(target_vm_idx).get()};
+  lua_State *worker{lua_states::at(target_vm_idx).get()};
 
   // Schedule task in another thread
-  job_system::get().executor().silent_async([=]() -> void {
+  job_system::executor.silent_async([=]() -> void {
     // Get remote task and ckeck for nil
     lua_getglobal(worker, "remote_task");
 

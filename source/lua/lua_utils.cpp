@@ -106,6 +106,6 @@ auto surge::do_file_at(lua_State *L, const char *path) noexcept -> bool {
 }
 
 auto surge::do_file_at_idx(std::size_t i, const char *path) noexcept -> bool {
-  auto &lua_state{surge::global_lua_states::get().at(i)};
+  auto &lua_state{surge::lua_states::at(i)};
   return do_file_at(lua_state.get(), path);
 }

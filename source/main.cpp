@@ -1,9 +1,9 @@
 #include "allocator.hpp"
 #include "cli.hpp"
 #include "gui_windows/gui_windows.hpp"
+#include "job_system/job_system.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
-#include "task_executor.hpp"
 #include "timer_system/timer_system.hpp"
 #include "window.hpp"
 
@@ -38,29 +38,18 @@ auto main(int argc, char **argv) noexcept -> int {
 
   const auto [config_script_path, startup_script_path] = cmd_line_args.value();
 
-  // Init parallel job system
-  try {
-    job_system::get();
-  } catch (const std::exception &e) {
-    log_error("Unable to initialize parallel job system {}", e.what());
-    return EXIT_FAILURE;
-  }
-
   /* Init Lua VM states
    * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
    * LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
    * XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
    * future if possible
    */
-  try {
-    global_lua_states::get();
-  } catch (const std::exception &e) {
-    log_error("Unable to initialize lua states {}", e.what());
+  if (!lua_states::init()) {
     return EXIT_FAILURE;
   }
 
   // Init all VMs with the engine configuration
-  if (!global_lua_states::get().configure(config_script_path)) {
+  if (!lua_states::configure(config_script_path)) {
     return EXIT_FAILURE;
   }
 
@@ -77,7 +66,7 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *      PRE LOOP CALLBACK      *
    *******************************/
-  if (!lua_pre_loop_callback(global_lua_states::get().at(0).get())) {
+  if (!lua_pre_loop_callback(lua_states::at(0).get())) {
     return EXIT_FAILURE;
   }
 
@@ -114,7 +103,7 @@ auto main(int argc, char **argv) noexcept -> int {
      * Lua update callback
      */
     lua_update_callback(
-        global_lua_states::get().at(0).get(),
+        lua_states::at(0).get(),
         std::chrono::duration<double>{std::chrono::steady_clock::now() - dt_start}.count());
     dt_start = std::chrono::steady_clock::now();
 
@@ -125,7 +114,7 @@ auto main(int argc, char **argv) noexcept -> int {
     /*
      * Lua draw callback
      */
-    lua_draw_callback(global_lua_states::get().at(0).get());
+    lua_draw_callback(lua_states::at(0).get());
 
     // Render Dear ImGui
     // ImGui::ShowDemoWindow();
@@ -138,7 +127,6 @@ auto main(int argc, char **argv) noexcept -> int {
 
     // Compute elapsed frame time
     frame_timer::end();
-    log_info("frame time {}", frame_timer::duration());
 
 #ifdef SURGE_ENABLE_TRACY
     FrameMark;

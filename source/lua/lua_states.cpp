@@ -1,10 +1,12 @@
 #include "lua/lua_states.hpp"
 
 #include "allocator.hpp"
+#include "job_system/job_system.hpp"
 #include "lua/lua_utils.hpp"
-#include "task_executor.hpp"
 
-surge::global_lua_states::global_lua_states() {
+surge::lua_states::state_vec_t surge::lua_states::state_array = state_vec_t{eastl_allocator{}};
+
+auto surge::lua_states::init() noexcept -> bool {
   surge::log_info("Starting up Lua states");
 
   const auto num_threads{std::thread::hardware_concurrency()};
@@ -18,7 +20,7 @@ surge::global_lua_states::global_lua_states() {
 
     if (L == nullptr) {
       log_error("Failed to initialize lua state {}", i);
-      throw std::runtime_error("Unable to initialize lua states");
+      return false;
     }
 
     luaL_openlibs(L);
@@ -26,15 +28,17 @@ surge::global_lua_states::global_lua_states() {
     luaopen_ffi(L);
     luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
-    job_system::get().executor().async(lua_add_engine_context, L, i);
+    job_system::executor.async(lua_add_engine_context, L, i);
 
     state_array.push_back(lua_state_ptr{L, lua_close});
   }
 
-  job_system::get().executor().wait_for_all();
+  job_system::executor.wait_for_all();
+
+  return true;
 }
 
-auto surge::global_lua_states::configure(const char *path) noexcept -> bool {
+auto surge::lua_states::configure(const char *path) noexcept -> bool {
   for (auto &lua_state_ptr : state_array) {
     if (!do_file_at(lua_state_ptr.get(), path)) {
       return false;
@@ -44,9 +48,7 @@ auto surge::global_lua_states::configure(const char *path) noexcept -> bool {
   return true;
 }
 
-surge::global_lua_states::~global_lua_states() noexcept { surge::log_info("Closing Lua states"); }
-
-auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
+auto surge::lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
   try {
     return state_array.at(i);
   } catch (const std::exception &e) {
@@ -55,5 +57,3 @@ auto surge::global_lua_states::at(std::size_t i) noexcept -> lua_state_ptr & {
   }
   return state_array[0];
 }
-
-auto surge::global_lua_states::back() noexcept -> lua_state_ptr & { return state_array.back(); }

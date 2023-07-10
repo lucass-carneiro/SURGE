@@ -25,6 +25,8 @@ set(
 
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
+  "${Surge_SOURCE_DIR}/include/job_system/job_system.hpp"
+  
   "${Surge_SOURCE_DIR}/include/allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
@@ -35,7 +37,6 @@ set(
   "${Surge_SOURCE_DIR}/include/sad_file.hpp"
   "${Surge_SOURCE_DIR}/include/safe_ops.hpp"
   "${Surge_SOURCE_DIR}/include/static_map.hpp"
-  "${Surge_SOURCE_DIR}/include/task_executor.hpp"
   "${Surge_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -66,6 +67,9 @@ set(
   "${Surge_SOURCE_DIR}/source/opengl/load_texture.cpp"
 
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
+
+  "${Surge_SOURCE_DIR}/source/job_system/job_system.cpp"
+
 
   "${Surge_SOURCE_DIR}/source/allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"

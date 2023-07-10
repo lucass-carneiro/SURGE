@@ -54,7 +54,7 @@ template <typename T> inline void lua_push(lua_State *L, T value) noexcept {
  * @param value The value to push
  */
 template <typename T> inline void lua_push(std::size_t i, T value) noexcept {
-  auto L = global_lua_states::get().at(i).get();
+  auto L = lua_states::at(i).get();
   lua_push(L, value);
 }
 

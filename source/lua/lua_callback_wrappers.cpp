@@ -66,7 +66,7 @@ void surge::lua_update_callback(lua_State *L, double dt) noexcept {
 void surge::glfw_key_callback(GLFWwindow *, int key, int, int action, int mods) noexcept {
 
   // VM defined actions
-  lua_State *L{global_lua_states::get().at(0).get()};
+  lua_State *L{lua_states::at(0).get()};
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "key_event");
@@ -123,7 +123,7 @@ auto surge::lua_get_key_state(lua_State *L) noexcept -> int {
 
 void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int mods) noexcept {
   // Recover main VM state
-  lua_State *L{global_lua_states::get().at(0).get()};
+  lua_State *L{lua_states::at(0).get()};
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "mouse_button_event");
@@ -143,7 +143,7 @@ void surge::glfw_mouse_button_callback(GLFWwindow *, int button, int action, int
 
 void surge::glfw_scroll_callback(GLFWwindow *, double xoffset, double yoffset) noexcept {
   // Recover main VM state
-  lua_State *L{global_lua_states::get().at(0).get()};
+  lua_State *L{lua_states::at(0).get()};
 
   lua_getglobal(L, "surge");
   lua_getfield(L, -1, "mouse_scroll_event");
