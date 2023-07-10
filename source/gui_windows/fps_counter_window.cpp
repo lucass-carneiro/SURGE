@@ -9,7 +9,7 @@
 template <typename T, std::size_t samples> class rolling_data {
 public:
   rolling_data() {
-    const auto dt0{1.0 / surge::frame_timer::get().dt()};
+    const auto dt0{1.0 / surge::frame_timer::duration()};
     std::fill(x_data.begin(), x_data.end(), 0.0);
     std::fill(y_data.begin(), y_data.end(), dt0);
 
@@ -72,7 +72,7 @@ void surge::show_fps_counter_window(bool *open) noexcept {
     static rolling_data<double, max_samples> plot_data{};
     static double x{0};
 
-    const auto frame_rate{1.0 / frame_timer::get().dt()};
+    const auto frame_rate{1.0 / frame_timer::duration()};
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     ImGui::Text("Avg. : %.0f FPS", plot_data.get_avg());

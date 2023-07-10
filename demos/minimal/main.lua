@@ -25,7 +25,6 @@ function surge.pre_loop()
 end
 
 function surge.update(dt)
-  surge.log_ffi.info("dt = " .. tostring(dt))
   -- do nothing
 end
 

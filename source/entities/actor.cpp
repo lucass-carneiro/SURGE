@@ -234,7 +234,7 @@ void surge::actor::update_animation_frame() noexcept {
 }
 
 void surge::actor::update(double frame_update_delay) noexcept {
-  const auto dt{frame_timer::get().dt()};
+  const auto dt{frame_timer::duration()};
   static double elapsed{dt};
 
   if (elapsed < frame_update_delay) {

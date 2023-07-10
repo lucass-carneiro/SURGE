@@ -3,43 +3,21 @@
 
 #include <chrono>
 
-namespace surge {
+namespace surge::frame_timer {
 
-class frame_timer {
-public:
-  using clock_t = std::chrono::steady_clock;
-  using duration_t = std::chrono::duration<double>;
-  using time_pt_t = std::chrono::time_point<clock_t>;
+using clock_t = std::chrono::steady_clock;
+using duration_t = std::chrono::duration<double>;
+using time_pt_t = std::chrono::time_point<clock_t>;
 
-  static inline auto get() noexcept -> frame_timer & {
-    static frame_timer ft;
-    return ft;
-  }
-
-  inline void begin_frame() noexcept { begin = std::chrono::steady_clock::now(); }
-  inline void end_frame() noexcept {
-    const duration_t dt{std::chrono::steady_clock::now() - begin};
-    previous_dt = dt.count();
-  }
-
-  [[nodiscard]] inline auto dt() const noexcept -> double { return previous_dt; }
-
-  frame_timer(const frame_timer &) = delete;
-  frame_timer(frame_timer &&) = delete;
-
-  auto operator=(frame_timer) -> frame_timer & = delete;
-  auto operator=(const frame_timer &) -> frame_timer & = delete;
-  auto operator=(frame_timer &&) -> frame_timer & = delete;
-
-  ~frame_timer() = default;
-
-private:
+extern struct frame_timer_data {
   time_pt_t begin;
-  double previous_dt{0};
+  double elapsed{0};
+} clock_data;
 
-  frame_timer() = default;
-};
+void begin() noexcept;
+void end() noexcept;
+auto duration() noexcept -> double;
 
-} // namespace surge
+} // namespace surge::frame_timer
 
 #endif // SURGE_FRAME_TIMER_HPP

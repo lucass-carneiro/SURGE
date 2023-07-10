@@ -231,7 +231,7 @@ void surge::animated_sprite::update_animation_frame() noexcept {
 }
 
 void surge::animated_sprite::update(double frame_update_delay) noexcept {
-  const auto dt{frame_timer::get().dt()};
+  const auto dt{frame_timer::duration()};
   static double elapsed{dt};
 
   if (elapsed < frame_update_delay) {

@@ -46,14 +46,6 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  // Init timer system
-  try {
-    frame_timer::get();
-  } catch (const std::exception &e) {
-    log_error("Unable to start timer systems {}", e.what());
-    return EXIT_FAILURE;
-  }
-
   /* Init Lua VM states
    * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
    * LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
@@ -95,7 +87,7 @@ auto main(int argc, char **argv) noexcept -> int {
 
   auto dt_start{std::chrono::steady_clock::now()};
 
-  while ((frame_timer::get().begin_frame(), !global_engine_window::get().should_close())) {
+  while ((frame_timer::begin(), !global_engine_window::get().should_close())) {
 
     // Poll IO events
     global_engine_window::get().poll_events();
@@ -144,8 +136,9 @@ auto main(int argc, char **argv) noexcept -> int {
     // Present rendering
     global_engine_window::get().swap_buffers();
 
-    // Compute elapsed time
-    frame_timer::get().end_frame();
+    // Compute elapsed frame time
+    frame_timer::end();
+    log_info("frame time {}", frame_timer::duration());
 
 #ifdef SURGE_ENABLE_TRACY
     FrameMark;
