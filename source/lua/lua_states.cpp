@@ -1,12 +1,11 @@
 #include "lua/lua_states.hpp"
 
 #include "allocator.hpp"
-#include "job_system/job_system.hpp"
 #include "lua/lua_utils.hpp"
 
 surge::lua_states::state_vec_t surge::lua_states::state_array = state_vec_t{eastl_allocator{}};
 
-auto surge::lua_states::init() noexcept -> bool {
+auto surge::lua_states::init(tf::Executor &executor) noexcept -> bool {
   log_info("Starting up Lua states");
 
   const auto num_threads{std::thread::hardware_concurrency()};
@@ -28,12 +27,12 @@ auto surge::lua_states::init() noexcept -> bool {
     luaopen_ffi(L);
     luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
 
-    job_system::executor.async(lua_add_engine_context, L, i);
+    executor.async(lua_add_engine_context, L, i, &executor);
 
     state_array.push_back(lua_state_ptr{L, lua_close});
   }
 
-  job_system::executor.wait_for_all();
+  executor.wait_for_all();
 
   return true;
 }

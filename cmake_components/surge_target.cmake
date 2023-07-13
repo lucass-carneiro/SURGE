@@ -23,8 +23,6 @@ set(
 
   "${Surge_SOURCE_DIR}/include/stb/stb_image.hpp"
   
-  "${Surge_SOURCE_DIR}/include/job_system/job_system.hpp"
-  
   "${Surge_SOURCE_DIR}/include/allocator.hpp"
   "${Surge_SOURCE_DIR}/include/cli.hpp"
   "${Surge_SOURCE_DIR}/include/file.hpp"
@@ -53,7 +51,6 @@ set(
   "${Surge_SOURCE_DIR}/source/lua/lua_add_engine_context.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_animated_sprite_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_states.cpp"
-  "${Surge_SOURCE_DIR}/source/lua/lua_task_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_util_wrappers.cpp"
   "${Surge_SOURCE_DIR}/source/lua/lua_utils.cpp"
 
@@ -62,9 +59,6 @@ set(
   "${Surge_SOURCE_DIR}/source/opengl/load_texture.cpp"
 
   "${Surge_SOURCE_DIR}/source/stb/stb_image_impl.cpp"
-
-  "${Surge_SOURCE_DIR}/source/job_system/job_system.cpp"
-
 
   "${Surge_SOURCE_DIR}/source/allocator.cpp"
   "${Surge_SOURCE_DIR}/source/cli.cpp"

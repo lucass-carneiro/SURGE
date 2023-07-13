@@ -2,9 +2,10 @@
 #include "lua/lua_logs.hpp"
 #include "lua/lua_utils.hpp"
 #include "lua/lua_wrappers.hpp"
-#include "safe_ops.hpp"
 
-void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
+#include <gsl-lite.hpp>
+
+void surge::lua_add_engine_context(lua_State *L, std::size_t i, tf::Executor *executor) noexcept {
   log_info("Adding engine context to VM {} ({:#x})", i, reinterpret_cast<std::uintptr_t>(L));
 
   // begin surge table
@@ -20,10 +21,6 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     }
     lua_setfield(L, -2, "config");
     // end config table
-
-    // TODO: Warning! This is potentially very dangerous. What happens if the user changes this
-    // number? Maybe this can be made more secure.
-    lua_add_table_field<lua_String, lua_Integer>(L, "vm_index", safe_cast<long>(i).value_or(0));
 
     // begin sprite table
     lua_newtable(L);
@@ -121,8 +118,11 @@ void surge::lua_add_engine_context(lua_State *L, std::size_t i) noexcept {
     // begin task table
     lua_newtable(L);
     {
-      lua_add_table_field<lua_String, lua_CFunction>(L, "send_to", lua_send_task_to);
-      lua_add_table_field<lua_String, lua_CFunction>(L, "run_at", lua_run_task_at);
+      // TODO: Warning! This is potentially very dangerous. What happens if the user changes this
+      // number? Maybe this can be made more secure.
+      lua_add_table_field<lua_String, lua_Integer>(L, "worker_id",
+                                                   gsl::narrow_cast<lua_Integer>(i));
+      lua_add_table_field<lua_String, void *>(L, "executor", static_cast<void *>(executor));
     }
     lua_setfield(L, -2, "tasks");
     // end task table

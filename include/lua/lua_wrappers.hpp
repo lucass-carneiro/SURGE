@@ -36,9 +36,6 @@ auto lua_image_move(lua_State *L) noexcept -> int;
 auto lua_image_get_corner_coords(lua_State *L) noexcept -> int;
 auto lua_image_reset_position(lua_State *L) noexcept -> int;
 
-auto lua_send_task_to(lua_State *L) noexcept -> int;
-auto lua_run_task_at(lua_State *L) noexcept -> int;
-
 auto lua_pre_loop_callback(lua_State *L) noexcept -> bool;
 void lua_draw_callback(lua_State *L) noexcept;
 void lua_update_callback(lua_State *L, double dt) noexcept;

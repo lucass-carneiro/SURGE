@@ -3,8 +3,11 @@
 
 #include "lua_bindings.hpp"
 
+// clang-format off
+#include <taskflow/core/executor.hpp>
+// clang-format on
+
 #include <array>
-#include <filesystem>
 #include <optional>
 
 namespace surge {
@@ -21,7 +24,7 @@ struct lua_engine_config {
   const char *root_dir{"/home/surge/"};
 };
 
-void lua_add_engine_context(lua_State *L, std::size_t i) noexcept;
+void lua_add_engine_context(lua_State *L, std::size_t i, tf::Executor *executor) noexcept;
 
 auto lua_get_engine_config(lua_State *L) noexcept -> std::optional<lua_engine_config>;
 

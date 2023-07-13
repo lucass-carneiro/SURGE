@@ -1,10 +1,12 @@
 #include "allocator.hpp"
 #include "cli.hpp"
-#include "job_system/job_system.hpp"
 #include "lua/lua_states.hpp"
 #include "lua/lua_utils.hpp"
 #include "timer_system/timer_system.hpp"
 #include "window.hpp"
+
+#include <taskflow/core/executor.hpp>
+#include <taskflow/taskflow.hpp>
 
 #ifdef SURGE_ENABLE_TRACY
 #  include <tracy/Tracy.hpp>
@@ -31,13 +33,16 @@ auto main(int argc, char **argv) noexcept -> int {
 
   const auto [config_script_path, startup_script_path] = cmd_line_args.value();
 
+  // Init Job system
+  tf::Executor task_executor{};
+
   /* Init Lua VM states
    * LuaJIT allocates memory for each state using it's own allocator). TODO: In 64bit architectures,
    * LuaJIT does not allow one to change it's internal allocator. There are workarounds (see
    * XPlane's strategy) using a custom version of the lib but it is complicated. Change this in the
    * future if possible
    */
-  if (!lua_states::init()) {
+  if (!lua_states::init(task_executor)) {
     return EXIT_FAILURE;
   }
 

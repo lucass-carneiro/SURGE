@@ -32,6 +32,8 @@ template <typename T> inline void lua_push_scalar(lua_State *L, T value) noexcep
     lua_pushboolean(L, static_cast<int>(value));
   } else if constexpr (std::is_same<T, lua_CFunction>::value) {
     lua_pushcfunction(L, value);
+  } else if constexpr (std::is_same<T, void *>::value) {
+    lua_pushlightuserdata(L, value);
   }
 }
 

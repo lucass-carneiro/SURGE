@@ -6,6 +6,7 @@
 // clang-format off
 #include <luajit/lua.hpp>
 #include <EASTL/vector.h>
+#include <taskflow/core/executor.hpp>
 // clang-format on
 
 #include <memory>
@@ -18,7 +19,7 @@ using state_vec_t = eastl::vector<lua_state_ptr, eastl_allocator>;
 
 extern state_vec_t state_array;
 
-auto init() noexcept -> bool;
+auto init(tf::Executor &) noexcept -> bool;
 auto configure(const char *path) noexcept -> bool;
 auto at(std::size_t i) noexcept -> lua_state_ptr &;
 
