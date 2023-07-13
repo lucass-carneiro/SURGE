@@ -84,12 +84,12 @@ auto surge::lua_drop_actor(lua_State *L) noexcept -> int {
 
 [[nodiscard]] static auto is_actor(lua_State *L, const char *func_name) noexcept -> bool {
   if (!lua_isuserdata(L, 1)) {
-    surge::log_warn("Function {} expected 1 user data argument. Returning nil", func_name);
+    log_warn("Function {} expected 1 user data argument. Returning nil", func_name);
     return false;
   }
 
   if (!lua_getmetatable(L, 1)) {
-    surge::log_warn("User data does not have a metatable");
+    log_warn("User data does not have a metatable");
     return false;
   }
 
@@ -97,7 +97,7 @@ auto surge::lua_drop_actor(lua_State *L) noexcept -> int {
   const auto name{lua_tostring(L, -1)};
 
   if (std::strcmp(name, "surge::actor") != 0) {
-    surge::log_warn("Expected surge::actor userdata and recieved {}", name);
+    log_warn("Expected surge::actor userdata and recieved {}", name);
     return false;
   }
 

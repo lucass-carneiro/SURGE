@@ -7,7 +7,7 @@
 surge::lua_states::state_vec_t surge::lua_states::state_array = state_vec_t{eastl_allocator{}};
 
 auto surge::lua_states::init() noexcept -> bool {
-  surge::log_info("Starting up Lua states");
+  log_info("Starting up Lua states");
 
   const auto num_threads{std::thread::hardware_concurrency()};
 

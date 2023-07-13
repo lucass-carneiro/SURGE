@@ -20,12 +20,6 @@
         },
         "eastl",
         {
-            "name": "spdlog",
-            "features": [
-                "wchar"
-            ]
-        },
-        {
             "name": "tracy",
             "features": [
                 "gui-tools"

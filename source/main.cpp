@@ -23,11 +23,6 @@ auto main(int argc, char **argv) noexcept -> int {
   // Init allocator subsystem
   init_mimalloc();
 
-  // Init log subsystem
-  if (!logger::init()) {
-    return EXIT_FAILURE;
-  }
-
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
   if (!cmd_line_args) {

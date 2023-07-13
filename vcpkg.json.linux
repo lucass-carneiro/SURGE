@@ -19,7 +19,6 @@
             ]
         },
         "eastl",
-        "spdlog",
         {
             "name": "tracy",
             "features": [

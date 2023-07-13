@@ -193,7 +193,6 @@ target_link_libraries(Surge PRIVATE
   glad::glad
   glfw
   EASTL
-  spdlog::spdlog_header_only
   SurgeLoggingSystem # On Windows, these lines should be removed. This is only used for static linking there.
   SurgeTimerSystem # On Windows, these lines should be removed. This is only used for static linking there.
 )
