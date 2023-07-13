@@ -19,11 +19,11 @@ auto main(int argc, char **argv) noexcept -> int {
   ZoneScoped;
 #endif
 
+  // Init allocator
+  init_mimalloc();
+
   // Logo
   draw_logo();
-
-  // Init allocator subsystem
-  init_mimalloc();
 
   // Command line argument parsing
   const auto cmd_line_args = parse_arguments(argc, argv);
