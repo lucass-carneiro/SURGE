@@ -77,9 +77,11 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************************
    *          MAIN LOOP          *
    *******************************/
+
+  frame_timer::frame_timer_data frame_clock{std::chrono::steady_clock::now(), 0};
   auto dt_start{std::chrono::steady_clock::now()};
 
-  while ((frame_timer::begin(), !glfwWindowShouldClose(engine_window::window.get()))) {
+  while ((frame_timer::begin(frame_clock), !glfwWindowShouldClose(engine_window::window.get()))) {
     glfwPollEvents();
 
     /*
@@ -113,7 +115,7 @@ auto main(int argc, char **argv) noexcept -> int {
     lua_draw_callback(lua_states::at(0).get());
 
     // Compute elapsed frame time
-    frame_timer::end();
+    frame_timer::end(frame_clock);
 
     glfwSwapBuffers(engine_window::window.get());
 

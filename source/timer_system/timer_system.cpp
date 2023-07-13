@@ -2,17 +2,19 @@
 
 #include <cstdio>
 
-surge::frame_timer::frame_timer_data surge::frame_timer::clock_data
-    = {std::chrono::steady_clock::now(), 0.0};
+void surge::frame_timer::begin(surge::frame_timer::frame_timer_data &clock_data) noexcept {
+  clock_data.begin = std::chrono::steady_clock::now();
+}
 
-void surge::frame_timer::begin() noexcept { clock_data.begin = std::chrono::steady_clock::now(); }
-
-void surge::frame_timer::end() noexcept {
+void surge::frame_timer::end(surge::frame_timer::frame_timer_data &clock_data) noexcept {
   const duration_t dt{std::chrono::steady_clock::now() - clock_data.begin};
   clock_data.elapsed = dt.count();
 }
 
-auto surge::frame_timer::duration() noexcept -> double { return clock_data.elapsed; }
+auto surge::frame_timer::duration(const surge::frame_timer::frame_timer_data &clock_data) noexcept
+    -> double {
+  return clock_data.elapsed;
+}
 
 extern "C" {
 

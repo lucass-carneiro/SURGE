@@ -216,8 +216,8 @@ auto surge::lua_update_actor(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 2) {
-    log_warn("Function update expected 2 arguments and instead got "
+  if (nargs != 3) {
+    log_warn("Function update expected 3 arguments and instead got "
              "{} arguments. Returning nil",
              nargs);
     lua_pushnil(L);
@@ -235,13 +235,20 @@ auto surge::lua_update_actor(lua_State *L) noexcept -> int {
     return 1;
   }
 
+  if (!lua_isnumber(L, 3)) {
+    log_warn("Function update expected argument 3 to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
   // Data recovery
   auto vm_actor_ptr{static_cast<actor **>(lua_touserdata(L, 1))};
   auto actor_ptr{*vm_actor_ptr};
-  const auto delay{lua_tonumber(L, 2)};
+  const auto dt{lua_tonumber(L, 2)};
+  const auto delay{lua_tonumber(L, 3)};
 
   // Internal call
-  actor_ptr->update(delay);
+  actor_ptr->update(dt, delay);
 
   lua_pop(L, 1);
 

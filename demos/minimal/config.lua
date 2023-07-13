@@ -1,9 +1,9 @@
 -- Window geometry
-surge.config.window_width = 453
-surge.config.window_height = 453
+surge.config.window_width = 800
+surge.config.window_height = 600
 
 -- Window name
-surge.config.window_name = "2048 - SURGE"
+surge.config.window_name = "SURGE"
 
 -- Window borders and output monitor
 surge.config.windowed = true -- true for windowed, false for fullscreen

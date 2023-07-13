@@ -215,8 +215,8 @@ auto surge::lua_update_animated_sprite(lua_State *L) noexcept -> int {
   const auto nargs{lua_gettop(L)};
 
   // Argument count and type validation
-  if (nargs != 2) {
-    log_warn("Function update expected 2 arguments and instead got "
+  if (nargs != 3) {
+    log_warn("Function update expected 3 arguments and instead got "
              "{} arguments. Returning nil",
              nargs);
     lua_pushnil(L);
@@ -234,13 +234,20 @@ auto surge::lua_update_animated_sprite(lua_State *L) noexcept -> int {
     return 1;
   }
 
+  if (!lua_isnumber(L, 2)) {
+    log_warn("Function update expected argument 3 to be a number. Returning nil");
+    lua_pushnil(L);
+    return 1;
+  }
+
   // Data recovery
   auto vm_animated_sprite_ptr{static_cast<animated_sprite **>(lua_touserdata(L, 1))};
   auto animated_sprite_ptr{*vm_animated_sprite_ptr};
-  const auto delay{lua_tonumber(L, 2)};
+  const auto dt{lua_tonumber(L, 2)};
+  const auto delay{lua_tonumber(L, 3)};
 
   // Internal call
-  animated_sprite_ptr->update(delay);
+  animated_sprite_ptr->update(dt, delay);
 
   lua_pop(L, 1);
 

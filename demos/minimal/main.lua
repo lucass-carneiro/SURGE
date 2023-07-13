@@ -1,7 +1,5 @@
 function surge.pre_loop()
-  surge.log_ffi
-      .info("The task executor ptr: " .. tostring(surge.tasks.executor))
-  surge.log_ffi.info("Worker ID " .. tostring(surge.tasks.worker_id))
+  -- do nothing
 end
 
 function surge.update(dt)

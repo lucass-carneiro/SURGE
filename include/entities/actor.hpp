@@ -20,7 +20,7 @@ public:
         const char *sprite_sheet_ext = ".png") noexcept;
 
   void draw() noexcept;
-  void update(double frame_update_delay) noexcept;
+  void update(double dt, double frame_update_delay) noexcept;
 
   void move(glm::vec3 &&vec) noexcept;
   void scale(glm::vec3 &&vec) noexcept;
