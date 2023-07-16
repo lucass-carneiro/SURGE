@@ -1,4 +1,0 @@
-#!/bin/bash
-
-export LSAN_OPTIONS="print_suppressions=false:suppressions=lsan_supressions.supp"
-./bin/surge --num-thread=1 ../scripts/config.lua ../scripts/main.lua

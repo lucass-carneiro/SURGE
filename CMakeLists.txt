@@ -37,31 +37,79 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 list(APPEND VCPKG_FEATURE_FLAGS "versions")
 
-
-include(${CMAKE_SOURCE_DIR}/cmake_components/find_packages.cmake)
-
-# -----------------------------------------
-# Options
-# -----------------------------------------
-
-include(${CMAKE_SOURCE_DIR}/cmake_components/add_options.cmake)
+find_package(mimalloc CONFIG REQUIRED)
+find_package(gsl-lite CONFIG REQUIRED)
+find_package(EASTL CONFIG REQUIRED)
 
 # -----------------------------------------
-# Library targets
+# Operating system and compiler detection
 # -----------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake_components/logging_system.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake_components/timer_system.cmake)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(SURGE_SYSTEM_IS_POSIX "IS_POSIX")
+else()
+  set(SURGE_SYSTEM_IS_POSIX "NOT_POSIX")
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+  set(SURGE_COMPILER_FLAG_STYLE "gcc")
+else()
+  set(SURGE_COMPILER_FLAG_STYLE "msvc")
+endif()
 
 # -----------------------------------------
-#  Main target
+# Logging options
 # -----------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake_components/surge_target.cmake)
+option(SURGE_USE_LOG "Enable log messages" ON)
+option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
+
+# -----------------------------------------
+# Compilation flag options
+# -----------------------------------------
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" ON)
+  option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" OFF)
+  option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" OFF)
+  option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" OFF)
+  option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" OFF)
+option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" OFF)
+  option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
+  option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
+  option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
+  option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+endif()
+
+# -----------------------------------------
+#  Engine player target
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_player)
 
 
 # -----------------------------------------
-# Create stating directory
+#  Modules
 # -----------------------------------------
 
-include(${CMAKE_SOURCE_DIR}/cmake_components/create_staging.cmake)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_modules)
+
+# -----------------------------------------
+# Create staging directory
+# -----------------------------------------
+
+set(SURGE_STAGING_DIR "${CMAKE_SOURCE_DIR}/staging_${CMAKE_BUILD_TYPE}")
+
+add_custom_target(
+  SurgeStatingDirectory
+  ALL
+  DEPENDS SurgePlayer
+  COMMAND ${CMAKE_COMMAND} -E echo "Creating staging directory for ${CMAKE_BUILD_TYPE} build"
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${SURGE_STAGING_DIR}
+  COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:SurgePlayer> ${SURGE_STAGING_DIR}/$<TARGET_FILE_NAME:SurgePlayer>
+  COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:SurgeDefaultModule> ${SURGE_STAGING_DIR}/$<TARGET_FILE_NAME:SurgeDefaultModule>
+  VERBATIM  
+)

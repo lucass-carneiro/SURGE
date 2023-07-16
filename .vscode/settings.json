@@ -6,7 +6,9 @@
         "clang-diagnostic-*",
         "clang-analyzer-*",
         "bugprone*",
-        "performance"
+        "performance",
+        "-cppcoreguidelines-pro-type-vararg",
+        "-cppcoreguidelines-macro-usage"
     ],
     "editor.formatOnSave": true,
     "cmake.configureOnOpen": false
