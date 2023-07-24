@@ -14,7 +14,7 @@ public:
   generic_timer() noexcept;
 
   void start() noexcept;
-  [[nodiscard]] auto stop() noexcept -> double;
+  auto stop() noexcept -> double;
   [[nodiscard]] auto elapsed() noexcept -> double;
 
 private:

@@ -130,4 +130,5 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgeDefaultModule PRIVATE
+  EASTL
 )

@@ -6,6 +6,15 @@
   "dependencies": [
     "mimalloc",
     "gsl-lite",
-    "eastl"
+    "eastl",
+    "yaml-cpp",
+    "glfw3",
+    {
+      "name": "bgfx",
+      "features": [
+        "multithreaded",
+        "tools"
+      ]
+    }
   ]
 }

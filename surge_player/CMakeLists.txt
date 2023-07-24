@@ -22,18 +22,27 @@ configure_file("${PROJECT_SOURCE_DIR}/include/options_in.txt" "${PROJECT_SOURCE_
 
 set(
   SURGE_PLAYER_HEADER_LIST
+  "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
+  "${PROJECT_SOURCE_DIR}/include/cli.hpp"
+  "${PROJECT_SOURCE_DIR}/include/files.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
+  "${PROJECT_SOURCE_DIR}/include/mimalloc_override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/module_manager.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
   "${PROJECT_SOURCE_DIR}/include/surge_player.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
+  "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
 
 set(
   SURGE_PLAYER_SOURCE_LIST
+  "${PROJECT_SOURCE_DIR}/source/allocators.cpp"
+  "${PROJECT_SOURCE_DIR}/source/cli.cpp"
+  "${PROJECT_SOURCE_DIR}/source/files.cpp"
   "${PROJECT_SOURCE_DIR}/source/main.cpp"
   "${PROJECT_SOURCE_DIR}/source/module_manager.cpp"
   "${PROJECT_SOURCE_DIR}/source/timers.cpp"
+  "${PROJECT_SOURCE_DIR}/source/window.cpp"
 )
 
 # -----------------------------------------
@@ -137,4 +146,10 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgePlayer PRIVATE
+  mimalloc-static
+  gsl::gsl-lite
+  EASTL
+  yaml-cpp
+  glfw
+  bgfx::bgfx # bgfx::bx bgfx::bimg bgfx::bimg_decode)
 )

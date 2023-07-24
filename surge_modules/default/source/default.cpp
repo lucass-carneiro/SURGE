@@ -1,16 +1,15 @@
 #include "default.hpp"
 
+#include "allocators.hpp"
 #include "logging.hpp"
+
+#include <EASTL/vector.h>
 
 extern "C" {
 
-SURGE_MODULE_EXPORT void on_load() noexcept {
-  log_info("This is called when the module gets loaded");
-}
+SURGE_MODULE_EXPORT void on_load() noexcept { log_info("On load"); }
 
-SURGE_MODULE_EXPORT void on_unload() noexcept {
-  log_info("This is called when the module gets unloaded");
-}
+SURGE_MODULE_EXPORT void on_unload() noexcept { log_info("On unload"); }
 
 SURGE_MODULE_EXPORT void draw() noexcept { log_info("Draw called"); }
 

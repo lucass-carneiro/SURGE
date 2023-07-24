@@ -4,7 +4,7 @@ surge::timers::generic_timer::generic_timer() noexcept { begin = clock_t::now();
 
 void surge::timers::generic_timer::start() noexcept { begin = clock_t::now(); }
 
-[[nodiscard]] auto surge::timers::generic_timer::stop() noexcept -> double {
+auto surge::timers::generic_timer::stop() noexcept -> double {
   last_elapsed = duration_t{clock_t::now() - begin}.count();
   return last_elapsed;
 }

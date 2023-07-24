@@ -40,6 +40,9 @@ list(APPEND VCPKG_FEATURE_FLAGS "versions")
 find_package(mimalloc CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(bgfx CONFIG REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection

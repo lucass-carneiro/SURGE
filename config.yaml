@@ -1,0 +1,32 @@
+renderer:
+  backend: "Vulkan"
+  gpu_vendor: "nVidia"
+  
+  clear_color:
+    r: 0.2
+    g: 0.3
+    b: 0.3
+    a: 1.0
+
+window:
+  name: "SURGE Window"
+  
+  monitor_index: 1
+  windowed: true
+  cursor: true
+  
+  resolution:
+    width: 1280
+    height: 720
+  
+  VSync:
+    enabled: true
+  
+  # Currently, this draws only to the upper half of the screen
+  MSAA:
+    enabled: true
+    level: 4 #(2, 4, 8, 16)
+  
+  HDR:
+    enabled: true
+
