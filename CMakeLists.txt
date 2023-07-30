@@ -37,6 +37,8 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 list(APPEND VCPKG_FEATURE_FLAGS "versions")
 
+find_package(PythonInterp REQUIRED)
+
 find_package(mimalloc CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
@@ -104,15 +106,11 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_modules)
 # Create staging directory
 # -----------------------------------------
 
-set(SURGE_STAGING_DIR "${CMAKE_SOURCE_DIR}/staging_${CMAKE_BUILD_TYPE}")
-
 add_custom_target(
   SurgeStatingDirectory
   ALL
   DEPENDS SurgePlayer
-  COMMAND ${CMAKE_COMMAND} -E echo "Creating staging directory for ${CMAKE_BUILD_TYPE} build"
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${SURGE_STAGING_DIR}
-  COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:SurgePlayer> ${SURGE_STAGING_DIR}/$<TARGET_FILE_NAME:SurgePlayer>
-  COMMAND ${CMAKE_COMMAND} -E create_symlink $<TARGET_FILE:SurgeDefaultModule> ${SURGE_STAGING_DIR}/$<TARGET_FILE_NAME:SurgeDefaultModule>
+  COMMAND ${CMAKE_COMMAND} -E echo "Creating ${CMAKE_BUILD_TYPE} staging for SurgePlayer"
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/make_staging.py ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_BUILD_TYPE}
   VERBATIM  
 )

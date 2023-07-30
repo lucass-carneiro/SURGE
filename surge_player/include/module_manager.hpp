@@ -1,32 +1,33 @@
 #ifndef SURGE_MODULE_MANAGER_HPP
 #define SURGE_MODULE_MANAGER_HPP
 
+// clang-format off
+#include <GLFW/glfw3.h>
+// clang-format on
+
+#include <array>
+#include <cstdint>
 #include <optional>
+#include <string>
 
-namespace surge::modules {
+namespace surge::module {
 
-using load_unload_callback_t = void (*)();
-using update_callback_t = void (*)(double);
-using buton_key_callback_t = void (*)(int, int, int);
-using scroll_callback_t = void (*)(double, double);
+using handle_t = void *;
 
-struct module_t {
-  void *lib_handle;
+using on_load_fun = void (*)();
+using update_fun = void (*)(double);
+using draw_fun = void (*)();
 
-  load_unload_callback_t on_load;
-  load_unload_callback_t on_unload;
+auto load(const char *module_name) noexcept -> handle_t;
+void unload(handle_t module_handle) noexcept;
+auto reload(GLFWwindow *window, handle_t module_handle) noexcept -> handle_t;
 
-  load_unload_callback_t draw;
-  update_callback_t update;
+void on_load(GLFWwindow *window, handle_t module_handle);
+void on_unload(GLFWwindow *window, handle_t module_handle);
 
-  buton_key_callback_t keyboard_event;
-  buton_key_callback_t mouse_button_event;
-  scroll_callback_t mouse_scroll_event;
-};
+void update(handle_t module_handle, double dt) noexcept;
+void draw(handle_t module_handle) noexcept;
 
-auto load(const char *module_name) noexcept -> std::optional<module_t>;
-void unload(module_t &module) noexcept;
-
-} // namespace surge::modules
+} // namespace surge::module
 
 #endif // SURGE_MODULE_MANAGER_HPP

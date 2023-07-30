@@ -25,6 +25,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/logo.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/mimalloc_override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/module_manager.hpp"
@@ -151,5 +152,6 @@ target_link_libraries(SurgePlayer PRIVATE
   EASTL
   yaml-cpp
   glfw
-  bgfx::bgfx # bgfx::bx bgfx::bimg bgfx::bimg_decode)
+  bgfx::bgfx
+  bgfx::bx # bgfx::bimg bgfx::bimg_decode
 )

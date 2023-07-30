@@ -11,5 +11,6 @@
         "-cppcoreguidelines-macro-usage"
     ],
     "editor.formatOnSave": true,
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "editor.inlayHints.enabled": "offUnlessPressed"
 }

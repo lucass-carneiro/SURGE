@@ -4,7 +4,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <gsl-lite.hpp>
 
 namespace surge::allocators {
 

@@ -29,8 +29,10 @@ set(
 # -----------------------------------------
 
 add_library(SurgeDefaultModule MODULE ${SURGE_MODULE_DEFAULT_HEADER_LIST} ${SURGE_MODULE_DEFAULT_SOURCE_LIST})
+add_dependencies(SurgeDefaultModule SurgePlayer)
 target_compile_features(SurgeDefaultModule PRIVATE cxx_std_20)
-set_target_properties(SurgeDefaultModule PROPERTIES OUTPUT_NAME "surge_module_default")
+set_target_properties(SurgeDefaultModule PROPERTIES PREFIX "")
+set_target_properties(SurgeDefaultModule PROPERTIES OUTPUT_NAME "default")
 set_target_properties(SurgeDefaultModule PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/default.hpp")
 set_target_properties(SurgeDefaultModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
@@ -40,6 +42,7 @@ target_include_directories(
   SurgeDefaultModule PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${SurgePlayer_SOURCE_DIR}/include>
+  "${BGFX_INCLUDE_PATH}"
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
@@ -128,7 +131,4 @@ endif()
 # -----------------------------------------
 # Link and build order dependencies
 # -----------------------------------------
-
-target_link_libraries(SurgeDefaultModule PRIVATE
-  EASTL
-)
+target_link_libraries(SurgeDefaultModule PRIVATE EASTL)

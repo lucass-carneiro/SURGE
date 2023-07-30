@@ -1,6 +1,7 @@
 #include "cli.hpp"
 
 #include "files.hpp"
+#include "logo.hpp"
 #include "options.hpp"
 
 #include <cstdio>
@@ -10,7 +11,7 @@
 static constexpr const char *USAGE =
 "SURGE engine.                          \n\n"
 "  Usage:                                 \n"
-"    surge <config-file>                  \n"
+"    surge <config-file> <initial-module> \n"
 "    surge (-h | --help)                  \n"
 "    surge --version                    \n\n"
 "  Options:                               \n"
@@ -21,20 +22,6 @@ static constexpr const char *USAGE =
 static constexpr const char *VERSION_STRING
     = "SURGE v" SURGE_VERSION_MAJOR_STRING "." SURGE_VERSION_MINOR_STRING
       "." SURGE_VERSION_PATCH_STRING "\n";
-
-// clang-format off
-static constexpr const char *LOGO =
-"   d888888o.   8 8888      88 8 888888888o.        ,o888888o.    8 8888888888  \n"
-" .`8888:' `88. 8 8888      88 8 8888    `88.      8888     `88.  8 8888        \n"
-" 8.`8888.   Y8 8 8888      88 8 8888     `88   ,8 8888       `8. 8 8888        \n"
-" `8.`8888.     8 8888      88 8 8888     ,88   88 8888           8 8888        \n"
-"  `8.`8888.    8 8888      88 8 8888.   ,88'   88 8888           8 888888888888\n"
-"   `8.`8888.   8 8888      88 8 888888888P'    88 8888           8 8888        \n"
-"    `8.`8888.  8 8888      88 8 8888`8b        88 8888   8888888 8 8888        \n"
-"8b   `8.`8888. ` 8888     ,8P 8 8888 `8b.      `8 8888       .8' 8 8888        \n"
-"`8b.  ;8.`8888   8888   ,d8P  8 8888   `8b.       8888     ,88'  8 8888        \n"
-" `Y8888P ,88P'    `Y88888P'   8 8888     `88.      `8888888P'    8 888888888888\n";
-// clang-format on
 
 void surge::cli::draw_logo() noexcept {
   using std::printf;
@@ -70,6 +57,8 @@ auto surge::cli::parse_arguments(int argc, char **argv) noexcept -> bool {
     return false;
   } else if (argc == 2) {
     return surge::files::validate_path(argv[1]);
+  } else if (argc == 3) {
+    return surge::files::validate_path(argv[1]) && surge::files::validate_path(argv[2]);
   } else {
     print_help();
     return {};
