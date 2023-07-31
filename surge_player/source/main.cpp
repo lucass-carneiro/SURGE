@@ -3,6 +3,7 @@
 #include "files.hpp"
 #include "logging.hpp"
 #include "module_manager.hpp"
+#include "options.hpp"
 #include "surge_player.hpp"
 #include "timers.hpp"
 #include "window.hpp"
@@ -56,8 +57,10 @@ auto main(int argc, char **argv) noexcept -> int {
   timers::generic_timer update_timer;
   update_timer.start();
 
-  auto refresh_key_old_state{glfwGetKey(window, GLFW_KEY_F5)
-                             && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)};
+#ifdef SURGE_ENABLE_HR
+  auto hr_key_old_state{glfwGetKey(window, GLFW_KEY_F5)
+                        && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)};
+#endif
 
   while ((frame_timer.start(), !glfwWindowShouldClose(window))) {
     glfwPollEvents();
@@ -65,11 +68,12 @@ auto main(int argc, char **argv) noexcept -> int {
     // No need to do that, since we are creating non resizable windows, but good to have
     window::handle_resize(window, ww, wh, rf);
 
-    // Handle module updates
-    const auto should_reload{glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS
-                             && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
-                             && refresh_key_old_state == GLFW_RELEASE};
-    if (should_reload) {
+    // Handle hot reloading
+#ifdef SURGE_ENABLE_HR
+    const auto should_hr{glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS
+                         && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
+                         && hr_key_old_state == GLFW_RELEASE};
+    if (should_hr) {
       auto new_module = module::reload(window, curr_module);
       if (!new_module) {
         break;
@@ -77,6 +81,7 @@ auto main(int argc, char **argv) noexcept -> int {
         curr_module = new_module;
       }
     }
+#endif
 
     // Call module update
     module::update(curr_module, update_timer.stop());
@@ -91,8 +96,9 @@ auto main(int argc, char **argv) noexcept -> int {
     bgfx::frame();
 
     // Cache refresh key state
-    refresh_key_old_state
-        = glfwGetKey(window, GLFW_KEY_F5) && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL);
+#ifdef SURGE_ENABLE_HR
+    hr_key_old_state = glfwGetKey(window, GLFW_KEY_F5) && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL);
+#endif
 
     frame_timer.stop();
   }

@@ -16,5 +16,6 @@
 #define SURGE_USE_LOG
 #define SURGE_USE_LOG_COLOR
 #define SURGE_DEBUG_MEMORY
+#define SURGE_ENABLE_HR
 
 #endif // SURGE_OPTIONS_HPP
