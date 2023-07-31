@@ -11,9 +11,10 @@
 #include <EASTL/vector.h>
 // clang-format on
 
-extern "C" {
-
 static bool show_debug_stats = false;
+static constexpr const int sample_size = 100;
+
+extern "C" {
 
 static eastl::ring_buffer<double,
                           eastl::vector<double, surge::allocators::eastl_allocators::gp_allocator>>
@@ -23,7 +24,7 @@ static double dt_avg{0};
 SURGE_MODULE_EXPORT void on_load() noexcept {
   log_info("Loading default module");
 
-  frame_time_buffer.reserve(100);
+  frame_time_buffer.reserve(sample_size);
   for (auto &dt : frame_time_buffer) {
     dt = 0.0;
   }
@@ -42,7 +43,7 @@ SURGE_MODULE_EXPORT void draw() noexcept {
   } else {
     bgfx::setDebug(BGFX_DEBUG_TEXT);
 
-    bgfx::dbgTextPrintf(1, 1, 0x0f, "Last dt, FPS = %.4f %.4f", dt_avg, 1.0 / dt_avg);
+    bgfx::dbgTextPrintf(1, 1, 0x0f, "Last dt = %.4f, FPS = %.4f", dt_avg, 1.0 / dt_avg);
 
     std::uint16_t y{3};
     for (const auto &line : surge::cli::LOGO_LINES) {
@@ -71,7 +72,7 @@ SURGE_MODULE_EXPORT void update(double dt) noexcept {
   for (const auto dt : frame_time_buffer) {
     dt_sum += dt;
   }
-  dt_avg = dt_sum / 100.0;
+  dt_avg = dt_sum / static_cast<double>(sample_size);
 }
 
 SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
@@ -80,13 +81,11 @@ SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int, int action, 
   }
 }
 
-SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int, int, int) noexcept {
-  double x{0}, y{0};
-  glfwGetCursorPos(window, &x, &y);
-  log_info("Click at (%f, %f)", x, y);
+SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *, int, int, int) noexcept {
+  // TODO
 }
 
 SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *, double, double) noexcept {
-  // todo
+  // TODO
 }
 }

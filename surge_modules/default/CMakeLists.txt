@@ -29,7 +29,6 @@ set(
 # -----------------------------------------
 
 add_library(SurgeDefaultModule MODULE ${SURGE_MODULE_DEFAULT_HEADER_LIST} ${SURGE_MODULE_DEFAULT_SOURCE_LIST})
-add_dependencies(SurgeDefaultModule SurgePlayer)
 target_compile_features(SurgeDefaultModule PRIVATE cxx_std_20)
 set_target_properties(SurgeDefaultModule PROPERTIES PREFIX "")
 set_target_properties(SurgeDefaultModule PROPERTIES OUTPUT_NAME "default")

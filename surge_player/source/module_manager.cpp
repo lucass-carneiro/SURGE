@@ -1,6 +1,5 @@
 #include "module_manager.hpp"
 
-#include "allocators.hpp"
 #include "logging.hpp"
 #include "options.hpp"
 #include "timers.hpp"
@@ -8,6 +7,9 @@
 #include <GLFW/glfw3.h>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <string>
+#include <system_error>
 
 #ifdef SURGE_SYSTEM_IS_POSIX
 #  include <dlfcn.h>
@@ -105,6 +107,7 @@ void surge::module::unload(handle_t module_handle) noexcept {
 auto surge::module::reload(GLFWwindow *window, handle_t module_handle) noexcept -> handle_t {
   log_info("Reloading currently loaded module");
 
+  // Get module file name
   timers::generic_timer t;
   t.start();
 
@@ -116,23 +119,33 @@ auto surge::module::reload(GLFWwindow *window, handle_t module_handle) noexcept 
     return nullptr;
   }
 
-  const auto module_file_name{allocators::mimalloc::strdup(info.dli_fname)};
-  if (!module_file_name) {
-    log_error("Unable to allocate duplicate of current module's file name");
-    return nullptr;
-  }
+  // Copy module name before closing
+  const std::string module_file_name(info.dli_fname);
 
   // Unload
   on_unload(window, module_handle);
   unload(module_handle);
 
+  // Check to see if .new exists
+  const std::string module_file_name_new{module_file_name + ".new"};
+
+  std::error_code error;
+  if (!std::filesystem::exists(module_file_name_new, error)) {
+    log_info("No %s file found. Reloading module without updating", module_file_name_new.c_str());
+  } else {
+    std::filesystem::rename(module_file_name_new, module_file_name, error);
+    if (error.value() != 0) {
+      log_error("Unable to rename %s to %s: %s", module_file_name_new.c_str(),
+                module_file_name.c_str(), error.message().c_str());
+      return nullptr;
+    }
+  }
+
   // Load
-  auto new_handle = load(module_file_name);
+  auto new_handle = load(module_file_name.c_str());
   if (!new_handle) {
-    allocators::mimalloc::free(module_file_name);
     return nullptr;
   }
-  allocators::mimalloc::free(module_file_name);
 
   on_load(window, new_handle);
 
