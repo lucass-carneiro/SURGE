@@ -3,6 +3,8 @@
 #include "logging.hpp"
 #include "options.hpp"
 
+#include <GLFW/glfw3.h>
+
 #ifdef SURGE_SYSTEM_Linux
 #  define GLFW_EXPOSE_NATIVE_X11
 #  include <GLFW/glfw3native.h>
@@ -16,6 +18,7 @@
 // clang-format on
 
 #include <cstdint>
+#include <gsl/gsl-lite.hpp>
 #include <string>
 
 struct clear_color {
@@ -303,5 +306,16 @@ void surge::window::handle_resize(GLFWwindow *window, std::uint32_t &old_w, std:
     bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
     old_w = new_w;
     old_h = new_h;
+  }
+}
+
+auto surge::window::get_dims(GLFWwindow *window) noexcept -> std::tuple<float, float> {
+  int ww{0}, wh{0};
+  glfwGetWindowSize(window, &ww, &wh);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to determine window dimentions");
+    return std::make_tuple(0.0f, 0.0f);
+  } else {
+    return std::make_tuple(gsl::narrow_cast<float>(ww), gsl::narrow_cast<float>(wh));
   }
 }

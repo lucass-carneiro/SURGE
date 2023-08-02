@@ -15,6 +15,8 @@ void terminate(GLFWwindow *window) noexcept;
 void handle_resize(GLFWwindow *window, std::uint32_t &old_w, std::uint32_t &old_h,
                    std::uint32_t reset_flags) noexcept;
 
+auto get_dims(GLFWwindow *window) noexcept -> std::tuple<float, float>;
+
 } // namespace surge::window
 
 #endif // SURGE_WINDOW_HPP

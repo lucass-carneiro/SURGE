@@ -152,6 +152,9 @@ target_link_libraries(SurgePlayer PRIVATE
   EASTL
   yaml-cpp
   glfw
+  glm::glm
   bgfx::bgfx
-  bgfx::bx # bgfx::bimg bgfx::bimg_decode
+  bgfx::bx
+  bgfx::bimg
+  bgfx::bimg_decode
 )

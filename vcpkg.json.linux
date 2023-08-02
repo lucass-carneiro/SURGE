@@ -9,6 +9,7 @@
     "eastl",
     "yaml-cpp",
     "glfw3",
+    "glm",
     {
       "name": "bgfx",
       "features": [

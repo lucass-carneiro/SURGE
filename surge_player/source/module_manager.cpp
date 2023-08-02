@@ -147,16 +147,19 @@ auto surge::module::reload(GLFWwindow *window, handle_t module_handle) noexcept 
     return nullptr;
   }
 
-  on_load(window, new_handle);
+  if (!on_load(window, new_handle)) {
+    unload(new_handle);
+    return nullptr;
+  }
 
   t.stop();
   log_info("Reloading succsesfull in %f s", t.elapsed());
   return new_handle;
 }
 
-void surge::module::on_load(GLFWwindow *window, handle_t module_handle) {
+auto surge::module::on_load(GLFWwindow *window, handle_t module_handle) noexcept -> bool {
   if (!module_handle) {
-    return;
+    return false;
   }
 
   // bind callbacks
@@ -184,16 +187,16 @@ void surge::module::on_load(GLFWwindow *window, handle_t module_handle) {
   }
 
   // Call on load
-  reinterpret_cast<on_load_fun>(dlsym(module_handle, "on_load"))();
+  return reinterpret_cast<on_load_fun>(dlsym(module_handle, "on_load"))(window);
 }
 
-void surge::module::on_unload(GLFWwindow *window, handle_t module_handle) {
+void surge::module::on_unload(GLFWwindow *window, handle_t module_handle) noexcept {
   if (!module_handle) {
     return;
   }
 
   // Call on unload
-  reinterpret_cast<on_load_fun>(dlsym(module_handle, "on_unload"))();
+  reinterpret_cast<on_unload_fun>(dlsym(module_handle, "on_unload"))();
 
   // Unbind callbacks
   glfwSetKeyCallback(window, nullptr);

@@ -12,22 +12,25 @@
 // clang-format on
 
 static bool show_debug_stats = false;
-static constexpr const int sample_size = 100;
-
-extern "C" {
 
 static eastl::ring_buffer<double,
                           eastl::vector<double, surge::allocators::eastl_allocators::gp_allocator>>
     frame_time_buffer;
 static double dt_avg{0};
 
-SURGE_MODULE_EXPORT void on_load() noexcept {
+static constexpr const int sample_size = 100;
+
+extern "C" {
+
+SURGE_MODULE_EXPORT auto on_load(GLFWwindow *) noexcept -> bool {
   log_info("Loading default module");
 
   frame_time_buffer.reserve(sample_size);
   for (auto &dt : frame_time_buffer) {
     dt = 0.0;
   }
+
+  return true;
 }
 
 SURGE_MODULE_EXPORT void on_unload() noexcept {

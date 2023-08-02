@@ -42,13 +42,16 @@ auto main(int argc, char **argv) noexcept -> int {
   /******************
    * Current module *
    ******************/
-  auto curr_module{module::load("./default.so")};
+  auto curr_module{argc == 3 ? module::load(argv[2]) : module::load("./default.so")};
   if (curr_module == nullptr) {
     window::terminate(window);
     return EXIT_FAILURE;
   }
 
-  module::on_load(window, curr_module);
+  if (!module::on_load(window, curr_module)) {
+    window::terminate(window);
+    return EXIT_FAILURE;
+  }
 
   /*************
    * Main Loop *
@@ -75,10 +78,9 @@ auto main(int argc, char **argv) noexcept -> int {
                          && hr_key_old_state == GLFW_RELEASE};
     if (should_hr) {
       auto new_module = module::reload(window, curr_module);
-      if (!new_module) {
+      curr_module = new_module;
+      if (!curr_module) {
         break;
-      } else {
-        curr_module = new_module;
       }
     }
 #endif

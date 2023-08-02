@@ -44,7 +44,10 @@ find_package(gsl-lite CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(bgfx CONFIG REQUIRED)
+
+get_target_property(BGFX_SHADERC_EXECUTABLE bgfx::shaderc LOCATION)
 
 # -----------------------------------------
 # Operating system and compiler detection
