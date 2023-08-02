@@ -4,12 +4,8 @@
 #include "logging.hpp"
 #include "module_manager.hpp"
 #include "options.hpp"
-#include "surge_player.hpp"
 #include "timers.hpp"
 #include "window.hpp"
-
-#include <GLFW/glfw3.h>
-#include <cstdlib>
 
 auto main(int argc, char **argv) noexcept -> int {
   using namespace surge;
@@ -34,7 +30,7 @@ auto main(int argc, char **argv) noexcept -> int {
   /****************************
    * Init window and renderer *
    ****************************/
-  auto [window, ww, wh, rf] = window::init(argv[1]);
+  auto [window, ww, wh, ccl] = window::init(argv[1]);
   if (!window) {
     return EXIT_FAILURE;
   }
@@ -53,9 +49,9 @@ auto main(int argc, char **argv) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  /*************
-   * Main Loop *
-   *************/
+  /***********************
+   * Main Loop variables *
+   ***********************/
   timers::generic_timer frame_timer;
   timers::generic_timer update_timer;
   update_timer.start();
@@ -65,11 +61,11 @@ auto main(int argc, char **argv) noexcept -> int {
                         && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)};
 #endif
 
+  /*************
+   * Main Loop *
+   *************/
   while ((frame_timer.start(), !glfwWindowShouldClose(window))) {
     glfwPollEvents();
-
-    // No need to do that, since we are creating non resizable windows, but good to have
-    window::handle_resize(window, ww, wh, rf);
 
     // Handle hot reloading
 #ifdef SURGE_ENABLE_HR
@@ -89,13 +85,14 @@ auto main(int argc, char **argv) noexcept -> int {
     module::update(curr_module, update_timer.stop());
     update_timer.start();
 
-    bgfx::touch(0);
+    // Clear buffers
+    renderer::clear(ccl);
 
     // Call module draw
     module::draw(curr_module);
 
-    // bgfx frame draw
-    bgfx::frame();
+    // Present rendering
+    glfwSwapBuffers(window);
 
     // Cache refresh key state
 #ifdef SURGE_ENABLE_HR

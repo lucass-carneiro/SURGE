@@ -10,11 +10,12 @@
     "yaml-cpp",
     "glfw3",
     "glm",
+    "opengl",
     {
-      "name": "bgfx",
+      "name": "glad",
       "features": [
-        "multithreaded",
-        "tools"
+        "loader",
+        "gl-api-latest"
       ]
     }
   ]

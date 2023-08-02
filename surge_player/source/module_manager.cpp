@@ -4,7 +4,6 @@
 #include "options.hpp"
 #include "timers.hpp"
 
-#include <GLFW/glfw3.h>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>

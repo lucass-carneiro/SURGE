@@ -1,9 +1,7 @@
 #ifndef SURGE_MODULE_MANAGER_HPP
 #define SURGE_MODULE_MANAGER_HPP
 
-// clang-format off
-#include <GLFW/glfw3.h>
-// clang-format on
+#include "renderer.hpp"
 
 #include <array>
 #include <cstdint>

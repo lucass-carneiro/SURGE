@@ -41,7 +41,6 @@ target_include_directories(
   SurgeDefaultModule PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:${SurgePlayer_SOURCE_DIR}/include>
-  "${BGFX_INCLUDE_PATH}"
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 

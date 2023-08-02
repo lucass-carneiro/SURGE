@@ -2,8 +2,7 @@
 #define SURGE_MODULE_DEFAULT
 
 #include "options.hpp"
-
-#include <GLFW/glfw3.h>
+#include "window.hpp"
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))

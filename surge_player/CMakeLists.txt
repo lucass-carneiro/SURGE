@@ -30,7 +30,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/mimalloc_override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/module_manager.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
-  "${PROJECT_SOURCE_DIR}/include/surge_player.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
@@ -42,6 +42,7 @@ set(
   "${PROJECT_SOURCE_DIR}/source/files.cpp"
   "${PROJECT_SOURCE_DIR}/source/main.cpp"
   "${PROJECT_SOURCE_DIR}/source/module_manager.cpp"
+  "${PROJECT_SOURCE_DIR}/source/renderer.cpp"
   "${PROJECT_SOURCE_DIR}/source/timers.cpp"
   "${PROJECT_SOURCE_DIR}/source/window.cpp"
 )
@@ -153,8 +154,6 @@ target_link_libraries(SurgePlayer PRIVATE
   yaml-cpp
   glfw
   glm::glm
-  bgfx::bgfx
-  bgfx::bx
-  bgfx::bimg
-  bgfx::bimg_decode
+  OpenGL::GL
+  glad::glad
 )

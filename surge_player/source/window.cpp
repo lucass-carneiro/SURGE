@@ -1,134 +1,67 @@
+// clang-format off
+// clang-format on
+
 #include "window.hpp"
 
 #include "logging.hpp"
 #include "options.hpp"
-
-#include <GLFW/glfw3.h>
-
-#ifdef SURGE_SYSTEM_Linux
-#  define GLFW_EXPOSE_NATIVE_X11
-#  include <GLFW/glfw3native.h>
-#else
-#  error "Unknow native API export macro. See https://www.glfw.org/docs/3.3/group__native.html
-#endif
+#include "renderer.hpp"
 
 // clang-format off
-#include <bgfx/platform.h>
 #include <yaml-cpp/yaml.h>
 // clang-format on
 
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
 #include <string>
-
-struct clear_color {
-  float r;
-  float g;
-  float b;
-  float a;
-};
+#include <tuple>
 
 static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW erro code %i: %s", code, description);
 }
 
-static auto rgba_to_hex(float R, float G, float B, float A) noexcept -> std::uint32_t {
-  uint32_t r{static_cast<std::uint32_t>(255.0 * R)};
-  uint32_t g{static_cast<std::uint32_t>(255.0 * G)};
-  uint32_t b{static_cast<std::uint32_t>(255.0 * B)};
-  uint32_t a{static_cast<std::uint32_t>(255.0 * A)};
-
-  return ((r & 0xff) << 24) + ((g & 0xff) << 16) + ((b & 0xff) << 8) + (a & 0xff);
+static void glfw_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
+  glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
 
 auto surge::window::init(const char *config_file) noexcept
-    -> std::tuple<GLFWwindow *, std::uint32_t, std::uint32_t, std::uint32_t> {
+    -> std::tuple<GLFWwindow *, std::uint32_t, std::uint32_t, renderer::clear_color> {
+
   /******************
    * Config parsing *
    ******************/
   log_info("Parsing config file %s", config_file);
 
-  bgfx::RendererType::Enum rt{};
-  bgfx::Resolution res{};
-  clear_color ccl{};
-
-  std::uint16_t vendor_Id{0};
-
   std::string wname{};
   int mi{0};
   bool windowed{true};
   bool cursor{true};
+  int ww{0}, wh{0};
+  bool vsync{true};
+
+  renderer::clear_color ccl{};
 
   try {
     const auto cf{YAML::LoadFile(config_file)};
-
-    const auto rbe{cf["renderer"]["backend"].as<std::string>()};
-    if (rbe == "Vulkan" || rbe == "vulkan") {
-      rt = bgfx::RendererType::Vulkan;
-    } else if (rbe == "OpenGL" || rbe == "opengl") {
-      rt = bgfx::RendererType::OpenGL;
-    } else {
-      log_error("Unknow render beckend %s", rbe.c_str());
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-    }
-
-    const auto gpu_v{cf["renderer"]["gpu_vendor"].as<std::string>()};
-    if (gpu_v == "nVidia" || gpu_v == "nvidia" || gpu_v == "NVIDIA") {
-      vendor_Id = BGFX_PCI_ID_NVIDIA;
-    } else if (gpu_v == "AMD" || gpu_v == "amd") {
-      vendor_Id = BGFX_PCI_ID_AMD;
-    } else if (gpu_v == "intel") {
-      vendor_Id = BGFX_PCI_ID_INTEL;
-    } else {
-      log_error("Unknow GPU vendor %s", gpu_v.c_str());
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-    }
-
-    res.width = cf["window"]["resolution"]["width"].as<int>();
-    res.height = cf["window"]["resolution"]["height"].as<int>();
-
-    if (cf["window"]["VSync"]["enabled"].as<bool>()) {
-      res.reset |= BGFX_RESET_VSYNC;
-    }
-
-    if (cf["window"]["MSAA"]["enabled"].as<bool>()) {
-      const auto level{cf["window"]["MSAA"]["level"].as<int>()};
-      switch (level) {
-      case 2:
-        res.reset |= BGFX_RESET_MSAA_X2;
-        break;
-      case 4:
-        res.reset |= BGFX_RESET_MSAA_X4;
-        break;
-      case 8:
-        res.reset |= BGFX_RESET_MSAA_X8;
-        break;
-      case 16:
-        res.reset |= BGFX_RESET_MSAA_X16;
-        break;
-      default:
-        log_error("Unable to set MSAA level to x%i", level);
-        return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-      }
-    }
-
-    if (cf["window"]["HDR"]["enabled"].as<bool>()) {
-      res.reset |= BGFX_RESET_HDR10;
-    }
-
-    ccl.r = cf["renderer"]["clear_color"]["r"].as<float>();
-    ccl.g = cf["renderer"]["clear_color"]["g"].as<float>();
-    ccl.b = cf["renderer"]["clear_color"]["b"].as<float>();
-    ccl.a = cf["renderer"]["clear_color"]["a"].as<float>();
 
     wname = cf["window"]["name"].as<std::string>();
     mi = cf["window"]["monitor_index"].as<int>();
     windowed = cf["window"]["windowed"].as<bool>();
     cursor = cf["window"]["cursor"].as<bool>();
 
+    ww = cf["window"]["resolution"]["width"].as<int>();
+    wh = cf["window"]["resolution"]["height"].as<int>();
+
+    vsync = cf["window"]["VSync"]["enabled"].as<bool>();
+
+    ccl = renderer::clear_color{cf["renderer"]["clear_color"]["r"].as<float>(),
+                                cf["renderer"]["clear_color"]["g"].as<float>(),
+                                cf["renderer"]["clear_color"]["b"].as<float>(),
+                                cf["renderer"]["clear_color"]["a"].as<float>()};
+
   } catch (const std::exception &e) {
     log_error("Unable to load %s: %s", config_file, e.what());
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
   /*************
@@ -139,7 +72,7 @@ auto surge::window::init(const char *config_file) noexcept
   glfwSetErrorCallback(glfw_error_callback);
 
   if (glfwInit() != GLFW_TRUE) {
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
   /*****************
@@ -152,7 +85,7 @@ auto surge::window::init(const char *config_file) noexcept
 
   if (monitors == nullptr) {
     glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
   log_info("Monitors detected: %i", mc);
@@ -167,35 +100,35 @@ auto surge::window::init(const char *config_file) noexcept
     glfwGetMonitorPhysicalSize(monitors[i], &width, &height);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+      return std::make_tuple(nullptr, 0, 0, ccl);
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorContentScale(monitors[i], &xscale, &yscale);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+      return std::make_tuple(nullptr, 0, 0, ccl);
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorPos(monitors[i], &xpos, &ypos);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+      return std::make_tuple(nullptr, 0, 0, ccl);
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorWorkarea(monitors[i], &w_xpos, &w_ypos, &w_width, &w_height);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+      return std::make_tuple(nullptr, 0, 0, ccl);
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const char *name = glfwGetMonitorName(monitors[i]);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+      return std::make_tuple(nullptr, 0, 0, ccl);
     }
 
     log_info("Properties of monitor %i:\n"
@@ -212,101 +145,115 @@ auto surge::window::init(const char *config_file) noexcept
    ***************/
   log_info("Initializing engine window");
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
-  GLFWwindow *window = nullptr;
-
-  if (windowed) {
-    window = glfwCreateWindow(res.width, res.height, wname.c_str(), nullptr, nullptr);
-  } else {
-    window = glfwCreateWindow(res.width, res.height, wname.c_str(), monitors[mi < mc ? mi : 0],
-                              nullptr);
-  }
-
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
-  glfwSetInputMode(window, GLFW_CURSOR, cursor ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-  }
-
-  /*************
-   * BGFX init *
-   *************/
-  log_info("Initializing BGFX");
-
-  bgfx::PlatformData pd{};
-
-#ifdef SURGE_SYSTEM_Linux
-  pd.ndt = glfwGetX11Display();
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-  }
-
-  pd.nwh = reinterpret_cast<void *>(static_cast<std::uintptr_t>(glfwGetX11Window(window)));
+  // TODO: Is this macro name correct?
+#ifdef SURGE_SYSTEM_MacOSX
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
     return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
   }
 #endif
 
-  bgfx::Init init_data{};
-  init_data.type = rt;
-  init_data.vendorId = vendor_Id;
-  init_data.platformData = pd;
-  init_data.resolution = res;
-
-  // Call bgfx::renderFrame before bgfx::init to signal to bgfx not to create a render thread.
-  // Most graphics APIs must be used on the same thread that created the window.
-  if (rt == bgfx::RendererType::OpenGL) {
-    bgfx::renderFrame();
-  }
-
-  if (!bgfx::init(init_data)) {
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
+    return std::make_tuple(nullptr, 0, 0, ccl);
   }
 
-  bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
-                     rgba_to_hex(ccl.r, ccl.g, ccl.b, ccl.a), 1.0f, 0);
-  bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
+  GLFWwindow *window = nullptr;
 
-  return std::make_tuple(window, res.width, res.height, res.reset);
+  if (windowed) {
+    window = glfwCreateWindow(ww, wh, wname.c_str(), nullptr, nullptr);
+  } else {
+    window = glfwCreateWindow(ww, wh, wname.c_str(), monitors[mi < mc ? mi : 0], nullptr);
+  }
+
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return std::make_tuple(nullptr, 0, 0, ccl);
+  }
+
+  log_info("Engine window created");
+
+  /*******************************
+   *           CURSORS           *
+   *******************************/
+  log_info("Setting cursor mode");
+
+  glfwSetInputMode(window, GLFW_CURSOR, cursor ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return std::make_tuple(nullptr, 0, 0, ccl);
+  }
+
+  /***********************
+   * OpenGL context init *
+   ***********************/
+  log_info("Initializing OpenGL");
+
+  glfwMakeContextCurrent(window);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return std::make_tuple(nullptr, 0, 0, ccl);
+  }
+
+  if (vsync) {
+    glfwSwapInterval(1);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return std::make_tuple(nullptr, 0, 0, ccl);
+    }
+  }
+
+  /********
+   * GLAD *
+   ********/
+  log_info("Initializing GLAD");
+
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    log_error("Failed to initialize GLAD");
+    glfwTerminate();
+    return std::make_tuple(nullptr, 0, 0, ccl);
+  }
+
+  glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return std::make_tuple(nullptr, 0, 0, ccl);
+  }
+
+  /******************
+   * OpenGL options *
+   ******************/
+  renderer::enable(renderer::capability::depth_test);
+  renderer::enable(renderer::capability::blend);
+  renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);
+
+  return std::make_tuple(window, ww, wh, ccl);
 }
 
 void surge::window::terminate(GLFWwindow *window) noexcept {
   log_info("Terminating window and renderer");
-  bgfx::shutdown();
   glfwDestroyWindow(window);
   glfwTerminate();
-}
-
-void surge::window::handle_resize(GLFWwindow *window, std::uint32_t &old_w, std::uint32_t &old_h,
-                                  std::uint32_t reset_flags) noexcept {
-  int new_w{0}, new_h{0};
-  glfwGetWindowSize(window, &new_w, &new_h);
-
-  if (static_cast<std::uint32_t>(new_w) != old_w || static_cast<std::uint32_t>(new_h) != old_h) {
-    bgfx::reset(new_w, new_h, reset_flags);
-    bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
-    old_w = new_w;
-    old_h = new_h;
-  }
 }
 
 auto surge::window::get_dims(GLFWwindow *window) noexcept -> std::tuple<float, float> {

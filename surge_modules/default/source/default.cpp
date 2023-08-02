@@ -4,8 +4,6 @@
 #include "logging.hpp"
 #include "logo.hpp"
 
-#include <bgfx/bgfx.h>
-
 // clang-format off
 #include <EASTL/bonus/ring_buffer.h>
 #include <EASTL/vector.h>
@@ -39,34 +37,7 @@ SURGE_MODULE_EXPORT void on_unload() noexcept {
 }
 
 SURGE_MODULE_EXPORT void draw() noexcept {
-  bgfx::dbgTextClear();
-
-  if (show_debug_stats) {
-    bgfx::setDebug(BGFX_DEBUG_STATS);
-  } else {
-    bgfx::setDebug(BGFX_DEBUG_TEXT);
-
-    bgfx::dbgTextPrintf(1, 1, 0x0f, "Last dt = %.4f, FPS = %.4f", dt_avg, 1.0 / dt_avg);
-
-    std::uint16_t y{3};
-    for (const auto &line : surge::cli::LOGO_LINES) {
-      bgfx::dbgTextPrintf(1, y, 0x04, "%s", line);
-      y++;
-    }
-    y++;
-
-    bgfx::dbgTextPrintf(1, y, 0x0f, "\x1b[4;0mS\x1b[0muper");
-    y++;
-    bgfx::dbgTextPrintf(1, y, 0x0f, "\x1b[4;0mU\x1b[0mnder\x1b[4;0mR\x1b[0mated");
-    y++;
-    bgfx::dbgTextPrintf(1, y, 0x0f, "\x1b[4;0mG\x1b[0mame");
-    y++;
-    bgfx::dbgTextPrintf(1, y, 0x0f, "\x1b[4;0mE\x1b[0mngine");
-    y++;
-    y++;
-
-    bgfx::dbgTextPrintf(1, y, 0x0f, "Press F1 to see bgfx stats");
-  }
+  // TODO
 }
 
 SURGE_MODULE_EXPORT void update(double dt) noexcept {
