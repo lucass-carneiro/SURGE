@@ -47,6 +47,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Freetype REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection
@@ -105,36 +106,3 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_player)
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_modules)
-
-# -----------------------------------------
-# Create staging directory
-# -----------------------------------------
-
-# We need to make sure that this script runs after all targets are built
-# https://stackoverflow.com/a/62311397
-function(get_all_targets var)
-    set(targets)
-    get_all_targets_recursive(targets ${CMAKE_CURRENT_SOURCE_DIR})
-    set(${var} ${targets} PARENT_SCOPE)
-endfunction()
-
-macro(get_all_targets_recursive targets dir)
-    get_property(subdirectories DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
-    foreach(subdir ${subdirectories})
-        get_all_targets_recursive(${targets} ${subdir})
-    endforeach()
-
-    get_property(current_targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
-    list(APPEND ${targets} ${current_targets})
-endmacro()
-
-get_all_targets(all_targets)
-
-add_custom_target(
-  SurgeStatingDirectory
-  ALL
-  DEPENDS ${all_targets}
-  COMMAND ${CMAKE_COMMAND} -E echo "Creating ${CMAKE_BUILD_TYPE} staging for SurgePlayer"
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/make_staging.py ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_BUILD_TYPE}
-  VERBATIM  
-)

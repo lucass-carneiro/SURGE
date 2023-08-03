@@ -6,12 +6,13 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 // clang-format off
 static constexpr const char *USAGE =
 "SURGE engine.                          \n\n"
 "  Usage:                                 \n"
-"    surge <config-file> <initial-module> \n"
+"    surge [<module-file>]                \n"
 "    surge (-h | --help)                  \n"
 "    surge --version                    \n\n"
 "  Options:                               \n"
@@ -56,11 +57,11 @@ auto surge::cli::parse_arguments(int argc, char **argv) noexcept -> bool {
     print_version();
     return false;
   } else if (argc == 2) {
-    return surge::files::validate_path(argv[1]);
-  } else if (argc == 3) {
-    return surge::files::validate_path(argv[1]) && surge::files::validate_path(argv[2]);
+    return surge::files::validate_path("config.yaml") && surge::files::validate_path(argv[1]);
+  } else if (argc == 1) {
+    return surge::files::validate_path("config.yaml");
   } else {
     print_help();
-    return {};
+    return false;
   }
 }

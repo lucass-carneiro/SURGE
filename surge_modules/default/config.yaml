@@ -18,3 +18,7 @@ renderer:
     g: 0.3
     b: 0.3
     a: 1.0
+
+font_cache:
+  - "Broadway-Regular.ttf"
+  - "Go-Mono.ttf"

@@ -17,6 +17,12 @@
         "loader",
         "gl-api-latest"
       ]
+    },
+    {
+      "name": "freetype",
+      "features": [
+        "error-strings"
+      ]
     }
   ]
 }

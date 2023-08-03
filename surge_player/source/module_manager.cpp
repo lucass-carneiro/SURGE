@@ -18,6 +18,20 @@
 
 #ifdef SURGE_SYSTEM_IS_POSIX
 
+auto surge::module::load_first_module(int argc, char **argv) noexcept -> handle_t {
+  if (argc == 2) {
+    return load(argv[1]);
+  } else {
+#  ifdef SURGE_SYSTEM_IS_POSIX
+    const auto default_path{std::filesystem::path{"bin"} / "default.so"};
+    return load(default_path.c_str());
+#  else
+    const auto default_path{std::filesystem::path{"bin"} / "default.dll"};
+    return load(default_path.c_str());
+#  endif
+  }
+}
+
 auto surge::module::load(const char *module_name) noexcept -> handle_t {
   log_info("Loading %s", module_name);
 

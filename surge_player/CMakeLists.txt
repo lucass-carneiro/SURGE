@@ -25,6 +25,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/font_cache.hpp"
   "${PROJECT_SOURCE_DIR}/include/logo.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/mimalloc_override_new_delete.hpp"
@@ -40,6 +41,7 @@ set(
   "${PROJECT_SOURCE_DIR}/source/allocators.cpp"
   "${PROJECT_SOURCE_DIR}/source/cli.cpp"
   "${PROJECT_SOURCE_DIR}/source/files.cpp"
+  "${PROJECT_SOURCE_DIR}/source/font_cache.cpp"
   "${PROJECT_SOURCE_DIR}/source/main.cpp"
   "${PROJECT_SOURCE_DIR}/source/module_manager.cpp"
   "${PROJECT_SOURCE_DIR}/source/renderer.cpp"
@@ -156,4 +158,5 @@ target_link_libraries(SurgePlayer PRIVATE
   glm::glm
   OpenGL::GL
   glad::glad
+  Freetype::Freetype
 )

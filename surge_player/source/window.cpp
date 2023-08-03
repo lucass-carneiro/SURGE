@@ -30,7 +30,7 @@ auto surge::window::init(const char *config_file) noexcept
   /******************
    * Config parsing *
    ******************/
-  log_info("Parsing config file %s", config_file);
+  log_info("Parsing window data in engine config file %s", config_file);
 
   std::string wname{};
   int mi{0};

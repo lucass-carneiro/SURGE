@@ -1,6 +1,7 @@
 #include "allocators.hpp"
 #include "cli.hpp"
 #include "files.hpp"
+#include "font_cache.hpp"
 #include "logging.hpp"
 #include "module_manager.hpp"
 #include "options.hpp"
@@ -30,15 +31,23 @@ auto main(int argc, char **argv) noexcept -> int {
   /****************************
    * Init window and renderer *
    ****************************/
-  auto [window, ww, wh, ccl] = window::init(argv[1]);
+  auto [window, ww, wh, ccl] = window::init("config.yaml");
   if (!window) {
     return EXIT_FAILURE;
   }
 
-  /******************
-   * Current module *
-   ******************/
-  auto curr_module{argc == 3 ? module::load(argv[2]) : module::load("./default.so")};
+  /*******************
+   * Init font cache *
+   *******************/
+  const auto font_cache{fonts::init("config.yaml")};
+  if (!font_cache) {
+    return EXIT_FAILURE;
+  }
+
+  /*********************
+   * Load First module *
+   *********************/
+  auto curr_module{module::load_first_module(argc, argv)};
   if (curr_module == nullptr) {
     window::terminate(window);
     return EXIT_FAILURE;

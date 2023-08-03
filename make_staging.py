@@ -2,55 +2,78 @@ import os
 import shutil
 import sys
 
-if os.name == "posix":
-    exe_ext = ""
-    lib_ext = ".so"
-elif os.name == "nt":
-    exe_ext = ".exe"
-    lib_ext = ".dll"
 
-root_dir = sys.argv[1]
-build_type = sys.argv[2]
+def make_staging_paths(exe_ext, lib_ext, staging_dir, module_name):
+    player_path = os.path.join(staging_dir, "surge" + exe_ext)
 
-staging_dir = root_dir + "/staging_" + build_type
-bin_dir = root_dir + "/" + build_type
+    module_bin_dir = os.path.join(staging_dir, "bin")
+    module_path = os.path.join(module_bin_dir, module_name + lib_ext)
 
-module_name_list = os.listdir(bin_dir + "/surge_modules/")
-module_name_list = [m for m in module_name_list if m not in (
-    "Makefile", "CMakeFiles", "cmake_install.cmake")]
+    config_path = os.path.join(staging_dir, "config.yaml")
+    fonts_path = os.path.join(staging_dir, "fonts")
 
-bin_file_name = bin_dir + "/surge_player/surge" + exe_ext
-staging_bin_file_name = staging_dir + "/surge" + exe_ext
+    return (player_path, module_path, config_path, fonts_path, module_bin_dir)
 
-if not os.path.exists(staging_dir):
-    print("Creating staging directory")
-    os.makedirs(staging_dir)
 
-    print("Copying player")
-    shutil.copy2(bin_file_name, staging_bin_file_name)
+def copy_data(src_paths, dest_paths):
+    shutil.copy2(src_paths[0], dest_paths[0])
+    shutil.copy2(src_paths[1], dest_paths[1])
+    shutil.copy2(src_paths[2], dest_paths[2])
+    shutil.copytree(src_paths[3], dest_paths[3])
 
-    print("Copying modules")
-    for mod in module_name_list:
-        print("  Copying", mod)
-        mod_file = bin_dir + "/surge_modules/" + mod + "/" + mod + lib_ext
-        staging_mod_file = staging_dir + "/" + mod + lib_ext
-        shutil.copy2(mod_file, staging_mod_file)
 
-    print("Done")
+def should_update(source, dest):
+    if os.stat(source).st_mtime != os.stat(dest).st_mtime:
+        return True
+    else:
+        return False
 
-else:
-    print("Updating staging directory")
 
-    if os.stat(bin_file_name).st_mtime != os.stat(staging_bin_file_name).st_mtime:
-        print("Updating player")
-        shutil.copy2(bin_file_name, staging_bin_file_name)
+def update_data(src_paths, dest_paths):
+    if should_update(src_paths[0], dest_paths[0]):
+        shutil.copy2(src_paths[0], dest_paths[0])
 
-    for mod in module_name_list:
-        mod_file = bin_dir + "/surge_modules/" + mod + "/" + mod + lib_ext
-        staging_mod_file = staging_dir + "/" + mod + lib_ext
+    if should_update(src_paths[1], dest_paths[1]):
+        shutil.copy2(src_paths[1], dest_paths[1] + ".new")
 
-        if os.stat(mod_file).st_mtime != os.stat(staging_mod_file).st_mtime:
-            print("Updating module", mod)
-            shutil.copy2(mod_file, staging_mod_file + ".new")
+    if should_update(src_paths[2], dest_paths[2]):
+        shutil.copy2(src_paths[2], dest_paths[2])
 
-    print("Done")
+    if should_update(src_paths[3], dest_paths[3]):
+        shutil.copy2(src_paths[3], dest_paths[3])
+
+
+def main():
+    if os.name == "posix":
+        exe_ext = ""
+        lib_ext = ".so"
+    elif os.name == "nt":
+        exe_ext = ".exe"
+        lib_ext = ".dll"
+
+    build_type = sys.argv[1]
+    module_name = sys.argv[2]
+
+    root_dir = os.getcwd()
+    staging_dir = os.path.join(root_dir, "staging_" + build_type)
+    bin_dir = os.path.join(root_dir, build_type)
+
+    player_path = os.path.join(bin_dir, "surge_player", "surge" + exe_ext)
+    module_path = os.path.join(
+        bin_dir, "surge_modules", module_name, module_name + lib_ext)
+
+    config_path = os.path.join(
+        root_dir, "surge_modules", module_name, "config.yaml")
+    fonts_path = os.path.join(root_dir, "surge_modules", module_name, "fonts")
+
+    src_paths = (player_path, module_path, config_path, fonts_path)
+    dest_paths = make_staging_paths(exe_ext, lib_ext, staging_dir, module_name)
+
+    if not os.path.exists(staging_dir):
+        os.makedirs(dest_paths[-1])
+        copy_data(src_paths, dest_paths)
+    else:
+        update_data(src_paths, dest_paths)
+
+
+main()

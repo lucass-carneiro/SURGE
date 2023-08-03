@@ -17,6 +17,8 @@ using on_unload_fun = void (*)();
 using update_fun = void (*)(double);
 using draw_fun = void (*)();
 
+auto load_first_module(int argc, char **argv) noexcept -> handle_t;
+
 auto load(const char *module_name) noexcept -> handle_t;
 void unload(handle_t module_handle) noexcept;
 auto reload(GLFWwindow *window, handle_t module_handle) noexcept -> handle_t;
