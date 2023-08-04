@@ -95,6 +95,17 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 # -----------------------------------------
+# Buffer sizes
+# -----------------------------------------
+
+if(NOT DEFINED SURGE_OPENGL_ERROR_BUFFER_SIZE)
+  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
+elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
+  message(WARNING "The variable SURGE_OPENGL_ERROR_BUFFER_SIZE should be set to at least 1024. It will be automatically set to this value.")
+  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
+endif()
+
+# -----------------------------------------
 #  Engine player target
 # -----------------------------------------
 

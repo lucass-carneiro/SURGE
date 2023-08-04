@@ -7,6 +7,8 @@
 #include <glad/glad.h>
 // clang-format on
 
+#include <optional>
+
 namespace surge::renderer {
 
 struct clear_color {
@@ -28,6 +30,9 @@ void disable(const capability cap) noexcept;
 void blend_function(const blend_src src, const blend_dest dest) noexcept;
 
 void clear(const clear_color &ccl) noexcept;
+
+auto create_shader_program(const char *vertex_shader_path,
+                           const char *fragment_shader_path) noexcept -> std::optional<GLuint>;
 
 } // namespace surge::renderer
 

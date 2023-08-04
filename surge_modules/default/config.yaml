@@ -20,5 +20,5 @@ renderer:
     a: 1.0
 
 font_cache:
-  - "Broadway-Regular.ttf"
-  - "Go-Mono.ttf"
+  - "fonts/Broadway-Regular.ttf"
+  - "fonts/Go-Mono.ttf"

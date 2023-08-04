@@ -39,8 +39,13 @@ auto main(int argc, char **argv) noexcept -> int {
   /*******************
    * Init font cache *
    *******************/
-  const auto font_cache{fonts::init("config.yaml")};
-  if (!font_cache) {
+  auto freetype_ctx{fonts::init(window, "config.yaml")};
+  if (!freetype_ctx) {
+    return EXIT_FAILURE;
+  }
+
+  auto char_map{fonts::create_character_maps(*freetype_ctx, 48)};
+  if (!char_map) {
     return EXIT_FAILURE;
   }
 
@@ -97,6 +102,20 @@ auto main(int argc, char **argv) noexcept -> int {
     // Clear buffers
     renderer::clear(ccl);
 
+    fonts::render_text(*freetype_ctx, *char_map, 0, glm::vec3{10.0f, 500.0f, 1.0f},
+                       glm::vec3{220.0f / 256.0f, 20.0f / 256.0f, 60.0f / 256.0f},
+                       "The quick brown fox jumps");
+    fonts::render_text(*freetype_ctx, *char_map, 0, glm::vec3{10.0f, 450.0f, 1.0f},
+                       glm::vec3{220.0f / 256.0f, 20.0f / 256.0f, 60.0f / 256.0f},
+                       "over the lazy dog");
+
+    fonts::render_text(*freetype_ctx, *char_map, 1, glm::vec3{10.0f, 350.0f, 1.0f},
+                       glm::vec3{220.0f / 256.0f, 20.0f / 256.0f, 60.0f / 256.0f},
+                       "The quick brown fox jumps");
+    fonts::render_text(*freetype_ctx, *char_map, 1, glm::vec3{10.0f, 300.0f, 1.0f},
+                       glm::vec3{220.0f / 256.0f, 20.0f / 256.0f, 60.0f / 256.0f},
+                       "over the lazy dog");
+
     // Call module draw
     module::draw(curr_module);
 
@@ -117,6 +136,9 @@ auto main(int argc, char **argv) noexcept -> int {
 
   // Finalize window and renderer
   window::terminate(window);
+
+  // Finalize font cache
+  fonts::terminate(*freetype_ctx);
 
   return EXIT_SUCCESS;
 }

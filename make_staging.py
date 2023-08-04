@@ -11,8 +11,9 @@ def make_staging_paths(exe_ext, lib_ext, staging_dir, module_name):
 
     config_path = os.path.join(staging_dir, "config.yaml")
     fonts_path = os.path.join(staging_dir, "fonts")
+    shaders_path = os.path.join(staging_dir, "shaders")
 
-    return (player_path, module_path, config_path, fonts_path, module_bin_dir)
+    return (player_path, module_path, config_path, fonts_path, shaders_path, module_bin_dir)
 
 
 def copy_data(src_paths, dest_paths):
@@ -20,6 +21,7 @@ def copy_data(src_paths, dest_paths):
     shutil.copy2(src_paths[1], dest_paths[1])
     shutil.copy2(src_paths[2], dest_paths[2])
     shutil.copytree(src_paths[3], dest_paths[3])
+    shutil.copytree(src_paths[4], dest_paths[4])
 
 
 def should_update(source, dest):
@@ -41,6 +43,9 @@ def update_data(src_paths, dest_paths):
 
     if should_update(src_paths[3], dest_paths[3]):
         shutil.copy2(src_paths[3], dest_paths[3])
+
+    if should_update(src_paths[4], dest_paths[4]):
+        shutil.copy2(src_paths[4], dest_paths[4])
 
 
 def main():
@@ -65,8 +70,10 @@ def main():
     config_path = os.path.join(
         root_dir, "surge_modules", module_name, "config.yaml")
     fonts_path = os.path.join(root_dir, "surge_modules", module_name, "fonts")
+    core_shaders_path = os.path.join(root_dir, "surge_player", "shaders")
 
-    src_paths = (player_path, module_path, config_path, fonts_path)
+    src_paths = (player_path, module_path, config_path,
+                 fonts_path, core_shaders_path)
     dest_paths = make_staging_paths(exe_ext, lib_ext, staging_dir, module_name)
 
     if not os.path.exists(staging_dir):
