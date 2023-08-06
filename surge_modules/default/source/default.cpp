@@ -1,6 +1,7 @@
 #include "default.hpp"
 
 #include "allocators.hpp"
+#include "font_cache.hpp"
 #include "logging.hpp"
 #include "logo.hpp"
 
@@ -18,10 +19,29 @@ static double dt_avg{0};
 
 static constexpr const int sample_size = 100;
 
+std::optional<surge::fonts::font_system_context> freetype_ctx{};
+std::optional<surge::fonts::charmap> char_map{};
+
 extern "C" {
 
-SURGE_MODULE_EXPORT auto on_load(GLFWwindow *) noexcept -> bool {
+SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> bool {
+  using namespace surge;
+
   log_info("Loading default module");
+
+  /*******************
+   * Init font cache *
+   *******************/
+  log_info("Initializing font cache");
+  freetype_ctx = fonts::init(window, "config.yaml");
+  if (!freetype_ctx) {
+    return false;
+  }
+
+  char_map = fonts::create_character_maps(*freetype_ctx, 100);
+  if (!char_map) {
+    return false;
+  }
 
   frame_time_buffer.reserve(sample_size);
   for (auto &dt : frame_time_buffer) {
@@ -32,12 +52,24 @@ SURGE_MODULE_EXPORT auto on_load(GLFWwindow *) noexcept -> bool {
 }
 
 SURGE_MODULE_EXPORT void on_unload() noexcept {
+  using namespace surge;
+
   log_info("Unloading default module");
   frame_time_buffer.clear();
+
+  log_info("Terminating font cache");
+  fonts::terminate(*freetype_ctx);
 }
 
 SURGE_MODULE_EXPORT void draw() noexcept {
-  // TODO
+  using namespace surge;
+
+  fonts::render_text(*freetype_ctx, *char_map, 0, glm::vec3{10.0f, 80.0f, 1.0f},
+                     glm::vec3{220.0f / 256.0f, 20.0f / 256.0f, 60.0f / 256.0f}, "SURGE");
+  fonts::render_text(*freetype_ctx, *char_map, 1, glm::vec3{10.0f, 130.0f, 0.3f},
+                     glm::vec3{0.0f, 0.0f, 0.0f}, "The Super Underrated Game Engine");
+  fonts::render_text(*freetype_ctx, *char_map, 1, glm::vec3{10.0f, 160.0f, 0.3f},
+                     glm::vec3{0.0f, 0.0f, 0.0f}, "Created with love by the Ninja Sheep");
 }
 
 SURGE_MODULE_EXPORT void update(double dt) noexcept {

@@ -13,6 +13,7 @@
 #include <freetype/ftmodapi.h>
 
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/vector_float3.hpp>
 #include <string_view>
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/node/node.h>
@@ -149,7 +150,7 @@ auto surge::fonts::init(GLFWwindow *window, const char *config_file) noexcept
   glBindVertexArray(0);
 
   log_info("Font cache initialized");
-  return font_system_context{lib, face_vec, *shader_handle, windo_proj, VAO, VBO};
+  return font_system_context{lib, face_vec, *shader_handle, windo_proj, VAO, VBO, wh};
 }
 
 void surge::fonts::terminate(font_system_context &ctx) noexcept {
@@ -248,7 +249,7 @@ auto surge::fonts::create_character_maps(font_system_context &ctx, FT_UInt pixel
 }
 
 void surge::fonts::render_text(font_system_context &ctx, charmap &map, std::uint64_t face_idx,
-                               glm::vec3 pos_scale, glm::vec3 color,
+                               glm::vec3 draw_pos_scale, glm::vec3 color,
                                std::string_view text) noexcept {
 
   // Set OpenGL state
@@ -261,6 +262,11 @@ void surge::fonts::render_text(font_system_context &ctx, charmap &map, std::uint
   glActiveTexture(GL_TEXTURE0);
 
   glBindVertexArray(ctx.VAO);
+
+  // This makes the text y position relative to the window's top left corner growing downwards,
+  // which is more intuitive in graphycs
+  const auto pos_scale{
+      glm::vec3{draw_pos_scale[0], ctx.window_height - draw_pos_scale[1], draw_pos_scale[2]}};
 
   float x{pos_scale[0]};
   const float y{pos_scale[1]}, scale{pos_scale[2]};
@@ -285,12 +291,12 @@ void surge::fonts::render_text(font_system_context &ctx, charmap &map, std::uint
     // Update VBO
     // clang-format off
     std::array<float, 24> vertices{{
-      xpos,     ypos + h,   0.0f, 0.0f,
-      xpos,     ypos,       0.0f, 1.0f,
-      xpos + w, ypos,       1.0f, 1.0f,
-      xpos,     ypos + h,   0.0f, 0.0f,
-      xpos + w, ypos,       1.0f, 1.0f,
-      xpos + w, ypos + h,   1.0f, 0.0f,
+      xpos,     ypos + h,   0.0f, 0.0f, // 1
+      xpos,     ypos,       0.0f, 1.0f, // 2
+      xpos + w, ypos,       1.0f, 1.0f, // 3
+      xpos,     ypos + h,   0.0f, 0.0f, // 4
+      xpos + w, ypos,       1.0f, 1.0f, // 5
+      xpos + w, ypos + h,   1.0f, 0.0f, // 6
 
     }};
     // clang-format on
@@ -310,6 +316,6 @@ void surge::fonts::render_text(font_system_context &ctx, charmap &map, std::uint
      * to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of
      * pixels))
      */
-    x += (map.advances[char_idx] >> 6) * scale;
+    x += gsl::narrow_cast<float>(map.advances[char_idx] >> 6) * scale;
   }
 }

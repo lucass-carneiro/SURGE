@@ -38,6 +38,8 @@ struct font_system_context {
   glm::mat4 windo_proj;
   GLuint VAO;
   GLuint VBO;
+
+  float window_height;
 };
 
 struct charmap {
@@ -64,7 +66,7 @@ auto create_character_maps(font_system_context &ctx, FT_UInt pixel_height) noexc
     -> std::optional<charmap>;
 
 void render_text(font_system_context &ctx, charmap &map, std::uint64_t face_idx,
-                 glm::vec3 pos_scale, glm::vec3 color, std::string_view text) noexcept;
+                 glm::vec3 draw_pos_scale, glm::vec3 color, std::string_view text) noexcept;
 
 } // namespace surge::fonts
 
