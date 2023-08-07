@@ -17,11 +17,8 @@
 
 namespace globals {
 
-extern std::optional<surge::fonts::font_system_context> freetype_ctx;
-extern std::optional<surge::fonts::charmap> char_map;
-
-extern std::optional<surge::renderer::image::context> sheep_img;
-extern surge::renderer::image::draw_context sheep_dc;
+extern surge::fonts::font_system_context freetype_ctx;
+extern surge::fonts::charmap char_map;
 
 }; // namespace globals
 
