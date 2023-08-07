@@ -1,6 +1,7 @@
 #ifndef SURGE_MODULE_DEFAULT
 #define SURGE_MODULE_DEFAULT
 
+#include "font_cache.hpp"
 #include "options.hpp"
 #include "window.hpp"
 
@@ -14,12 +15,22 @@
 #  define SURGE_MODULE_EXPORT
 #endif
 
+namespace globals {
+
+extern std::optional<surge::fonts::font_system_context> freetype_ctx;
+extern std::optional<surge::fonts::charmap> char_map;
+
+extern std::optional<surge::renderer::image::context> sheep_img;
+extern surge::renderer::image::draw_context sheep_dc;
+
+}; // namespace globals
+
 extern "C" {
 
 SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> bool;
 SURGE_MODULE_EXPORT void on_unload() noexcept;
 
-SURGE_MODULE_EXPORT void draw() noexcept;
+SURGE_MODULE_EXPORT void draw(GLFWwindow *window) noexcept;
 SURGE_MODULE_EXPORT void update(double dt) noexcept;
 
 SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,

@@ -21,7 +21,9 @@ set(
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/source/default.cpp"
+  "${PROJECT_SOURCE_DIR}/source/callbacks.cpp"
+  "${PROJECT_SOURCE_DIR}/source/draw.cpp"
+  "${PROJECT_SOURCE_DIR}/source/load_unload.cpp"
 )
 
 # -----------------------------------------

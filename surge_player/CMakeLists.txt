@@ -42,10 +42,13 @@ set(
   "${PROJECT_SOURCE_DIR}/source/cli.cpp"
   "${PROJECT_SOURCE_DIR}/source/files.cpp"
   "${PROJECT_SOURCE_DIR}/source/font_cache.cpp"
+  "${PROJECT_SOURCE_DIR}/source/image.cpp"
   "${PROJECT_SOURCE_DIR}/source/main.cpp"
   "${PROJECT_SOURCE_DIR}/source/module_manager.cpp"
   "${PROJECT_SOURCE_DIR}/source/renderer.cpp"
+  "${PROJECT_SOURCE_DIR}/source/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/source/timers.cpp"
+  "${PROJECT_SOURCE_DIR}/source/uniforms.cpp"
   "${PROJECT_SOURCE_DIR}/source/window.cpp"
 )
 

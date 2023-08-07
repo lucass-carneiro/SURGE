@@ -90,7 +90,7 @@ auto main(int argc, char **argv) noexcept -> int {
     renderer::clear(ccl);
 
     // Call module draw
-    module::draw(curr_module);
+    module::draw(window, curr_module);
 
     // Present rendering
     glfwSwapBuffers(window);

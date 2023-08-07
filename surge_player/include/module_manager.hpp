@@ -15,7 +15,7 @@ using handle_t = void *;
 using on_load_fun = bool (*)(GLFWwindow *);
 using on_unload_fun = void (*)();
 using update_fun = void (*)(double);
-using draw_fun = void (*)();
+using draw_fun = void (*)(GLFWwindow *);
 
 auto load_first_module(int argc, char **argv) noexcept -> handle_t;
 
@@ -27,7 +27,7 @@ auto on_load(GLFWwindow *window, handle_t module_handle) noexcept -> bool;
 void on_unload(GLFWwindow *window, handle_t module_handle) noexcept;
 
 void update(handle_t module_handle, double dt) noexcept;
-void draw(handle_t module_handle) noexcept;
+void draw(GLFWwindow *window, handle_t module_handle) noexcept;
 
 } // namespace surge::module
 

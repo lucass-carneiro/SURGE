@@ -12,14 +12,12 @@
 #include <freetype/ftsystem.h>
 #include <freetype/ftmodapi.h>
 
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/vector_float3.hpp>
 #include <string_view>
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/node/node.h>
 
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 // clang-format on
 
 #include <array>
@@ -255,10 +253,8 @@ void surge::fonts::render_text(font_system_context &ctx, charmap &map, std::uint
   // Set OpenGL state
   glUseProgram(ctx.text_shader_program);
 
-  glUniformMatrix4fv(glGetUniformLocation(ctx.text_shader_program, "projection"), 1, GL_FALSE,
-                     glm::value_ptr(ctx.windo_proj));
-  glUniform3f(glGetUniformLocation(ctx.text_shader_program, "textColor"), color[0], color[1],
-              color[2]);
+  renderer::uniforms::set(ctx.text_shader_program, "projection", ctx.windo_proj);
+  renderer::uniforms::set(ctx.text_shader_program, "textColor", color);
   glActiveTexture(GL_TEXTURE0);
 
   glBindVertexArray(ctx.VAO);

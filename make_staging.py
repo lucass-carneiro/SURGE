@@ -17,11 +17,11 @@ def make_staging_paths(exe_ext, lib_ext, staging_dir, module_name):
 
 
 def copy_data(src_paths, dest_paths):
-    shutil.copy2(src_paths[0], dest_paths[0])
+    os.symlink(src_paths[0], dest_paths[0])
     shutil.copy2(src_paths[1], dest_paths[1])
-    shutil.copy2(src_paths[2], dest_paths[2])
-    shutil.copytree(src_paths[3], dest_paths[3])
-    shutil.copytree(src_paths[4], dest_paths[4])
+    os.symlink(src_paths[2], dest_paths[2])
+    os.symlink(src_paths[3], dest_paths[3])
+    os.symlink(src_paths[4], dest_paths[4])
 
 
 def should_update(source, dest):
@@ -32,20 +32,8 @@ def should_update(source, dest):
 
 
 def update_data(src_paths, dest_paths):
-    if should_update(src_paths[0], dest_paths[0]):
-        shutil.copy2(src_paths[0], dest_paths[0])
-
     if should_update(src_paths[1], dest_paths[1]):
         shutil.copy2(src_paths[1], dest_paths[1] + ".new")
-
-    if should_update(src_paths[2], dest_paths[2]):
-        shutil.copy2(src_paths[2], dest_paths[2])
-
-    if should_update(src_paths[3], dest_paths[3]):
-        shutil.copy2(src_paths[3], dest_paths[3])
-
-    if should_update(src_paths[4], dest_paths[4]):
-        shutil.copy2(src_paths[4], dest_paths[4])
 
 
 def main():

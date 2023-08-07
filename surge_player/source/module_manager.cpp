@@ -225,12 +225,12 @@ void surge::module::update(handle_t module_handle, double dt) noexcept {
   reinterpret_cast<update_fun>(dlsym(module_handle, "update"))(dt);
 }
 
-void surge::module::draw(handle_t module_handle) noexcept {
+void surge::module::draw(GLFWwindow *window, handle_t module_handle) noexcept {
   if (!module_handle) {
     return;
   }
 
-  reinterpret_cast<draw_fun>(dlsym(module_handle, "draw"))();
+  reinterpret_cast<draw_fun>(dlsym(module_handle, "draw"))(window);
 }
 
 #endif

@@ -23,6 +23,7 @@
       "features": [
         "error-strings"
       ]
-    }
+    },
+    "stb"
   ]
 }

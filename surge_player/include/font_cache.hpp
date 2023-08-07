@@ -11,12 +11,10 @@
 #include <freetype/ftimage.h>
 #include <freetype/fttypes.h>
 
-#include <glm/ext/vector_float3.hpp>
 
 #include <EASTL/vector.h>
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 // clang-format on
 
 #include <cstddef>
