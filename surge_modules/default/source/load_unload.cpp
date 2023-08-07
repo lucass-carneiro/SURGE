@@ -44,7 +44,7 @@ SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> bool {
    * Load sheep image *
    *******************/
   log_info("Loding sheep image");
-  sheep_img = renderer::image::create("sheep.png");
+  sheep_img = renderer::image::create("pieces.png");
   if (!sheep_img) {
     return false;
   }

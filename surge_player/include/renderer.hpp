@@ -79,6 +79,7 @@ struct draw_context {
 
 auto create(const char *p) noexcept -> std::optional<context>;
 void draw(context &ctx, draw_context &dctx) noexcept;
+void draw_region(context &ctx, draw_context &dctx, glm::vec2 &&origin, glm::vec2 &&dims) noexcept;
 
 } // namespace image
 

@@ -52,5 +52,4 @@ vec2 get_sprite_coord() {
   return (M * ext_txt_pos).xy;
 }
 
-// void main() { fragment_color = texture(txt_0, get_sprite_coord()); }
-void main() { fragment_color = texture(txt_0, fs_in.txt_pos); }
+void main() { fragment_color = texture(txt_0, get_sprite_coord()); }

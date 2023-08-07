@@ -1,5 +1,7 @@
 #include "default.hpp"
 
+#include <glm/fwd.hpp>
+
 extern "C" {
 
 SURGE_MODULE_EXPORT void draw(GLFWwindow *) noexcept {
@@ -14,7 +16,8 @@ SURGE_MODULE_EXPORT void draw(GLFWwindow *) noexcept {
                      glm::vec3{0.0f, 0.0f, 0.0f}, "Created with love by the Ninja Sheep");
 
   sheep_dc.pos = glm::vec3{100.0f, 200.0f, 0.1};
-  sheep_dc.scale = glm::vec3{300.0f, 300.0f, 1.0};
-  renderer::image::draw(*sheep_img, sheep_dc);
+  sheep_dc.scale = glm::vec3{102.0f, 102.0f, 1.0f};
+  renderer::image::draw_region(*sheep_img, sheep_dc, glm::vec2{1.0f, 1.0f},
+                               glm::vec2{102.0f, 102.0f});
 }
 }

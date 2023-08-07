@@ -161,3 +161,32 @@ void surge::renderer::image::draw(context &ctx, draw_context &dctx) noexcept {
 
   glBindVertexArray(0);
 }
+
+void surge::renderer::image::draw_region(context &ctx, draw_context &dctx, glm::vec2 &&origin,
+                                         glm::vec2 &&dims) noexcept {
+
+  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
+
+  glUseProgram(ctx.shader_program);
+
+  uniforms::set(ctx.shader_program, "projection", dctx.projection);
+  uniforms::set(ctx.shader_program, "view", dctx.view);
+  uniforms::set(ctx.shader_program, "model", model);
+
+  uniforms::set(ctx.shader_program, "txt_0", GLint{0});
+  uniforms::set(ctx.shader_program, "ds", ctx.ds);
+  uniforms::set(ctx.shader_program, "r0", origin);
+  uniforms::set(ctx.shader_program, "dims", dims);
+
+  // TODO: Implement
+  uniforms::set(ctx.shader_program, "h_flip", dctx.h_flip);
+  uniforms::set(ctx.shader_program, "v_flip", dctx.v_flip);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, ctx.texture_id);
+
+  glBindVertexArray(ctx.VAO);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+  glBindVertexArray(0);
+}
