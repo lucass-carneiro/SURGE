@@ -13,6 +13,7 @@
 #include <EASTL/fixed_list.h>
 // clang-format on
 
+#include <EASTL/sort.h>
 #include <array>
 #include <random>
 
@@ -54,17 +55,27 @@ void mod_2048::piece::remove(id_t id) noexcept {
   available_IDs.push_back(id);
 }
 
+auto mod_2048::piece::is_occupied(id_t slot) noexcept -> bool {
+  for (const auto &p : slots) {
+    if (p.second == slot) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void mod_2048::piece::add_random() noexcept {
   static std::mt19937 gen{std::random_device{}()};
-  static std::uniform_int_distribution<id_t> pos_distrib(0, 15);
   static std::uniform_int_distribution<id_t> exp_distrib(1, 2);
+  static std::uniform_int_distribution<id_t> pos_distrib(0, 15);
 
   const auto exp{exp_distrib(gen)};
   auto slot{pos_distrib(gen)};
 
-  while (slots.find(slot) != slots.end()) {
+  while (is_occupied(slot)) {
     slot = pos_distrib(gen);
   }
+
   log_info("Adding piece to slot %i exponent %i", slot, exp);
   add(slot, exp);
 }

@@ -15,6 +15,7 @@ auto get_img_ctx() noexcept -> const surge::renderer::image::context &;
 void add(id_t slot, id_t exponent) noexcept;
 void remove(id_t id) noexcept;
 
+auto is_occupied(id_t slot) noexcept -> bool;
 void add_random() noexcept;
 
 void draw() noexcept;
