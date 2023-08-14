@@ -1,7 +1,5 @@
 #include "default.hpp"
 
-#include <glm/fwd.hpp>
-
 extern "C" SURGE_MODULE_EXPORT void draw(GLFWwindow *) noexcept {
   using namespace surge;
   using namespace globals;

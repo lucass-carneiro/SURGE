@@ -2,6 +2,7 @@
 #define SURGE_RENDERER_HPP
 
 // clang-format off
+#include <glm/fwd.hpp>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -73,13 +74,16 @@ struct draw_context {
   glm::mat4 view;
   glm::vec3 pos;
   glm::vec3 scale;
+  glm::vec2 region_origin;
+  glm::vec2 region_dims;
   bool h_flip{false};
   bool v_flip{false};
 };
 
 auto create(const char *p) noexcept -> std::optional<context>;
-void draw(context &ctx, draw_context &dctx) noexcept;
-void draw_region(context &ctx, draw_context &dctx, glm::vec2 &&origin, glm::vec2 &&dims) noexcept;
+
+void draw(const context &ctx, const draw_context &dctx) noexcept;
+void draw(const context &ctx, draw_context &&dctx) noexcept;
 
 } // namespace image
 

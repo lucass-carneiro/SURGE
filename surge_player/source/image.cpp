@@ -3,6 +3,9 @@
 #include "logging.hpp"
 #include "renderer.hpp"
 
+#include <glm/fwd.hpp>
+#include <utility>
+
 // clang-format off
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz)           surge::allocators::mimalloc::malloc(sz)
@@ -134,7 +137,7 @@ auto surge::renderer::image::create(const char *p) noexcept -> std::optional<con
                  EBO};
 }
 
-void surge::renderer::image::draw(context &ctx, draw_context &dctx) noexcept {
+void surge::renderer::image::draw(const context &ctx, const draw_context &dctx) noexcept {
 
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
 
@@ -146,10 +149,9 @@ void surge::renderer::image::draw(context &ctx, draw_context &dctx) noexcept {
 
   uniforms::set(ctx.shader_program, "txt_0", GLint{0});
   uniforms::set(ctx.shader_program, "ds", ctx.ds);
-  uniforms::set(ctx.shader_program, "r0", glm::vec2{0.0f, 0.0f});
-  uniforms::set(ctx.shader_program, "dims", ctx.dimentions);
+  uniforms::set(ctx.shader_program, "r0", dctx.region_origin);
+  uniforms::set(ctx.shader_program, "dims", dctx.region_dims);
 
-  // TODO: Implement
   uniforms::set(ctx.shader_program, "h_flip", dctx.h_flip);
   uniforms::set(ctx.shader_program, "v_flip", dctx.v_flip);
 
@@ -162,31 +164,6 @@ void surge::renderer::image::draw(context &ctx, draw_context &dctx) noexcept {
   glBindVertexArray(0);
 }
 
-void surge::renderer::image::draw_region(context &ctx, draw_context &dctx, glm::vec2 &&origin,
-                                         glm::vec2 &&dims) noexcept {
-
-  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
-
-  glUseProgram(ctx.shader_program);
-
-  uniforms::set(ctx.shader_program, "projection", dctx.projection);
-  uniforms::set(ctx.shader_program, "view", dctx.view);
-  uniforms::set(ctx.shader_program, "model", model);
-
-  uniforms::set(ctx.shader_program, "txt_0", GLint{0});
-  uniforms::set(ctx.shader_program, "ds", ctx.ds);
-  uniforms::set(ctx.shader_program, "r0", origin);
-  uniforms::set(ctx.shader_program, "dims", dims);
-
-  // TODO: Implement
-  uniforms::set(ctx.shader_program, "h_flip", dctx.h_flip);
-  uniforms::set(ctx.shader_program, "v_flip", dctx.v_flip);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, ctx.texture_id);
-
-  glBindVertexArray(ctx.VAO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-  glBindVertexArray(0);
+void surge::renderer::image::draw(const context &ctx, draw_context &&dctx) noexcept {
+  draw(ctx, dctx);
 }

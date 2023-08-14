@@ -131,4 +131,4 @@ endif()
 # -----------------------------------------
 # Link and build order dependencies
 # -----------------------------------------
-target_link_libraries(SurgeDefaultModule PRIVATE EASTL)
+target_link_libraries(SurgeDefaultModule PRIVATE glfw)

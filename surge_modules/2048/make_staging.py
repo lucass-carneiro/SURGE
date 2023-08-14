@@ -10,10 +10,11 @@ def make_staging_paths(exe_ext, lib_ext, staging_dir, module_name):
     module_path = os.path.join(module_bin_dir, module_name + lib_ext)
 
     config_path = os.path.join(staging_dir, "config.yaml")
-    fonts_path = os.path.join(staging_dir, "fonts")
     shaders_path = os.path.join(staging_dir, "shaders")
 
-    return (player_path, module_path, config_path, fonts_path, shaders_path, module_bin_dir)
+    resources_path = os.path.join(staging_dir, "resources")
+
+    return (player_path, module_path, config_path, shaders_path, resources_path, module_bin_dir)
 
 
 def copy_data(src_paths, dest_paths):
@@ -45,7 +46,7 @@ def main():
         lib_ext = ".dll"
 
     build_type = sys.argv[1]
-    module_name = sys.argv[2]
+    module_name = "2048"
 
     root_dir = os.getcwd()
     staging_dir = os.path.join(root_dir, "staging_" + build_type)
@@ -57,11 +58,13 @@ def main():
 
     config_path = os.path.join(
         root_dir, "surge_modules", module_name, "config.yaml")
-    fonts_path = os.path.join(root_dir, "surge_modules", module_name, "fonts")
     core_shaders_path = os.path.join(root_dir, "surge_player", "shaders")
 
+    resources_path = os.path.join(
+        root_dir, "surge_modules", module_name, "resources")
+
     src_paths = (player_path, module_path, config_path,
-                 fonts_path, core_shaders_path)
+                 core_shaders_path, resources_path)
     dest_paths = make_staging_paths(exe_ext, lib_ext, staging_dir, module_name)
 
     if not os.path.exists(staging_dir):
