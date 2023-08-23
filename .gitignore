@@ -1,17 +1,5 @@
-.cache/*
 
-Debug/*
-Release/*
 
-staging_Debug/*
+# Added by cargo
 
-include/options.hpp
-
-compile_commands.json
-
-vcpkg/*
-vcpkg_installed/*
-vcpkg.json
-
-staging_Debug/*
-staging_Release/*
+/target

@@ -1,15 +1,4 @@
 {
-    "clang-tidy.checks": [
-        "modernize*",
-        "cppcoreguidelines*",
-        "-cppcoreguidelines-avoid-magic-numbers",
-        "clang-diagnostic-*",
-        "clang-analyzer-*",
-        "bugprone*",
-        "performance",
-        "-cppcoreguidelines-pro-type-vararg",
-        "-cppcoreguidelines-macro-usage"
-    ],
     "editor.formatOnSave": true,
     "cmake.configureOnOpen": false,
     "editor.inlayHints.enabled": "offUnlessPressed"
