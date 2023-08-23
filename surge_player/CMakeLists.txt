@@ -162,4 +162,5 @@ target_link_libraries(SurgePlayer PRIVATE
   OpenGL::GL
   glad::glad
   Freetype::Freetype
+  imgui::imgui
 )

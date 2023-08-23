@@ -17,8 +17,9 @@ project(
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/2048_board.hpp"
+  "${PROJECT_SOURCE_DIR}/include/2048_debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/2048_globals.hpp"
-  "${PROJECT_SOURCE_DIR}/include/2048_piece.hpp"
+  "${PROJECT_SOURCE_DIR}/include/2048_pieces.hpp"
   "${PROJECT_SOURCE_DIR}/include/2048.hpp"
 )
 
@@ -26,10 +27,11 @@ set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/source/2048_board.cpp"
   "${PROJECT_SOURCE_DIR}/source/2048_callbacks.cpp"
+  "${PROJECT_SOURCE_DIR}/source/2048_debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/source/2048_draw.cpp"
   "${PROJECT_SOURCE_DIR}/source/2048_globals.cpp"
   "${PROJECT_SOURCE_DIR}/source/2048_load_unload.cpp"
-  "${PROJECT_SOURCE_DIR}/source/2048_piece.cpp"
+  "${PROJECT_SOURCE_DIR}/source/2048_pieces.cpp"
 )
 
 # -----------------------------------------
@@ -138,4 +140,4 @@ endif()
 # -----------------------------------------
 # Link and build order dependencies
 # -----------------------------------------
-target_link_libraries(Surge2048 PRIVATE glfw EASTL)
+target_link_libraries(Surge2048 PRIVATE glfw EASTL imgui::imgui)

@@ -9,6 +9,10 @@
 
 // clang-format off
 #include <yaml-cpp/yaml.h>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 // clang-format on
 
 #include <cstdint>
@@ -247,10 +251,35 @@ auto surge::window::init(const char *config_file) noexcept
   renderer::enable(renderer::capability::blend);
   renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);
 
+  /********************
+   * Dear ImGui setup *
+   ********************/
+  log_info("Initializing DearImGui");
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  /* ImGuiIO &io =  ImGui::GetIO();
+  (void)io;
+   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+  */
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsLight();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window, false);
+  ImGui_ImplOpenGL3_Init("#version 460");
+
   return std::make_tuple(window, ww, wh, ccl);
 }
 
 void surge::window::terminate(GLFWwindow *window) noexcept {
+  log_info("Terminating DearImGui");
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+
   log_info("Terminating window and renderer");
   glfwDestroyWindow(window);
   glfwTerminate();
