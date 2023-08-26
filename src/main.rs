@@ -2,8 +2,10 @@
 
 #[macro_use]
 mod logging;
+mod cli;
 
 fn main() {
-    log_info!("This is an information");
-    log_info!("This is an information with a number: {}", 1);
+    cli::draw_logo();
+    let config_file = cli::parse_cfg().unwrap();
+    print!("{:?}", config_file)
 }

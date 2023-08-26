@@ -9,3 +9,4 @@ log_color = []
 
 [dependencies]
 chrono = "0.4.26"
+yaml-rust = "0.4.5"
