@@ -1,0 +1,23 @@
+startup:
+  module_name: "default"
+
+window:
+  name: "SURGE Default Module"
+  
+  windowed: true
+  cursor: true
+  
+  resolution:
+    width: 800
+    height: 600
+  
+  VSync:
+    enabled: true
+    adaptive: false
+
+renderer:
+  clear_color:
+    r: 0.2
+    g: 0.3
+    b: 0.3
+    a: 1.0
