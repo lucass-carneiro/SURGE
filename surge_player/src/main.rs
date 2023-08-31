@@ -1,34 +1,35 @@
 #![feature(thread_id_value)]
 
-use glfw::Context;
-use mimalloc::MiMalloc;
+use surge_core::chrono;
+use surge_core::glfw;
+use surge_core::glfw::Context;
 
-#[global_allocator]
-static GLOBAL: MiMalloc = MiMalloc;
+use surge_core::cli::draw_logo;
+use surge_core::cli::parse_cfg;
 
-#[macro_use]
-mod logging;
-mod cli;
-mod renderer;
-mod shader;
-mod window;
+use surge_core::log_info;
+
+use surge_core::renderer::clear;
+use surge_core::renderer::get_clear_color;
+
+use surge_core::window::init;
 
 fn main() {
     /********
      * Logo *
      ********/
-    cli::draw_logo();
+    draw_logo();
 
     /******************
      * Parse CLI args *
      ******************/
-    let config_file = cli::parse_cfg().unwrap();
+    let config_file = parse_cfg().unwrap();
 
     /****************************
      * Init window and renderer *
      ****************************/
-    let (mut glfw_ctx, mut window, event_reciever) = window::init(&config_file).unwrap();
-    let clear_color = renderer::get_clear_color(&config_file).unwrap();
+    let (mut glfw_ctx, mut window, _event_reciever) = init(&config_file).unwrap();
+    let clear_color = get_clear_color(&config_file).unwrap();
 
     /***********************
      * Main Loop variables *
@@ -55,7 +56,7 @@ fn main() {
         // Call module update
 
         // Clear buffers
-        renderer::clear(&clear_color);
+        clear(&clear_color);
 
         // Call module draw
 

@@ -1,0 +1,14 @@
+[package]
+name = "surge_core"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["log_color"]
+log_color = []
+
+[dependencies]
+chrono = "0.4.28"
+gl = "0.14.0"
+glfw = "0.52.0"
+yaml-rust = "0.4.5"

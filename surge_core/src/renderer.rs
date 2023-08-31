@@ -1,3 +1,5 @@
+use crate::opt_or_error;
+
 #[derive(Debug)]
 pub enum RendererError {
     ClearColorRedRecoveryError,

@@ -1,6 +1,7 @@
 #[cfg(feature = "log_color")]
+#[macro_export]
 macro_rules! log_info {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "\x1b[94m[{}]\x1b[m \x1b[36m[Thread ID: {}]\x1b[m \x1b[1m\x1b[32mSURGE Info:\x1b[m {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -22,9 +23,14 @@ macro_rules! log_info {
     };
 }
 
+pub fn log_info(msg: &str) {
+    log_info!(msg);
+}
+
 #[cfg(feature = "log_color")]
+#[macro_export]
 macro_rules! log_warning {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "\x1b[94m[{}]\x1b[m \x1b[36m[Thread ID: {}]\x1b[m \x1b[1m\x1b[33mSURGE Warning:\x1b[m {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -47,8 +53,9 @@ macro_rules! log_warning {
 }
 
 #[cfg(feature = "log_color")]
+#[macro_export]
 macro_rules! log_error {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "\x1b[94m[{}]\x1b[m \x1b[36m[Thread ID: {}]\x1b[m \x1b[1m\x1b[31mSURGE Error:\x1b[m {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -71,8 +78,9 @@ macro_rules! log_error {
 }
 
 #[cfg(not(feature = "log_color"))]
+#[macro_export]
 macro_rules! log_info {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "[{}] [Thread ID: {}] SURGE Info: {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -95,8 +103,9 @@ macro_rules! log_info {
 }
 
 #[cfg(not(feature = "log_color"))]
+#[macro_export]
 macro_rules! log_warning {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "[{}] [Thread ID: {}] SURGE Warning: {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -119,8 +128,9 @@ macro_rules! log_warning {
 }
 
 #[cfg(not(feature = "log_color"))]
+#[macro_export]
 macro_rules! log_error {
-    ($msg:literal) => {
+    ($msg:tt) => {
         println!(
             "[{}] \x1b[36m[Thread ID: {}] \x1b[31mSURGE Error: {}",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
@@ -143,6 +153,7 @@ macro_rules! log_error {
 }
 
 #[cfg(feature = "log_color")]
+#[macro_export]
 macro_rules! value_or_error {
     ($exp:expr, $err_value:expr, $msg:tt) => {
         match $exp {
@@ -162,6 +173,7 @@ macro_rules! value_or_error {
 }
 
 #[cfg(feature = "log_color")]
+#[macro_export]
 macro_rules! opt_or_error {
     ($exp:expr, $err_value:expr, $msg:tt) => {
         match $exp {
@@ -180,6 +192,7 @@ macro_rules! opt_or_error {
 }
 
 #[cfg(not(feature = "log_color"))]
+#[macro_export]
 macro_rules! value_or_error {
     ($exp:expr, $err_value:expr, $msg:tt) => {
         match $exp {

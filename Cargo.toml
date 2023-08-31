@@ -1,15 +1,6 @@
-[package]
-name = "surge"
-version = "0.1.0"
-edition = "2021"
-
-[features]
-default = ["log_color"]
-log_color = []
-
-[dependencies]
-chrono = "0.4.26"
-gl = "0.14.0"
-glfw = "0.52.0"
-mimalloc = { version = "0.1.38", features = ["secure"] }
-yaml-rust = "0.4.5"
+[workspace]
+resolver = "2"
+members = [
+    "surge_core",
+    "surge_player"
+]

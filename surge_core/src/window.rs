@@ -1,6 +1,10 @@
-use glfw::Context;
-
+use crate::log_error;
+use crate::log_info;
+use crate::opt_or_error;
 use crate::renderer;
+use crate::value_or_error;
+
+use glfw::Context;
 
 fn glfw_error_callback(error_code: glfw::Error, description: String, _: &()) {
     log_error!("GLFW error code{}: {}", error_code, description);

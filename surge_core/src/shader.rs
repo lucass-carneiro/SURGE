@@ -1,3 +1,7 @@
+use crate::log_error;
+use crate::log_info;
+use crate::value_or_error;
+
 #[derive(Debug)]
 pub enum ShaderType {
     FragmentShader,

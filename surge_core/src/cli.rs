@@ -1,3 +1,6 @@
+use crate::log_info;
+use crate::value_or_error;
+
 #[cfg(feature = "log_color")]
 pub fn draw_logo() {
     print!("\x1b[1;38;2;220;20;60m");
