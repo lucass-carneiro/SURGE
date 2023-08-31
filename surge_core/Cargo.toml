@@ -11,4 +11,5 @@ log_color = []
 chrono = "0.4.28"
 gl = "0.14.0"
 glfw = "0.52.0"
+libloading = "0.8.0"
 yaml-rust = "0.4.5"

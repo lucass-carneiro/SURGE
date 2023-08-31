@@ -2,5 +2,6 @@
 resolver = "2"
 members = [
     "surge_core",
-    "surge_player"
+    "surge_player", 
+    "module_default"
 ]

@@ -5,6 +5,7 @@ pub extern crate glfw;
 
 pub mod cli;
 pub mod logging;
+pub mod module;
 pub mod renderer;
 pub mod shader;
 pub mod window;
