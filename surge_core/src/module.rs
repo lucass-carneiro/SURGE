@@ -1,5 +1,6 @@
 use crate::log_error;
 use crate::log_info;
+use crate::opt_or_error;
 
 #[derive(Debug)]
 pub enum ModuleError {
@@ -8,9 +9,21 @@ pub enum ModuleError {
     OnLoadCallError,
 }
 
+pub fn load_from_config(
+    config_file: &Vec<yaml_rust::Yaml>,
+) -> Result<libloading::Library, ModuleError> {
+    let module_base_name = opt_or_error!(
+        config_file[0]["startup"]["module_name"].as_str(),
+        ModuleError::LoadError,
+        "Unable to recover the module file from the config file"
+    );
+
+    return load(module_base_name);
+}
+
 pub fn load(module_base_name: &str) -> Result<libloading::Library, ModuleError> {
-    let module_name = libloading::library_filename(module_base_name);
     log_info!("Loading module {}", module_base_name);
+    let module_name = libloading::library_filename(module_base_name);
 
     unsafe {
         let lib = match libloading::Library::new(module_name) {

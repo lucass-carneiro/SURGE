@@ -41,8 +41,7 @@ fn main() {
     /*********************
      * Load First module *
      *********************/
-    // TODO: First module needs to be loaded from config
-    let current_module = module::load("module_default").unwrap();
+    let current_module = module::load_from_config(&config_file).unwrap();
     module::on_load(&current_module).unwrap();
     let module_update = module::get_update_handle(&current_module).unwrap();
 

@@ -1,5 +1,5 @@
 startup:
-  module_name: "default"
+  module_name: "module_default"
 
 window:
   name: "SURGE Default Module"
