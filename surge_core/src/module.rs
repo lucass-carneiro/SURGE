@@ -8,19 +8,20 @@ pub enum ModuleError {
     OnLoadCallError,
 }
 
-pub fn load(module_name: &str) -> Result<libloading::Library, ModuleError> {
-    log_info!("Loading module {}", module_name);
+pub fn load(module_base_name: &str) -> Result<libloading::Library, ModuleError> {
+    let module_name = libloading::library_filename(module_base_name);
+    log_info!("Loading module {}", module_base_name);
 
     unsafe {
         let lib = match libloading::Library::new(module_name) {
             Ok(l) => l,
             Err(e) => {
-                log_error!("Unable to load module {}: {}", module_name, e);
+                log_error!("Unable to load module {}: {}", module_base_name, e);
                 return Err(ModuleError::LoadError);
             }
         };
 
-        log_info!("Loaded {}. Module object: {:?}", module_name, lib);
+        log_info!("Loaded {}. Module object: {:?}", module_base_name, lib);
         return Ok(lib);
     }
 }
