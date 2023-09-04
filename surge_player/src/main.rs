@@ -64,8 +64,10 @@ fn main() {
             && window.get_key(glfw::Key::LeftControl) == glfw::Action::Press
             && hr_key_old_state == false;
 
+        // Handle Hot Reloading
         if should_hr {
             log_info!("Hot reload");
+            module::reload(&current_module).unwrap();
         }
 
         // Call module update
