@@ -17,6 +17,7 @@ pub enum ModuleError {
     OnLoadCallError,
 }
 
+//see https://users.rust-lang.org/t/borrow-checker-error-when-wrapping-a-c-library/68601/4
 pub fn load(module_base_name: &str) -> Result<Module, ModuleError> {
     log_info!("Loading module {}", module_base_name);
     let module_name = libloading::library_filename(module_base_name);
@@ -67,31 +68,6 @@ pub fn unload(module: Module) -> Result<(), ModuleError> {
 
 pub fn reload(module: &Module) -> Result<(), ModuleError> {
     log_info!("Reloading module {:?}", module.name);
-
-    // Copy name before closing
-    let module_name = module.name.clone();
-
-    // Create the name with .new appended
-    let mut module_name_new = module.name.clone();
-    module_name_new.push(".new");
-    let module_name_new_path = std::path::PathBuf::from(module_name_new);
-
-    // Unload
-    //on_unload(&module)?;
-    //unload(module)?;
-
-    if module_name_new_path.exists() {
-        log_info!("Replace {:?} with {:?}", module_name_new_path, module_name);
-    } else {
-        log_info!(
-            "No {:?} found. reloading module without updating",
-            module_name_new_path
-        );
-    }
-
-    // Load
-    let new_handle = load(module_name.as_os_str());
-
     return Ok(());
 }
 
