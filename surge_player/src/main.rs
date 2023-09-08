@@ -42,8 +42,7 @@ fn main() {
      * Load First module *
      *********************/
     let current_module = module::load_from_config(&config_file).unwrap();
-    module::on_load(&current_module).unwrap();
-    let module_update = module::get_update_handle(&current_module).unwrap();
+    module::checked_on_load(&current_module).unwrap();
 
     /***********************
      * Main Loop variables *
@@ -67,12 +66,11 @@ fn main() {
         // Handle Hot Reloading
         if should_hr {
             log_info!("Hot reload");
-            module::reload(&current_module).unwrap();
         }
 
         // Call module update
         unsafe {
-            module_update(dt_timer.elapsed().as_secs_f64());
+            current_module.update(dt_timer.elapsed().as_secs_f64());
         }
         dt_timer = std::time::Instant::now();
 
