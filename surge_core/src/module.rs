@@ -22,7 +22,7 @@ pub enum ModuleError {
     UpdateError,
 }
 
-pub fn load(module_base_name: &str) -> Result<Module, ModuleError> {
+pub fn load(module_base_name: &str) -> Result<(Module, std::ffi::OsString), ModuleError> {
     log_info!("Loading module {}", module_base_name);
 
     unsafe {
@@ -36,11 +36,13 @@ pub fn load(module_base_name: &str) -> Result<Module, ModuleError> {
 
         log_info!("Loaded {}", module_base_name);
 
-        return Ok(module);
+        return Ok((module, dlopen::utils::platform_file_name(module_base_name)));
     }
 }
 
-pub fn load_from_config(config_file: &Vec<yaml_rust::Yaml>) -> Result<Module, ModuleError> {
+pub fn load_from_config(
+    config_file: &Vec<yaml_rust::Yaml>,
+) -> Result<(Module, std::ffi::OsString), ModuleError> {
     let module_base_name = opt_or_error!(
         config_file[0]["startup"]["module_name"].as_str(),
         ModuleError::LoadError,
@@ -54,6 +56,24 @@ pub fn unload(module: Module) -> Result<u32, ModuleError> {
     checked_on_unload(&module)?;
     drop(module);
     return Ok(0);
+}
+
+pub fn reload(module_name: &std::ffi::OsString) {
+    log_info!("Hot reloading {:?}", module_name);
+
+    let mut module_name_new = module_name.clone();
+    module_name_new.push(".new");
+
+    let module_name_new_path = std::path::Path::new(&module_name);
+
+    if module_name_new_path.exists() {
+        log_info!("{:?} exists. Replacing current module", &module_name_new);
+    } else {
+        log_info!(
+            "{:?} does not exist. Reloading currently loaded module",
+            &module_name_new
+        );
+    }
 }
 
 pub fn checked_on_load(module: &Module) -> Result<u32, ModuleError> {

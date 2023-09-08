@@ -5,14 +5,11 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-use surge_core::chrono;
 use surge_core::glfw;
 use surge_core::glfw::Context;
 
 use surge_core::cli::draw_logo;
 use surge_core::cli::parse_cfg;
-
-use surge_core::log_info;
 
 use surge_core::renderer::clear;
 use surge_core::renderer::get_clear_color;
@@ -41,8 +38,8 @@ fn main() {
     /*********************
      * Load First module *
      *********************/
-    let current_module = module::load_from_config(&config_file).unwrap();
-    module::checked_on_load(&current_module).unwrap();
+    let (curr_mod, curr_mod_name) = module::load_from_config(&config_file).unwrap();
+    module::checked_on_load(&curr_mod).unwrap();
 
     /***********************
      * Main Loop variables *
@@ -65,12 +62,12 @@ fn main() {
 
         // Handle Hot Reloading
         if should_hr {
-            log_info!("Hot reload");
+            module::reload(&curr_mod_name);
         }
 
         // Call module update
         unsafe {
-            current_module.update(dt_timer.elapsed().as_secs_f64());
+            curr_mod.update(dt_timer.elapsed().as_secs_f64());
         }
         dt_timer = std::time::Instant::now();
 
@@ -87,5 +84,5 @@ fn main() {
             && window.get_key(glfw::Key::LeftControl) == glfw::Action::Press;
     }
 
-    module::unload(current_module).unwrap();
+    module::unload(curr_mod).unwrap();
 }
