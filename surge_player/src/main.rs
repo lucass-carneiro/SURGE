@@ -38,8 +38,8 @@ fn main() {
     /*********************
      * Load First module *
      *********************/
-    let (curr_mod, curr_mod_name) = module::load_from_config(&config_file).unwrap();
-    module::checked_on_load(&curr_mod).unwrap();
+    let mut curr_mod = module::Module::load_from_config(&config_file).unwrap();
+    curr_mod.checked_on_load().unwrap();
 
     /***********************
      * Main Loop variables *
@@ -62,13 +62,11 @@ fn main() {
 
         // Handle Hot Reloading
         if should_hr {
-            module::reload(&curr_mod_name);
+            curr_mod = module::reload(curr_mod).unwrap();
         }
 
         // Call module update
-        unsafe {
-            curr_mod.update(dt_timer.elapsed().as_secs_f64());
-        }
+        curr_mod.update(dt_timer.elapsed().as_secs_f64());
         dt_timer = std::time::Instant::now();
 
         // Clear buffers
@@ -84,5 +82,5 @@ fn main() {
             && window.get_key(glfw::Key::LeftControl) == glfw::Action::Press;
     }
 
-    module::unload(curr_mod).unwrap();
+    curr_mod.unload().unwrap();
 }

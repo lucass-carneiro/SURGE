@@ -5,13 +5,13 @@ use surge_core::log_info;
 
 #[no_mangle]
 pub extern "C" fn on_load() -> u32 {
-    log_info!("Loading default module");
+    log_info!("on_load called on module_default");
     return 0;
 }
 
 #[no_mangle]
 pub extern "C" fn on_unload() -> u32 {
-    log_info!("Unloading default module");
+    log_info!("on_unload called on module_default");
     return 0;
 }
 
