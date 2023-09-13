@@ -67,10 +67,9 @@ def build(staging_dir, player_dir, shaders_dir, config_dir, target_dir, lib_ext)
 
 
 def run(staging_dir):
-    build
     print("Running engine")
     os.chdir(staging_dir)
-    subprocess.check_call(["surge"])
+    subprocess.check_call([os.path.join(".", "surge")])
     os.chdir("..")
 
 

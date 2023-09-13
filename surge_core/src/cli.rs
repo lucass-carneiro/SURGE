@@ -1,3 +1,4 @@
+use crate::log_error;
 use crate::log_info;
 use crate::value_or_error;
 
@@ -36,6 +37,7 @@ pub fn draw_logo() {
 pub enum ConfigFileError {
     FileNotLoaded,
     FileNotParsed,
+    ExePathNotFound,
 }
 
 pub fn parse_cfg() -> Result<Vec<yaml_rust::Yaml>, ConfigFileError> {
@@ -44,8 +46,17 @@ pub fn parse_cfg() -> Result<Vec<yaml_rust::Yaml>, ConfigFileError> {
 
     log_info!("Parsing config file");
 
+    let mut file_path = match std::env::current_dir() {
+        Ok(o) => o,
+        Err(e) => {
+            log_error!("Failed to get current exe path: {}", e);
+            return Err(ConfigFileError::ExePathNotFound);
+        }
+    };
+    file_path.push("config.yaml");
+
     let file_string = value_or_error!(
-        fs::read_to_string("config.yaml"),
+        fs::read_to_string(file_path),
         ConfigFileError::FileNotLoaded,
         "Unable to load file \"config.yaml\""
     );

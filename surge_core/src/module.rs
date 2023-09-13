@@ -24,26 +24,27 @@ pub enum ModuleError {
     OnLoadError,
     OnUnloadError,
     UpdateError,
+    ExePathNotFound,
 }
 
 impl Module {
-    pub fn load(module_base_name: &str) -> Result<Module, ModuleError> {
-        log_info!("Loading module {}", module_base_name);
+    pub fn load(module_name: &str) -> Result<Module, ModuleError> {
+        log_info!("Loading module {}", module_name);
 
         unsafe {
-            let library = match dlopen::wrapper::Container::load(module_base_name) {
+            let library = match dlopen::wrapper::Container::load(module_name) {
                 Ok(c) => c,
                 Err(e) => {
-                    log_error!("Unable to load module {}: {}", module_base_name, e);
+                    log_error!("Unable to load module {}: {}", module_name, e);
                     return Err(ModuleError::LoadError);
                 }
             };
 
-            log_info!("Loaded {}", module_base_name);
+            log_info!("Loaded {}", module_name);
 
             return Ok(Module {
                 library,
-                name: String::from(module_base_name),
+                name: String::from(module_name),
             });
         }
     }
@@ -55,11 +56,18 @@ impl Module {
             "Unable to recover the module file from the config file"
         );
 
-        return Module::load(
-            dlopen::utils::platform_file_name(module_base_name)
-                .to_str()
-                .unwrap(),
-        );
+        let module_os_name = dlopen::utils::platform_file_name(module_base_name);
+
+        let mut module_full_name = match std::env::current_dir() {
+            Ok(o) => o,
+            Err(e) => {
+                log_error!("Failed to get current exe path: {}", e);
+                return Err(ModuleError::ExePathNotFound);
+            }
+        };
+        module_full_name.push(module_os_name);
+
+        return Module::load(module_full_name.to_str().unwrap());
     }
 
     pub fn unload(self) -> Result<u32, ModuleError> {
