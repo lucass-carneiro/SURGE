@@ -1,17 +1,8 @@
-.cache/*
-
 Debug/*
 Release/*
+staging/*
 
-staging_Debug/*
-
-include/options.hpp
-
-compile_commands.json
-
+triplets/*
 vcpkg/*
-vcpkg_installed/*
-vcpkg.json
 
-staging_Debug/*
-staging_Release/*
+player/include/options.hpp

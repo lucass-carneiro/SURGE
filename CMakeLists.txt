@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 # -----------------------------------------
 
 set(CMAKE_TOOLCHAIN_FILE vcpkg/scripts/buildsystems/vcpkg.cmake)
+set(VCPKG_OVERLAY_TRIPLETS triplets/)
 
 # -----------------------------------------
 # Project
@@ -34,21 +35,11 @@ endif()
 # External dependencies
 # -----------------------------------------
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-list(APPEND VCPKG_FEATURE_FLAGS "versions")
-
-find_package (Python3 COMPONENTS Interpreter)
-
-find_package(mimalloc CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
-find_package(EASTL CONFIG REQUIRED)
+find_package(tl-expected CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(Freetype REQUIRED)
-find_package(imgui REQUIRED)
+find_package(EASTL CONFIG REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection
@@ -59,6 +50,8 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Windows")
 else()
   set(SURGE_SYSTEM_IS_POSIX "NOT_POSIX")
 endif()
+
+message(STATUS "Selected compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
   set(SURGE_COMPILER_FLAG_STYLE "gcc")
@@ -110,11 +103,4 @@ endif()
 #  Engine player target
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_player)
-
-
-# -----------------------------------------
-#  Modules
-# -----------------------------------------
-
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/surge_modules)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
