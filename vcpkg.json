@@ -8,7 +8,12 @@
       "name": "mimalloc",
       "features": [
         "override"
-      ]
+      ],
+      "platform": "windows"
+    },
+    {
+      "name": "mimalloc",
+      "platform": "!windows"
     },
     "gsl-lite",
     "tl-expected",

@@ -72,6 +72,7 @@ auto surge::files::get_file_size(const char *path) noexcept
 #endif
 
 #ifdef SURGE_SYSTEM_Windows
+
 auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexcept -> bool {
   std::array<char, 256> error_msg_buff{};
   error_msg_buff.fill('\0');
@@ -94,6 +95,29 @@ auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexce
 
   return true;
 }
+
+#else
+
+auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexcept -> bool {
+  // NOLINTNEXTLINE
+  int fd = open(path, O_RDONLY);
+
+  if (fd == -1) {
+    log_error("Error while oppening file: %s", std::strerror(errno));
+    return false;
+  }
+
+  if (read(fd, buffer, file_size) == -1) {
+    log_error("Uanable to read the file %s: %s", path, std::strerror(errno));
+    close(fd);
+    return false;
+  }
+
+  close(fd);
+
+  return true;
+}
+
 #endif
 
 auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -> file {

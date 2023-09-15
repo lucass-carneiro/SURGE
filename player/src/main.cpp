@@ -3,7 +3,7 @@
 #include "config.hpp"
 #include "files.hpp"
 
-auto main(int argc, char **argv) noexcept -> int {
+auto main(int, char **) noexcept -> int {
   using namespace surge;
 
   /*******************

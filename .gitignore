@@ -6,3 +6,5 @@ triplets/*
 vcpkg/*
 
 player/include/options.hpp
+
+compile_commands.json
