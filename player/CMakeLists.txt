@@ -71,7 +71,7 @@ if(SURGE_ENABLE_SANITIZERS)
     target_compile_options(SurgePlayer PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgePlayer PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    # Sanitizers dont work on msvc because of some annotations bullshit
+    message(WARNING "Sanitizers don't work on MSVC yet.")# because of some "annotations" bullshit
   endif()
 endif()
 
@@ -107,11 +107,12 @@ if(SURGE_ENABLE_FAST_MATH)
     target_compile_options(SurgePlayer PUBLIC -ffast-math)
     target_link_options(SurgePlayer PUBLIC -ffast-math)
   else()
-    # TODO
+    target_compile_options(SurgePlayer PUBLIC /fp:fast)
   endif()
 endif()
 
-# Dependencies and main program build type must match. If building dependencies static-debug, then /MTd must be used.
+# Dependencies and main program build type must match.
+# If building dependencies static-debug, then /MTd must be used.
 # See the link bellow for further information
 # https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/2kzt1wy3(v=vs.110)?redirectedfrom=MSDN
 
