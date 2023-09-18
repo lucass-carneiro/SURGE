@@ -30,6 +30,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/config.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
+  "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
 )
@@ -41,6 +42,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
+  "${PROJECT_SOURCE_DIR}/src/module.cpp"
 )
 
 # -----------------------------------------
@@ -89,7 +91,7 @@ if(SURGE_ENABLE_TUNING)
     target_compile_options(SurgePlayer PUBLIC -march=native -mtune=native)
     target_link_options(SurgePlayer PUBLIC -march=native -mtune=native)
   else()
-    # TODO
+    message(WARNING "TODO: Unknow tuning flags for msvc")
   endif()
 endif()
 
@@ -98,7 +100,7 @@ if(SURGE_ENABLE_LTO)
     target_compile_options(SurgePlayer PUBLIC -flto)
     target_link_options(SurgePlayer PUBLIC -flto)
   else()
-    # TODO
+    message(WARNING "TODO: Unknow LTO flag for msvc")
   endif()
 endif()
 
