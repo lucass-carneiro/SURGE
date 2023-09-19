@@ -36,13 +36,13 @@ struct api {
   on_unload_t on_unload;
 };
 
-auto get_name(const handle_t &module, std::size_t max_size = 256) noexcept
+auto get_name(handle_t module, std::size_t max_size = 256) noexcept
     -> tl::expected<std::string, module_error>;
 
 auto load(const char *path) noexcept -> tl::expected<handle_t, module_error>;
-void unload(handle_t &module) noexcept;
+void unload(handle_t module) noexcept;
 
-auto get_api(const handle_t &module) noexcept -> tl::expected<api, module_error>;
+auto get_api(handle_t module) noexcept -> tl::expected<api, module_error>;
 
 } // namespace surge::module
 

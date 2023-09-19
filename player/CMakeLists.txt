@@ -31,8 +31,10 @@ set(
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
-  "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
+  "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
+  "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
 
 set(
@@ -43,6 +45,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
+  "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 
 # -----------------------------------------
@@ -156,5 +160,10 @@ target_link_libraries(SurgePlayer PRIVATE
   tl::expected
   yaml-cpp
   EASTL
+  glfw
+  glm::glm
+  OpenGL::GL
+  glad::glad
+  imgui::imgui
   mimalloc-static
 )

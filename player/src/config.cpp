@@ -3,6 +3,8 @@
 #include "files.hpp"
 #include "logging.hpp"
 
+#include <filesystem>
+
 auto surge::config::parse_config() noexcept -> tl::expected<config_data, cli_error> {
   const auto config_file{files::load_file("config.yaml", true)};
 
@@ -42,9 +44,9 @@ auto surge::config::parse_config() noexcept -> tl::expected<config_data, cli_err
 #ifdef SURGE_SYSTEM_Windows
       module_name.append(".dll");
 #else
-      module_name.insert(0, "lib");
-      module_name
-          .append(".so")
+      module_name.insert(0, "/");
+      module_name.insert(0, std::filesystem::current_path().string());
+      module_name.append(".so");
 #endif
       mlist.push_back(module_name);
     }

@@ -18,6 +18,24 @@
     "gsl-lite",
     "tl-expected",
     "yaml-cpp",
-    "eastl"
+    "eastl",
+    "glfw3",
+    "glm",
+    "opengl",
+    {
+      "name": "glad",
+      "features": [
+        "loader",
+        "gl-api-latest"
+      ]
+    },
+    {
+      "name": "imgui",
+      "features": [
+        "freetype",
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    }
   ]
 }

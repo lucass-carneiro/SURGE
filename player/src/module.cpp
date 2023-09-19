@@ -2,8 +2,11 @@
 
 #include "logging.hpp"
 
+#include <dlfcn.h>
+
 #ifdef SURGE_SYSTEM_Windows
-auto surge::module::get_name(const handle_t &module, std::size_t max_size) noexcept
+
+auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
     -> tl::expected<std::string, module_error> {
   std::string module_name{};
   module_name.reserve(max_size);
@@ -43,7 +46,11 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, mo
   }
 }
 
-void surge::module::unload(handle_t &module) noexcept {
+void surge::module::unload(handle_t module) noexcept {
+  if (!module) {
+    return;
+  }
+
   log_info("Unloading module %p", module);
 
   if (FreeLibrary(module) == 0) {
@@ -60,7 +67,7 @@ void surge::module::unload(handle_t &module) noexcept {
   }
 }
 
-auto surge::module::get_api(const handle_t &module) noexcept -> tl::expected<api, module_error> {
+auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, module_error> {
   // on_load
   const auto on_load_addr{GetProcAddress(module, "on_load")};
   if (!on_load_addr) {
@@ -92,4 +99,74 @@ auto surge::module::get_api(const handle_t &module) noexcept -> tl::expected<api
   return api{reinterpret_cast<on_load_t>(on_load_addr),
              reinterpret_cast<on_unload_t>(on_unload_addr)};
 }
+
+#else
+
+auto surge::module::get_name(handle_t module, std::size_t) noexcept
+    -> tl::expected<std::string, module_error> {
+
+  Dl_info info;
+  const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
+
+  if (dladdr_stats == 0) {
+    log_error("Unable to retrieve module %p name.", module);
+    return tl::unexpected(module_error::name_retrival);
+  } else {
+    return std::string(info.dli_fname);
+  }
+}
+
+auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, module_error> {
+  log_info("Loading module %s", path);
+
+  // Load and get handle
+  auto handle{dlopen(path, RTLD_NOW)};
+  if (!handle) {
+    log_error("Unable to load library %s", dlerror());
+    return tl::unexpected(module_error::loading);
+  } else {
+    log_info("Loaded module %s, address %p", path, handle);
+    return handle;
+  }
+}
+
+void surge::module::unload(handle_t module) noexcept {
+  if (!module) {
+    return;
+  }
+
+  log_info("Unloading module %p", module);
+
+  const auto result{dlclose(module)};
+  if (result != 0) {
+    log_error("Unable to close module %p: %s", module, dlerror());
+  } else {
+    log_info("Unloaded module %p", module);
+  }
+}
+
+auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, module_error> {
+  // on_load
+  auto on_load_addr{dlsym(module, "on_load")};
+  if (!on_load_addr) {
+    log_error("Unable to obtain handle to on_unload in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // on_unload
+  (void)dlerror();
+  auto on_unload_addr{dlsym(module, "on_unload")};
+  if (!on_unload_addr) {
+    log_error("Unable to obtain handle to on_unload in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // clang-format off
+  return api{
+    reinterpret_cast<on_load_t>(on_load_addr),    // NOLINT
+    reinterpret_cast<on_unload_t>(on_unload_addr) // NOLINT
+  };
+  // clang-format on
+}
+
 #endif
