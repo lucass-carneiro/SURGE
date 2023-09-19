@@ -128,8 +128,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   return api{
     reinterpret_cast<on_load_t>(on_load_addr),
     reinterpret_cast<on_unload_t>(on_unload_addr),
-    reinterpret_cast<on_unload_t>(draw_addr),
-    reinterpret_cast<on_unload_t>(update_addr),
+    reinterpret_cast<draw_t>(draw_addr),
+    reinterpret_cast<update_t>(update_addr),
   };
   // clang-format on
 }
