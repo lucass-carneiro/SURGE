@@ -15,31 +15,34 @@
 #include <cstdint>
 #include <gsl/gsl-lite.hpp>
 #include <memory>
+#include <string>
+#include <tl/expected.hpp>
 
 namespace surge::module {
 
-class owned_module {
-public:
-  owned_module(const char *path) noexcept;
-  ~owned_module();
-
-  [[nodiscard]] auto is_loaded() noexcept -> bool;
-
-  auto on_load() noexcept -> bool;
-  auto on_unload() noexcept -> bool;
-
-private:
-  using on_load_t = bool (*)(void);
-  using on_unload_t = bool (*)(void);
+enum class module_error { loading, name_retrival, symbol_retrival };
 
 #ifdef SURGE_SYSTEM_Windows
-  gsl::owner<HMODULE> module_handle;
+using handle_t = HMODULE;
 #else
-  gsl::owner<void *> module_handle;
+using handle_t = void *;
 #endif
-  on_load_t on_load_ptr;
-  on_unload_t on_unload_ptr;
+
+using on_load_t = bool (*)();
+using on_unload_t = bool (*)();
+
+struct api {
+  on_load_t on_load;
+  on_unload_t on_unload;
 };
+
+auto get_name(const handle_t &module, std::size_t max_size = 256) noexcept
+    -> tl::expected<std::string, module_error>;
+
+auto load(const char *path) noexcept -> tl::expected<handle_t, module_error>;
+void unload(handle_t &module) noexcept;
+
+auto get_api(const handle_t &module) noexcept -> tl::expected<api, module_error>;
 
 } // namespace surge::module
 

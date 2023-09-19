@@ -40,17 +40,23 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  auto curr_module{module::owned_module(m_list[0].c_str())};
-  curr_module.on_load();
-  /*if (curr_module == nullptr) {
-    window::terminate(window);
+  const auto &first_mod_name{m_list[0].c_str()};
+
+  auto mod{module::load(first_mod_name).value()};
+  if (!mod) {
+    log_error("Unable to load firs module %s", first_mod_name);
     return EXIT_FAILURE;
   }
 
-  if (!module::on_load(window, curr_module)) {
-    window::terminate(window);
+  auto mod_api{module::get_api(mod)};
+  if (!mod_api) {
+    log_error("Unable to recover first module %s API", first_mod_name);
     return EXIT_FAILURE;
-  }*/
+  }
+
+  mod_api->on_load();
+  mod_api->on_unload();
+  module::unload(mod);
 
   return EXIT_SUCCESS;
 }
