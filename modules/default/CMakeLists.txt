@@ -21,7 +21,7 @@ set(
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/load_unload.cpp"
+  "${PROJECT_SOURCE_DIR}/src/default.cpp"
 )
 
 # -----------------------------------------

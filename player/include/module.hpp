@@ -28,12 +28,16 @@ using handle_t = HMODULE;
 using handle_t = void *;
 #endif
 
-using on_load_t = bool (*)();
-using on_unload_t = bool (*)();
+using on_load_t = std::uint32_t (*)();
+using on_unload_t = std::uint32_t (*)();
+using draw_t = std::uint32_t (*)();
+using update_t = std::uint32_t (*)();
 
 struct api {
   on_load_t on_load;
   on_unload_t on_unload;
+  draw_t draw;
+  update_t update;
 };
 
 auto get_name(handle_t module, std::size_t max_size = 256) noexcept

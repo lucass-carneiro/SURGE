@@ -8,6 +8,8 @@
 #include "renderer.hpp"
 #include "window.hpp"
 
+#include <cstdlib>
+
 auto main(int, char **) noexcept -> int {
   using namespace surge;
 
@@ -61,7 +63,12 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  mod_api->on_load();
+  const auto on_load_result{mod_api->on_load()};
+  if (on_load_result != 0) {
+    log_error("Mudule %p returned error %i while calling on_load", *mod, on_load_result);
+    module::unload(*mod);
+    return EXIT_FAILURE;
+  }
 
   /***********************
    * Main Loop variables *
@@ -93,11 +100,13 @@ auto main(int, char **) noexcept -> int {
 #endif
 
     // Call module update
+    mod_api->update();
 
     // Clear buffers
     renderer::clear(w_ccl);
 
     // Call module draw
+    mod_api->draw();
 
     // Present rendering
     glfwSwapBuffers(*window);

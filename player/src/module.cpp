@@ -96,8 +96,42 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
     return tl::unexpected(module_error::symbol_retrival);
   }
 
-  return api{reinterpret_cast<on_load_t>(on_load_addr),
-             reinterpret_cast<on_unload_t>(on_unload_addr)};
+  // draw
+  const auto draw_addr{GetProcAddress(module, "draw")};
+  if (!draw_addr) {
+    const auto error_code{GetLastError()};
+    LPSTR error_txt{nullptr};
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                       | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&error_txt, 0, nullptr);
+    log_error("Unable to obtain handle to draw in module %p: %s", module, error_txt);
+    LocalFree(error_txt);
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // update
+  const auto update_addr{GetProcAddress(module, "update")};
+  if (!update_addr) {
+    const auto error_code{GetLastError()};
+    LPSTR error_txt{nullptr};
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                       | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&error_txt, 0, nullptr);
+    log_error("Unable to obtain handle to update in module %p: %s", module, error_txt);
+    LocalFree(error_txt);
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // clang-format off
+  return api{
+    reinterpret_cast<on_load_t>(on_load_addr),
+    reinterpret_cast<on_unload_t>(on_unload_addr),
+    reinterpret_cast<on_unload_t>(draw_addr),
+    reinterpret_cast<on_unload_t>(update_addr),
+  };
+  // clang-format on
 }
 
 #else
@@ -161,10 +195,28 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
     return tl::unexpected(module_error::symbol_retrival);
   }
 
+  // draw
+  (void)dlerror();
+  auto draw_addr{dlsym(module, "draw")};
+  if (!draw_addr) {
+    log_error("Unable to obtain handle to draw in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // update
+  (void)dlerror();
+  auto update_addr{dlsym(module, "update")};
+  if (!update_addr) {
+    log_error("Unable to obtain handle to update in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
   // clang-format off
   return api{
     reinterpret_cast<on_load_t>(on_load_addr),    // NOLINT
-    reinterpret_cast<on_unload_t>(on_unload_addr) // NOLINT
+    reinterpret_cast<on_unload_t>(on_unload_addr), // NOLINT
+    reinterpret_cast<on_unload_t>(draw_addr), // NOLINT
+    reinterpret_cast<on_unload_t>(update_addr), // NOLINT
   };
   // clang-format on
 }

@@ -3,6 +3,8 @@
 
 #include "options.hpp"
 
+#include <cstdint>
+
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
 #elif defined(SURGE_COMPILER_MSVC) && COMPILING_SURGE_MODULE_DEFAULT
@@ -14,8 +16,10 @@
 #endif
 
 extern "C" {
-SURGE_MODULE_EXPORT auto on_load() noexcept -> bool;
-SURGE_MODULE_EXPORT void on_unload() noexcept;
+SURGE_MODULE_EXPORT auto on_load() noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto on_unload() noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto update() noexcept -> std::uint32_t;
 }
 
 #endif // SURGE_MODULE_DEFAULT
