@@ -6,6 +6,7 @@
 #include "module.hpp"
 #include "options.hpp"
 #include "renderer.hpp"
+#include "timers.hpp"
 #include "window.hpp"
 
 #include <cstdlib>
@@ -73,6 +74,10 @@ auto main(int, char **) noexcept -> int {
   /***********************
    * Main Loop variables *
    ***********************/
+  timers::generic_timer frame_timer;
+  timers::generic_timer update_timer;
+  update_timer.start();
+
 #ifdef SURGE_ENABLE_HR
   auto hr_key_old_state{glfwGetKey(*window, GLFW_KEY_F5)
                         && glfwGetKey(*window, GLFW_KEY_LEFT_CONTROL)};
@@ -81,7 +86,7 @@ auto main(int, char **) noexcept -> int {
   /*************
    * Main Loop *
    *************/
-  while (!glfwWindowShouldClose(*window)) {
+  while ((frame_timer.start(), !glfwWindowShouldClose(*window))) {
     glfwPollEvents();
 
     // Handle hot reloading
@@ -90,17 +95,35 @@ auto main(int, char **) noexcept -> int {
                          && glfwGetKey(*window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
                          && hr_key_old_state == GLFW_RELEASE};
     if (should_hr) {
-      log_info("HR");
-      /*auto new_module = module::reload(window, curr_module);
-      curr_module = new_module;
-      if (!curr_module) {
+      timers::generic_timer t;
+      t.start();
+
+      mod_api->on_unload();
+
+      mod = module::reload(*mod);
+      if (!mod) {
         break;
-      }*/
+      }
+
+      mod_api = module::get_api(*mod);
+      if (!mod_api) {
+        break;
+      }
+
+      const auto on_load_result{mod_api->on_load()};
+      if (on_load_result != 0) {
+        log_error("Mudule %p returned error %i while calling on_load", *mod, on_load_result);
+        break;
+      }
+
+      t.stop();
+      log_info("Hot reloading succsesfull in %f s", t.elapsed());
     }
 #endif
 
     // Call module update
-    mod_api->update();
+    mod_api->update(update_timer.stop());
+    update_timer.start();
 
     // Clear buffers
     renderer::clear(w_ccl);
@@ -116,6 +139,8 @@ auto main(int, char **) noexcept -> int {
     hr_key_old_state
         = glfwGetKey(*window, GLFW_KEY_F5) && glfwGetKey(*window, GLFW_KEY_LEFT_CONTROL);
 #endif
+
+    frame_timer.stop();
   }
 
   mod_api->on_unload();

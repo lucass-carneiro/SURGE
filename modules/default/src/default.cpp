@@ -19,7 +19,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update() noexcept -> std::uint32_t {
+extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> std::uint32_t {
   // Do nothing
   return 0;
 }

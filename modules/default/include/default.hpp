@@ -19,7 +19,7 @@ extern "C" {
 SURGE_MODULE_EXPORT auto on_load() noexcept -> std::uint32_t;
 SURGE_MODULE_EXPORT auto on_unload() noexcept -> std::uint32_t;
 SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto update() noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto update(double dt) noexcept -> std::uint32_t;
 }
 
 #endif // SURGE_MODULE_DEFAULT

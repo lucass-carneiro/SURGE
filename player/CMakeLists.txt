@@ -34,6 +34,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
   "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
+  "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -46,6 +47,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
+  "${PROJECT_SOURCE_DIR}/src/timers.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 

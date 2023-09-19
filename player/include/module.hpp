@@ -31,7 +31,7 @@ using handle_t = void *;
 using on_load_t = std::uint32_t (*)();
 using on_unload_t = std::uint32_t (*)();
 using draw_t = std::uint32_t (*)();
-using update_t = std::uint32_t (*)();
+using update_t = std::uint32_t (*)(double);
 
 struct api {
   on_load_t on_load;
@@ -45,6 +45,7 @@ auto get_name(handle_t module, std::size_t max_size = 256) noexcept
 
 auto load(const char *path) noexcept -> tl::expected<handle_t, module_error>;
 void unload(handle_t module) noexcept;
+auto reload(handle_t module) noexcept -> tl::expected<handle_t, module_error>;
 
 auto get_api(handle_t module) noexcept -> tl::expected<api, module_error>;
 

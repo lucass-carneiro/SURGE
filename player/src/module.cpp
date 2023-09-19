@@ -2,7 +2,7 @@
 
 #include "logging.hpp"
 
-#include <dlfcn.h>
+#include <filesystem>
 
 #ifdef SURGE_SYSTEM_Windows
 
@@ -215,10 +215,46 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   return api{
     reinterpret_cast<on_load_t>(on_load_addr),    // NOLINT
     reinterpret_cast<on_unload_t>(on_unload_addr), // NOLINT
-    reinterpret_cast<on_unload_t>(draw_addr), // NOLINT
-    reinterpret_cast<on_unload_t>(update_addr), // NOLINT
+    reinterpret_cast<draw_t>(draw_addr), // NOLINT
+    reinterpret_cast<update_t>(update_addr), // NOLINT
   };
   // clang-format on
 }
 
 #endif
+
+auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, module_error> {
+  log_info("Reloading currently loaded module");
+
+  // Get module file name
+  const auto module_file_name{get_name(module)};
+  if (!module_file_name) {
+    return tl::unexpected(module_file_name.error());
+  }
+
+  // Unload
+  unload(module);
+
+  // Check to see if .new exists
+  const std::string module_file_name_new{*module_file_name + ".new"};
+
+  std::error_code error;
+  if (!std::filesystem::exists(module_file_name_new, error)) {
+    log_info("No %s file found. Reloading module without updating", module_file_name_new.c_str());
+  } else {
+    std::filesystem::rename(module_file_name_new, *module_file_name, error);
+    if (error.value() != 0) {
+      log_error("Unable to rename %s to %s: %s", module_file_name_new.c_str(),
+                module_file_name->c_str(), error.message().c_str());
+      return nullptr;
+    }
+  }
+
+  // Load
+  auto new_handle = load(module_file_name->c_str());
+  if (!new_handle) {
+    return tl::unexpected(new_handle.error());
+  }
+
+  return new_handle;
+}
