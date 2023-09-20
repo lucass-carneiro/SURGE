@@ -127,12 +127,57 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
     return tl::unexpected(module_error::symbol_retrival);
   }
 
+  // keyboard_event
+  const auto keyboard_event_addr{GetProcAddress(module, "keyboard_event")};
+  if (!keyboard_event_addr) {
+    const auto error_code{GetLastError()};
+    LPSTR error_txt{nullptr};
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                       | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&error_txt, 0, nullptr);
+    log_error("Unable to obtain handle to keyboard_event in module %p: %s", module, error_txt);
+    LocalFree(error_txt);
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // mouse_button_event
+  const auto mouse_button_event_addr{GetProcAddress(module, "mouse_button_event")};
+  if (!mouse_button_event_addr) {
+    const auto error_code{GetLastError()};
+    LPSTR error_txt{nullptr};
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                       | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&error_txt, 0, nullptr);
+    log_error("Unable to obtain handle to mouse_button_event in module %p: %s", module, error_txt);
+    LocalFree(error_txt);
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // mouse_scroll_event
+  const auto mouse_scroll_event_addr{GetProcAddress(module, "mouse_scroll_event")};
+  if (!mouse_scroll_event_addr) {
+    const auto error_code{GetLastError()};
+    LPSTR error_txt{nullptr};
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+                       | FORMAT_MESSAGE_IGNORE_INSERTS,
+                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPSTR)&error_txt, 0, nullptr);
+    log_error("Unable to obtain handle to mouse_scroll_event in module %p: %s", module, error_txt);
+    LocalFree(error_txt);
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
   // clang-format off
   return api{
     reinterpret_cast<on_load_t>(on_load_addr),
     reinterpret_cast<on_unload_t>(on_unload_addr),
     reinterpret_cast<draw_t>(draw_addr),
     reinterpret_cast<update_t>(update_addr),
+    reinterpret_cast<keyboard_event_t>(keyboard_event_addr),
+    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr),
+    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr)
   };
   // clang-format on
 }
@@ -214,12 +259,39 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
     return tl::unexpected(module_error::symbol_retrival);
   }
 
+  // keyboard_event
+  (void)dlerror();
+  auto keyboard_event_addr{dlsym(module, "keyboard_event")};
+  if (!keyboard_event_addr) {
+    log_error("Unable to obtain handle to keyboard_event in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // mouse_button_event
+  (void)dlerror();
+  auto mouse_button_event_addr{dlsym(module, "mouse_button_event")};
+  if (!mouse_button_event_addr) {
+    log_error("Unable to obtain handle to mouse_button_event in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
+  // mouse_scroll_event
+  (void)dlerror();
+  auto mouse_scroll_event_addr{dlsym(module, "mouse_scroll_event")};
+  if (!mouse_scroll_event_addr) {
+    log_error("Unable to obtain handle to mouse_scroll_event in module %p: %s", module, dlerror());
+    return tl::unexpected(module_error::symbol_retrival);
+  }
+
   // clang-format off
   return api{
     reinterpret_cast<on_load_t>(on_load_addr),    // NOLINT
     reinterpret_cast<on_unload_t>(on_unload_addr), // NOLINT
     reinterpret_cast<draw_t>(draw_addr), // NOLINT
     reinterpret_cast<update_t>(update_addr), // NOLINT
+    reinterpret_cast<keyboard_event_t>(keyboard_event_addr), // NOLINT
+    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr), // NOLINT
+    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr) // NOLINT
   };
   // clang-format on
 }

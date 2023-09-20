@@ -64,7 +64,7 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  const auto on_load_result{mod_api->on_load()};
+  const auto on_load_result{mod_api->on_load(*window)};
   if (on_load_result != 0) {
     log_error("Mudule %p returned error %i while calling on_load", *mod, on_load_result);
     module::unload(*mod);
@@ -98,7 +98,7 @@ auto main(int, char **) noexcept -> int {
       timers::generic_timer t;
       t.start();
 
-      mod_api->on_unload();
+      mod_api->on_unload(*window);
 
       mod = module::reload(*mod);
       if (!mod) {
@@ -110,7 +110,7 @@ auto main(int, char **) noexcept -> int {
         break;
       }
 
-      const auto on_load_result{mod_api->on_load()};
+      const auto on_load_result{mod_api->on_load(*window)};
       if (on_load_result != 0) {
         log_error("Mudule %p returned error %i while calling on_load", *mod, on_load_result);
         break;
@@ -144,7 +144,7 @@ auto main(int, char **) noexcept -> int {
   }
 
   // Finalize modules
-  mod_api->on_unload();
+  mod_api->on_unload(*window);
   module::unload(*mod);
 
   // Finalize window and renderer

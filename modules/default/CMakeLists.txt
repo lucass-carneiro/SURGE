@@ -138,4 +138,5 @@ endif()
 # -----------------------------------------
 # Link and build order dependencies
 # -----------------------------------------
-#target_link_libraries(SurgeDefaultModule PRIVATE "D:\\SURGE\\Debug\\player\\Debug\\surge.lib")
+# This should be necessary on windows, but it does not work for now.
+#target_link_libraries(SurgeDefaultModule PRIVATE surge)

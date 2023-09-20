@@ -2,6 +2,7 @@
 #define SURGE_MODULE_DEFAULT
 
 #include "options.hpp"
+#include "window.hpp"
 
 #include <cstdint>
 
@@ -15,11 +16,33 @@
 #  define SURGE_MODULE_EXPORT
 #endif
 
+namespace mod_default {
+
+enum class error : std::uint32_t {
+  keyboard_event_binding,
+  mouse_button_event_binding,
+  mouse_scroll_event_binding,
+  keyboard_event_unbinding,
+  mouse_button_event_unbinding,
+  mouse_scroll_event_unbinding,
+};
+
+} // namespace mod_default
+
 extern "C" {
-SURGE_MODULE_EXPORT auto on_load() noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto on_unload() noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t;
 SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t;
 SURGE_MODULE_EXPORT auto update(double dt) noexcept -> std::uint32_t;
+
+SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,
+                                        int mods) noexcept;
+
+SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
+                                            int mods) noexcept;
+
+SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
+                                            double yoffset) noexcept;
 }
 
 #endif // SURGE_MODULE_DEFAULT
