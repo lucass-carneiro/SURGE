@@ -12,9 +12,11 @@
 #include <glm/glm.hpp>
 // clang-format on
 
-#include <optional>
+#include <tl/expected.hpp>
 
 namespace surge::renderer {
+
+enum class renderer_error { unrecognized_shader, shader_load_error, shader_link_error };
 
 enum class capability : GLenum { depth_test = GL_DEPTH_TEST, blend = GL_BLEND };
 
@@ -30,7 +32,8 @@ void blend_function(const blend_src src, const blend_dest dest) noexcept;
 void clear(const config::clear_color &ccl) noexcept;
 
 auto create_shader_program(const char *vertex_shader_path,
-                           const char *fragment_shader_path) noexcept -> std::optional<GLuint>;
+                           const char *fragment_shader_path) noexcept
+    -> tl::expected<GLuint, renderer_error>;
 
 namespace uniforms {
 
@@ -51,6 +54,8 @@ void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value
 } // namespace uniforms
 
 namespace image {
+
+enum class image_error { load_error, stbi_error, shader_creation };
 
 struct context {
   // Uniform data
@@ -75,7 +80,7 @@ struct draw_context {
   bool v_flip{false};
 };
 
-auto create(const char *p) noexcept -> std::optional<context>;
+auto create(const char *p) noexcept -> tl::expected<context, image_error>;
 
 void draw(const context &ctx, const draw_context &dctx) noexcept;
 void draw(const context &ctx, draw_context &&dctx) noexcept;

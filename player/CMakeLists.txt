@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 # -----------------------------------------
 # Project
@@ -44,10 +44,13 @@ set(
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/image.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
+  "${PROJECT_SOURCE_DIR}/src/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
+  "${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 
@@ -58,7 +61,8 @@ set(
 add_executable(SurgePlayer ${SURGE_PLAYER_HEADER_LIST} ${SURGE_PLAYER_SOURCE_LIST})
 target_compile_features(SurgePlayer PRIVATE cxx_std_20)
 set_target_properties(SurgePlayer PROPERTIES OUTPUT_NAME "surge")
-set_target_properties(SurgePlayer PROPERTIES ENABLE_EXPORTS ON)
+set_target_properties(SurgePlayer PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS True)
+set_target_properties(SurgePlayer PROPERTIES ENABLE_EXPORTS True)
 
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")

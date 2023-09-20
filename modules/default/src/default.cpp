@@ -1,8 +1,7 @@
 #include "default.hpp"
 
+#include "debug_window.hpp"
 #include "logging.hpp"
-
-#include <cstdint>
 
 extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> std::uint32_t {
   log_info("Hello from module default");
@@ -15,7 +14,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload() noexcept -> std::uint32_t {
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t {
-  // Do nothing
+  mod_default::debug_window::draw();
   return 0;
 }
 

@@ -19,6 +19,7 @@
     "tl-expected",
     "yaml-cpp",
     "eastl",
+    "stb",
     "glfw3",
     "glm",
     "opengl",

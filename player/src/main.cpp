@@ -143,9 +143,11 @@ auto main(int, char **) noexcept -> int {
     frame_timer.stop();
   }
 
+  // Finalize modules
   mod_api->on_unload();
   module::unload(*mod);
 
+  // Finalize window and renderer
   window::terminate(*window);
 
   return EXIT_SUCCESS;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 # -----------------------------------------
 # Vcpkg configuration
@@ -40,6 +40,7 @@ find_package(tl-expected CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)

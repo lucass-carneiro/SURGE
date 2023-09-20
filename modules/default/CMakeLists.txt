@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 # -----------------------------------------
 # Project
@@ -16,11 +16,13 @@ project(
 
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
+  "${PROJECT_SOURCE_DIR}/include/debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/default.hpp"
 )
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
+  "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/default.cpp"
 )
 
@@ -48,6 +50,8 @@ target_include_directories(
   $<BUILD_INTERFACE:${SurgePlayer_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
+
+target_include_directories(SurgeDefaultModule PRIVATE ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
 
 # -----------------------------------------
 # Compilers flags and options
@@ -134,4 +138,4 @@ endif()
 # -----------------------------------------
 # Link and build order dependencies
 # -----------------------------------------
-#target_link_libraries(SurgeDefaultModule PRIVATE glfw)
+#target_link_libraries(SurgeDefaultModule PRIVATE "D:\\SURGE\\Debug\\player\\Debug\\surge.lib")
