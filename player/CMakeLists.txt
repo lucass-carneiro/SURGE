@@ -158,6 +158,7 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgePlayer PRIVATE
+  mimalloc-static
   gsl::gsl-lite
   tl::expected
   yaml-cpp
@@ -167,5 +168,4 @@ target_link_libraries(SurgePlayer PRIVATE
   OpenGL::GL
   glad::glad
   imgui::imgui
-  mimalloc-static
 )

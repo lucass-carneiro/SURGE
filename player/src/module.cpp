@@ -8,10 +8,12 @@
 
 auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
     -> tl::expected<std::string, module_error> {
-  std::string module_name{};
-  module_name.reserve(max_size);
 
-  if (GetModuleFileNameA(module, module_name.data(), gsl::narrow_cast<DWORD>(max_size)) == 0) {
+  auto module_name{std::string(max_size, '\0')};
+  const auto actual_name_size{
+      GetModuleFileNameA(module, module_name.data(), gsl::narrow_cast<DWORD>(max_size))};
+
+  if (actual_name_size == 0) {
     const auto error_code{GetLastError()};
     LPSTR error_txt{nullptr};
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
@@ -22,6 +24,7 @@ auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
     LocalFree(error_txt);
     return tl::unexpected(module_error::name_retrival);
   } else {
+    module_name.resize(actual_name_size);
     return module_name;
   }
 }
@@ -224,24 +227,26 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
 #endif
 
 auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, module_error> {
-  log_info("Reloading currently loaded module");
-
   // Get module file name
   const auto module_file_name{get_name(module)};
   if (!module_file_name) {
     return tl::unexpected(module_file_name.error());
   }
 
+  log_info("Reloading %s", module_file_name->c_str());
+
   // Unload
   unload(module);
 
   // Check to see if .new exists
-  const std::string module_file_name_new{*module_file_name + ".new"};
+  const auto module_file_name_new{*module_file_name + ".new"};
+  log_info("Checking if %s exists", module_file_name_new.c_str());
 
   std::error_code error;
   if (!std::filesystem::exists(module_file_name_new, error)) {
     log_info("No %s file found. Reloading module without updating", module_file_name_new.c_str());
   } else {
+    log_info("%s exists. Replacing old module", module_file_name_new.c_str());
     std::filesystem::rename(module_file_name_new, *module_file_name, error);
     if (error.value() != 0) {
       log_error("Unable to rename %s to %s: %s", module_file_name_new.c_str(),
