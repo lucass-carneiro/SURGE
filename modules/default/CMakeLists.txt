@@ -139,4 +139,4 @@ endif()
 # Link and build order dependencies
 # -----------------------------------------
 # This should be necessary on windows, but it does not work for now.
-#target_link_libraries(SurgeDefaultModule PRIVATE surge)
+target_link_libraries(SurgeDefaultModule PRIVATE SurgePlayer)

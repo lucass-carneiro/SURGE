@@ -161,7 +161,8 @@ endif()
 # Link and build order dependencies
 # -----------------------------------------
 
-target_link_libraries(SurgePlayer PRIVATE
+target_link_libraries(SurgePlayer PUBLIC
+  mimalloc
   mimalloc-static
   gsl::gsl-lite
   tl::expected

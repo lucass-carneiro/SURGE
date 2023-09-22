@@ -3,7 +3,7 @@
 #include "debug_window.hpp"
 #include "logging.hpp"
 
-extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_default::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
   log_info("Binding interaction callbacks");
 
   glfwSetKeyCallback(window, keyboard_event);
@@ -27,7 +27,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std:
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_default::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
   log_info("Unbinding interaction callbacks");
 
   glfwSetKeyCallback(window, nullptr);
@@ -44,6 +44,32 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> st
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_warn("Unable to unbind mouse scroll event callback");
   }
+
+  return 0;
+}
+
+extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
+  using namespace mod_default;
+
+  const auto bind_callback_stat{bind_callbacks(window)};
+  if (bind_callback_stat != 0) {
+    return bind_callback_stat;
+  }
+
+  debug_window::imgui_init(window);
+
+  return 0;
+}
+
+extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+  using namespace mod_default;
+
+  const auto unbind_callback_stat{unbind_callbacks(window)};
+  if (unbind_callback_stat != 0) {
+    return unbind_callback_stat;
+  }
+
+  debug_window::imgui_terminate();
 
   return 0;
 }
@@ -68,11 +94,12 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int, int, int, 
 
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
                                                        int mods) noexcept {
-  // Do nothing
-  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+  using namespace mod_default;
+  debug_window::imgui_keyboard_callback(window, button, action, mods);
 }
 
 extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
                                                        double yoffset) noexcept {
-  ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+  using namespace mod_default;
+  debug_window::imgui_scroll_callback(window, xoffset, yoffset);
 }

@@ -30,7 +30,7 @@ cd SURGE
 git submodule init
 git submodule update
 cp vcpkg.json.windows vcpkg.json
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DCMAKE_BUILD_TYPE=Debug
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug
 ```
 
@@ -42,6 +42,6 @@ cd SURGE
 git submodule init
 git submodule update
 cp vcpkg.json.windows vcpkg.json
-cmake -B Release -S . -DVCPKG_TARGET_TRIPLET=x64-windows-static-md-release -DCMAKE_BUILD_TYPE=Release
+cmake -B Release -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Release
 cmake --build Release --config Release
 ```

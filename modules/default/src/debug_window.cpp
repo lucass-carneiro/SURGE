@@ -1,8 +1,49 @@
 #include "debug_window.hpp"
 
+#include "logging.hpp"
 #include "options.hpp"
 
+// clang-format off
 #include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+// clang-format on
+
+void mod_default::debug_window::imgui_init(GLFWwindow *window) noexcept {
+  log_info("Initializing DearImGui");
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  /* ImGuiIO &io =  ImGui::GetIO();
+  (void)io;
+   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+  */
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsLight();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOpenGL(window, false);
+  ImGui_ImplOpenGL3_Init("#version 460");
+}
+
+void mod_default::debug_window::imgui_terminate() noexcept {
+  log_info("Terminating DearImGui");
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+}
+
+void mod_default::debug_window::imgui_keyboard_callback(GLFWwindow *window, int button, int action,
+                                                        int mods) noexcept {
+  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+}
+
+void mod_default::debug_window::imgui_scroll_callback(GLFWwindow *window, double xoffset,
+                                                      double yoffset) noexcept {
+  ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+}
 
 void mod_default::debug_window::draw() noexcept {
   ImGui_ImplOpenGL3_NewFrame();

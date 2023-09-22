@@ -27,6 +27,9 @@ enum class error : std::uint32_t {
   mouse_scroll_event_unbinding,
 };
 
+auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
+auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
+
 } // namespace mod_default
 
 extern "C" {
