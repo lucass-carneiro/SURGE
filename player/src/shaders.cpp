@@ -53,7 +53,7 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     log_error("Shader %s handle %u compilation failed:\n  %s", p, shader_handle_tmp,
               info_log.data());
 
-    return {};
+    return tl::unexpected(surge::renderer::renderer_error::shader_load_error);
   } else {
     log_info("Shader %s handle %u compilation succesfull", p, shader_handle_tmp);
     return shader_handle_tmp;

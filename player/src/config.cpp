@@ -34,7 +34,7 @@ auto surge::config::parse_config() noexcept -> tl::expected<config_data, cli_err
     const auto windowed{yaml_file["window"]["windowed"].as<bool>()};
     const auto cursor{yaml_file["window"]["cursor"].as<bool>()};
     const auto vsync{yaml_file["window"]["VSync"]["enabled"].as<bool>()};
-    const window_attrs attrs{"SURGE Window", monitor_index, windowed, cursor, vsync};
+    const window_attrs attrs{name, monitor_index, windowed, cursor, vsync};
 
     // Module list
     module_list mlist{};

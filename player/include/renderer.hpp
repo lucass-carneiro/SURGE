@@ -1,6 +1,7 @@
 #ifndef SURGE_RENDERER_HPP
 #define SURGE_RENDERER_HPP
 
+#include "allocators.hpp"
 #include "config.hpp"
 
 // clang-format off
@@ -12,6 +13,7 @@
 #include <glm/glm.hpp>
 // clang-format on
 
+#include <EASTL/vector.h>
 #include <tl/expected.hpp>
 
 namespace surge::renderer {
@@ -55,7 +57,7 @@ void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value
 
 namespace image {
 
-enum class image_error { load_error, stbi_error, shader_creation };
+enum class image_error : std::uint32_t { load_error = 1, stbi_error = 2, shader_creation = 3 };
 
 struct context {
   // Uniform data
@@ -86,6 +88,34 @@ void draw(const context &ctx, const draw_context &dctx) noexcept;
 void draw(const context &ctx, draw_context &&dctx) noexcept;
 
 } // namespace image
+
+namespace line {
+enum class error : std::uint32_t { shader_creation = 1 };
+
+struct context {
+  GLuint shader_program;
+  GLuint VAO;
+  GLuint VBO;
+  std::size_t num_points;
+};
+
+struct draw_context {
+  glm::mat4 projection;
+  glm::mat4 view;
+};
+
+using line_data_buffer = eastl::vector<float, surge::allocators::eastl::gp_allocator>;
+
+auto create(GLuint line_shader, const line_data_buffer &buffer) noexcept -> context;
+auto create(GLuint line_shader, glm::vec3 &&initial, glm::vec3 &&final) noexcept -> context;
+
+auto create(const line_data_buffer &buffer) noexcept -> tl::expected<context, error>;
+auto create(glm::vec3 &&initial, glm::vec3 &&final) noexcept -> tl::expected<context, error>;
+
+void draw(const context &ctx, const draw_context &dctx) noexcept;
+void draw(const context &ctx, draw_context &&dctx) noexcept;
+
+} // namespace line
 
 } // namespace surge::renderer
 

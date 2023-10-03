@@ -45,6 +45,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
   "${PROJECT_SOURCE_DIR}/src/image.cpp"
+  "${PROJECT_SOURCE_DIR}/src/line.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
