@@ -90,6 +90,7 @@ void surge::renderer::smo::draw(const indexed_context &ctx, const draw_context &
   uniforms::set(ctx.shader_program, "projection", dctx.projection);
   uniforms::set(ctx.shader_program, "view", dctx.view);
   uniforms::set(ctx.shader_program, "model", dctx.model);
+  uniforms::set(ctx.shader_program, "color", dctx.color);
 
   glBindVertexArray(ctx.VAO);
   glDrawElements(GL_TRIANGLES, ctx.num_elements, GL_UNSIGNED_INT, nullptr);
@@ -103,6 +104,7 @@ void surge::renderer::smo::draw(type primitive_type, const context &ctx, const d
   uniforms::set(ctx.shader_program, "projection", dctx.projection);
   uniforms::set(ctx.shader_program, "view", dctx.view);
   uniforms::set(ctx.shader_program, "model", dctx.model);
+  uniforms::set(ctx.shader_program, "color", dctx.color);
 
   glBindVertexArray(ctx.VAO);
   glDrawArrays(static_cast<GLenum>(primitive_type), 0, ctx.num_elements);
