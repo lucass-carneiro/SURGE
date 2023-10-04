@@ -5,6 +5,7 @@
 #include "config.hpp"
 
 // clang-format off
+#include <cstddef>
 #include <glm/fwd.hpp>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -89,33 +90,67 @@ void draw(const context &ctx, draw_context &&dctx) noexcept;
 
 } // namespace image
 
-namespace line {
+// Stands for static mesh object. It is an object with static geometry and fixed color that can be
+// drawn. You pass the vertex data and how it shoul be interpreted (lines, pts, triangles, etc) and
+// it is drawn on the screen with fixed color.
+namespace smo {
+
 enum class error : std::uint32_t { shader_creation = 1 };
+
+enum class type : GLenum {
+  points = GL_POINTS,
+  line_strip = GL_LINE_STRIP,
+  line_loop = GL_LINE_LOOP,
+  lines = GL_LINES,
+  triangles = GL_TRIANGLES
+};
 
 struct context {
   GLuint shader_program;
   GLuint VAO;
   GLuint VBO;
-  std::size_t num_points;
+  GLsizei num_elements;
 };
 
+// Draws indexed triangles. Allows complex 3D meshes to be draw
+struct indexed_context {
+  GLuint shader_program;
+  GLuint VAO;
+  GLuint VBO;
+  GLuint EBO;
+  GLsizei num_elements;
+};
+
+// Draws non indexed elements (poitns, lines triangles)
 struct draw_context {
   glm::mat4 projection;
   glm::mat4 view;
+  glm::mat4 model;
 };
 
-using line_data_buffer = eastl::vector<float, surge::allocators::eastl::gp_allocator>;
+struct vertex_data {
+  const float *data;
+  std::size_t size;
+};
 
-auto create(GLuint line_shader, const line_data_buffer &buffer) noexcept -> context;
-auto create(GLuint line_shader, glm::vec3 &&initial, glm::vec3 &&final) noexcept -> context;
+struct index_vertex_data {
+  const float *vertex_data;
+  std::size_t vertex_data_size;
 
-auto create(const line_data_buffer &buffer) noexcept -> tl::expected<context, error>;
-auto create(glm::vec3 &&initial, glm::vec3 &&final) noexcept -> tl::expected<context, error>;
+  const GLuint *index_data;
+  std::size_t index_data_size;
+};
 
-void draw(const context &ctx, const draw_context &dctx) noexcept;
-void draw(const context &ctx, draw_context &&dctx) noexcept;
+auto create(GLuint shader_program, const index_vertex_data &vd) noexcept -> indexed_context;
+auto create(GLuint shader_program, const vertex_data &vd) noexcept -> context;
 
-} // namespace line
+auto create(const index_vertex_data &vd) noexcept -> tl::expected<indexed_context, error>;
+auto create(const vertex_data &vd) noexcept -> tl::expected<context, error>;
+
+void draw(const indexed_context &ctx, const draw_context &dctx);
+void draw(type primitive_type, const context &vd, const draw_context &dc);
+
+} // namespace smo
 
 } // namespace surge::renderer
 

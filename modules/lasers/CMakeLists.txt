@@ -16,14 +16,15 @@ project(
 
 set(
   SURGE_MODULE_LASERS_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/globals.hpp"
   "${PROJECT_SOURCE_DIR}/include/lasers.hpp"
 )
 
 set(
   SURGE_MODULE_LASERS_SOURCE_LIST
+  "${PROJECT_SOURCE_DIR}/src/draw.cpp"
   "${PROJECT_SOURCE_DIR}/src/lasers.cpp"
-  "${PROJECT_SOURCE_DIR}/src/globals.cpp"
+  "${PROJECT_SOURCE_DIR}/src/on_load.cpp"
+  "${PROJECT_SOURCE_DIR}/src/on_unload.cpp"
 )
 
 # -----------------------------------------

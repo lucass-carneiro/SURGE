@@ -1,10 +1,14 @@
 #ifndef SURGE_MODULE_LASERS
 #define SURGE_MODULE_LASERS
 
+#include "logging.hpp"
 #include "options.hpp"
+#include "renderer.hpp"
 #include "window.hpp"
 
 #include <cstdint>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_LASERS
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
@@ -27,6 +31,13 @@ enum class error : std::uint32_t {
   mouse_scroll_event_unbinding,
   shader_creation,
 };
+
+auto get_global_projection() noexcept -> const glm::mat4 &;
+auto get_global_view() noexcept -> const glm::mat4 &;
+
+auto get_global_smo_shader() noexcept -> const GLuint &;
+
+auto get_global_cell_grid_ctx() noexcept -> const surge::renderer::smo::context &;
 
 auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
