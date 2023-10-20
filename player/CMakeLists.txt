@@ -34,6 +34,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
   "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
+  "${PROJECT_SOURCE_DIR}/include/static_mesh.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
@@ -50,6 +51,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
   "${PROJECT_SOURCE_DIR}/src/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/smo.cpp"
+  "${PROJECT_SOURCE_DIR}/src/static_mesh.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
   "${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"

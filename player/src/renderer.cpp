@@ -1,9 +1,20 @@
 #include "renderer.hpp"
 
-void surge::renderer::enable(const capability cap) noexcept { glEnable(static_cast<GLenum>(cap)); }
+void surge::renderer::enable(const capability cap) noexcept {
+  if (cap == capability::wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  } else {
+    glEnable(static_cast<GLenum>(cap));
+  }
+}
 
 void surge::renderer::disable(const capability cap) noexcept {
   glDisable(static_cast<GLenum>(cap));
+  if (cap == capability::wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  } else {
+    glDisable(static_cast<GLenum>(cap));
+  }
 }
 
 void surge::renderer::blend_function(const blend_src src, const blend_dest dest) noexcept {

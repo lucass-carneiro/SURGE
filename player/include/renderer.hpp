@@ -19,9 +19,13 @@
 
 namespace surge::renderer {
 
-enum class renderer_error { unrecognized_shader, shader_load_error, shader_link_error };
+enum class renderer_error : std::uint32_t {
+  unrecognized_shader = 1,
+  shader_load_error,
+  shader_link_error
+};
 
-enum class capability : GLenum { depth_test = GL_DEPTH_TEST, blend = GL_BLEND };
+enum class capability : GLenum { depth_test = GL_DEPTH_TEST, blend = GL_BLEND, wireframe };
 
 enum class blend_src : GLenum { alpha = GL_SRC_ALPHA };
 

@@ -9,7 +9,7 @@
 
 namespace surge::files {
 
-enum class file_error { size_truncation, invalid_path, read_error, unknow_error };
+enum class file_error { size_truncation, invalid_path, read_error, invalid_format, unknow_error };
 
 #ifdef SURGE_SYSTEM_Windows
 using file_size_t = unsigned int;

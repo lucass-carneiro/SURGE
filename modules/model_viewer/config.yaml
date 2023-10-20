@@ -1,11 +1,11 @@
 window:
-  name: "Lasers"
+  name: "SURGE Default Window"
   monitor_index: 1
   windowed: true
   cursor: true
   resolution:
     width: 800
-    height: 800
+    height: 600
   VSync:
     enabled: true
 renderer:
@@ -14,4 +14,4 @@ renderer:
     g: 0.3
     b: 0.3
     a: 1.0
-modules: ["lasers"]
+modules: ["model_viewer"]
