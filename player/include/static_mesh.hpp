@@ -23,19 +23,16 @@ template <typename T> using vec = eastl::vector<T, allocators::eastl::gp_allocat
 template <typename T, std::size_t N> using arr = std::array<T, N>;
 
 struct one_buffer_data {
-  GLuint shader_program;
   GLuint VAO;
   GLsizei elements;
 };
 
 template <std::size_t N> struct st_buffer_data {
-  GLuint shader_program;
   arr<GLuint, N> VAOs;
   arr<GLsizei, N> elements;
 };
 
 struct buffer_data {
-  GLuint shader_program;
   vec<GLuint> VAOs;
   vec<GLsizei> elements;
 };
@@ -64,9 +61,9 @@ struct draw_data {
 auto gen_triangle() noexcept -> std::tuple<GLuint, std::size_t>;
 auto gen_square() noexcept -> std::tuple<GLuint, std::size_t>;
 
-auto load(const char *path) noexcept -> tl::expected<std::tuple<GLuint, GLuint>, files::file_error>;
+auto load(const char *path) noexcept -> tl::expected<one_buffer_data, files::file_error>;
 
-void draw(const one_buffer_data &bd, const one_draw_data &dd) noexcept;
+void draw(GLuint shader_program, const one_buffer_data &bd, const one_draw_data &dd) noexcept;
 
 } // namespace surge::atom::static_mesh
 

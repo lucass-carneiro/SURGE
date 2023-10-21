@@ -4,6 +4,7 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <EASTL/vector.h>
+#include <gsl/gsl-lite.hpp>
 #include <tiny_obj_loader.h>
 #include <vector>
 
@@ -81,7 +82,7 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
 }
 
 auto surge::atom::static_mesh::load(const char *path) noexcept
-    -> tl::expected<std::tuple<GLuint, GLuint>, files::file_error> {
+    -> tl::expected<one_buffer_data, files::file_error> {
   log_info("Loading OBJ file %s", path);
 
   if (!files::validate_path(path)) {
@@ -134,18 +135,19 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  return std::make_tuple(VAO, idx.size());
+  return one_buffer_data{VAO, gsl::narrow_cast<GLsizei>(idx.size())};
 }
 
-void surge::atom::static_mesh::draw(const one_buffer_data &bd, const one_draw_data &dd) noexcept {
+void surge::atom::static_mesh::draw(GLuint shader_program, const one_buffer_data &bd,
+                                    const one_draw_data &dd) noexcept {
   using namespace surge::renderer;
 
-  glUseProgram(bd.shader_program);
+  glUseProgram(shader_program);
 
-  uniforms::set(bd.shader_program, "projection", dd.projection);
-  uniforms::set(bd.shader_program, "view", dd.view);
-  uniforms::set(bd.shader_program, "model", dd.model);
-  uniforms::set(bd.shader_program, "color", dd.color);
+  uniforms::set(shader_program, "projection", dd.projection);
+  uniforms::set(shader_program, "view", dd.view);
+  uniforms::set(shader_program, "model", dd.model);
+  uniforms::set(shader_program, "color", dd.color);
 
   glBindVertexArray(bd.VAO);
   glDrawElements(GL_TRIANGLES, bd.elements, GL_UNSIGNED_INT, nullptr);

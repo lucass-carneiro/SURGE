@@ -17,6 +17,8 @@ static glm::mat4 model{1.0f};
 
 static surge::atom::static_mesh::one_buffer_data static_mesh_bd{};
 
+static GLuint static_mesh_shader{0};
+
 auto mod_model_viewer::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
   log_info("Binding interaction callbacks");
 
@@ -88,9 +90,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std:
   if (!model) {
     return static_cast<std::uint32_t>(model.error());
   } else {
-    static_mesh_bd.shader_program = *shader;
-    static_mesh_bd.VAO = std::get<0>(*model);
-    static_mesh_bd.elements = std::get<1>(*model);
+    static_mesh_shader = *shader;
+    static_mesh_bd = *model;
   }
 
   return 0;
@@ -112,7 +113,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t {
 
   const static_mesh::one_draw_data static_mesh_dd{projection, view, model,
                                                   glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}};
-  static_mesh::draw(static_mesh_bd, static_mesh_dd);
+  static_mesh::draw(static_mesh_shader, static_mesh_bd, static_mesh_dd);
   return 0;
 }
 

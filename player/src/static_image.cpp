@@ -1,3 +1,5 @@
+#include "static_image.hpp"
+
 #include "allocators.hpp"
 #include "files.hpp"
 #include "logging.hpp"
@@ -19,7 +21,8 @@
 
 #include <gsl/gsl-lite.hpp>
 
-auto surge::renderer::image::create(const char *p) noexcept -> tl::expected<context, image_error> {
+auto surge::atom::static_image::create(const char *p) noexcept
+    -> tl::expected<one_buffer_data, error> {
   /**************
    * Load Image *
    **************/
@@ -28,7 +31,7 @@ auto surge::renderer::image::create(const char *p) noexcept -> tl::expected<cont
   auto file{surge::files::load_file(p, false)};
   if (!file) {
     log_error("Unable to load image file %s", p);
-    return tl::unexpected(image_error::load_error);
+    return tl::unexpected(error::load_error);
   }
 
   int iw{0}, ih{0}, channels_in_file{0};
@@ -40,7 +43,7 @@ auto surge::renderer::image::create(const char *p) noexcept -> tl::expected<cont
 
   if (img_data == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
-    return tl::unexpected(image_error::stbi_error);
+    return tl::unexpected(error::stbi_error);
     ;
   }
 
@@ -118,42 +121,30 @@ auto surge::renderer::image::create(const char *p) noexcept -> tl::expected<cont
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
-  /***************
-   * Load shader *
-   ***************/
-  log_info("Creating shader");
-  const auto img_shader{create_shader_program("shaders/image.vert", "shaders/image.frag")};
-  if (!img_shader) {
-    log_error("Unable to create image shader");
-    return tl::unexpected(image_error::shader_creation);
-  }
-
-  return context{glm::vec2{iw, ih},
-                 glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)},
-                 *img_shader,
-                 texture_id,
-                 VAO,
-                 VBO,
-                 EBO};
+  return one_buffer_data{
+      glm::vec2{iw, ih},
+      glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)}, texture_id,
+      VAO};
 }
 
-void surge::renderer::image::draw(const context &ctx, const draw_context &dctx) noexcept {
+void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &ctx,
+                                     const one_draw_data &dctx) noexcept {
 
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
 
-  glUseProgram(ctx.shader_program);
+  glUseProgram(shader_program);
 
-  uniforms::set(ctx.shader_program, "projection", dctx.projection);
-  uniforms::set(ctx.shader_program, "view", dctx.view);
-  uniforms::set(ctx.shader_program, "model", model);
+  renderer::uniforms::set(shader_program, "projection", dctx.projection);
+  renderer::uniforms::set(shader_program, "view", dctx.view);
+  renderer::uniforms::set(shader_program, "model", model);
 
-  uniforms::set(ctx.shader_program, "txt_0", GLint{0});
-  uniforms::set(ctx.shader_program, "ds", ctx.ds);
-  uniforms::set(ctx.shader_program, "r0", dctx.region_origin);
-  uniforms::set(ctx.shader_program, "dims", dctx.region_dims);
+  renderer::uniforms::set(shader_program, "txt_0", GLint{0});
+  renderer::uniforms::set(shader_program, "ds", ctx.ds);
+  renderer::uniforms::set(shader_program, "r0", dctx.region_origin);
+  renderer::uniforms::set(shader_program, "dims", dctx.region_dims);
 
-  uniforms::set(ctx.shader_program, "h_flip", dctx.h_flip);
-  uniforms::set(ctx.shader_program, "v_flip", dctx.v_flip);
+  renderer::uniforms::set(shader_program, "h_flip", dctx.h_flip);
+  renderer::uniforms::set(shader_program, "v_flip", dctx.v_flip);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, ctx.texture_id);
@@ -164,6 +155,7 @@ void surge::renderer::image::draw(const context &ctx, const draw_context &dctx) 
   glBindVertexArray(0);
 }
 
-void surge::renderer::image::draw(const context &ctx, draw_context &&dctx) noexcept {
-  draw(ctx, dctx);
+void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &&ctx,
+                                     one_draw_data &&dctx) noexcept {
+  draw(shader_program, ctx, dctx);
 }
