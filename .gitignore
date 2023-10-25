@@ -4,6 +4,9 @@ Debug/*
 Release/*
 staging/*
 
+companion/src/__pycache__
+venv/*
+
 triplets/*
 vcpkg/*
 
