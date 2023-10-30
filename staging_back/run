@@ -1,7 +1,0 @@
-#!/bin/bash
-
-cp ../Debug/player/surge ./
-cp ../Debug/modules/default/default.so ./
-cp ../modules/default/config.yaml ./
-
-./surge

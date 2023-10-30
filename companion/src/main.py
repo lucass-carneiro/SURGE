@@ -24,7 +24,6 @@ import sys
 
 def main():
     args = docopt(__doc__, version="SCOMP - SURGE Companion. 1.0.0")
-    print(args)
 
     if args["staging"]:
         staging.main(args)

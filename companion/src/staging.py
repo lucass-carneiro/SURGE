@@ -19,19 +19,53 @@ def new(args):
     os.mkdir(args["--output"])
 
     # Player
-    src_player_path = os.path.join(configuration_folder, "player", "surge")
-    dst_player_path = os.path.join(args["--output"], "surge")
-
     if platform.system() == "Windows":
-        src_player_path = src_player_path + ".exe"
-        dst_player_path = dst_player_path + ".exe"
+        src_player_path = os.path.join(
+            configuration_folder, "player", args["<configuration>"])
+        dst_player_path = args["--output"]
+    else:
+        src_player_path = os.path.join(configuration_folder, "player", "surge")
+        dst_player_path = os.path.join(args["--output"], "surge")
 
     # Shaders
     src_shaders_path = os.path.join(args["--prefix"], "shaders")
     dst_shaders_path = os.path.join(args["--output"], "shaders")
 
-    shutil.copy2(src_player_path, dst_player_path)
+    # On windows, the whole player directory is copied as it contains the required DLLs
+    if platform.system() == "Windows":
+        for file in os.listdir(src_player_path):
+            src_file = os.path.join(src_player_path, file)
+            dst_file = os.path.join(dst_player_path, file)
+            shutil.copy2(src_file, dst_file)
+    else:
+        shutil.copy2(src_player_path, dst_player_path)
+
     shutil.copytree(src_shaders_path, dst_shaders_path)
+
+    # Mimalloc injection
+    if platform.system() == "Windows":
+        wd = os.path.abspath(os.getcwd())
+
+        minject = os.path.abspath(
+            os.path.join(
+                args["--prefix"], "companion", "minject.exe"
+            )
+        )
+
+        mimalloc = os.path.join(args["--prefix"], "vcpkg", "packages",
+                                "mimalloc_x64-windows", "bin", "mimalloc.dll")
+        shutil.copy2(mimalloc, args["--output"])
+
+        os.chdir(args["--output"])
+
+        subprocess.run([
+            minject,
+            "--force",
+            "--inplace",
+            "surge.exe"
+        ])
+
+        os.chdir(wd)
 
 
 def delete(args):
@@ -54,8 +88,12 @@ def populate(args):
     else:
         module_name = module_name + ".so"
 
-    src_module_path = os.path.join(
-        args["--prefix"], args["<configuration>"], "modules", args["<module>"], module_name)
+    if platform.system() == "Windows":
+        src_module_path = os.path.join(
+            args["--prefix"], args["<configuration>"], "modules", args["<module>"], args["<configuration>"], module_name)
+    else:
+        src_module_path = os.path.join(
+            args["--prefix"], args["<configuration>"], "modules", args["<module>"], module_name)
 
     src_config_path = os.path.join(
         args["--prefix"], "modules", args["<module>"], "config.yaml")
@@ -96,7 +134,6 @@ def run(args):
         exec_name = exec_name + ".exe"
 
     os.chdir(args["--output"])
-    print(os.getcwd())
     subprocess.run([exec_name])
 
 
