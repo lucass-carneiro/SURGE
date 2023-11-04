@@ -61,6 +61,8 @@ auto reload(handle_t module) noexcept -> tl::expected<handle_t, module_error>;
 
 auto get_api(handle_t module) noexcept -> tl::expected<api, module_error>;
 
+auto set_module_path() noexcept -> bool;
+
 } // namespace surge::module
 
 #endif // SURGE_MODULE_HPP

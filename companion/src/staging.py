@@ -31,12 +31,13 @@ def new(args):
     src_shaders_path = os.path.join(args["--prefix"], "shaders")
     dst_shaders_path = os.path.join(args["--output"], "shaders")
 
-    # On windows, the whole player directory is copied as it contains the required DLLs
+    # On windows, copy all DLLs and .exe
     if platform.system() == "Windows":
         for file in os.listdir(src_player_path):
-            src_file = os.path.join(src_player_path, file)
-            dst_file = os.path.join(dst_player_path, file)
-            shutil.copy2(src_file, dst_file)
+            if file.endswith(".exe") or file.endswith(".dll"):
+                src_file = os.path.join(src_player_path, file)
+                dst_file = os.path.join(dst_player_path, file)
+                shutil.copy2(src_file, dst_file)
     else:
         shutil.copy2(src_player_path, dst_player_path)
 
@@ -67,6 +68,8 @@ def new(args):
 
         os.chdir(wd)
 
+    print("Staging created")
+
 
 def delete(args):
     if os.path.exists(args["--output"]):
@@ -82,25 +85,30 @@ def populate(args):
         print("Unable to enter staging directory.")
         sys.exit(1)
 
-    module_name = args["<module>"]
+    # Copy module. In windows, copy all DLLs
     if platform.system() == "Windows":
-        module_name = module_name + ".dll"
+        src_module_path = os.path.join(
+            args["--prefix"], args["<configuration>"], "modules", args["<module>"], args["<configuration>"])
+
+        for file in os.listdir(src_module_path):
+            if file.endswith(".dll"):
+                src_file = os.path.join(src_module_path, file)
+                dst_file = os.path.join(args["--output"], file)
+                shutil.copy2(src_file, dst_file)
     else:
         module_name = module_name + ".so"
-
-    if platform.system() == "Windows":
-        src_module_path = os.path.join(
-            args["--prefix"], args["<configuration>"], "modules", args["<module>"], args["<configuration>"], module_name)
-    else:
         src_module_path = os.path.join(
             args["--prefix"], args["<configuration>"], "modules", args["<module>"], module_name)
+        shutil.copy2(src_module_path, os.path.join(
+            args["--output"], module_name))
 
+    # Copy config
     src_config_path = os.path.join(
         args["--prefix"], "modules", args["<module>"], "config.yaml")
-
-    shutil.copy2(src_module_path, os.path.join(args["--output"], module_name))
     shutil.copy2(src_config_path, os.path.join(
         args["--output"], "config.yaml"))
+
+    print("Staging populated")
 
 
 def update(args):

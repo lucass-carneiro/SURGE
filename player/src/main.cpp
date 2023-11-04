@@ -52,6 +52,11 @@ auto main(int, char **) noexcept -> int {
 
   const auto &first_mod_name{m_list[0].c_str()};
 
+  if (!module::set_module_path()) {
+    log_error("Unable to set the module path");
+    return EXIT_FAILURE;
+  }
+
   auto mod{module::load(first_mod_name)};
   if (!mod) {
     log_error("Unable to load first module %s", first_mod_name);

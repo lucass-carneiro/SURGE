@@ -182,6 +182,13 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   // clang-format on
 }
 
+auto surge::module::set_module_path() noexcept -> bool {
+  char buff[2048];
+  GetCurrentDirectoryA(2048, buff);
+  log_info("CWD: %s", buff);
+  return SetDllDirectoryA(buff);
+}
+
 #else
 
 auto surge::module::get_name(handle_t module, std::size_t) noexcept
@@ -295,6 +302,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   };
   // clang-format on
 }
+
+auto surge::module::set_module_path() noexcept -> bool { return true; }
 
 #endif
 
