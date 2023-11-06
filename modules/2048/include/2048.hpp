@@ -2,9 +2,11 @@
 #define SURGE_MODULE_2048
 
 #include "options.hpp"
+#include "static_image.hpp"
 #include "window.hpp"
 
 #include <cstdint>
+#include <glm/fwd.hpp>
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_2048
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
@@ -33,8 +35,29 @@ enum class error : std::uint32_t {
 auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 
-void get_board_buffer_data() noexcept;
-void get_pieces_buffer_data() noexcept;
+auto get_projection() noexcept -> const glm::mat4 &;
+auto get_view() noexcept -> const glm::mat4 &;
+
+using buffer_t = surge::atom::static_image::one_buffer_data;
+using draw_t = surge::atom::static_image::one_draw_data;
+
+auto get_board_buffer() noexcept -> const buffer_t &;
+auto get_pieces_buffer() noexcept -> const buffer_t &;
+auto get_img_shader() noexcept -> GLuint;
+
+auto get_board_draw_data() noexcept -> const draw_t &;
+
+using texture_origins_t = const std::array<glm::vec2, 11>;
+
+auto get_piece_texture_origins() noexcept -> texture_origins_t &;
+
+using slot_coords_t = const std::array<glm::vec3, 16>;
+
+auto get_slot_coords() noexcept -> const slot_coords_t &;
+
+auto get_slot_size() noexcept -> float;
+
+auto get_slot_delta() noexcept -> float;
 
 } // namespace mod_2048
 
