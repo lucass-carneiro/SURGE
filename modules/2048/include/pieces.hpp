@@ -6,7 +6,7 @@
 #include <EASTL/deque.h>
 #include <EASTL/fixed_hash_map.h>
 #include <cstdint>
-#include <glm/fwd.hpp>
+#include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
 
@@ -29,6 +29,8 @@ auto get_piece_slots() noexcept -> const piece_slots_t &;
 
 auto create_piece(exponent_t exponent, slot_t slot) noexcept -> piece_id_t;
 void delete_piece(piece_id_t piece_id) noexcept;
+
+auto create_random() noexcept -> piece_id_t;
 
 void draw() noexcept;
 

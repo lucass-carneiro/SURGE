@@ -2,6 +2,8 @@
 
 #include "2048.hpp"
 
+#include <random>
+
 void mod_2048::pieces::draw() noexcept {
   using namespace surge::atom;
 
@@ -35,4 +37,22 @@ void mod_2048::pieces::draw() noexcept {
 
     static_image::draw(img_shader, pieces_buffer, piece);
   }
+}
+// TODO: Adds the same piece twice
+auto mod_2048::pieces::create_random() noexcept -> piece_id_t {
+  static std::mt19937 gen{std::random_device{}()};
+  static std::uniform_int_distribution<id_t> exp_distrib(1, 11);
+  static std::uniform_int_distribution<id_t> pos_distrib(0, 15);
+
+  const auto exp{exp_distrib(gen)};
+
+  const auto &slots{get_piece_slots()};
+
+  // Find free slot
+  auto slot{pos_distrib(gen)};
+  while (slots.count(slot) != 0) {
+    slot = pos_distrib(gen);
+  }
+
+  return create_piece(exp, slot);
 }

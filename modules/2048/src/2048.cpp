@@ -6,6 +6,7 @@
 
 // clang-format off
 #include "pieces.hpp"
+#include "debug_window.hpp"
 // clang-format on
 
 #include <EASTL/algorithm.h>
@@ -238,6 +239,9 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
     g_piece_id_queue.push_back(i);
   }
 
+  // Init debug window
+  debug_window::init(window);
+
   pieces::create_piece(1, 0);
 
   return 0;
@@ -254,7 +258,13 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
   return 0;
 }
 
+void mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
+  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+}
+
+void mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noexcept {
+  ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+}
+
 auto update(double) noexcept -> std::uint32_t { return 0; }
 void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
-void mouse_button_event(GLFWwindow *, int, int, int) noexcept {}
-void mouse_scroll_event(GLFWwindow *, double, double) noexcept {}

@@ -112,4 +112,6 @@
     },
     "cmake.automaticReconfigure": false,
     "cmake.configureOnEdit": false,
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
 }

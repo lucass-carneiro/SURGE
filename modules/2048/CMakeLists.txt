@@ -17,12 +17,14 @@ project(
 set(
   SURGE_MODULE_2048_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/2048.hpp"
+  "${PROJECT_SOURCE_DIR}/include/debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/pieces.hpp"
 )
 
 set(
   SURGE_MODULE_2048_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/2048.cpp"
+  "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/draw.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces.cpp"
 )
