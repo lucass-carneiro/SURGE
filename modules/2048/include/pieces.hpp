@@ -30,7 +30,7 @@ auto get_piece_slots() noexcept -> const piece_slots_t &;
 auto create_piece(exponent_t exponent, slot_t slot) noexcept -> piece_id_t;
 void delete_piece(piece_id_t piece_id) noexcept;
 
-auto create_random() noexcept -> piece_id_t;
+auto create_random(exponent_t last_exponent = 2) noexcept -> piece_id_t;
 
 void draw() noexcept;
 
