@@ -3,6 +3,7 @@
 #include "2048.hpp"
 #include "logging.hpp"
 
+#include <gsl/gsl-lite.hpp>
 #include <random>
 
 void mod_2048::pieces::draw() noexcept {
@@ -72,4 +73,94 @@ auto mod_2048::pieces::create_random(exponent_t last_exponent) noexcept -> piece
   }
 
   return create_piece(exp, randomized_slot);
+}
+
+auto mod_2048::pieces::get_command_desc(const commands &cmd) noexcept -> const char * {
+  switch (static_cast<piece_command_code_t>(cmd)) {
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_1):
+    return "Change exp to 1";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_2):
+    return "Change exp to 2";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_3):
+    return "Change exp to 3";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_4):
+    return "Change exp to 4";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_5):
+    return "Change exp to 5";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_6):
+    return "Change exp to 6";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_7):
+    return "Change exp to 7";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_8):
+    return "Change exp to 8";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_9):
+    return "Change exp to 9";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_10):
+    return "Change exp to 10";
+
+  case static_cast<piece_command_code_t>(commands::change_exp_to_11):
+    return "Change exp to 11";
+
+  case static_cast<piece_command_code_t>(commands::move_up):
+    return "Move up";
+
+  case static_cast<piece_command_code_t>(commands::move_down):
+    return "Move down";
+
+  case static_cast<piece_command_code_t>(commands::move_left):
+    return "Move left";
+
+  case static_cast<piece_command_code_t>(commands::move_right):
+    return "Move right";
+
+  default:
+    return "Unknown command";
+  }
+}
+
+void mod_2048::pieces::update(double dt) noexcept {
+  using std::abs, std::sqrt;
+
+  // These values must be fine tuned together
+  const float v{get_slot_delta() / 0.25f};
+  constexpr const float threshold{2.5f};
+
+  auto &positions{get_piece_positions()};
+  auto &slots{get_piece_slots()};
+  auto &target_slots{get_piece_target_slots()};
+
+  for (const auto &s : slots) {
+    auto piece_id{s.first};
+    auto src_slot{s.second};
+    auto tgt_slot{target_slots.at(piece_id)};
+
+    // Move pieces
+    if (tgt_slot != src_slot) {
+      const auto curr_pos{positions.at(piece_id)};
+      const auto tgt_slot_pos{get_slot_coords().at(tgt_slot)};
+
+      const auto delta_r{tgt_slot_pos - curr_pos};
+      const auto delta_r_length{sqrt(glm::dot(delta_r, delta_r))};
+
+      // Stopping condition
+      if (abs(delta_r_length) < threshold) {
+        slots.at(piece_id) = tgt_slot;
+        positions.at(piece_id) = tgt_slot_pos;
+      } else {
+        const auto n_r{delta_r / delta_r_length};
+        const auto r_next{curr_pos + v * gsl::narrow_cast<float>(dt) * n_r};
+        positions.at(piece_id) = r_next;
+      }
+    }
+  }
 }

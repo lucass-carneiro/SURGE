@@ -10,6 +10,7 @@
 namespace mod_2048::debug_window {
 
 void init(GLFWwindow *window) noexcept;
+void cleanup() noexcept;
 void main_window(bool *p_open = nullptr) noexcept;
 void draw() noexcept;
 

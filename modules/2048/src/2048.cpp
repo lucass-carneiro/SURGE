@@ -78,6 +78,9 @@ static mod_2048::pieces::piece_positions_t g_piece_positions{};
 static mod_2048::pieces::piece_exponents_t g_piece_exponents{};
 
 static mod_2048::pieces::piece_slots_t g_piece_slots{};
+static mod_2048::pieces::piece_slots_t g_piece_target_slots{};
+
+static mod_2048::pieces::piece_command_queue_t g_piece_command_queue{};
 
 /*
  * Global handlers and accessors
@@ -105,15 +108,23 @@ auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
 
 auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
 
-auto mod_2048::pieces::get_piece_positions() noexcept -> const piece_positions_t & {
+auto mod_2048::pieces::get_piece_positions() noexcept -> piece_positions_t & {
   return g_piece_positions;
 }
 
-auto mod_2048::pieces::get_piece_exponents() noexcept -> const piece_exponents_t & {
+auto mod_2048::pieces::get_piece_exponents() noexcept -> piece_exponents_t & {
   return g_piece_exponents;
 }
 
-auto mod_2048::pieces::get_piece_slots() noexcept -> const piece_slots_t & { return g_piece_slots; }
+auto mod_2048::pieces::get_piece_slots() noexcept -> piece_slots_t & { return g_piece_slots; }
+
+auto mod_2048::pieces::get_piece_target_slots() noexcept -> piece_slots_t & {
+  return g_piece_target_slots;
+}
+
+auto mod_2048::pieces::get_piece_command_queue() noexcept -> piece_command_queue_t & {
+  return g_piece_command_queue;
+}
 
 auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
     -> mod_2048::pieces::piece_id_t {
@@ -126,6 +137,7 @@ auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
   g_piece_positions[id] = g_slot_coords[slot];
   g_piece_exponents[id] = exponent;
   g_piece_slots[id] = slot;
+  g_piece_target_slots[id] = slot;
 
   return id;
 }
@@ -138,6 +150,7 @@ void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
     g_piece_positions.erase(piece_id);
     g_piece_exponents.erase(piece_id);
     g_piece_slots.erase(piece_id);
+    g_piece_target_slots.erase(piece_id);
     g_piece_id_queue.push_back(piece_id);
   }
 }
@@ -242,7 +255,7 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   // Init debug window
   debug_window::init(window);
 
-  pieces::create_piece(1, 0);
+  pieces::create_piece(1, 15);
 
   return 0;
 }
@@ -255,6 +268,8 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
     return unbind_callback_stat;
   }
 
+  debug_window::cleanup();
+
   return 0;
 }
 
@@ -266,5 +281,10 @@ void mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noex
   ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 }
 
-auto update(double) noexcept -> std::uint32_t { return 0; }
+auto update(double dt) noexcept -> std::uint32_t {
+  mod_2048::pieces::update(dt);
+
+  return 0;
+}
+
 void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
