@@ -1,10 +1,12 @@
 #ifndef SURGE_MODULE_2048
 #define SURGE_MODULE_2048
 
+#include "allocators.hpp"
 #include "options.hpp"
 #include "static_image.hpp"
 #include "window.hpp"
 
+#include <EASTL/deque.h>
 #include <cstdint>
 #include <glm/fwd.hpp>
 
@@ -32,6 +34,23 @@ enum class error : std::uint32_t {
   pieces_img_load,
 };
 
+using state_code_t = std::uint8_t;
+enum class game_state : state_code_t {
+  idle = 0,
+  compress_up = 1,
+  compress_down = 2,
+  compress_left = 3,
+  compress_right = 4,
+  merge_up = 5,
+  merge_down = 6,
+  merge_left = 7,
+  merge_right = 8,
+  piece_removal = 9,
+  add_piece = 10,
+};
+
+using state_queue = eastl::deque<game_state, surge::allocators::eastl::gp_allocator>;
+
 auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 
@@ -58,6 +77,9 @@ auto get_slot_coords() noexcept -> const slot_coords_t &;
 auto get_slot_size() noexcept -> float;
 
 auto get_slot_delta() noexcept -> float;
+
+auto view_state_queue() noexcept -> const state_queue &;
+auto get_state_queue() noexcept -> state_queue &;
 
 } // namespace mod_2048
 

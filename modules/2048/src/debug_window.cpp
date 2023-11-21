@@ -1,7 +1,10 @@
 #include "debug_window.hpp"
 
+#include "2048.hpp"
 #include "logging.hpp"
 #include "pieces.hpp"
+
+#include <imgui.h>
 
 void mod_2048::debug_window::init(GLFWwindow *window) noexcept {
   log_info("Initializing debug window");
@@ -39,6 +42,36 @@ void mod_2048::debug_window::cleanup() noexcept {
   ImGui::DestroyContext();
 }
 
+static auto get_state_string(const mod_2048::game_state &state) -> const char * {
+  using namespace mod_2048;
+  switch (static_cast<state_code_t>(state)) {
+  case static_cast<state_code_t>(game_state::idle):
+    return "Idle";
+  case static_cast<state_code_t>(game_state::compress_up):
+    return "Compress up";
+  case static_cast<state_code_t>(game_state::compress_down):
+    return "Compress down";
+  case static_cast<state_code_t>(game_state::compress_left):
+    return "Compress left";
+  case static_cast<state_code_t>(game_state::compress_right):
+    return "Compress right";
+  case static_cast<state_code_t>(game_state::merge_up):
+    return "Merge up";
+  case static_cast<state_code_t>(game_state::merge_down):
+    return "Merge down";
+  case static_cast<state_code_t>(game_state::merge_left):
+    return "Merge left";
+  case static_cast<state_code_t>(game_state::merge_right):
+    return "Merge right";
+  case static_cast<state_code_t>(game_state::piece_removal):
+    return "Piece removal";
+  case static_cast<state_code_t>(game_state::add_piece):
+    return "Add piece";
+  default:
+    return "Unknown state";
+  }
+}
+
 void mod_2048::debug_window::main_window(bool *p_open) noexcept {
   using namespace mod_2048;
   using namespace mod_2048::pieces;
@@ -60,12 +93,11 @@ void mod_2048::debug_window::main_window(bool *p_open) noexcept {
   const auto &exponents{pieces::get_piece_exponents()};
   const auto &slots{pieces::get_piece_slots()};
   auto &target_slots{pieces::get_piece_target_slots()};
-  auto &command_queue{pieces::get_piece_command_queue()};
+  const auto &state_stack{view_state_queue()};
 
   static pieces::slot_t slot_input{0};
   static pieces::exponent_t exponent_input{1};
   static pieces::piece_id_t piece_id_input{0};
-  static pieces::piece_command_code_t command_code_input{0};
   const pieces::slot_t step_input{1};
 
   if (ImGui::CollapsingHeader("Add random")) {
@@ -136,36 +168,25 @@ void mod_2048::debug_window::main_window(bool *p_open) noexcept {
     }
   }
 
-  if (ImGui::CollapsingHeader("Piece commands")) {
-    ImGui::InputScalar("Piece ID", ImGuiDataType_U8, &piece_id_input, &step_input, nullptr, "%u");
-    ImGui::InputScalar("Command", ImGuiDataType_U8, &command_code_input, &step_input, nullptr,
-                       "%u");
-
-    if (ImGui::Button("Push command")) {
-      const pieces::command_t packed_command = (piece_id_input << 4) | command_code_input;
-      command_queue.push_back(packed_command);
-    }
-
-    if (ImGui::BeginTable("pieces_command_queue_table", 3, table_flags)) {
-      ImGui::TableSetupColumn("ID");
-      ImGui::TableSetupColumn("Command");
-      ImGui::TableSetupColumn("Description");
+  if (ImGui::CollapsingHeader("State stack data")) {
+    if (ImGui::BeginTable("game_state_table", 3, table_flags)) {
+      ImGui::TableSetupColumn("Element");
+      ImGui::TableSetupColumn("State Code");
+      ImGui::TableSetupColumn("State desc.");
       ImGui::TableHeadersRow();
 
-      for (const auto &pc : command_queue) {
-        const auto id{(pc >> 4) & 0x0F};
-        const auto command{pc & 0x0F};
-
+      for (std::size_t i = 0; const auto &s : state_stack) {
         ImGui::TableNextRow();
 
         ImGui::TableSetColumnIndex(0);
-        ImGui::Text("%d", id);
+        ImGui::Text("%lu", i);
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%d", command);
+        ImGui::Text("%u", static_cast<state_code_t>(s));
 
         ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%s", get_command_desc(static_cast<commands>(command)));
+        ImGui::Text("%s", get_state_string(s));
+        i++;
       }
 
       ImGui::EndTable();

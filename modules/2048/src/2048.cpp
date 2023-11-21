@@ -10,6 +10,7 @@
 // clang-format on
 
 #include <EASTL/algorithm.h>
+#include <GLFW/glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
@@ -73,6 +74,8 @@ static const float g_slot_delta = g_slot_coords[1][0] - g_slot_coords[0][0];
 
 static mod_2048::pieces::piece_id_queue_t g_piece_id_queue{};
 
+static mod_2048::pieces::piece_id_queue_t g_stale_pieces_queue{};
+
 static mod_2048::pieces::piece_positions_t g_piece_positions{};
 
 static mod_2048::pieces::piece_exponents_t g_piece_exponents{};
@@ -80,7 +83,7 @@ static mod_2048::pieces::piece_exponents_t g_piece_exponents{};
 static mod_2048::pieces::piece_slots_t g_piece_slots{};
 static mod_2048::pieces::piece_slots_t g_piece_target_slots{};
 
-static mod_2048::pieces::piece_command_queue_t g_piece_command_queue{};
+static mod_2048::state_queue g_state_queue{};
 
 /*
  * Global handlers and accessors
@@ -122,9 +125,9 @@ auto mod_2048::pieces::get_piece_target_slots() noexcept -> piece_slots_t & {
   return g_piece_target_slots;
 }
 
-auto mod_2048::pieces::get_piece_command_queue() noexcept -> piece_command_queue_t & {
-  return g_piece_command_queue;
-}
+auto mod_2048::view_state_queue() noexcept -> const state_queue & { return g_state_queue; }
+
+auto mod_2048::get_state_queue() noexcept -> state_queue & { return g_state_queue; }
 
 auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
     -> mod_2048::pieces::piece_id_t {
@@ -152,6 +155,16 @@ void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
     g_piece_slots.erase(piece_id);
     g_piece_target_slots.erase(piece_id);
     g_piece_id_queue.push_back(piece_id);
+  }
+}
+
+void mod_2048::pieces::mark_stale(piece_id_t piece) noexcept {
+  g_stale_pieces_queue.push_back(piece);
+}
+
+void mod_2048::pieces::remove_stale() noexcept {
+  for (const auto &p : g_stale_pieces_queue) {
+    delete_piece(p);
   }
 }
 
@@ -252,6 +265,9 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
     g_piece_id_queue.push_back(i);
   }
 
+  // Init state stack
+  g_state_queue.push_back(game_state::idle);
+
   // Init debug window
   debug_window::init(window);
 
@@ -282,9 +298,60 @@ void mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noex
 }
 
 auto update(double dt) noexcept -> std::uint32_t {
-  mod_2048::pieces::update(dt);
+  using namespace mod_2048;
+
+  switch (static_cast<state_code_t>(g_state_queue.front())) {
+
+  case static_cast<state_code_t>(game_state::compress_right):
+    if (pieces::idle()) {
+      pieces::compress_right();
+      g_state_queue.pop_front();
+    }
+    break;
+
+  case static_cast<state_code_t>(game_state::merge_right):
+    if (pieces::idle()) {
+      pieces::merge_right();
+      g_state_queue.pop_front();
+    }
+    break;
+
+  case static_cast<state_code_t>(game_state::piece_removal):
+    if (pieces::idle()) {
+      pieces::remove_stale();
+      g_state_queue.pop_front();
+    }
+    break;
+
+  case static_cast<state_code_t>(game_state::add_piece):
+    if (pieces::idle()) {
+      pieces::create_random();
+      g_state_queue.pop_front();
+    }
+    break;
+
+  default:
+    return 0;
+  }
+
+  pieces::update(dt);
 
   return 0;
 }
 
-void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
+void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
+  using namespace mod_2048;
+
+  // Examine state stack. Only push a move if the board is idle
+  if (g_state_queue.front() == game_state::idle) {
+    if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+      g_state_queue.pop_front();
+      g_state_queue.push_back(game_state::compress_right);
+      g_state_queue.push_back(game_state::merge_right);
+      g_state_queue.push_back(game_state::piece_removal);
+      g_state_queue.push_back(game_state::compress_right);
+      g_state_queue.push_back(game_state::add_piece);
+      g_state_queue.push_back(game_state::idle);
+    }
+  }
+}

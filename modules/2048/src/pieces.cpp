@@ -75,57 +75,26 @@ auto mod_2048::pieces::create_random(exponent_t last_exponent) noexcept -> piece
   return create_piece(exp, randomized_slot);
 }
 
-auto mod_2048::pieces::get_command_desc(const commands &cmd) noexcept -> const char * {
-  switch (static_cast<piece_command_code_t>(cmd)) {
+auto mod_2048::pieces::idle() noexcept -> bool {
+  auto &slots{get_piece_slots()};
+  auto &target_slots{get_piece_target_slots()};
 
-  case static_cast<piece_command_code_t>(commands::change_exp_to_1):
-    return "Change exp to 1";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_2):
-    return "Change exp to 2";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_3):
-    return "Change exp to 3";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_4):
-    return "Change exp to 4";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_5):
-    return "Change exp to 5";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_6):
-    return "Change exp to 6";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_7):
-    return "Change exp to 7";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_8):
-    return "Change exp to 8";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_9):
-    return "Change exp to 9";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_10):
-    return "Change exp to 10";
-
-  case static_cast<piece_command_code_t>(commands::change_exp_to_11):
-    return "Change exp to 11";
-
-  case static_cast<piece_command_code_t>(commands::move_up):
-    return "Move up";
-
-  case static_cast<piece_command_code_t>(commands::move_down):
-    return "Move down";
-
-  case static_cast<piece_command_code_t>(commands::move_left):
-    return "Move left";
-
-  case static_cast<piece_command_code_t>(commands::move_right):
-    return "Move right";
-
-  default:
-    return "Unknown command";
+  for (const auto &s : slots) {
+    if (s.second != target_slots.at(s.first)) {
+      return false;
+    }
   }
+
+  return true;
+}
+
+void mod_2048::pieces::compress_right() noexcept {
+  // This function simply sets the target slot of all pieces to their positions after a right
+  // compression
+}
+
+void mod_2048::pieces::merge_right() noexcept {
+  // This function simply sets the target of all
 }
 
 void mod_2048::pieces::update(double dt) noexcept {
