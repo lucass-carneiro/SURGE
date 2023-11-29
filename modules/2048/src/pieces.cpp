@@ -3,6 +3,8 @@
 #include "2048.hpp"
 #include "logging.hpp"
 
+#include <array>
+#include <cstddef>
 #include <gsl/gsl-lite.hpp>
 #include <random>
 
@@ -88,9 +90,157 @@ auto mod_2048::pieces::idle() noexcept -> bool {
   return true;
 }
 
+auto mod_2048::pieces::deflatten_slot(slot_t slot) noexcept -> board_address {
+  switch (slot) {
+  case 0:
+    return board_address{0, 0};
+  case 1:
+    return board_address{0, 1};
+  case 2:
+    return board_address{0, 2};
+  case 3:
+    return board_address{0, 3};
+  case 4:
+    return board_address{1, 0};
+  case 5:
+    return board_address{1, 1};
+  case 6:
+    return board_address{1, 2};
+  case 7:
+    return board_address{1, 3};
+  case 8:
+    return board_address{2, 0};
+  case 9:
+    return board_address{2, 1};
+  case 10:
+    return board_address{2, 2};
+  case 11:
+    return board_address{2, 3};
+  case 12:
+    return board_address{3, 0};
+  case 13:
+    return board_address{3, 1};
+  case 14:
+    return board_address{3, 2};
+  case 15:
+    return board_address{3, 3};
+  default:
+    return board_address{16, 16};
+  }
+}
+
+auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexcept
+    -> board_element {
+  board_element element{{16, 16, 16, 16}, 0, board_element_configuration::XOOO};
+
+  // Get data and size
+  for (const auto &slot : get_piece_slots()) {
+    const auto slot_coords{deflatten_slot(slot.second)};
+
+    if (type == board_element_type::row && slot_coords.row == value) {
+      element.data.at(slot_coords.col) = slot.first;
+      element.size += 1;
+
+    } else if (type == board_element_type::column && slot_coords.col == value) {
+      element.data.at(slot_coords.row) = slot.first;
+      element.size += 1;
+    }
+  }
+
+  // Get get configuration
+  if (element.size == 1) {
+    if (element.data[0] != 16) {
+      element.config = board_element_configuration::XOOO;
+    } else if (element.data[1] != 16) {
+      element.config = board_element_configuration::OXOO;
+    } else if (element.data[2] != 16) {
+      element.config = board_element_configuration::OOXO;
+    } else {
+      element.config = board_element_configuration::OOOX;
+    }
+  } else if (element.size == 4) {
+    element.config = board_element_configuration::XXXX;
+  } else if (element.size == 3) {
+    if (element.data[0] != 16 && element.data[1] != 16 && element.data[2] != 16) {
+      element.config = board_element_configuration::XXXO;
+    } else if (element.data[0] != 16 && element.data[1] != 16 && element.data[3] != 16) {
+      element.config = board_element_configuration::XXOX;
+    } else if (element.data[0] != 16 && element.data[2] != 16 && element.data[3] != 16) {
+      element.config = board_element_configuration::XOXX;
+    } else {
+      element.config = board_element_configuration::OXXX;
+    }
+  } else if (element.size == 2) {
+    if (element.data[0] != 16 && element.data[1] != 16) {
+      element.config = board_element_configuration::XXOO;
+    } else if (element.data[0] != 16 && element.data[2] != 16) {
+      element.config = board_element_configuration::XOXO;
+    } else if (element.data[0] != 16 && element.data[3] != 16) {
+      element.config = board_element_configuration::XOOX;
+    } else if (element.data[1] != 16 && element.data[2] != 16) {
+      element.config = board_element_configuration::OXXO;
+    } else if (element.data[1] != 16 && element.data[3] != 16) {
+      element.config = board_element_configuration::OXOX;
+    } else {
+      element.config = board_element_configuration::OOXX;
+    }
+  }
+
+  return element;
+}
+
 void mod_2048::pieces::compress_right() noexcept {
-  // This function simply sets the target slot of all pieces to their positions after a right
-  // compression
+  log_warn("Compressing right");
+
+  auto &target_slots{get_piece_target_slots()};
+
+  for (slot_t i = 0; i < 4; i++) {
+    const auto element{get_element(board_element_type::row, i)};
+
+    switch (element.config) {
+    case board_element_configuration::XOOO:
+      target_slots[element.data[0]] = 3 + i * 4;
+      break;
+    case board_element_configuration::OXOO:
+      target_slots[element.data[1]] = 3 + i * 4;
+      break;
+    case board_element_configuration::OOXO:
+      target_slots[element.data[2]] = 3 + i * 4;
+      break;
+    case board_element_configuration::XXOO:
+      target_slots[element.data[0]] = 2 + i * 4;
+      target_slots[element.data[1]] = 3 + i * 4;
+      break;
+    case board_element_configuration::XOXO:
+      target_slots[element.data[0]] = 2 + i * 4;
+      target_slots[element.data[2]] = 3 + i * 4;
+      break;
+    case board_element_configuration::XOOX:
+      target_slots[element.data[0]] = 2 + i * 4;
+      break;
+    case board_element_configuration::OXXO:
+      target_slots[element.data[1]] = 2;
+      target_slots[element.data[2]] = 3;
+      break;
+    case board_element_configuration::OXOX:
+      target_slots[element.data[1]] = 2 + i * 4;
+      break;
+    case board_element_configuration::XXXO:
+      target_slots[element.data[0]] = 1 + i * 4;
+      target_slots[element.data[1]] = 2 + i * 4;
+      target_slots[element.data[2]] = 3 + i * 4;
+      break;
+    case board_element_configuration::XXOX:
+      target_slots[element.data[0]] = 1 + i * 4;
+      target_slots[element.data[1]] = 2 + i * 4;
+      break;
+    case board_element_configuration::XOXX:
+      target_slots[element.data[0]] = 1 + i * 4;
+      break;
+    default:
+      break;
+    }
+  }
 }
 
 void mod_2048::pieces::merge_right() noexcept {

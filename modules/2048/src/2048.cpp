@@ -237,7 +237,8 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   g_img_shader = *img_shader;
 
   // Load board image2
-  const auto board_buffer{static_image::create("resources/board_normal.png")};
+  // const auto board_buffer{static_image::create("resources/board_normal.png")};
+  const auto board_buffer{static_image::create("resources/board_debug.png")};
   if (!board_buffer) {
     return static_cast<std::uint32_t>(error::board_img_load);
   }
@@ -271,7 +272,7 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   // Init debug window
   debug_window::init(window);
 
-  pieces::create_piece(1, 15);
+  pieces::create_piece(1, 0);
 
   return 0;
 }
@@ -312,6 +313,7 @@ auto update(double dt) noexcept -> std::uint32_t {
   case static_cast<state_code_t>(game_state::merge_right):
     if (pieces::idle()) {
       pieces::merge_right();
+      log_warn("merge right");
       g_state_queue.pop_front();
     }
     break;
@@ -319,13 +321,15 @@ auto update(double dt) noexcept -> std::uint32_t {
   case static_cast<state_code_t>(game_state::piece_removal):
     if (pieces::idle()) {
       pieces::remove_stale();
+      log_warn("remove stale pieces");
       g_state_queue.pop_front();
     }
     break;
 
   case static_cast<state_code_t>(game_state::add_piece):
     if (pieces::idle()) {
-      pieces::create_random();
+      // pieces::create_random();
+      log_warn("add random piece");
       g_state_queue.pop_front();
     }
     break;

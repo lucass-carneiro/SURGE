@@ -23,6 +23,44 @@ using piece_exponents_t = eastl::fixed_hash_map<piece_id_t, exponent_t, 16, 17, 
 
 using piece_slots_t = eastl::fixed_hash_map<piece_id_t, slot_t, 16, 17, false>;
 
+enum class board_element_type : std::uint8_t { row, column };
+
+enum board_element_configuration : std::uint8_t {
+  // 1 Piece combos
+  XOOO,
+  OXOO,
+  OOXO,
+  OOOX,
+
+  // 2 Piece combos
+  XXOO,
+  XOXO,
+  XOOX,
+  OXXO,
+  OXOX,
+  OOXX,
+
+  // 3 Piece combos
+  XXXO,
+  XXOX,
+  XOXX,
+  OXXX,
+
+  // 4 Piece combos
+  XXXX
+};
+
+struct board_element {
+  std::array<piece_id_t, 4> data;
+  std::uint8_t size;
+  board_element_configuration config;
+};
+
+struct board_address {
+  slot_t row;
+  slot_t col;
+};
+
 auto get_piece_positions() noexcept -> piece_positions_t &;
 auto get_piece_exponents() noexcept -> piece_exponents_t &;
 auto get_piece_slots() noexcept -> piece_slots_t &;
@@ -34,6 +72,9 @@ void delete_piece(piece_id_t piece_id) noexcept;
 auto create_random(exponent_t last_exponent = 2) noexcept -> piece_id_t;
 
 auto idle() noexcept -> bool;
+
+auto deflatten_slot(slot_t slot) noexcept -> board_address;
+auto get_element(board_element_type type, slot_t value) noexcept -> board_element;
 
 void compress_right() noexcept;
 void merge_right() noexcept;
