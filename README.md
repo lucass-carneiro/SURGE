@@ -6,7 +6,7 @@
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
-git submodule init && git submodule update
+git submodule init && git submodule update --remote --merge
 cp vcpkg.json.linux vcpkg.json
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug
@@ -16,7 +16,7 @@ cmake --build Debug
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE && cd SURGE
-git submodule init && git submodule update
+git submodule init && git submodule update --remote --merge
 cp vcpkg.json.linux vcpkg.json
 cmake -B Release -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
 cmake --build Release
@@ -28,7 +28,7 @@ cmake --build Release
 git clone https://github.com/lucass-carneiro/SURGE
 cd SURGE
 git submodule init
-git submodule update
+git submodule update --remote --merge
 cp vcpkg.json.windows vcpkg.json
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug
@@ -40,7 +40,7 @@ cmake --build Debug --config Debug
 git clone https://github.com/lucass-carneiro/SURGE
 cd SURGE
 git submodule init
-git submodule update
+git submodule update --remote --merge
 cp vcpkg.json.windows vcpkg.json
 cmake -B Release -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Release
 cmake --build Release --config Release

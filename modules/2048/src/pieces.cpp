@@ -62,8 +62,8 @@ auto mod_2048::pieces::create_random(exponent_t last_exponent) noexcept -> piece
   }
 
   static std::mt19937 gen{std::random_device{}()};
-  static std::uniform_int_distribution<id_t> exp_distrib(1, last_exponent);
-  static std::uniform_int_distribution<id_t> pos_distrib(0, 15);
+  static std::uniform_int_distribution<unsigned short> exp_distrib(1, last_exponent);
+  static std::uniform_int_distribution<unsigned short> pos_distrib(0, 15);
 
   const auto exp{exp_distrib(gen)};
 

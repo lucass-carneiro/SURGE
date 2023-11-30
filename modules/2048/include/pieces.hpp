@@ -5,15 +5,14 @@
 
 #include <EASTL/deque.h>
 #include <EASTL/fixed_hash_map.h>
-#include <cstdint>
 #include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
 
-using exponent_t = std::uint8_t;
-using slot_t = std::uint8_t;
+using exponent_t = unsigned short;
+using slot_t = unsigned short;
 
-using piece_id_t = std::uint8_t;
+using piece_id_t = unsigned short;
 using piece_id_queue_t = eastl::deque<piece_id_t, surge::allocators::eastl::gp_allocator>;
 
 using piece_pos_t = glm::vec3;
@@ -23,9 +22,9 @@ using piece_exponents_t = eastl::fixed_hash_map<piece_id_t, exponent_t, 16, 17, 
 
 using piece_slots_t = eastl::fixed_hash_map<piece_id_t, slot_t, 16, 17, false>;
 
-enum class board_element_type : std::uint8_t { row, column };
+enum class board_element_type : unsigned short { row, column };
 
-enum board_element_configuration : std::uint8_t {
+enum board_element_configuration : unsigned short {
   // 1 Piece combos
   XOOO,
   OXOO,
@@ -52,7 +51,7 @@ enum board_element_configuration : std::uint8_t {
 
 struct board_element {
   std::array<piece_id_t, 4> data;
-  std::uint8_t size;
+  unsigned short size;
   board_element_configuration config;
 };
 

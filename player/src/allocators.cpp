@@ -64,7 +64,6 @@ void surge::allocators::mimalloc::init() noexcept {
 #endif
 
   mi_option_enable(mi_option_eager_commit);
-  mi_option_enable(mi_option_page_reset);
 
   mi_option_set(mi_option_reserve_huge_os_pages, 1);
   mi_option_set(mi_option_eager_commit_delay, 100);

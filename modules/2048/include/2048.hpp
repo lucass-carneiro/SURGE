@@ -34,7 +34,7 @@ enum class error : std::uint32_t {
   pieces_img_load,
 };
 
-using state_code_t = std::uint8_t;
+using state_code_t = unsigned short;
 enum class game_state : state_code_t {
   idle = 0,
   compress_up = 1,
