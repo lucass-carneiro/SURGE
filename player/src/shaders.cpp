@@ -10,7 +10,12 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
   files::file file{};
 
   if (shader_type == GL_VERTEX_SHADER || shader_type == GL_FRAGMENT_SHADER) {
+#ifdef SURGE_SYSTEM_Windows
     file = files::load_file(p, true);
+#else
+#  warning See if this works with true on linux
+    file = files::load_file(p, false);
+#endif
   } else {
     log_error("Unrecognized shader type %u", shader_type);
     return tl::unexpected(surge::renderer::renderer_error::unrecognized_shader);

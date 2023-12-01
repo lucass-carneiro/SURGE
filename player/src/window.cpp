@@ -203,6 +203,7 @@ auto surge::window::init(const config::window_resolution &wres,
   /******************
    * OpenGL options *
    ******************/
+  log_info("Using OpenGL Version %s", glGetString(GL_VERSION));
   renderer::enable(renderer::capability::depth_test);
   renderer::enable(renderer::capability::blend);
   renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);

@@ -45,40 +45,12 @@ auto surge::files::validate_path(const char *path) noexcept -> bool {
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::files::get_file_size(const char *path) noexcept
-    -> tl::expected<file_size_t, file_error> {
-  const auto size = std::filesystem::file_size(path);
-
-  // Parenthesis are required becaus windows defines a max macro.
-  // See https://stackoverflow.com/a/27443191
-  constexpr const auto max_file_size{(std::numeric_limits<unsigned int>::max)()};
-
-  if (size > max_file_size) {
-    log_error("The file %s has size %llu, which exceeds the maximun capacity of %u.", path, size,
-              max_file_size);
-    return tl::unexpected(file_error::size_truncation);
-  } else {
-    return gsl::narrow_cast<unsigned int>(size);
-  }
-}
-
-#else
-
-auto surge::files::get_file_size(const char *path) noexcept
-    -> tl::expected<std::uintmax_t, file_error> {
-  return std::filesystem::file_size(path);
-}
-
-#endif
-
-#ifdef SURGE_SYSTEM_Windows
-
 auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexcept -> bool {
   std::array<char, 256> error_msg_buff{};
   error_msg_buff.fill('\0');
 
   int fd = 0;
-  if (_sopen_s(&fd, path, _O_RDONLY, _SH_DENYWR, _S_IREAD) != 0) {
+  if (_sopen_s(&fd, path, _O_RDONLY | _O_BINARY, _SH_DENYWR, _S_IREAD) != 0) {
     strerror_s(error_msg_buff.data(), error_msg_buff.size(), errno);
     log_error("Error while oppening file %s: %s", path, error_msg_buff.data());
     return false;
@@ -129,16 +101,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
       return tl::unexpected(file_error::invalid_path);
     }
 
-    const auto original_file_size{get_file_size(path)};
-    if (!original_file_size) {
-      return tl::unexpected(original_file_size.error());
-    }
-
-#ifdef SURGE_SYSTEM_Windows
-    unsigned int file_size{*original_file_size};
-#else
-    std::uintmax_t file_size{*original_file_size};
-#endif
+    std::uintmax_t file_size{std::filesystem::file_size(path)};
     if (append_null_byte) {
       file_size += 1;
     }
