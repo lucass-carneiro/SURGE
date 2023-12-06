@@ -25,6 +25,9 @@ using piece_slots_t = eastl::fixed_hash_map<piece_id_t, slot_t, 16, 17, false>;
 enum class board_element_type : unsigned short { row, column };
 
 enum board_element_configuration : unsigned short {
+  // 0 pieces
+  OOOO,
+
   // 1 Piece combos
   XOOO,
   OXOO,
@@ -61,7 +64,10 @@ struct board_address {
 };
 
 auto get_piece_positions() noexcept -> piece_positions_t &;
+
 auto get_piece_exponents() noexcept -> piece_exponents_t &;
+auto get_piece_target_exponents() noexcept -> piece_exponents_t &;
+
 auto get_piece_slots() noexcept -> piece_slots_t &;
 auto get_piece_target_slots() noexcept -> piece_slots_t &;
 
@@ -83,7 +89,8 @@ void remove_stale() noexcept;
 
 void draw() noexcept;
 
-void update(double dt) noexcept;
+void update_positions(double dt) noexcept;
+void update_exponents() noexcept;
 
 } // namespace mod_2048::pieces
 

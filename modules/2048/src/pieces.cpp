@@ -131,7 +131,7 @@ auto mod_2048::pieces::deflatten_slot(slot_t slot) noexcept -> board_address {
 
 auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexcept
     -> board_element {
-  board_element element{{16, 16, 16, 16}, 0, board_element_configuration::XOOO};
+  board_element element{{16, 16, 16, 16}, 0, board_element_configuration::OOOO};
 
   // Get data and size
   for (const auto &slot : get_piece_slots()) {
@@ -148,7 +148,9 @@ auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexce
   }
 
   // Get get configuration
-  if (element.size == 1) {
+  if (element.size == 0) {
+    return element;
+  } else if (element.size == 1) {
     if (element.data[0] != 16) {
       element.config = board_element_configuration::XOOO;
     } else if (element.data[1] != 16) {
@@ -244,10 +246,45 @@ void mod_2048::pieces::compress_right() noexcept {
 }
 
 void mod_2048::pieces::merge_right() noexcept {
-  // This function simply sets the target of all
+  log_warn("Merging right");
+
+  auto &target_slots{get_piece_target_slots()};
+  auto &exponents{get_piece_exponents()};
+  auto &target_exponents{get_piece_target_exponents()};
+
+  for (slot_t i = 0; i < 4; i++) {
+    const auto element{get_element(board_element_type::row, i)};
+
+    switch (element.config) {
+
+    case board_element_configuration::OOXX:
+      if (exponents[element.data[2]] == exponents[element.data[3]]) {
+        target_slots[element.data[2]] = 3 + i * 4;
+        target_exponents[element.data[2]] += 1;
+        mark_stale(element.data[3]);
+      }
+      break;
+
+    case board_element_configuration::OXXX:
+      if (exponents[element.data[1]] == exponents[element.data[2]]) {
+        target_slots[element.data[1]] = 2 + i * 4;
+        target_exponents[element.data[1]] += 1;
+        mark_stale(element.data[2]);
+      } else if (exponents[element.data[2]] == exponents[element.data[3]]) {
+        target_slots[element.data[1]] = 2 + i * 4;
+        target_slots[element.data[2]] = 3 + i * 4;
+        target_exponents[element.data[2]] += 1;
+        mark_stale(element.data[3]);
+      }
+      break;
+
+    default:
+      break;
+    }
+  }
 }
 
-void mod_2048::pieces::update(double dt) noexcept {
+void mod_2048::pieces::update_positions(double dt) noexcept {
   using std::abs, std::sqrt;
 
   // These values must be fine tuned together
@@ -255,11 +292,13 @@ void mod_2048::pieces::update(double dt) noexcept {
   constexpr const float threshold{2.5f};
 
   auto &positions{get_piece_positions()};
+
   auto &slots{get_piece_slots()};
   auto &target_slots{get_piece_target_slots()};
 
   for (const auto &s : slots) {
     auto piece_id{s.first};
+
     auto src_slot{s.second};
     auto tgt_slot{target_slots.at(piece_id)};
 
@@ -280,6 +319,22 @@ void mod_2048::pieces::update(double dt) noexcept {
         const auto r_next{curr_pos + v * gsl::narrow_cast<float>(dt) * n_r};
         positions.at(piece_id) = r_next;
       }
+    }
+  }
+}
+
+void mod_2048::pieces::update_exponents() noexcept {
+  auto &exponents{get_piece_exponents()};
+  auto &target_exponents{get_piece_target_exponents()};
+
+  for (const auto &e : exponents) {
+    auto piece_id{e.first};
+
+    auto src_exp{e.second};
+    auto tgt_exp{target_exponents.at(piece_id)};
+
+    if (src_exp != tgt_exp) {
+      exponents.at(piece_id) = tgt_exp;
     }
   }
 }

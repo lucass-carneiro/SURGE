@@ -79,6 +79,7 @@ static mod_2048::pieces::piece_id_queue_t g_stale_pieces_queue{};
 static mod_2048::pieces::piece_positions_t g_piece_positions{};
 
 static mod_2048::pieces::piece_exponents_t g_piece_exponents{};
+static mod_2048::pieces::piece_exponents_t g_piece_target_exponents{};
 
 static mod_2048::pieces::piece_slots_t g_piece_slots{};
 static mod_2048::pieces::piece_slots_t g_piece_target_slots{};
@@ -119,6 +120,10 @@ auto mod_2048::pieces::get_piece_exponents() noexcept -> piece_exponents_t & {
   return g_piece_exponents;
 }
 
+auto mod_2048::pieces::get_piece_target_exponents() noexcept -> piece_exponents_t & {
+  return g_piece_target_exponents;
+}
+
 auto mod_2048::pieces::get_piece_slots() noexcept -> piece_slots_t & { return g_piece_slots; }
 
 auto mod_2048::pieces::get_piece_target_slots() noexcept -> piece_slots_t & {
@@ -138,7 +143,10 @@ auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
 
   // Store components
   g_piece_positions[id] = g_slot_coords[slot];
+
   g_piece_exponents[id] = exponent;
+  g_piece_target_exponents[id] = exponent;
+
   g_piece_slots[id] = slot;
   g_piece_target_slots[id] = slot;
 
@@ -151,9 +159,13 @@ void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
     log_warn("Unable to remove piece id %u because it is already non existant", piece_id);
   } else {
     g_piece_positions.erase(piece_id);
+
     g_piece_exponents.erase(piece_id);
+    g_piece_target_exponents.erase(piece_id);
+
     g_piece_slots.erase(piece_id);
     g_piece_target_slots.erase(piece_id);
+
     g_piece_id_queue.push_back(piece_id);
   }
 }
@@ -163,6 +175,8 @@ void mod_2048::pieces::mark_stale(piece_id_t piece) noexcept {
 }
 
 void mod_2048::pieces::remove_stale() noexcept {
+  log_warn("Removing stale pieces");
+
   for (const auto &p : g_stale_pieces_queue) {
     delete_piece(p);
   }
@@ -273,6 +287,11 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   debug_window::init(window);
 
   pieces::create_piece(1, 0);
+  pieces::create_piece(1, 2);
+
+  pieces::create_piece(2, 4);
+  pieces::create_piece(1, 5);
+  pieces::create_piece(1, 7);
 
   return 0;
 }
@@ -313,7 +332,6 @@ auto update(double dt) noexcept -> std::uint32_t {
   case static_cast<state_code_t>(game_state::merge_right):
     if (pieces::idle()) {
       pieces::merge_right();
-      log_warn("merge right");
       g_state_queue.pop_front();
     }
     break;
@@ -321,7 +339,7 @@ auto update(double dt) noexcept -> std::uint32_t {
   case static_cast<state_code_t>(game_state::piece_removal):
     if (pieces::idle()) {
       pieces::remove_stale();
-      log_warn("remove stale pieces");
+      pieces::update_exponents();
       g_state_queue.pop_front();
     }
     break;
@@ -338,7 +356,7 @@ auto update(double dt) noexcept -> std::uint32_t {
     return 0;
   }
 
-  pieces::update(dt);
+  pieces::update_positions(dt);
 
   return 0;
 }
@@ -353,7 +371,7 @@ void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
       g_state_queue.push_back(game_state::compress_right);
       g_state_queue.push_back(game_state::merge_right);
       g_state_queue.push_back(game_state::piece_removal);
-      g_state_queue.push_back(game_state::compress_right);
+      g_state_queue.push_back(game_state::compress_right); // TODO: May be unnecessary
       g_state_queue.push_back(game_state::add_piece);
       g_state_queue.push_back(game_state::idle);
     }
