@@ -17,14 +17,17 @@
 #  define SURGE_ERROR_BANNER "\033[36m[Thread ID: %lu]\033[m \033[1m\033[31mSURGE Error:\033[m "
 #  define SURGE_INFO_BANNER "\033[36m[Thread ID: %lu]\033[m \033[1m\033[32mSURGE Info:\033[m "
 #  define SURGE_WARN_BANNER "\033[36m[Thread ID: %lu]\033[m \033[1m\033[33mSURGE Warning:\033[m "
+#  define SURGE_DEBUG_BANNER "\033[36m[Thread ID: %lu]\033[m \033[1m\033[34mSURGE Warning:\033[m "
 #elif defined(SURGE_USE_LOG_COLOR) && defined(SURGE_SYSTEM_IS_POSIX)
 #  define SURGE_ERROR_BANNER "\033[36m[Thread ID: %i]\033[m \033[1m\033[31mSURGE Error:\033[m "
 #  define SURGE_INFO_BANNER "\033[36m[Thread ID: %i]\033[m \033[1m\033[32mSURGE Info:\033[m "
 #  define SURGE_WARN_BANNER "\033[36m[Thread ID: %i]\033[m \033[1m\033[33mSURGE Warning:\033[m "
+#  define SURGE_DEBUG_BANNER "\033[36m[Thread ID: %i]\033[m \033[1m\033[34mSURGE Debug Info:\033[m "
 #else
 #  define SURGE_ERROR_BANNER "[Thread ID: %i] SURGE Error: "
 #  define SURGE_INFO_BANNER "[Thread ID: %i] SURGE Info: "
 #  define SURGE_WARN_BANNER "[Thread ID: %i] SURGE Warning: "
+#  define SURGE_DEBUG_BANNER "[Thread ID: %i] SURGE Debug Info: "
 #endif
 
 #define log_error(format, ...)                                                                     \
@@ -35,5 +38,8 @@
 
 #define log_warn(format, ...)                                                                      \
   std::printf(SURGE_WARN_BANNER format "\n", SURGE_TID_FUNCTION __VA_OPT__(, ) __VA_ARGS__)
+
+#define log_debug(format, ...)                                                                     \
+  std::printf(SURGE_DEBUG_BANNER format "\n", SURGE_TID_FUNCTION __VA_OPT__(, ) __VA_ARGS__)
 
 #endif // SURGE_LOGGING_HPP

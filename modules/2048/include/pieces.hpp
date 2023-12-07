@@ -78,6 +78,8 @@ auto create_random(exponent_t last_exponent = 2) noexcept -> piece_id_t;
 
 auto idle() noexcept -> bool;
 
+void should_add_new_piece(bool v) noexcept;
+
 auto deflatten_slot(slot_t slot) noexcept -> board_address;
 auto get_element(board_element_type type, slot_t value) noexcept -> board_element;
 

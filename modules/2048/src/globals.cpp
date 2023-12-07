@@ -81,6 +81,8 @@ static mod_2048::pieces::piece_slots_t g_piece_target_slots{};
 
 static mod_2048::state_queue g_state_queue{};
 
+static bool g_should_add_new_piece{false};
+
 /*
  * Global handlers and accessors
  */
@@ -151,7 +153,7 @@ auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
 void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
   if (eastl::find(g_piece_id_queue.begin(), g_piece_id_queue.end(), piece_id)
       != g_piece_id_queue.end()) {
-    log_warn("Unable to remove piece id %u because it is already non existant", piece_id);
+    log_debug("Unable to remove piece id %u because it is already non existant", piece_id);
   } else {
     g_piece_positions.erase(piece_id);
 
@@ -170,13 +172,15 @@ void mod_2048::pieces::mark_stale(piece_id_t piece) noexcept {
 }
 
 void mod_2048::pieces::remove_stale() noexcept {
-  log_warn("Removing stale pieces");
+  log_debug("Removing stale pieces");
 
   while (g_stale_pieces_queue.size() != 0) {
     delete_piece(g_stale_pieces_queue.front());
     g_stale_pieces_queue.pop_front();
   }
 }
+
+void mod_2048::pieces::should_add_new_piece(bool v) noexcept { g_should_add_new_piece = v; }
 
 auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   using namespace mod_2048;
@@ -281,8 +285,10 @@ auto update(double dt) noexcept -> std::uint32_t {
 
   case static_cast<state_code_t>(game_state::add_piece):
     if (pieces::idle()) {
-      // pieces::create_random();
-      log_warn("add random piece");
+      if (g_should_add_new_piece) {
+        pieces::create_random();
+        g_should_add_new_piece = false;
+      }
       g_state_queue.pop_front();
     }
     break;

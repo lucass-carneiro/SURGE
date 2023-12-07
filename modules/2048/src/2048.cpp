@@ -11,19 +11,19 @@ auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
 
   glfwSetKeyCallback(window, keyboard_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind keyboard event callback");
+    log_debug("Unable to bind keyboard event callback");
     return static_cast<std::uint32_t>(mod_2048::error::keyboard_event_unbinding);
   }
 
   glfwSetMouseButtonCallback(window, mouse_button_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse button event callback");
+    log_debug("Unable to bind mouse button event callback");
     return static_cast<std::uint32_t>(mod_2048::error::mouse_button_event_unbinding);
   }
 
   glfwSetScrollCallback(window, mouse_scroll_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse scroll event callback");
+    log_debug("Unable to bind mouse scroll event callback");
     return static_cast<std::uint32_t>(mod_2048::error::mouse_scroll_event_unbinding);
   }
 
@@ -35,17 +35,17 @@ auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
 
   glfwSetKeyCallback(window, nullptr);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind keyboard event callback");
+    log_debug("Unable to unbind keyboard event callback");
   }
 
   glfwSetMouseButtonCallback(window, nullptr);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse button event callback");
+    log_debug("Unable to unbind mouse button event callback");
   }
 
   glfwSetScrollCallback(window, nullptr);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse scroll event callback");
+    log_debug("Unable to unbind mouse scroll event callback");
   }
 
   return 0;
