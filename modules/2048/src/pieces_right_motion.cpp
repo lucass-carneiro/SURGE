@@ -94,6 +94,7 @@ void mod_2048::pieces::merge_right() noexcept {
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
         mark_stale(element.data[3]);
+        should_add_new_piece(true);
       }
       break;
 
@@ -103,10 +104,12 @@ void mod_2048::pieces::merge_right() noexcept {
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
         mark_stale(element.data[3]);
+        should_add_new_piece(true);
       } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
         target_slots[element.data[1]] = 2 + i * 4;
         target_exponents[element.data[1]] += 1;
         mark_stale(element.data[2]);
+        should_add_new_piece(true);
       }
       break;
 
@@ -117,15 +120,18 @@ void mod_2048::pieces::merge_right() noexcept {
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
         mark_stale(element.data[3]);
+        should_add_new_piece(true);
       } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
         target_slots[element.data[0]] = 1 + i * 4;
         target_slots[element.data[1]] = 2 + i * 4;
         target_exponents[element.data[1]] += 1;
         mark_stale(element.data[2]);
+        should_add_new_piece(true);
       } else if (exponents[element.data[0]] == exponents[element.data[1]]) {
         target_slots[element.data[0]] = 1 + i * 4;
         target_exponents[element.data[0]] += 1;
         mark_stale(element.data[1]);
+        should_add_new_piece(true);
       }
       break;
 
