@@ -27,6 +27,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/draw.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces.cpp"
+  "${PROJECT_SOURCE_DIR}/src/globals.cpp"
 )
 
 # -----------------------------------------

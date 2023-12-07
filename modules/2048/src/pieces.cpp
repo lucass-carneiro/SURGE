@@ -266,15 +266,34 @@ void mod_2048::pieces::merge_right() noexcept {
       break;
 
     case board_element_configuration::OXXX:
-      if (exponents[element.data[1]] == exponents[element.data[2]]) {
-        target_slots[element.data[1]] = 2 + i * 4;
-        target_exponents[element.data[1]] += 1;
-        mark_stale(element.data[2]);
-      } else if (exponents[element.data[2]] == exponents[element.data[3]]) {
+      if (exponents[element.data[2]] == exponents[element.data[3]]) {
         target_slots[element.data[1]] = 2 + i * 4;
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
         mark_stale(element.data[3]);
+      } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
+        target_slots[element.data[1]] = 2 + i * 4;
+        target_exponents[element.data[1]] += 1;
+        mark_stale(element.data[2]);
+      }
+      break;
+
+    case board_element_configuration::XXXX:
+      if (exponents[element.data[2]] == exponents[element.data[3]]) {
+        target_slots[element.data[0]] = 1 + i * 4;
+        target_slots[element.data[1]] = 2 + i * 4;
+        target_slots[element.data[2]] = 3 + i * 4;
+        target_exponents[element.data[2]] += 1;
+        mark_stale(element.data[3]);
+      } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
+        target_slots[element.data[0]] = 1 + i * 4;
+        target_slots[element.data[1]] = 2 + i * 4;
+        target_exponents[element.data[1]] += 1;
+        mark_stale(element.data[2]);
+      } else if (exponents[element.data[0]] == exponents[element.data[1]]) {
+        target_slots[element.data[0]] = 1 + i * 4;
+        target_exponents[element.data[0]] += 1;
+        mark_stale(element.data[1]);
       }
       break;
 
