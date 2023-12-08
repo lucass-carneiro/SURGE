@@ -14,6 +14,7 @@
     5. [Build Commands](#build-commands)
     6. [Example Debug Build On Linux](#example-debug-build-on-linux)
     7. [Example Debug Build On Windows](#example-debug-build-on-windows)
+3. [Staging](#staging)
 
 # Phylosophy
 
@@ -122,3 +123,7 @@ git submodule update --remote
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug -j20
 ```
+
+# Staging
+
+TODO: Fill this section later
