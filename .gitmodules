@@ -5,3 +5,4 @@
 [submodule "triplets"]
 	path = triplets
 	url = https://github.com/Neumann-A/my-vcpkg-triplets
+	branch = master

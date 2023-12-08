@@ -1,4 +1,16 @@
 {
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "cmake.configureOnOpen": false,
+    "cmake.automaticReconfigure": false,
+    "cmake.configureOnEdit": false,
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.compilerArgs": [
+        "/Zc:preprocessor"
+    ],
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
     "clang-tidy.checks": [
         "modernize*",
         "cppcoreguidelines*",
@@ -10,14 +22,20 @@
         "-cppcoreguidelines-pro-type-vararg",
         "-cppcoreguidelines-macro-usage"
     ],
-    "editor.formatOnSave": true,
-    "editor.tabSize": 2,
-    "cmake.configureOnOpen": false,
-    "editor.inlayHints.enabled": "offUnlessPressed",
-    "C_Cpp.default.cppStandard": "c++20",
-    "C_Cpp.default.compilerArgs": [
-        "/Zc:preprocessor"
-    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "[markdown]": {
+        "editor.unicodeHighlight.ambiguousCharacters": true,
+        "editor.unicodeHighlight.invisibleCharacters": false,
+        "diffEditor.ignoreTrimWhitespace": false,
+        "editor.wordWrap": "off",
+        "editor.quickSuggestions": {
+            "comments": "on",
+            "strings": "on",
+            "other": "on"
+        }
+    },
     "files.associations": {
         ".clang-format": "yaml",
         "memory": "cpp",
@@ -108,12 +126,5 @@
         "cstdarg": "cpp",
         "any": "cpp",
         "valarray": "cpp"
-    },
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.autopep8"
-    },
-    "cmake.automaticReconfigure": false,
-    "cmake.configureOnEdit": false,
-    "C_Cpp.formatting": "clangFormat",
-    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    }
 }
