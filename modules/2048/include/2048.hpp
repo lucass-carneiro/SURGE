@@ -78,6 +78,8 @@ auto get_slot_size() noexcept -> float;
 
 auto get_slot_delta() noexcept -> float;
 
+auto inside_new_game_button(double x, double y) noexcept -> bool;
+
 auto view_state_queue() noexcept -> const state_queue &;
 auto get_state_queue() noexcept -> state_queue &;
 

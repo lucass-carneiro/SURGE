@@ -4,14 +4,14 @@ window:
   windowed: true
   cursor: true
   resolution:
-    width: 454
-    height: 454
+    width: 500
+    height: 800
   VSync:
     enabled: true
 renderer:
   clear_color:
-    r: 0.2
-    g: 0.3
-    b: 0.3
+    r: 0.980
+    g: 0.973
+    b: 0.937
     a: 1.0
 modules: ["2048"]

@@ -193,11 +193,11 @@ auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexce
   return element;
 }
 
-void mod_2048::pieces::update_positions(double dt) noexcept {
+void mod_2048::pieces::update_positions(double) noexcept {
   using std::abs, std::sqrt;
 
   // These values must be fine tuned together
-  const float v{get_slot_delta() / 0.25f};
+  const float v{(get_slot_delta() * 0.125f)}; // Divide by dt
   constexpr const float threshold{2.5f};
 
   auto &positions{get_piece_positions()};
@@ -225,7 +225,7 @@ void mod_2048::pieces::update_positions(double dt) noexcept {
         positions.at(piece_id) = tgt_slot_pos;
       } else {
         const auto n_r{delta_r / delta_r_length};
-        const auto r_next{curr_pos + v * gsl::narrow_cast<float>(dt) * n_r};
+        const auto r_next{curr_pos + v * n_r}; // Multiply by dt. dt cancels
         positions.at(piece_id) = r_next;
       }
     }

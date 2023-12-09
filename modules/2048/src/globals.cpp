@@ -28,44 +28,52 @@ static mod_2048::draw_t g_board_draw_data{};
 
 // clang-format off
 static const mod_2048::texture_origins_t g_piece_texture_origins{
-  glm::vec2{1.0f  , 1.0f  },
-  glm::vec2{104.0f, 1.0f  },
-  glm::vec2{207.0f, 1.0f  },
-  glm::vec2{310.0f, 1.0f  },
-  glm::vec2{1.0f  , 104.0f},
-  glm::vec2{104.0f, 104.0f},
-  glm::vec2{207.0f, 104.0f},
-  glm::vec2{310.0f, 104.0f},
-  glm::vec2{1.0f  , 207.0f},
-  glm::vec2{104.0f, 207.0f},
-  glm::vec2{207.0f, 207.0f}
+  glm::vec2{1.0f  , 1.0f},
+  glm::vec2{107.0f, 1.0f},
+  glm::vec2{213.0f, 1.0f},
+  glm::vec2{319.0f, 1.0f},
+
+  glm::vec2{1.0f  , 107.0f},
+  glm::vec2{107.0f, 107.0f},
+  glm::vec2{213.0f, 107.0f},
+  glm::vec2{319.0f, 107.0f},
+
+  glm::vec2{1.0f  , 213.0f},
+  glm::vec2{107.0f, 213.0f},
+  glm::vec2{213.0f, 213.0f}
 };
 // clang-format on
 
 // clang-format off
 static const mod_2048::slot_coords_t g_slot_coords {
-  glm::vec3{9.0f  , 9.0f  , 0.1f},
-  glm::vec3{120.0f, 9.0f  , 0.1f},
-  glm::vec3{231.0f, 9.0f  , 0.1f},
-  glm::vec3{342.0f, 9.0f  , 0.1f},
-  glm::vec3{9.0f  , 120.0f, 0.1f},
-  glm::vec3{120.0f, 120.0f, 0.1f},
-  glm::vec3{231.0f, 120.0f, 0.1f},
-  glm::vec3{342.0f, 120.0f, 0.1f},
-  glm::vec3{9.0f  , 231.0f, 0.1f},
-  glm::vec3{120.0f, 231.0f, 0.1f},
-  glm::vec3{231.0f, 231.0f, 0.1f},
-  glm::vec3{342.0f, 231.0f, 0.1f},
-  glm::vec3{9.0f  , 342.0f, 0.1f},
-  glm::vec3{120.0f, 342.0f, 0.1f},
-  glm::vec3{231.0f, 342.0f, 0.1f},
-  glm::vec3{342.0f, 342.0f, 0.1f}
+  glm::vec3{15.0f , 315.0f, 0.1f},
+  glm::vec3{136.0f, 315.0f, 0.1f},
+  glm::vec3{257.0f, 315.0f, 0.1f},
+  glm::vec3{378.0f, 315.0f, 0.1f},
+
+  glm::vec3{15.0f , 436.0f, 0.1f},
+  glm::vec3{136.0f, 436.0f, 0.1f},
+  glm::vec3{257.0f, 436.0f, 0.1f},
+  glm::vec3{378.0f, 436.0f, 0.1f},
+
+  glm::vec3{15.0f , 557.0f, 0.1f},
+  glm::vec3{136.0f, 557.0f, 0.1f},
+  glm::vec3{257.0f, 557.0f, 0.1f},
+  glm::vec3{378.0f, 557.0f, 0.1f},
+
+  glm::vec3{15.0f , 678.0f, 0.1f},
+  glm::vec3{136.0f, 678.0f, 0.1f},
+  glm::vec3{257.0f, 678.0f, 0.1f},
+  glm::vec3{378.0f, 678.0f, 0.1f}
 };
 // clang-format on
 
-static const float g_slot_size = 102.0f;
+static const float g_slot_size = 105.0f;
 
 static const float g_slot_delta = g_slot_coords[1][0] - g_slot_coords[0][0];
+
+static const glm::vec2 g_new_game_button_corner{358.0, 66.0};
+static const glm::vec2 g_new_game_button_extent{138.0, 40.0};
 
 static mod_2048::pieces::piece_id_queue_t g_piece_id_queue{};
 
@@ -108,6 +116,14 @@ auto mod_2048::get_slot_coords() noexcept -> const slot_coords_t & { return g_sl
 auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
 
 auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
+
+auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {
+  const auto in_x{g_new_game_button_corner[0] < x
+                  && x < (g_new_game_button_corner[0] + g_new_game_button_extent[0])};
+  const auto in_y{g_new_game_button_corner[1] < y
+                  && y < (g_new_game_button_corner[1] + g_new_game_button_extent[1])};
+  return in_x && in_y;
+}
 
 auto mod_2048::pieces::get_piece_positions() noexcept -> piece_positions_t & {
   return g_piece_positions;

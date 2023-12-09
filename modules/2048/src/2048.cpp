@@ -4,6 +4,7 @@
 
 // clang-format off
 #include "debug_window.hpp"
+#include <GLFW/glfw3.h>
 // clang-format on
 
 auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
@@ -65,6 +66,15 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 void mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
+  // New Game button click
+  double xpos{0}, ypos{0};
+  glfwGetCursorPos(window, &xpos, &ypos);
+  if (mod_2048::inside_new_game_button(xpos, ypos) && button == GLFW_MOUSE_BUTTON_LEFT
+      && action == GLFW_PRESS) {
+    log_debug("New Game clicked");
+  }
+
+  // ImGui window clicks
   ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 }
 
