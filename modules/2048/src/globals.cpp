@@ -91,6 +91,9 @@ static mod_2048::state_queue g_state_queue{};
 
 static bool g_should_add_new_piece{false};
 
+static mod_2048::points_t g_game_points{0};
+static mod_2048::points_t g_best_score{0};
+
 /*
  * Global handlers and accessors
  */
@@ -116,6 +119,9 @@ auto mod_2048::get_slot_coords() noexcept -> const slot_coords_t & { return g_sl
 auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
 
 auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
+
+auto mod_2048::get_game_points() noexcept -> points_t { return g_game_points; }
+void mod_2048::add_game_points(points_t points) noexcept { g_game_points += points; }
 
 auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {
   const auto in_x{g_new_game_button_corner[0] < x
@@ -207,6 +213,13 @@ void mod_2048::new_game() noexcept {
   g_piece_target_slots.clear();
   g_piece_id_queue.clear();
   g_state_queue.clear();
+
+  if (g_game_points > g_best_score) {
+    g_best_score = g_game_points;
+  }
+
+  g_game_points = 0;
+  log_debug("Best score %lu", g_best_score);
 
   // Reset piece ID queue
   for (pieces::piece_id_t i = 0; i < 16; i++) {
@@ -317,6 +330,7 @@ auto update(double dt) noexcept -> std::uint32_t {
     if (pieces::idle()) {
       pieces::remove_stale();
       pieces::update_exponents();
+      log_debug("Update game points: %lu", get_game_points());
       g_state_queue.pop_front();
     }
     break;

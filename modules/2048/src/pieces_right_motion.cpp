@@ -1,5 +1,8 @@
+#include "2048.hpp"
 #include "logging.hpp"
 #include "pieces.hpp"
+
+#include <cstdint>
 
 void mod_2048::pieces::compress_right() noexcept {
   log_debug("Compressing right");
@@ -80,6 +83,8 @@ void mod_2048::pieces::compress_right() noexcept {
 void mod_2048::pieces::merge_right() noexcept {
   log_debug("Merging right");
 
+  points_t round_points{0};
+
   auto &target_slots{get_piece_target_slots()};
   auto &exponents{get_piece_exponents()};
   auto &target_exponents{get_piece_target_exponents()};
@@ -93,6 +98,7 @@ void mod_2048::pieces::merge_right() noexcept {
       if (exponents[element.data[2]] == exponents[element.data[3]]) {
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
+        round_points += 1 << target_exponents[element.data[2]];
         mark_stale(element.data[3]);
         should_add_new_piece(true);
       }
@@ -103,11 +109,13 @@ void mod_2048::pieces::merge_right() noexcept {
         target_slots[element.data[1]] = 2 + i * 4;
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
+        round_points += 1 << target_exponents[element.data[2]];
         mark_stale(element.data[3]);
         should_add_new_piece(true);
       } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
         target_slots[element.data[1]] = 2 + i * 4;
         target_exponents[element.data[1]] += 1;
+        round_points += 1 << target_exponents[element.data[1]];
         mark_stale(element.data[2]);
         should_add_new_piece(true);
       }
@@ -119,17 +127,20 @@ void mod_2048::pieces::merge_right() noexcept {
         target_slots[element.data[1]] = 2 + i * 4;
         target_slots[element.data[2]] = 3 + i * 4;
         target_exponents[element.data[2]] += 1;
+        round_points += 1 << target_exponents[element.data[2]];
         mark_stale(element.data[3]);
         should_add_new_piece(true);
       } else if (exponents[element.data[1]] == exponents[element.data[2]]) {
         target_slots[element.data[0]] = 1 + i * 4;
         target_slots[element.data[1]] = 2 + i * 4;
         target_exponents[element.data[1]] += 1;
+        round_points += 1 << target_exponents[element.data[1]];
         mark_stale(element.data[2]);
         should_add_new_piece(true);
       } else if (exponents[element.data[0]] == exponents[element.data[1]]) {
         target_slots[element.data[0]] = 1 + i * 4;
         target_exponents[element.data[0]] += 1;
+        round_points += 1 << target_exponents[element.data[0]];
         mark_stale(element.data[1]);
         should_add_new_piece(true);
       }
@@ -139,4 +150,7 @@ void mod_2048::pieces::merge_right() noexcept {
       break;
     }
   }
+
+  log_debug("Round points: %lu", round_points);
+  add_game_points(round_points);
 }

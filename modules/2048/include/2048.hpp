@@ -46,7 +46,7 @@ enum class game_state : state_code_t {
   merge_left = 7,
   merge_right = 8,
   piece_removal = 9,
-  add_piece = 10,
+  add_piece = 10
 };
 
 using state_queue = eastl::deque<game_state, surge::allocators::eastl::gp_allocator>;
@@ -72,6 +72,8 @@ auto get_piece_texture_origins() noexcept -> texture_origins_t &;
 
 using slot_coords_t = const std::array<glm::vec3, 16>;
 
+using points_t = std::uint64_t;
+
 auto get_slot_coords() noexcept -> const slot_coords_t &;
 
 auto get_slot_size() noexcept -> float;
@@ -83,6 +85,9 @@ void new_game() noexcept;
 
 auto view_state_queue() noexcept -> const state_queue &;
 auto get_state_queue() noexcept -> state_queue &;
+
+auto get_game_points() noexcept -> points_t;
+void add_game_points(points_t points) noexcept;
 
 } // namespace mod_2048
 
