@@ -71,7 +71,8 @@ void mouse_button_event(GLFWwindow *window, int button, int action, int mods) no
   glfwGetCursorPos(window, &xpos, &ypos);
   if (mod_2048::inside_new_game_button(xpos, ypos) && button == GLFW_MOUSE_BUTTON_LEFT
       && action == GLFW_PRESS) {
-    log_debug("New Game clicked");
+    log_debug("Starting new game");
+    mod_2048::new_game();
   }
 
   // ImGui window clicks

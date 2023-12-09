@@ -43,8 +43,8 @@ void mod_2048::pieces::compress_right() noexcept {
       break;
 
     case board_element_configuration::OXXO:
-      target_slots[element.data[1]] = 2;
-      target_slots[element.data[2]] = 3;
+      target_slots[element.data[1]] = 2 + i * 4;
+      target_slots[element.data[2]] = 3 + i * 4;
       should_add_new_piece(true);
       break;
 

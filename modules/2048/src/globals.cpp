@@ -198,6 +198,28 @@ void mod_2048::pieces::remove_stale() noexcept {
 
 void mod_2048::pieces::should_add_new_piece(bool v) noexcept { g_should_add_new_piece = v; }
 
+void mod_2048::new_game() noexcept {
+  // Clear all state
+  g_piece_positions.clear();
+  g_piece_exponents.clear();
+  g_piece_target_exponents.clear();
+  g_piece_slots.clear();
+  g_piece_target_slots.clear();
+  g_piece_id_queue.clear();
+  g_state_queue.clear();
+
+  // Reset piece ID queue
+  for (pieces::piece_id_t i = 0; i < 16; i++) {
+    g_piece_id_queue.push_back(i);
+  }
+
+  // Init state stack
+  g_state_queue.push_back(game_state::idle);
+
+  pieces::create_random();
+  pieces::create_random();
+}
+
 auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   using namespace mod_2048;
   using namespace surge;
