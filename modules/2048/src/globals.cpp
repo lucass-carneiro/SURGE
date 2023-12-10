@@ -219,7 +219,7 @@ void mod_2048::new_game() noexcept {
   }
 
   g_game_points = 0;
-  log_debug("Best score %lu", g_best_score);
+  log_debug("Best score %llu", g_best_score);
 
   // Reset piece ID queue
   for (pieces::piece_id_t i = 0; i < 16; i++) {
@@ -330,7 +330,7 @@ auto update(double dt) noexcept -> std::uint32_t {
     if (pieces::idle()) {
       pieces::remove_stale();
       pieces::update_exponents();
-      log_debug("Update game points: %lu", get_game_points());
+      log_debug("Update game points: %llu", get_game_points());
       g_state_queue.pop_front();
     }
     break;

@@ -151,6 +151,6 @@ void mod_2048::pieces::merge_right() noexcept {
     }
   }
 
-  log_debug("Round points: %lu", round_points);
+  log_debug("Round points: %llu", round_points);
   add_game_points(round_points);
 }
