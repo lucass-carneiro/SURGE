@@ -4,6 +4,7 @@
 // clang-format off
 #include "pieces.hpp"
 #include "debug_window.hpp"
+#include "static_image.hpp"
 // clang-format on
 
 #include <glm/ext/matrix_clip_space.hpp>
@@ -21,6 +22,7 @@ static const auto g_view_matrix{glm::lookAt(
 
 static mod_2048::buffer_t g_board_buffer{};
 static mod_2048::buffer_t g_pieces_buffer{};
+static mod_2048::buffer_t g_numbers_buffer{};
 
 static GLuint g_img_shader{};
 
@@ -105,6 +107,8 @@ auto mod_2048::get_view() noexcept -> const glm::mat4 & { return g_view_matrix; 
 auto mod_2048::get_board_buffer() noexcept -> const buffer_t & { return g_board_buffer; }
 
 auto mod_2048::get_pieces_buffer() noexcept -> const buffer_t & { return g_pieces_buffer; }
+
+auto mod_2048::get_numbers_buffer() noexcept -> const buffer_t & { return g_numbers_buffer; }
 
 auto mod_2048::get_img_shader() noexcept -> GLuint { return g_img_shader; }
 
@@ -270,6 +274,13 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
     return static_cast<std::uint32_t>(error::pieces_img_load);
   }
   g_pieces_buffer = *pieces_buffer;
+
+  // Load Numbers image
+  const auto numbers_buffer{static_image::create("resources/numbers.png")};
+  if (!numbers_buffer) {
+    return static_cast<std::uint32_t>(error::numbers_img_load);
+  }
+  g_numbers_buffer = *numbers_buffer;
 
   // Init board draw data
   g_board_draw_data.projection = g_projection_matrix;

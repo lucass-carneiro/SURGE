@@ -32,6 +32,7 @@ enum class error : std::uint32_t {
   img_shader_load,
   board_img_load,
   pieces_img_load,
+  numbers_img_load,
 };
 
 using state_code_t = unsigned short;
@@ -62,6 +63,7 @@ using draw_t = surge::atom::static_image::one_draw_data;
 
 auto get_board_buffer() noexcept -> const buffer_t &;
 auto get_pieces_buffer() noexcept -> const buffer_t &;
+auto get_numbers_buffer() noexcept -> const buffer_t &;
 auto get_img_shader() noexcept -> GLuint;
 
 auto get_board_draw_data() noexcept -> const draw_t &;
