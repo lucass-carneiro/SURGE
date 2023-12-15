@@ -74,7 +74,7 @@ auto get_piece_texture_origins() noexcept -> texture_origins_t &;
 
 using slot_coords_t = const std::array<glm::vec3, 16>;
 
-using points_t = std::uint64_t;
+using points_t = unsigned long long;
 
 auto get_slot_coords() noexcept -> const slot_coords_t &;
 
