@@ -19,6 +19,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/2048.hpp"
   "${PROJECT_SOURCE_DIR}/include/debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/pieces.hpp"
+  "${PROJECT_SOURCE_DIR}/include/score.hpp"
 )
 
 set(
@@ -29,6 +30,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/globals.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces_right_motion.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces.cpp"
+  "${PROJECT_SOURCE_DIR}/src/score.cpp"
 )
 
 # -----------------------------------------

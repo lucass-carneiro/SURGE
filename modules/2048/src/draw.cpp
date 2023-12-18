@@ -1,6 +1,7 @@
 #include "2048.hpp"
 #include "debug_window.hpp"
 #include "pieces.hpp"
+#include "score.hpp"
 #include "static_image.hpp"
 
 auto draw() noexcept -> std::uint32_t {
@@ -13,6 +14,8 @@ auto draw() noexcept -> std::uint32_t {
   pieces::draw();
 
   debug_window::draw();
+
+  score::draw();
 
   return 0;
 }

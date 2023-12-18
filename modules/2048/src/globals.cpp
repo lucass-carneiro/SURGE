@@ -124,7 +124,7 @@ auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
 
 auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
 
-auto mod_2048::get_game_points() noexcept -> points_t { return g_game_points; }
+auto mod_2048::get_game_points() noexcept -> points_t & { return g_game_points; }
 void mod_2048::add_game_points(points_t points) noexcept { g_game_points += points; }
 
 auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {

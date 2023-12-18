@@ -88,7 +88,7 @@ void new_game() noexcept;
 auto view_state_queue() noexcept -> const state_queue &;
 auto get_state_queue() noexcept -> state_queue &;
 
-auto get_game_points() noexcept -> points_t;
+auto get_game_points() noexcept -> points_t &;
 void add_game_points(points_t points) noexcept;
 
 } // namespace mod_2048
