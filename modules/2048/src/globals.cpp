@@ -4,7 +4,7 @@
 // clang-format off
 #include "pieces.hpp"
 #include "debug_window.hpp"
-#include "static_image.hpp"
+#include "text.hpp"
 // clang-format on
 
 #include <glm/ext/matrix_clip_space.hpp>
@@ -22,9 +22,12 @@ static const auto g_view_matrix{glm::lookAt(
 
 static mod_2048::buffer_t g_board_buffer{};
 static mod_2048::buffer_t g_pieces_buffer{};
-static mod_2048::buffer_t g_numbers_buffer{};
+
+static mod_2048::text_buffer_t g_text_buffer{};
+static mod_2048::text_charmap_t g_text_charmap{};
 
 static GLuint g_img_shader{};
+static GLuint g_txt_shader{};
 
 static mod_2048::draw_t g_board_draw_data{};
 
@@ -108,9 +111,13 @@ auto mod_2048::get_board_buffer() noexcept -> const buffer_t & { return g_board_
 
 auto mod_2048::get_pieces_buffer() noexcept -> const buffer_t & { return g_pieces_buffer; }
 
-auto mod_2048::get_numbers_buffer() noexcept -> const buffer_t & { return g_numbers_buffer; }
+auto mod_2048::get_text_buffer() noexcept -> const text_buffer_t & { return g_text_buffer; }
+
+auto mod_2048::get_text_charmap() noexcept -> const text_charmap_t & { return g_text_charmap; }
 
 auto mod_2048::get_img_shader() noexcept -> GLuint { return g_img_shader; }
+
+auto mod_2048::get_txt_shader() noexcept -> GLuint { return g_txt_shader; }
 
 auto mod_2048::get_board_draw_data() noexcept -> const draw_t & { return g_board_draw_data; }
 
@@ -124,8 +131,8 @@ auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
 
 auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
 
-auto mod_2048::get_game_points() noexcept -> points_t & { return g_game_points; }
-void mod_2048::add_game_points(points_t points) noexcept { g_game_points += points; }
+auto mod_2048::get_game_score() noexcept -> points_t & { return g_game_points; }
+void mod_2048::add_game_score(points_t points) noexcept { g_game_points += points; }
 
 auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {
   const auto in_x{g_new_game_button_corner[0] < x
@@ -260,9 +267,15 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   }
   g_img_shader = *img_shader;
 
-  // Load board image2
-  // const auto board_buffer{static_image::create("resources/board_normal.png")};
-  const auto board_buffer{static_image::create("resources/board_debug.png")};
+  // Load text rendering shader
+  const auto text_shader{renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
+  if (!text_shader) {
+    return static_cast<std::uint32_t>(error::img_shader_load);
+  }
+  g_txt_shader = *text_shader;
+
+  // Load board image
+  const auto board_buffer{static_image::create("resources/board.png")};
   if (!board_buffer) {
     return static_cast<std::uint32_t>(error::board_img_load);
   }
@@ -275,12 +288,21 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   }
   g_pieces_buffer = *pieces_buffer;
 
-  // Load Numbers image
-  const auto numbers_buffer{static_image::create("resources/numbers.png")};
-  if (!numbers_buffer) {
-    return static_cast<std::uint32_t>(error::numbers_img_load);
+  // Load font cache
+  text::font_name_vec_t fonts{"resources/clear-sans/ClearSans-Bold.ttf",
+                              "resources/clear-sans/ClearSans-Regular.ttf",
+                              "resources/clear-sans/ClearSans-Medium.ttf"};
+  const auto text_buffer{text::create(fonts)};
+  if (!text_buffer) {
+    return static_cast<std::uint32_t>(error::fonts_load);
   }
-  g_numbers_buffer = *numbers_buffer;
+  g_text_buffer = *text_buffer;
+
+  const auto text_charmap{text::create_charmap(g_text_buffer, 25)};
+  if (!text_charmap) {
+    return static_cast<std::uint32_t>(error::charmap_create);
+  }
+  g_text_charmap = *text_charmap;
 
   // Init board draw data
   g_board_draw_data.projection = g_projection_matrix;
@@ -318,6 +340,21 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   return 0;
 }
 
+auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+  using namespace surge::atom;
+  using namespace mod_2048;
+
+  const auto unbind_callback_stat{unbind_callbacks(window)};
+  if (unbind_callback_stat != 0) {
+    return unbind_callback_stat;
+  }
+
+  text::terminate(g_text_buffer);
+  debug_window::cleanup();
+
+  return 0;
+}
+
 auto update(double dt) noexcept -> std::uint32_t {
   using namespace mod_2048;
 
@@ -341,7 +378,7 @@ auto update(double dt) noexcept -> std::uint32_t {
     if (pieces::idle()) {
       pieces::remove_stale();
       pieces::update_exponents();
-      log_debug("Update game points: %llu", get_game_points());
+      log_debug("Update game points: %llu", get_game_score());
       g_state_queue.pop_front();
     }
     break;

@@ -31,6 +31,8 @@ enum class blend_src : GLenum { alpha = GL_SRC_ALPHA };
 
 enum class blend_dest : GLenum { one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA };
 
+enum class texture_filtering : GLenum { nearest = GL_NEAREST, linear = GL_LINEAR };
+
 void enable(const capability cap) noexcept;
 void disable(const capability cap) noexcept;
 

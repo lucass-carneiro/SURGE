@@ -52,19 +52,6 @@ auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
   return 0;
 }
 
-auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
-  using namespace mod_2048;
-
-  const auto unbind_callback_stat{unbind_callbacks(window)};
-  if (unbind_callback_stat != 0) {
-    return unbind_callback_stat;
-  }
-
-  debug_window::cleanup();
-
-  return 0;
-}
-
 void mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
   // New Game button click
   double xpos{0}, ypos{0};

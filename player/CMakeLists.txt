@@ -36,6 +36,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/static_image.hpp"
   "${PROJECT_SOURCE_DIR}/include/static_mesh.hpp"
+  "${PROJECT_SOURCE_DIR}/include/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
@@ -52,6 +53,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/static_image.cpp"
   "${PROJECT_SOURCE_DIR}/src/static_mesh.cpp"
+  "${PROJECT_SOURCE_DIR}/src/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
   "${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
@@ -176,4 +178,5 @@ target_link_libraries(SurgePlayer PUBLIC
   OpenGL::GL
   glad::glad
   imgui::imgui
+  Freetype::Freetype
 )

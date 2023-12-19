@@ -37,6 +37,12 @@
         "glfw-binding",
         "opengl3-binding"
       ]
+    },
+    {
+      "name": "freetype",
+      "features": [
+        "error-strings"
+      ]
     }
   ]
 }

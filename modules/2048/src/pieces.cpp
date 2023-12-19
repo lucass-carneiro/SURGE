@@ -21,9 +21,6 @@ void mod_2048::pieces::draw() noexcept {
 
   const auto &slot_size{get_slot_size()};
 
-  // const glm::vec3 scale{slot_size, slot_size, 1.0f};
-  // const glm::vec2 img_scale{slot_size, slot_size};
-
   draw_t piece;
   piece.projection = get_projection();
   piece.view = get_view();

@@ -21,7 +21,8 @@
 
 #include <gsl/gsl-lite.hpp>
 
-auto surge::atom::static_image::create(const char *p) noexcept
+auto surge::atom::static_image::create(const char *p,
+                                       renderer::texture_filtering filtering) noexcept
     -> tl::expected<one_buffer_data, error> {
   /**************
    * Load Image *
@@ -61,8 +62,8 @@ auto surge::atom::static_image::create(const char *p) noexcept
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   // Filtering
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(filtering));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(filtering));
 
   // Loading and mip mapping
   const int format{channels_in_file == 4 ? GL_RGBA : GL_RGB};

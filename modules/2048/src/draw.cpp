@@ -3,6 +3,7 @@
 #include "pieces.hpp"
 #include "score.hpp"
 #include "static_image.hpp"
+#include "text.hpp"
 
 auto draw() noexcept -> std::uint32_t {
   using namespace mod_2048;

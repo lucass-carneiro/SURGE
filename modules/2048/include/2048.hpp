@@ -4,6 +4,7 @@
 #include "allocators.hpp"
 #include "options.hpp"
 #include "static_image.hpp"
+#include "text.hpp"
 #include "window.hpp"
 
 #include <EASTL/deque.h>
@@ -30,9 +31,12 @@ enum class error : std::uint32_t {
   mouse_button_event_unbinding,
   mouse_scroll_event_unbinding,
   img_shader_load,
+  txt_shader_load,
   board_img_load,
   pieces_img_load,
   numbers_img_load,
+  fonts_load,
+  charmap_create
 };
 
 using state_code_t = unsigned short;
@@ -63,8 +67,14 @@ using draw_t = surge::atom::static_image::one_draw_data;
 
 auto get_board_buffer() noexcept -> const buffer_t &;
 auto get_pieces_buffer() noexcept -> const buffer_t &;
-auto get_numbers_buffer() noexcept -> const buffer_t &;
+
+using text_buffer_t = surge::atom::text::buffer_data;
+using text_charmap_t = surge::atom::text::charmap_data;
+auto get_text_buffer() noexcept -> const text_buffer_t &;
+auto get_text_charmap() noexcept -> const text_charmap_t &;
+
 auto get_img_shader() noexcept -> GLuint;
+auto get_txt_shader() noexcept -> GLuint;
 
 auto get_board_draw_data() noexcept -> const draw_t &;
 
@@ -88,8 +98,8 @@ void new_game() noexcept;
 auto view_state_queue() noexcept -> const state_queue &;
 auto get_state_queue() noexcept -> state_queue &;
 
-auto get_game_points() noexcept -> points_t &;
-void add_game_points(points_t points) noexcept;
+auto get_game_score() noexcept -> points_t &;
+void add_game_score(points_t points) noexcept;
 
 } // namespace mod_2048
 

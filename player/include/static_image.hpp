@@ -72,7 +72,9 @@ struct draw_data {
   vec<bool> v_flip{false};
 };
 
-auto create(const char *p) noexcept -> tl::expected<one_buffer_data, error>;
+auto create(const char *p,
+            renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
+    -> tl::expected<one_buffer_data, error>;
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
 void draw(GLuint shader_program, const one_buffer_data &&ctx, one_draw_data &&dctx) noexcept;
