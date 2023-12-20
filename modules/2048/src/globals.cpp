@@ -375,6 +375,20 @@ auto update(double dt) noexcept -> std::uint32_t {
     }
     break;
 
+  case static_cast<state_code_t>(game_state::compress_left):
+    if (pieces::idle()) {
+      pieces::compress_left();
+      g_state_queue.pop_front();
+    }
+    break;
+
+  case static_cast<state_code_t>(game_state::merge_left):
+    if (pieces::idle()) {
+      pieces::merge_left();
+      g_state_queue.pop_front();
+    }
+    break;
+
   case static_cast<state_code_t>(game_state::piece_removal):
     if (pieces::idle()) {
       pieces::remove_stale();
@@ -414,6 +428,15 @@ void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
       g_state_queue.push_back(game_state::merge_right);
       g_state_queue.push_back(game_state::piece_removal);
       g_state_queue.push_back(game_state::compress_right); // TODO: May be unnecessary
+      g_state_queue.push_back(game_state::add_piece);
+      g_state_queue.push_back(game_state::idle);
+
+    } else if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+      g_state_queue.pop_front();
+      g_state_queue.push_back(game_state::compress_left);
+      g_state_queue.push_back(game_state::merge_left);
+      g_state_queue.push_back(game_state::piece_removal);
+      g_state_queue.push_back(game_state::compress_left); // TODO: May be unnecessary
       g_state_queue.push_back(game_state::add_piece);
       g_state_queue.push_back(game_state::idle);
     }

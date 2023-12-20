@@ -86,6 +86,9 @@ auto get_element(board_element_type type, slot_t value) noexcept -> board_elemen
 void compress_right() noexcept;
 void merge_right() noexcept;
 
+void compress_left() noexcept;
+void merge_left() noexcept;
+
 void mark_stale(piece_id_t piece) noexcept;
 void remove_stale() noexcept;
 
