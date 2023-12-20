@@ -100,6 +100,7 @@ auto get_state_queue() noexcept -> state_queue &;
 
 auto get_game_score() noexcept -> points_t &;
 void add_game_score(points_t points) noexcept;
+auto get_best_score() noexcept -> points_t &;
 
 } // namespace mod_2048
 

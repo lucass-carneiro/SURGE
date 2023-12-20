@@ -3,12 +3,16 @@
 #include "logging.hpp"
 
 // clang-format off
+#include <cstdint>
 #include <freetype/freetype.h>
 #include <freetype/ftsystem.h>
 #include <freetype/ftmodapi.h>
 // clang-format on
 
+#include <algorithm>
+#include <cstdio>
 #include <gsl/gsl-lite.hpp>
+#include <limits>
 #include <tl/expected.hpp>
 
 static auto FT_malloc(FT_Memory, long size) noexcept -> void * {
@@ -188,6 +192,11 @@ void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const
 
   for (const auto &c : text) {
 
+    // Skip null character
+    if (c == '\0') {
+      continue;
+    }
+
     const auto char_idx{static_cast<std::size_t>(c - char_start)
                         + dd.face_idx * (cd.chars_per_face + 1)};
 
@@ -249,4 +258,17 @@ void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const
      */
     x += gsl::narrow_cast<float>(cd.advances[char_idx] >> 6) * dd.scale;
   }
+}
+
+void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
+                             const draw_data &dd, unsigned long long number) noexcept {
+  using std::snprintf;
+
+  // Parse number into array of digits (repreented by chars)
+  constexpr auto max_score_digits{std::numeric_limits<unsigned long long>::digits10};
+  std::array<char, max_score_digits + 1> digits{};
+  std::fill(digits.begin(), digits.end(), '\0');
+  snprintf(digits.data(), max_score_digits, "%llu", number);
+
+  draw(shader_program, bd, cd, dd, digits.data());
 }

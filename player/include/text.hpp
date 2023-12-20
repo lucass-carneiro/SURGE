@@ -75,6 +75,9 @@ auto create_charmap(buffer_data &data, FT_UInt pixel_height,
 void draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd, const draw_data &dd,
           std::string_view text, float extra_vskip = 5.0f) noexcept;
 
+void draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd, const draw_data &dd,
+          unsigned long long number) noexcept;
+
 } // namespace surge::atom::text
 
 #endif // SURGE_ATOM_TEXT
