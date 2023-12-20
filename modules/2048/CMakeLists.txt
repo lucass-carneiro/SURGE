@@ -28,8 +28,10 @@ set(
   "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/draw.cpp"
   "${PROJECT_SOURCE_DIR}/src/globals.cpp"
+  "${PROJECT_SOURCE_DIR}/src/pieces_down_motion.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces_left_motion.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces_right_motion.cpp"
+  "${PROJECT_SOURCE_DIR}/src/pieces_up_motion.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces.cpp"
   "${PROJECT_SOURCE_DIR}/src/score.cpp"
 )

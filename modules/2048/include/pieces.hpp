@@ -89,6 +89,12 @@ void merge_right() noexcept;
 void compress_left() noexcept;
 void merge_left() noexcept;
 
+void compress_up() noexcept;
+void merge_up() noexcept;
+
+void compress_down() noexcept;
+void merge_down() noexcept;
+
 void mark_stale(piece_id_t piece) noexcept;
 void remove_stale() noexcept;
 
