@@ -1,0 +1,5 @@
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QIn the \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q config, optimizatiosn are turned on but debug symbols and information are also produced.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QIn the \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q config, optimization are turned on but debug symbols and information are also produced.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QFor final builds and game releases, the \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q configuration is recomended.\\E$"}
+{"rule":"ENGLISH_WORD_REPEAT_BEGINNING_RULE","sentence":"^\\QFor final builds and game releases, the \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q configuration is recommended.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QSURGE is the Super UnderRated Game Engine\\E$"}

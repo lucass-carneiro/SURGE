@@ -5,7 +5,7 @@
  A prototype game engine made for fun (*and profit ?*).
 
 # Table of Contents
-1. [Phylosophy](#phylosophy)
+1. [Philosophy](#phylosophy)
 2. [Obtaining and Building](#obtaining-and-building)
     1. [Dependencies](#dependencies)
     2. [Cloning](#cloning)
@@ -16,13 +16,13 @@
     7. [Example Debug Build On Windows](#example-debug-build-on-windows)
 3. [Staging](#staging)
 
-# Phylosophy
+# Philosophy
 
 **SURGE** is divided in two logical components: A *player* and *modules*. The **SURGE** player creates an engine window, sets up the graphics renderer, handles memory allocations, file IO, user inputs and other services.
 
 After its initial setup, the *player* loads and executes a *module*. Modules utilize the services provided by the *player* to draw objects on the screen or to read from the user's mouse, keyboard and controllers. Each module is compiled as a dynamic library object. This allows for modules to be *hot reloaded*, that is, reloaded while the engine is running. The *player* takes care of loading, unloading and refreshing modules.
 
-A SURGE game is thus a sequence of modules, loaded one after the other, each producing custom behaviour that can be hot reloaded whenever the users wish to do so.
+A SURGE game is thus a sequence of modules, loaded one after the other, each producing custom behavior that can be hot reloaded whenever the users wish to do so.
 
 # Obtaining and building
 
@@ -41,7 +41,7 @@ All other dependencies are obtained automatically at compile time via `vcpkg`, w
 
 ## Cloning
 
-The first step in compiling **SURGE** is to clone this repository. With `git` isntalled, issue the following commands in a terminal
+The first step in compiling **SURGE** is to clone this repository. With `git` installed, issue the following commands in a terminal
 
 ```
 clone https://github.com/lucass-carneiro/SURGE
@@ -59,13 +59,13 @@ The `--remote in the last` command ensures that all submodules will be checked o
 2. `Release`
 3. `Profile` TODO: This config does not exist yet, but it should.
 
-In the `Debug` configuration, extra debug information is provided and optimizations are turned off. In the `Release` config on the other hand, optimizations are turned on but debug checks and informations are turned off. In the `Profile` config, optimizatiosn are turned on but debug symbols and information are also produced.
+In the `Debug` configuration, extra debug information is provided and optimizations are turned off. In the `Release` config on the other hand, optimizations are turned on but debug checks and information are turned off. In the `Profile` config, optimization are turned on but debug symbols and information are also produced.
 
-For develloping games, the `Debug` configuration is recommended. For profiling games and making them run faster, the `Profile` configuration is recomended. For final builds and game releases, the `Release` configuration is recomended.
+For developing games, the `Debug` configuration is recommended. For profiling games and making them run faster, the `Profile` configuration is recommended. For final builds and game releases, the `Release` configuration is recommended.
 
 ## Build Options
 
-**SURGE** uses `CMake` to generate its build system. Several engine options and behaviours can be customized in the `CMake` configuration step via flags passed with the `-D[FLAG NAME]=[SETTING]` options in the `CMake` command line invocation. The available build options are detailed bellow
+**SURGE** uses `CMake` to generate its build system. Several engine options and behaviors can be customized in the `CMake` configuration step via flags passed with the `-D[FLAG NAME]=[SETTING]` options in the `CMake` command line invocation. The available build options are detailed bellow
 
 Option                         | Description                                           | Default Value                             |
 -------------------------------|-------------------------------------------------------|-------------------------------------------|
