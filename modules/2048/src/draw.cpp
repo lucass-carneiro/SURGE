@@ -1,5 +1,9 @@
 #include "2048.hpp"
-#include "debug_window.hpp"
+
+#ifdef SURGE_BUILD_TYPE_Debug
+#  include "debug_window.hpp"
+#endif
+
 #include "pieces.hpp"
 #include "score.hpp"
 #include "static_image.hpp"
@@ -14,7 +18,9 @@ auto draw() noexcept -> std::uint32_t {
 
   pieces::draw();
 
+#ifdef SURGE_BUILD_TYPE_Debug
   debug_window::draw();
+#endif
 
   score::draw();
 

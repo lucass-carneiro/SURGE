@@ -2,8 +2,11 @@
 
 #include "logging.hpp"
 
+#ifdef SURGE_BUILD_TYPE_Debug
+#  include "debug_window.hpp"
+#endif
+
 // clang-format off
-#include "debug_window.hpp"
 #include <GLFW/glfw3.h>
 // clang-format on
 
@@ -62,10 +65,22 @@ void mouse_button_event(GLFWwindow *window, int button, int action, int mods) no
     mod_2048::new_game();
   }
 
-  // ImGui window clicks
+// ImGui window clicks
+#ifdef SURGE_BUILD_TYPE_Debug
   ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+#endif
 }
+
+#ifdef SURGE_BUILD_TYPE_Debug
 
 void mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noexcept {
   ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 }
+
+#else
+
+void mouse_scroll_event(GLFWwindow *, double, double) noexcept {
+  // do nothing
+}
+
+#endif

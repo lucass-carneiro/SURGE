@@ -1,9 +1,12 @@
 #include "2048.hpp"
 #include "logging.hpp"
 
+#ifdef SURGE_BUILD_TYPE_Debug
+#  include "debug_window.hpp"
+#endif
+
 // clang-format off
 #include "pieces.hpp"
-#include "debug_window.hpp"
 #include "text.hpp"
 // clang-format on
 
@@ -323,8 +326,10 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   // Init state stack
   g_state_queue.push_back(game_state::idle);
 
-  // Init debug window
+// Init debug window
+#ifdef SURGE_BUILD_TYPE_Debug
   debug_window::init(window);
+#endif
 
   pieces::create_random();
   pieces::create_random();
@@ -342,7 +347,10 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
   }
 
   text::terminate(g_text_buffer);
+
+#ifdef SURGE_BUILD_TYPE_Debug
   debug_window::cleanup();
+#endif
 
   return 0;
 }

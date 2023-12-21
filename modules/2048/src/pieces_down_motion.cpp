@@ -51,6 +51,12 @@ void mod_2048::pieces::compress_down() noexcept {
       should_add_new_piece(true);
       break;
 
+    case board_element_configuration::XOXO:
+      target_slots[element.data[0]] = i + 4 * 2;
+      target_slots[element.data[2]] = i + 4 * 3;
+      should_add_new_piece(true);
+      break;
+
     case board_element_configuration::XOXX:
       target_slots[element.data[0]] = i + 4;
       should_add_new_piece(true);

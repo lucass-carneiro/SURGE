@@ -40,7 +40,11 @@
 #define log_warn(format, ...)                                                                      \
   std::printf(SURGE_WARN_BANNER format "\n", SURGE_TID_FUNCTION __VA_OPT__(, ) __VA_ARGS__)
 
-#define log_debug(format, ...)                                                                     \
-  std::printf(SURGE_DEBUG_BANNER format "\n", SURGE_TID_FUNCTION __VA_OPT__(, ) __VA_ARGS__)
+#ifdef SURGE_BUILD_TYPE_Debug
+#  define log_debug(format, ...)                                                                   \
+    std::printf(SURGE_DEBUG_BANNER format "\n", SURGE_TID_FUNCTION __VA_OPT__(, ) __VA_ARGS__)
+#else
+#  define log_debug(format, ...)
+#endif
 
 #endif // SURGE_LOGGING_HPP

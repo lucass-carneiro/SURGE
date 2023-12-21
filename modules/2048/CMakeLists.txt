@@ -17,7 +17,6 @@ project(
 set(
   SURGE_MODULE_2048_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/2048.hpp"
-  "${PROJECT_SOURCE_DIR}/include/debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/pieces.hpp"
   "${PROJECT_SOURCE_DIR}/include/score.hpp"
 )
@@ -25,7 +24,6 @@ set(
 set(
   SURGE_MODULE_2048_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/2048.cpp"
-  "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/draw.cpp"
   "${PROJECT_SOURCE_DIR}/src/globals.cpp"
   "${PROJECT_SOURCE_DIR}/src/pieces_down_motion.cpp"
@@ -35,6 +33,11 @@ set(
   "${PROJECT_SOURCE_DIR}/src/pieces.cpp"
   "${PROJECT_SOURCE_DIR}/src/score.cpp"
 )
+
+if(CMAKE_BUILD_TYPE EQUAL "Debug")
+  list(SURGE_MODULE_2048_HEADER_LIST APPEND "${PROJECT_SOURCE_DIR}/include/debug_window.hpp")
+  list(SURGE_MODULE_2048_SOURCE_LIST APPEND "${PROJECT_SOURCE_DIR}/src/debug_window.cpp")
+endif()
 
 # -----------------------------------------
 # Executable engine target

@@ -58,7 +58,7 @@ The `--remote in the last` command ensures that all submodules will be checked o
 
 1. `Debug`
 2. `Release`
-3. `Profile` TODO: This config does not exist yet, but it should.
+3. `RelWithDebInfo` TODO: This config does not exist yet, but it should.
 
 In the `Debug` configuration, extra debug information is provided and optimizations are turned off. In the `Release` config on the other hand, optimizations are turned on but debug checks and information are turned off. In the `Profile` config, optimization are turned on but debug symbols and information are also produced.
 
