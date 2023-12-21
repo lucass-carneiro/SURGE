@@ -14,6 +14,7 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto main(int, char **) noexcept -> int {
@@ -159,6 +160,7 @@ auto main(int, char **) noexcept -> int {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     FrameMark;
+    TracyGpuCollect
 #endif
   }
 

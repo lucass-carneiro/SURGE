@@ -6,9 +6,28 @@
 #include "override_new_delete.hpp"
 // clang-format on
 
-void surge::allocators::mimalloc::free(void *p) noexcept { mi_free(p); }
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
 
-auto surge::allocators::mimalloc::malloc(size_t size) noexcept -> void * { return mi_malloc(size); }
+void surge::allocators::mimalloc::free(void *p) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  TracyFree(p);
+#endif
+
+  mi_free(p);
+}
+
+auto surge::allocators::mimalloc::malloc(size_t size) noexcept -> void * {
+  auto p{mi_malloc(size)};
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  TracyAlloc(p, size);
+#endif
+
+  return p;
+}
 
 auto surge::allocators::mimalloc::zalloc(size_t size) noexcept -> void * { return mi_zalloc(size); }
 

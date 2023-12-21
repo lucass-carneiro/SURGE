@@ -10,12 +10,14 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto surge::atom::static_mesh::gen_triangle() noexcept -> std::tuple<GLuint, std::size_t> {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::gen_triangle");
+  TracyGpuZone("GPU surge::atom::static_mesh::gen_triangle");
 #endif
 
   // clang-format off
@@ -57,6 +59,7 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::gen_square");
+  TracyGpuZone("GPU surge::atom::static_mesh::gen_square");
 #endif
 
   // clang-format off
@@ -100,6 +103,7 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::load");
+  TracyGpuZone("GPU surge::atom::static_mesh::load");
 #endif
 
   log_info("Loading OBJ file %s", path);
@@ -162,6 +166,7 @@ void surge::atom::static_mesh::draw(GLuint shader_program, const one_buffer_data
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::draw");
+  TracyGpuZone("GPU surge::atom::static_mesh::draw");
 #endif
 
   using namespace surge::renderer;

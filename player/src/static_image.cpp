@@ -23,6 +23,7 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto surge::atom::static_image::create(const char *p,
@@ -31,6 +32,7 @@ auto surge::atom::static_image::create(const char *p,
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::create");
+  TracyGpuZone("GPU surge::atom::static_image::create");
 #endif
 
   /**************
@@ -142,6 +144,7 @@ void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_dat
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::draw");
+  TracyGpuZone("GPU surge::atom::static_image::draw");
 #endif
 
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};

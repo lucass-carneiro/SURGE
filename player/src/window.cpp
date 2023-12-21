@@ -10,6 +10,10 @@
 #include <gsl/gsl-lite.hpp>
 #include <string>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW erro code %i: %s", code, description);
 }
@@ -207,6 +211,11 @@ auto surge::window::init(const config::window_resolution &wres,
   renderer::enable(renderer::capability::depth_test);
   renderer::enable(renderer::capability::blend);
   renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  glfwGetCurrentContext();
+  TracyGpuContext;
+#endif
 
   return window;
 }

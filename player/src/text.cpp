@@ -17,6 +17,7 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 static auto FT_malloc(FT_Memory, long size) noexcept -> void * {
@@ -36,6 +37,7 @@ auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::create");
+  TracyGpuZone("GPU surge::atom::text::create");
 #endif
 
   log_info("Creating FreeType library");
@@ -122,6 +124,7 @@ auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::create_charmap");
+  TracyGpuZone("GPU surge::atom::text::create_charmap");
 #endif
 
   const auto charmap_sizes{chars_per_face * data.faces.size()};
@@ -199,6 +202,7 @@ void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw");
+  TracyGpuZone("GPU surge::atom::text::draw");
 #endif
 
   // Set OpenGL state

@@ -14,7 +14,7 @@ terms of the MIT license. A copy of the license can be found in the file
 
 #  include "options.hpp"
 
-#  ifdef SURGE_ENABLE_TRACY
+#  if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #    include <tracy/Tracy.hpp>
 #  endif
 
@@ -45,196 +45,194 @@ terms of the MIT license. A copy of the license can be found in the file
 #    endif
 
 void operator delete(void *p) noexcept {
-#    ifdef SURGE_ENABLE_TRACY
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free(p);
-#    else
-  mi_free(p);
 #    endif
+
+  mi_free(p);
 };
 
 void operator delete[](void *p) noexcept {
-#    ifdef SURGE_ENABLE_TRACY
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free(p);
-#    else
-  mi_free(p);
 #    endif
+
+  mi_free(p);
 };
 
 void operator delete(void *p, const std::nothrow_t &) noexcept {
-#    ifdef SURGE_ENABLE_TRACY
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free(p);
-#    else
-  mi_free(p);
 #    endif
+
+  mi_free(p);
 }
 
 void operator delete[](void *p, const std::nothrow_t &) noexcept {
-#    ifdef SURGE_ENABLE_TRACY
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free(p);
-#    else
-  mi_free(p);
 #    endif
+
+  mi_free(p);
 }
 
 mi_decl_new(n) void *operator new(std::size_t n) noexcept(false) {
-#    ifdef SURGE_ENABLE_TRACY
   void *p = mi_new(n);
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#    else
-  return mi_new(n);
 #    endif
+
+  return p;
 }
 
 mi_decl_new(n) void *operator new[](std::size_t n) noexcept(false) {
-#    ifdef SURGE_ENABLE_TRACY
   void *p = mi_new(n);
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#    else
-  return mi_new(n);
 #    endif
+
+  return p;
 }
 
-mi_decl_new_nothrow(n) void *operator new(std::size_t n, const std::nothrow_t &tag) noexcept {
-  (void)(tag);
-#    ifdef SURGE_ENABLE_TRACY
+mi_decl_new_nothrow(n) void *operator new(std::size_t n, const std::nothrow_t &) noexcept {
   void *p = mi_new_nothrow(n);
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#    else
-  return mi_new_nothrow(n);
 #    endif
+
+  return p;
 }
 
-mi_decl_new_nothrow(n) void *operator new[](std::size_t n, const std::nothrow_t &tag) noexcept {
-  (void)(tag);
-#    ifdef SURGE_ENABLE_TRACY
+mi_decl_new_nothrow(n) void *operator new[](std::size_t n, const std::nothrow_t &) noexcept {
   void *p = mi_new_nothrow(n);
+
+#    if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#    else
-  return mi_new_nothrow(n);
 #    endif
+
+  return p;
 }
 
 #    if (__cplusplus >= 201402L || _MSC_VER >= 1916)
 void operator delete(void *p, std::size_t n) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_size(p, n);
-#      else
-  mi_free_size(p, n);
 #      endif
+
+  mi_free_size(p, n);
 };
 
 void operator delete[](void *p, std::size_t n) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_size(p, n);
-#      else
-  mi_free_size(p, n);
 #      endif
+
+  mi_free_size(p, n);
 };
 #    endif
 
 #    if (__cplusplus > 201402L || defined(__cpp_aligned_new))
 void operator delete(void *p, std::align_val_t al) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_aligned(p, static_cast<size_t>(al));
-#      else
-  mi_free_aligned(p, static_cast<size_t>(al));
 #      endif
+
+  mi_free_aligned(p, static_cast<size_t>(al));
 }
 
 void operator delete[](void *p, std::align_val_t al) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_aligned(p, static_cast<size_t>(al));
-#      else
-  mi_free_aligned(p, static_cast<size_t>(al));
 #      endif
+
+  mi_free_aligned(p, static_cast<size_t>(al));
 }
 
 void operator delete(void *p, std::size_t n, std::align_val_t al) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_size_aligned(p, n, static_cast<size_t>(al));
-#      else
-  mi_free_size_aligned(p, n, static_cast<size_t>(al));
 #      endif
+
+  mi_free_size_aligned(p, n, static_cast<size_t>(al));
 };
 
 void operator delete[](void *p, std::size_t n, std::align_val_t al) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_size_aligned(p, n, static_cast<size_t>(al));
-#      else
-  mi_free_size_aligned(p, n, static_cast<size_t>(al));
 #      endif
+
+  mi_free_size_aligned(p, n, static_cast<size_t>(al));
 };
 
 void operator delete(void *p, std::align_val_t al, const std::nothrow_t &) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_aligned(p, static_cast<size_t>(al));
-#      else
-  mi_free_aligned(p, static_cast<size_t>(al));
 #      endif
+
+  mi_free_aligned(p, static_cast<size_t>(al));
 }
 
 void operator delete[](void *p, std::align_val_t al, const std::nothrow_t &) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyFree(p);
-  mi_free_aligned(p, static_cast<size_t>(al));
-#      else
-  mi_free_aligned(p, static_cast<size_t>(al));
 #      endif
+
+  mi_free_aligned(p, static_cast<size_t>(al));
 }
 
 void *operator new(std::size_t n, std::align_val_t al) noexcept(false) {
-#      ifdef SURGE_ENABLE_TRACY
   void *p = mi_new_aligned(n, static_cast<size_t>(al));
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#      else
-  return mi_new_aligned(n, static_cast<size_t>(al));
 #      endif
+
+  return p;
 }
 
 void *operator new[](std::size_t n, std::align_val_t al) noexcept(false) {
-#      ifdef SURGE_ENABLE_TRACY
   void *p = mi_new_aligned(n, static_cast<size_t>(al));
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#      else
-  return mi_new_aligned(n, static_cast<size_t>(al));
 #      endif
+
+  return p;
 }
 
 void *operator new(std::size_t n, std::align_val_t al, const std::nothrow_t &) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
   void *p = mi_new_aligned_nothrow(n, static_cast<size_t>(al));
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#      else
-  return mi_new_aligned_nothrow(n, static_cast<size_t>(al));
 #      endif
+
+  return p;
 }
 
 void *operator new[](std::size_t n, std::align_val_t al, const std::nothrow_t &) noexcept {
-#      ifdef SURGE_ENABLE_TRACY
   void *p = mi_new_aligned_nothrow(n, static_cast<size_t>(al));
+
+#      if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   TracyAlloc(p, n);
-  return p;
-#      else
-  return mi_new_aligned_nothrow(n, static_cast<size_t>(al));
 #      endif
+
+  return p;
 }
 
 #    endif
