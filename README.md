@@ -14,7 +14,8 @@
     5. [Build Commands](#build-commands)
     6. [Example Debug Build On Linux](#example-debug-build-on-linux)
     7. [Example Debug Build On Windows](#example-debug-build-on-windows)
-3. [Staging](#staging)
+3. [`SCOMP`](#scomp)
+    1. [`Creating Stagings`](#creating-stagings)
 
 # Philosophy
 
@@ -124,6 +125,10 @@ cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug -j20
 ```
 
-# Staging
+# `SCOMP`
 
-TODO: Fill this section later
+`SCOMP` stands for **S**urge **COMP**anion. It is a python script accessible as a command line utility by issuing `./scomp.sh` on Linux or `.\scomp.bat` on Windows.
+
+## Creating Stagings
+
+A staging is a folder that contains a copy of the `SURGE` player executable and a module to be executed alongside dependencies such as configuration files and game resources. The idea being that when a game is to be shipped, users can distribute the staging folder "as-is" to be executed on the end user's machine. `SCOP` facilitates the creation of staging directories for the various build configurations possible. These facilities are available via the `scomp staging` family of commands
