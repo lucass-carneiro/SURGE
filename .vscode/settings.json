@@ -126,5 +126,10 @@
         "cstdarg": "cpp",
         "any": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "autopep8.args": [
+        "--max-line-length",
+        "100",
+        "--experimental"
+    ]
 }

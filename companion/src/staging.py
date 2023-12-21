@@ -10,8 +10,7 @@ def new(args):
         print("Unable to create staging directory because it already exists.")
         sys.exit(1)
 
-    configuration_folder = os.path.join(
-        args["--prefix"], args["<configuration>"])
+    configuration_folder = os.path.join(args["--prefix"], args["<configuration>"])
     if not os.path.exists(configuration_folder):
         print("Configuration", configuration_folder, "does not exist")
         sys.exit(1)
@@ -20,8 +19,7 @@ def new(args):
 
     # Player
     if platform.system() == "Windows":
-        src_player_path = os.path.join(
-            configuration_folder, "player", args["<configuration>"])
+        src_player_path = os.path.join(configuration_folder, "player", args["<configuration>"])
         dst_player_path = args["--output"]
     else:
         src_player_path = os.path.join(configuration_folder, "player", "surge")
@@ -47,12 +45,7 @@ def new(args):
     if platform.system() == "Windows":
         wd = os.path.abspath(os.getcwd())
 
-        minject = os.path.abspath(
-            os.path.join(
-                args["--prefix"], "companion", "minject.exe"
-            )
-        )
-
+        minject = os.path.abspath(os.path.join(args["--prefix"], "companion", "minject.exe"))
         mimalloc = os.path.join(args["--prefix"], "vcpkg", "packages",
                                 "mimalloc_x64-windows", "bin", "mimalloc.dll")
         shutil.copy2(mimalloc, args["--output"])
@@ -88,7 +81,10 @@ def populate(args):
     # Copy module. In windows, copy all DLLs
     if platform.system() == "Windows":
         src_module_path = os.path.join(
-            args["--prefix"], args["<configuration>"], "modules", args["<module>"], args["<configuration>"])
+            args["--prefix"],
+            args["<configuration>"],
+            "modules", args["<module>"],
+            args["<configuration>"])
 
         for file in os.listdir(src_module_path):
             if file.endswith(".dll"):
@@ -96,17 +92,25 @@ def populate(args):
                 dst_file = os.path.join(args["--output"], file)
                 shutil.copy2(src_file, dst_file)
     else:
-        module_name = module_name + ".so"
+        module_name = args["<module>"] + ".so"
         src_module_path = os.path.join(
-            args["--prefix"], args["<configuration>"], "modules", args["<module>"], module_name)
+            args["--prefix"],
+            args["<configuration>"],
+            "modules", args["<module>"],
+            module_name
+        )
         shutil.copy2(src_module_path, os.path.join(
             args["--output"], module_name))
 
     # Copy config
-    src_config_path = os.path.join(
-        args["--prefix"], "modules", args["<module>"], "config.yaml")
-    shutil.copy2(src_config_path, os.path.join(
-        args["--output"], "config.yaml"))
+    src_config_path = os.path.join(args["--prefix"], "modules", args["<module>"], "config.yaml")
+    dst_config_path = os.path.join(args["--output"], "config.yaml")
+    shutil.copy2(src_config_path, dst_config_path)
+
+    # Copy resources folder if it exists
+    src_resources_path = os.path.join(args["--prefix"], "modules", args["<module>"], "resources")
+    dst_resources_path = os.path.join(args["--output"], "resources")
+    shutil.copytree(src_resources_path, dst_resources_path)
 
     print("Staging populated")
 
@@ -120,7 +124,10 @@ def update(args):
 
     staged_module = os.path.join(args["--output"], module_name)
     origin_module = os.path.join(
-        args["--prefix"], args["<configuration>"], "modules", args["<module>"], module_name)
+        args["--prefix"],
+        args["<configuration>"],
+        "modules", args["<module>"],
+        module_name)
 
     if os.path.exists(staged_module):
         staged_mtime = os.stat(staged_module).st_mtime

@@ -5,7 +5,6 @@ Release/*
 staging/*
 
 companion/src/__pycache__
-venv/*
 
 player/include/options.hpp
 
