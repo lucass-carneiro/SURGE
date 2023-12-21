@@ -326,17 +326,8 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   // Init debug window
   debug_window::init(window);
 
-  pieces::create_piece(1, 0);
-  pieces::create_piece(1, 2);
-
-  pieces::create_piece(2, 4);
-  pieces::create_piece(1, 5);
-  pieces::create_piece(1, 7);
-
-  pieces::create_piece(2, 8);
-  pieces::create_piece(1, 9);
-  pieces::create_piece(1, 10);
-  pieces::create_piece(1, 11);
+  pieces::create_random();
+  pieces::create_random();
 
   return 0;
 }
