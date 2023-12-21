@@ -3,11 +3,20 @@
 
 #include "2048.hpp"
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 const glm::vec2 g_score_box_pos_pos{360.0f, 47.0f};
 const glm::vec2 g_best_score_box_pos_pos{440.0f, 47.0f};
 const glm::vec3 g_score_text_color{1.0f, 1.0f, 1.0f};
 
 void mod_2048::score::draw() noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::score::draw");
+#endif
+
   using namespace surge::atom;
 
   const auto &projection{get_projection()};

@@ -8,7 +8,16 @@
 #include <gsl/gsl-lite.hpp>
 #include <random>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 void mod_2048::pieces::draw() noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::draw");
+#endif
+
   using namespace surge::atom;
 
   const auto &img_shader{get_img_shader()};
@@ -42,6 +51,11 @@ void mod_2048::pieces::draw() noexcept {
 
 template <typename T, typename U> static auto has_value(const T value, const U &collection)
     -> bool {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::has_value");
+#endif
+
   for (const auto &i : collection) {
     if (i.second == value) {
       return true;
@@ -51,6 +65,11 @@ template <typename T, typename U> static auto has_value(const T value, const U &
 }
 
 auto mod_2048::pieces::create_random(exponent_t last_exponent) noexcept -> piece_id_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::create_random");
+#endif
+
   log_debug("Adding random piece");
 
   const auto &slots{get_piece_slots()};
@@ -77,6 +96,11 @@ auto mod_2048::pieces::create_random(exponent_t last_exponent) noexcept -> piece
 }
 
 auto mod_2048::pieces::idle() noexcept -> bool {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::idle");
+#endif
+
   auto &slots{get_piece_slots()};
   auto &target_slots{get_piece_target_slots()};
 
@@ -90,6 +114,11 @@ auto mod_2048::pieces::idle() noexcept -> bool {
 }
 
 auto mod_2048::pieces::deflatten_slot(slot_t slot) noexcept -> board_address {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::deflatten_slot");
+#endif
+
   switch (slot) {
   case 0:
     return board_address{0, 0};
@@ -130,6 +159,11 @@ auto mod_2048::pieces::deflatten_slot(slot_t slot) noexcept -> board_address {
 
 auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexcept
     -> board_element {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::get_element");
+#endif
+
   board_element element{{16, 16, 16, 16}, 0, board_element_configuration::OOOO};
 
   // Get data and size
@@ -191,6 +225,11 @@ auto mod_2048::pieces::get_element(board_element_type type, slot_t value) noexce
 }
 
 void mod_2048::pieces::update_positions(double) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::update_positions");
+#endif
+
   using std::abs, std::sqrt;
 
   // These values must be fine tuned together
@@ -230,6 +269,11 @@ void mod_2048::pieces::update_positions(double) noexcept {
 }
 
 void mod_2048::pieces::update_exponents() noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::update_exponents");
+#endif
+
   auto &exponents{get_piece_exponents()};
   auto &target_exponents{get_piece_target_exponents()};
 

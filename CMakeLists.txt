@@ -106,6 +106,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Profile")
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" ON)
 endif()
 
+if(SURGE_ENABLE_TRACY)
+  add_compile_definitions(TRACY_ENABLE)
+
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_compile_definitions(TRACY_DEBUGINFOD)
+  endif()
+endif()
+
 # -----------------------------------------
 # Buffer sizes
 # -----------------------------------------

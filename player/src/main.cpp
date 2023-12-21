@@ -9,9 +9,19 @@
 #include "timers.hpp"
 #include "window.hpp"
 
+#include <common/TracyColor.hpp>
 #include <cstdlib>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 auto main(int, char **) noexcept -> int {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedNC("surge::main", tracy::Color::Azure);
+#endif
+
   using namespace surge;
 
   /*******************
@@ -146,6 +156,10 @@ auto main(int, char **) noexcept -> int {
 #endif
 
     frame_timer.stop();
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+    FrameMark;
+#endif
   }
 
   // Finalize modules

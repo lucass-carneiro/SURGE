@@ -15,6 +15,10 @@
 #include <limits>
 #include <tl/expected.hpp>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 static auto FT_malloc(FT_Memory, long size) noexcept -> void * {
   return surge::allocators::mimalloc::malloc(size);
 }
@@ -29,6 +33,10 @@ static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
 auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
     -> tl::expected<buffer_data, error> {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::create");
+#endif
 
   log_info("Creating FreeType library");
 
@@ -81,6 +89,11 @@ auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
 }
 
 void surge::atom::text::terminate(buffer_data &data) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::terminate");
+#endif
+
   log_info("Closing faces");
   for (const auto &face : data.faces) {
     FT_Done_Face(face);
@@ -106,6 +119,11 @@ static constexpr const auto chars_per_face{char_end - char_start};
 auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
                                        renderer::texture_filtering filtering) noexcept
     -> tl::expected<charmap_data, error> {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::create_charmap");
+#endif
+
   const auto charmap_sizes{chars_per_face * data.faces.size()};
 
   log_info("Allocating memory for character maps");
@@ -178,6 +196,11 @@ auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
 void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
                              const draw_data &dd, std::string_view text,
                              float extra_vskip) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::draw");
+#endif
+
   // Set OpenGL state
   glUseProgram(shader_program);
 
@@ -262,6 +285,11 @@ void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const
 
 void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
                              const draw_data &dd, unsigned long long number) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::draw(number)");
+#endif
+
   using std::snprintf;
 
   // Parse number into array of digits (repreented by chars)

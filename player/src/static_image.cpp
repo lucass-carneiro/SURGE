@@ -21,9 +21,18 @@
 
 #include <gsl/gsl-lite.hpp>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 auto surge::atom::static_image::create(const char *p,
                                        renderer::texture_filtering filtering) noexcept
     -> tl::expected<one_buffer_data, error> {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::create");
+#endif
+
   /**************
    * Load Image *
    **************/
@@ -130,6 +139,10 @@ auto surge::atom::static_image::create(const char *p,
 
 void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &ctx,
                                      const one_draw_data &dctx) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::draw");
+#endif
 
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
 

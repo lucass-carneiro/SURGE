@@ -2,8 +2,17 @@
 #include "logging.hpp"
 #include "renderer.hpp"
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     -> tl::expected<GLuint, surge::renderer::renderer_error> {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::load_and_compile_shader");
+#endif
+
   using namespace surge;
   log_info("Loading shader file %s", p);
 
@@ -64,6 +73,10 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
                                 bool destroy_shaders = true) noexcept
     -> tl::expected<GLuint, surge::renderer::renderer_error> {
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::link_shader_program");
+#endif
+
   log_info("Linking shader handles %u and %u.", vertex_shader_handle, fragment_shader_handle);
 
   // Get a program object.
@@ -121,6 +134,10 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
 auto surge::renderer::create_shader_program(const char *vertex_shader_path,
                                             const char *fragment_shader_path) noexcept
     -> tl::expected<GLuint, renderer_error> {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::create_shader_program");
+#endif
 
   const auto vertex_shader_handle{load_and_compile_shader(vertex_shader_path, GL_VERTEX_SHADER)};
   const auto fragment_shader_handle{

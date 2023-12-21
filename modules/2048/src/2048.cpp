@@ -10,7 +10,16 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::bind_callbacks");
+#endif
+
   log_info("Binding interaction callbacks");
 
   glfwSetKeyCallback(window, keyboard_event);
@@ -35,6 +44,11 @@ auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::unbind_callbacks");
+#endif
+
   log_info("Unbinding interaction callbacks");
 
   glfwSetKeyCallback(window, nullptr);
@@ -56,6 +70,11 @@ auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 void mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::mouse_button_event");
+#endif
+
   // New Game button click
   double xpos{0}, ypos{0};
   glfwGetCursorPos(window, &xpos, &ypos);

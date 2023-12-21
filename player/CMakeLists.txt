@@ -135,10 +135,14 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
-    target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_compile_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -fno-omit-frame-pointer -Wall -Wextra -Werror -pedantic -pedantic-errors)
+    target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic -Wall -Wextra -Werror -pedantic -pedantic-errors)
   else()
     target_compile_options(SurgePlayer PUBLIC /DEBUG:FULL /MP /MDd)
+  endif()
+
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(SurgePlayer PUBLIC debuginfod)
   endif()
 
 endif()
@@ -156,9 +160,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Profile")
   endif()
   
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -g3 -ggdb3)
+    target_compile_options(SurgePlayer PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
+    target_link_options(SurgePlayer PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
   else()
     target_compile_options(SurgePlayer PUBLIC /DEBUG:FULL /MP /MD)
+  endif()
+
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(SurgePlayer PUBLIC debuginfod)
   endif()
 endif()
 

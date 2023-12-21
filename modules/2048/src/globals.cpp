@@ -14,6 +14,10 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 /*
  * Globals
  */
@@ -249,6 +253,11 @@ void mod_2048::new_game() noexcept {
 }
 
 auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::on_load");
+#endif
+
   using namespace mod_2048;
   using namespace surge;
   using namespace surge::atom;
@@ -338,6 +347,11 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::on_unload");
+#endif
+
   using namespace surge::atom;
   using namespace mod_2048;
 
@@ -356,6 +370,11 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 auto update(double dt) noexcept -> std::uint32_t {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::update");
+#endif
+
   using namespace mod_2048;
 
   switch (static_cast<state_code_t>(g_state_queue.front())) {
@@ -445,6 +464,11 @@ auto update(double dt) noexcept -> std::uint32_t {
 }
 
 void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::keyboard_event");
+#endif
+
   using namespace mod_2048;
 
   // Examine state stack. Only push a move if the board is idle
