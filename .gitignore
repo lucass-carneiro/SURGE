@@ -1,8 +1,12 @@
 .cache/*
-out/*
+
 Debug/*
 Release/*
-staging/*
+Profile/*
+
+staging-Debug/*
+staging-Release/*
+staging-Profile/*
 
 companion/src/__pycache__
 

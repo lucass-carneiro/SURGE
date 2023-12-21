@@ -43,6 +43,15 @@
       "features": [
         "error-strings"
       ]
+    },
+    {
+      "name": "tracy",
+      "features": [
+        "cli-tools",
+        "crash-handler",
+        "gui-tools",
+        "on-demand"
+      ]
     }
   ]
 }

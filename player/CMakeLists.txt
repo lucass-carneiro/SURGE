@@ -88,14 +88,14 @@ if(SURGE_ENABLE_SANITIZERS)
     target_compile_options(SurgePlayer PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgePlayer PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    message(WARNING "Sanitizers don't work on MSVC yet.")# because of some "annotations" bullshit
+    message(WARNING "Sanitizers don't work on MSVC yet.")
   endif()
 endif()
 
 if(SURGE_ENABLE_OPTIMIZATIONS)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -O2)
-    target_link_options(SurgePlayer PUBLIC -O2)
+    target_compile_options(SurgePlayer PUBLIC -O3)
+    target_link_options(SurgePlayer PUBLIC -O3)
   else()
     target_compile_options(SurgePlayer PUBLIC /O2)
   endif()
@@ -134,32 +134,32 @@ endif()
 # https://learn.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2012/2kzt1wy3(v=vs.110)?redirectedfrom=MSDN
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message(STATUS "Generating a Debug build system")
-
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
-    target_link_options(SurgePlayer PUBLIC -O0 -g3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_compile_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
+    target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -Wall -Wextra -Werror -pedantic -pedantic-errors -fno-omit-frame-pointer)
   else()
-    target_compile_options(SurgePlayer PUBLIC /MP /MDd)
+    target_compile_options(SurgePlayer PUBLIC /DEBUG:FULL /MP /MDd)
   endif()
 
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(STATUS "Generating a Release build system")
+  if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+    target_compile_options(SurgePlayer PUBLIC /MP /MD)
+  endif()
+endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Profile")
   if(SURGE_ENABLE_TRACY)
     find_package(Tracy CONFIG REQUIRED)
     target_link_libraries(SurgePlayer PRIVATE Tracy::TracyClient)
   endif()
-
+  
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -g3)
-    target_link_options(SurgePlayer PUBLIC -g3)
+    target_compile_options(SurgePlayer PUBLIC -g3 -ggdb3)
   else()
-    target_compile_options(SurgePlayer PUBLIC /MP /MD)
+    target_compile_options(SurgePlayer PUBLIC /DEBUG:FULL /MP /MD)
   endif()
-
 endif()
 
 # -----------------------------------------

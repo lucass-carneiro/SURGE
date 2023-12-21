@@ -5,8 +5,8 @@ import platform
 import subprocess
 
 
-def new(args):
-    if os.path.exists(args["--output"]):
+def new(args, output_folder):
+    if os.path.exists(output_folder):
         print("Unable to create staging directory because it already exists.")
         sys.exit(1)
 
@@ -15,19 +15,19 @@ def new(args):
         print("Configuration", configuration_folder, "does not exist")
         sys.exit(1)
 
-    os.mkdir(args["--output"])
+    os.mkdir(output_folder)
 
     # Player
     if platform.system() == "Windows":
         src_player_path = os.path.join(configuration_folder, "player", args["<configuration>"])
-        dst_player_path = args["--output"]
+        dst_player_path = output_folder
     else:
         src_player_path = os.path.join(configuration_folder, "player", "surge")
-        dst_player_path = os.path.join(args["--output"], "surge")
+        dst_player_path = os.path.join(output_folder, "surge")
 
     # Shaders
     src_shaders_path = os.path.join(args["--prefix"], "shaders")
-    dst_shaders_path = os.path.join(args["--output"], "shaders")
+    dst_shaders_path = os.path.join(output_folder, "shaders")
 
     # On windows, copy all DLLs and .exe
     if platform.system() == "Windows":
@@ -48,9 +48,9 @@ def new(args):
         minject = os.path.abspath(os.path.join(args["--prefix"], "companion", "minject.exe"))
         mimalloc = os.path.join(args["--prefix"], "vcpkg", "packages",
                                 "mimalloc_x64-windows", "bin", "mimalloc.dll")
-        shutil.copy2(mimalloc, args["--output"])
+        shutil.copy2(mimalloc, output_folder)
 
-        os.chdir(args["--output"])
+        os.chdir(output_folder)
 
         subprocess.run([
             minject,
@@ -64,17 +64,17 @@ def new(args):
     print("Staging created")
 
 
-def delete(args):
-    if os.path.exists(args["--output"]):
-        shutil.rmtree(args["--output"])
+def delete(args, output_folder):
+    if os.path.exists(output_folder):
+        shutil.rmtree(output_folder)
     else:
         print("Unable to remove output directory",
-              args["--output"], "because it does not exist")
+              output_folder, "because it does not exist")
         sys.exit(1)
 
 
-def populate(args):
-    if not os.path.exists(args["--output"]):
+def populate(args, output_folder):
+    if not os.path.exists(output_folder):
         print("Unable to enter staging directory.")
         sys.exit(1)
 
@@ -89,7 +89,7 @@ def populate(args):
         for file in os.listdir(src_module_path):
             if file.endswith(".dll"):
                 src_file = os.path.join(src_module_path, file)
-                dst_file = os.path.join(args["--output"], file)
+                dst_file = os.path.join(output_folder, file)
                 shutil.copy2(src_file, dst_file)
     else:
         module_name = args["<module>"] + ".so"
@@ -100,29 +100,29 @@ def populate(args):
             module_name
         )
         shutil.copy2(src_module_path, os.path.join(
-            args["--output"], module_name))
+            output_folder, module_name))
 
     # Copy config
     src_config_path = os.path.join(args["--prefix"], "modules", args["<module>"], "config.yaml")
-    dst_config_path = os.path.join(args["--output"], "config.yaml")
+    dst_config_path = os.path.join(output_folder, "config.yaml")
     shutil.copy2(src_config_path, dst_config_path)
 
     # Copy resources folder if it exists
     src_resources_path = os.path.join(args["--prefix"], "modules", args["<module>"], "resources")
-    dst_resources_path = os.path.join(args["--output"], "resources")
+    dst_resources_path = os.path.join(output_folder, "resources")
     shutil.copytree(src_resources_path, dst_resources_path)
 
     print("Staging populated")
 
 
-def update(args):
+def update(args, output_folder):
     module_name = args["<module>"]
     if platform.system() == "Windows":
         module_name = module_name + ".dll"
     else:
         module_name = module_name + ".so"
 
-    staged_module = os.path.join(args["--output"], module_name)
+    staged_module = os.path.join(output_folder, module_name)
     origin_module = os.path.join(
         args["--prefix"],
         args["<configuration>"],
@@ -139,8 +139,8 @@ def update(args):
         sys.exit(1)
 
 
-def run(args):
-    if not os.path.exists(args["--output"]):
+def run(output_folder):
+    if not os.path.exists(output_folder):
         print("Unable to enter staging directory.")
         sys.exit(1)
 
@@ -148,20 +148,20 @@ def run(args):
     if platform.system() == "Windows":
         exec_name = exec_name + ".exe"
 
-    os.chdir(args["--output"])
+    os.chdir(output_folder)
     subprocess.run([exec_name])
 
 
-def main(args):
+def main(args, output_folder):
     if args["new"]:
-        new(args)
+        new(args, output_folder)
     elif args["delete"]:
-        delete(args)
+        delete(args, output_folder)
     elif args["populate"]:
-        populate(args)
+        populate(args, output_folder)
     elif args["update"]:
-        update(args)
+        update(args, output_folder)
     elif args["run"]:
-        run(args)
+        run(output_folder)
 
     sys.exit(0)
