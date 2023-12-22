@@ -51,7 +51,8 @@
         "crash-handler",
         "gui-tools",
         "on-demand"
-      ]
+      ],
+      "platform": "!(windows & (static | staticcrt))"
     }
   ]
 }

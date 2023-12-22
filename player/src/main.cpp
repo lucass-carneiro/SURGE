@@ -9,10 +9,10 @@
 #include "timers.hpp"
 #include "window.hpp"
 
-#include <common/TracyColor.hpp>
 #include <cstdlib>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <common/TracyColor.hpp>
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif

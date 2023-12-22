@@ -150,7 +150,12 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
-    target_compile_options(SurgePlayer PUBLIC /MP /MD)
+    message(WARNING ${VCPKG_LIBRARY_LINKAGE})
+    if(VCPKG_TARGET_TRIPLET MATCHES "x64-windows-static") #TODO: This is not general and static releases do not work
+      target_compile_options(SurgePlayer PUBLIC /MP /MT)
+    else()
+      target_compile_options(SurgePlayer PUBLIC /MP /MD)
+    endif()
   endif()
 endif()
 
