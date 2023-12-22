@@ -19,7 +19,13 @@ def new(args, output_folder):
 
     # Player
     if platform.system() == "Windows":
-        src_player_path = os.path.join(configuration_folder, "player", args["<configuration>"])
+
+        # Because the way the Profile build is created on windows, this ugly hack is necessary
+        if (args["<configuration>"] == "Profile"):
+            src_player_path = os.path.join(configuration_folder, "player", "Release")
+        else:
+            src_player_path = os.path.join(configuration_folder, "player", args["<configuration>"])
+
         dst_player_path = output_folder
     else:
         src_player_path = os.path.join(configuration_folder, "player", "surge")
@@ -28,27 +34,22 @@ def new(args, output_folder):
     # Shaders
     src_shaders_path = os.path.join(args["--prefix"], "shaders")
     dst_shaders_path = os.path.join(output_folder, "shaders")
+    shutil.copytree(src_shaders_path, dst_shaders_path)
 
-    # On windows, copy all DLLs and .exe
+    # On windows, copy all DLLs, .exe and other files
     if platform.system() == "Windows":
         for file in os.listdir(src_player_path):
-            if file.endswith(".exe") or file.endswith(".dll"):
-                src_file = os.path.join(src_player_path, file)
-                dst_file = os.path.join(dst_player_path, file)
-                shutil.copy2(src_file, dst_file)
+            src_file = os.path.join(src_player_path, file)
+            dst_file = os.path.join(dst_player_path, file)
+            shutil.copy2(src_file, dst_file)
     else:
         shutil.copy2(src_player_path, dst_player_path)
-
-    shutil.copytree(src_shaders_path, dst_shaders_path)
 
     # Mimalloc injection
     if platform.system() == "Windows":
         wd = os.path.abspath(os.getcwd())
 
         minject = os.path.abspath(os.path.join(args["--prefix"], "companion", "minject.exe"))
-        mimalloc = os.path.join(args["--prefix"], "vcpkg", "packages",
-                                "mimalloc_x64-windows", "bin", "mimalloc.dll")
-        shutil.copy2(mimalloc, output_folder)
 
         os.chdir(output_folder)
 
@@ -80,11 +81,18 @@ def populate(args, output_folder):
 
     # Copy module. In windows, copy all DLLs
     if platform.system() == "Windows":
-        src_module_path = os.path.join(
-            args["--prefix"],
-            args["<configuration>"],
-            "modules", args["<module>"],
-            args["<configuration>"])
+        if args["<configuration>"] == "Profile":
+            src_module_path = os.path.join(
+                args["--prefix"],
+                args["<configuration>"],
+                "modules", args["<module>"],
+                "Release")
+        else:
+            src_module_path = os.path.join(
+                args["--prefix"],
+                args["<configuration>"],
+                "modules", args["<module>"],
+                args["<configuration>"])
 
         for file in os.listdir(src_module_path):
             if file.endswith(".dll"):
@@ -110,7 +118,9 @@ def populate(args, output_folder):
     # Copy resources folder if it exists
     src_resources_path = os.path.join(args["--prefix"], "modules", args["<module>"], "resources")
     dst_resources_path = os.path.join(output_folder, "resources")
-    shutil.copytree(src_resources_path, dst_resources_path)
+
+    if os.path.exists(src_resources_path):
+        shutil.copytree(src_resources_path, dst_resources_path)
 
     print("Staging populated")
 
