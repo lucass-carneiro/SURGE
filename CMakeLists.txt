@@ -108,6 +108,11 @@ endif()
 
 if(SURGE_ENABLE_TRACY)
   add_compile_definitions(TRACY_ENABLE)
+  add_compile_definitions(TRACY_CALLSTACK)
+  add_compile_definitions(TRACY_NO_EXIT)
+  add_compile_definitions(TRACY_LIBUNWIND_BACKTRACE)
+  add_compile_definitions(TRACY_SYMBOL_OFFLINE_RESOLVE)
+  add_compile_definitions(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT)
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_compile_definitions(TRACY_DEBUGINFOD)

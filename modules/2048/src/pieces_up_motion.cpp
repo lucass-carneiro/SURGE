@@ -4,16 +4,7 @@
 
 #include <cstdint>
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-#  include <tracy/Tracy.hpp>
-#endif
-
 void mod_2048::pieces::compress_up() noexcept {
-
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("mod_2048::pieces::compress_up");
-#endif
-
   log_debug("Compressing up");
 
   auto &target_slots{get_piece_target_slots()};
@@ -93,7 +84,7 @@ void mod_2048::pieces::compress_up() noexcept {
 void mod_2048::pieces::merge_up() noexcept {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("mod_2048::pieces::merge_up");
+  // ZoneScopedN("mod_2048::pieces::merge_up");
 #endif
 
   log_debug("Merging up");
