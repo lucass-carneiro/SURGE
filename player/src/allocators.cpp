@@ -6,7 +6,7 @@
 #include "override_new_delete.hpp"
 // clang-format on
 
-#warning "TODO: Tracy detects a double free and cannot profile. Fix this"
+// TODO: Tracy detects a double free and cannot profile. Fix this
 #undef SURGE_BUILD_TYPE_Profile
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
