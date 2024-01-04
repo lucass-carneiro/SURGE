@@ -83,9 +83,6 @@ auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-
   log_info("Font cache initialized");
   return buffer_data{lib, face_vec, VAO, VBO};
 }
@@ -189,8 +186,6 @@ auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
       map.bearings_y.push_back(face->glyph->bitmap_top);
       map.advances.push_back(face->glyph->advance.x);
     }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
   }
 
   return map;

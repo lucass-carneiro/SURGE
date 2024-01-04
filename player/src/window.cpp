@@ -180,10 +180,13 @@ auto surge::window::init(const config::window_resolution &wres,
 
   if (w_attrs.vsync) {
     glfwSwapInterval(1);
-    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-      glfwTerminate();
-      return tl::unexpected(window_error::glfw_vsync);
-    }
+  } else {
+    glfwSwapInterval(0);
+  }
+
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return tl::unexpected(window_error::glfw_vsync);
   }
 
   /********

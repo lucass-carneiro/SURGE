@@ -20,6 +20,8 @@ struct one_buffer_data {
   glm::vec2 ds{0.0f};
 
   GLuint texture_id;
+  GLuint VBO;
+  GLuint EBO;
   GLuint VAO;
 };
 
@@ -78,6 +80,8 @@ auto create(const char *p,
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
 void draw(GLuint shader_program, const one_buffer_data &&ctx, one_draw_data &&dctx) noexcept;
+
+void cleanup(one_buffer_data &ctx) noexcept;
 
 } // namespace surge::atom::static_image
 

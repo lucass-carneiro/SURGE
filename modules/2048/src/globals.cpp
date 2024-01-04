@@ -1,5 +1,7 @@
 #include "2048.hpp"
 #include "logging.hpp"
+#include "renderer.hpp"
+#include "static_image.hpp"
 
 #ifdef SURGE_BUILD_TYPE_Debug
 #  include "debug_window.hpp"
@@ -512,6 +514,11 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
   }
 
   text::terminate(g_text_buffer);
+
+  surge::atom::static_image::cleanup(g_board_buffer);
+  surge::atom::static_image::cleanup(g_pieces_buffer);
+  surge::renderer::cleanup_shader_program(g_img_shader);
+  surge::renderer::cleanup_shader_program(g_txt_shader);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   debug_window::cleanup();

@@ -130,12 +130,12 @@ auto surge::atom::static_image::create(const char *p,
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float)));
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-
   return one_buffer_data{
       glm::vec2{iw, ih},
-      glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)}, texture_id,
+      glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)},
+      texture_id,
+      VBO,
+      EBO,
       VAO};
 }
 
@@ -168,11 +168,22 @@ void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_dat
 
   glBindVertexArray(ctx.VAO);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-  glBindVertexArray(0);
 }
 
 void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &&ctx,
                                      one_draw_data &&dctx) noexcept {
   draw(shader_program, ctx, dctx);
+}
+
+void surge::atom::static_image::cleanup(one_buffer_data &ctx) noexcept {
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::cleanup");
+  TracyGpuZone("GPU surge::atom::static_image::cleanup");
+#endif
+
+  glDeleteBuffers(1, &(ctx.VBO));
+  glDeleteBuffers(1, &(ctx.EBO));
+  glDeleteTextures(1, &(ctx.texture_id));
+  glDeleteVertexArrays(1, &(ctx.VAO));
 }

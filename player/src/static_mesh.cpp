@@ -49,9 +49,6 @@ auto surge::atom::static_mesh::gen_triangle() noexcept -> std::tuple<GLuint, std
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-
   return std::make_tuple(VAO, ed.size());
 }
 
@@ -91,9 +88,6 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
 
   return std::make_tuple(VAO, ed.size());
 }
@@ -154,9 +148,6 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
 
   return one_buffer_data{VAO, gsl::narrow_cast<GLsizei>(idx.size())};
 }

@@ -4,6 +4,8 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+
 #endif
 
 static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
@@ -11,6 +13,7 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::load_and_compile_shader");
+  TracyGpuZone("GPU load_and_compile_shader");
 #endif
 
   using namespace surge;
@@ -75,6 +78,7 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::link_shader_program");
+  TracyGpuZone("GPU surge::renderer::link_shader_program");
 #endif
 
   log_info("Linking shader handles %u and %u.", vertex_shader_handle, fragment_shader_handle);
@@ -152,4 +156,13 @@ auto surge::renderer::create_shader_program(const char *vertex_shader_path,
   }
 
   return link_shader_program(*vertex_shader_handle, *fragment_shader_handle);
+}
+
+void surge::renderer::cleanup_shader_program(GLuint program) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::cleanup_shader_program");
+  TracyGpuZone("GPU surge::renderer::cleanup_shader_program");
+#endif
+
+  glDeleteProgram(program);
 }
