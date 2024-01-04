@@ -148,6 +148,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Profile")
+  target_link_libraries(Surge2048Module PUBLIC Tracy::TracyClient)
+  
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(Surge2048Module PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(Surge2048Module PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)

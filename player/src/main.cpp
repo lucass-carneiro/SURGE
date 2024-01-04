@@ -18,11 +18,6 @@
 #endif
 
 auto main(int, char **) noexcept -> int {
-
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedNC("surge::main", tracy::Color::Azure);
-#endif
-
   using namespace surge;
 
   /*******************
@@ -160,7 +155,7 @@ auto main(int, char **) noexcept -> int {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     FrameMark;
-    TracyGpuCollect
+    TracyGpuCollect;
 #endif
   }
 
@@ -170,6 +165,10 @@ auto main(int, char **) noexcept -> int {
 
   // Finalize window and renderer
   window::terminate(*window);
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  log_info("Tracy may still be collecting profiling data. Please wait...");
+#endif
 
   return EXIT_SUCCESS;
 }

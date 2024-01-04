@@ -6,3 +6,6 @@
 	path = triplets
 	url = https://github.com/Neumann-A/my-vcpkg-triplets
 	branch = master
+[submodule "tracy"]
+	path = tracy
+	url = https://github.com/wolfpld/tracy

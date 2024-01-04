@@ -14,6 +14,10 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 /*
  * Globals
  */
@@ -170,6 +174,9 @@ auto mod_2048::get_state_queue() noexcept -> state_queue & { return g_state_queu
 
 auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
     -> mod_2048::pieces::piece_id_t {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::create_piece");
+#endif
 
   // Gen ID
   const auto id{g_piece_id_queue.front()};
@@ -188,6 +195,10 @@ auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
 }
 
 void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::delete_piece");
+#endif
+
   if (eastl::find(g_piece_id_queue.begin(), g_piece_id_queue.end(), piece_id)
       != g_piece_id_queue.end()) {
     log_debug("Unable to remove piece id %u because it is already non existant", piece_id);
@@ -249,9 +260,8 @@ void mod_2048::new_game() noexcept {
 }
 
 auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  // ZoneScopedN("mod_2048::on_load");
+  ZoneScopedN("mod_2048::on_load");
 #endif
 
   using namespace mod_2048;
@@ -343,9 +353,8 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  // ZoneScopedN("mod_2048::on_unload");
+  ZoneScopedN("mod_2048::on_unload");
 #endif
 
   using namespace surge::atom;
@@ -366,9 +375,8 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
 }
 
 auto update(double dt) noexcept -> std::uint32_t {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  // ZoneScopedN("mod_2048::update");
+  ZoneScopedN("mod_2048::update");
 #endif
 
   using namespace mod_2048;

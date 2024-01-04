@@ -8,7 +8,17 @@
 #include <gsl/gsl-lite.hpp>
 #include <random>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 void mod_2048::pieces::draw() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::draw()");
+  TracyGpuZone("GPU mod_2048::pieces::draw()");
+#endif
+
   using namespace surge::atom;
 
   const auto &img_shader{get_img_shader()};

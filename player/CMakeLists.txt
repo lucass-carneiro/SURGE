@@ -160,10 +160,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Profile")
-  if(SURGE_ENABLE_TRACY)
-    find_package(Tracy CONFIG REQUIRED)
-    target_link_libraries(SurgePlayer PUBLIC Tracy::TracyClient)
-  endif()
+  target_link_libraries(SurgePlayer PUBLIC Tracy::TracyClient)
   
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgePlayer PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
@@ -175,6 +172,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Profile")
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(SurgePlayer PUBLIC debuginfod)
+    target_link_libraries(SurgePlayer PUBLIC unwind)
   endif()
 endif()
 

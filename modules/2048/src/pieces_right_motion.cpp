@@ -4,7 +4,15 @@
 
 #include <cstdint>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 void mod_2048::pieces::compress_right() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::compress_right");
+#endif
+
   log_debug("Compressing right");
 
   auto &target_slots{get_piece_target_slots()};
@@ -81,9 +89,8 @@ void mod_2048::pieces::compress_right() noexcept {
 }
 
 void mod_2048::pieces::merge_right() noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  // ZoneScopedN("mod_2048::pieces::merge_right");
+  ZoneScopedN("mod_2048::pieces::merge_right");
 #endif
 
   log_debug("Merging right");
