@@ -15,7 +15,6 @@ const glm::vec3 g_score_text_color{1.0f, 1.0f, 1.0f};
 void mod_2048::score::draw() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::score::draw()");
-  TracyGpuZone("GPU mod_2048::score::draw()");
 #endif
 
   using namespace surge::atom;

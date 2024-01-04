@@ -110,39 +110,137 @@ static mod_2048::points_t g_best_score{0};
  * Global handlers and accessors
  */
 
-auto mod_2048::get_projection() noexcept -> const glm::mat4 & { return g_projection_matrix; }
+auto mod_2048::get_projection() noexcept -> const glm::mat4 & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_projection()");
+#endif
 
-auto mod_2048::get_view() noexcept -> const glm::mat4 & { return g_view_matrix; }
+  return g_projection_matrix;
+}
 
-auto mod_2048::get_board_buffer() noexcept -> const buffer_t & { return g_board_buffer; }
+auto mod_2048::get_view() noexcept -> const glm::mat4 & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_view()");
+#endif
 
-auto mod_2048::get_pieces_buffer() noexcept -> const buffer_t & { return g_pieces_buffer; }
+  return g_view_matrix;
+}
 
-auto mod_2048::get_text_buffer() noexcept -> const text_buffer_t & { return g_text_buffer; }
+auto mod_2048::get_board_buffer() noexcept -> const buffer_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_board_buffer()");
+#endif
 
-auto mod_2048::get_text_charmap() noexcept -> const text_charmap_t & { return g_text_charmap; }
+  return g_board_buffer;
+}
 
-auto mod_2048::get_img_shader() noexcept -> GLuint { return g_img_shader; }
+auto mod_2048::get_pieces_buffer() noexcept -> const buffer_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_pieces_buffer()");
+#endif
 
-auto mod_2048::get_txt_shader() noexcept -> GLuint { return g_txt_shader; }
+  return g_pieces_buffer;
+}
 
-auto mod_2048::get_board_draw_data() noexcept -> const draw_t & { return g_board_draw_data; }
+auto mod_2048::get_text_buffer() noexcept -> const text_buffer_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_text_buffer()");
+#endif
+
+  return g_text_buffer;
+}
+
+auto mod_2048::get_text_charmap() noexcept -> const text_charmap_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_text_charmap()");
+#endif
+
+  return g_text_charmap;
+}
+
+auto mod_2048::get_img_shader() noexcept -> GLuint {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_img_shader()");
+#endif
+
+  return g_img_shader;
+}
+
+auto mod_2048::get_txt_shader() noexcept -> GLuint {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_txt_shader()");
+#endif
+
+  return g_txt_shader;
+}
+
+auto mod_2048::get_board_draw_data() noexcept -> const draw_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_board_draw_data()");
+#endif
+
+  return g_board_draw_data;
+}
 
 auto mod_2048::get_piece_texture_origins() noexcept -> texture_origins_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_texture_origins()");
+#endif
+
   return g_piece_texture_origins;
 }
 
-auto mod_2048::get_slot_coords() noexcept -> const slot_coords_t & { return g_slot_coords; }
+auto mod_2048::get_slot_coords() noexcept -> const slot_coords_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_slot_coords()");
+#endif
 
-auto mod_2048::get_slot_size() noexcept -> float { return g_slot_size; }
+  return g_slot_coords;
+}
 
-auto mod_2048::get_slot_delta() noexcept -> float { return g_slot_delta; }
+auto mod_2048::get_slot_size() noexcept -> float {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_slot_size()");
+#endif
 
-auto mod_2048::get_game_score() noexcept -> points_t & { return g_game_points; }
-void mod_2048::add_game_score(points_t points) noexcept { g_game_points += points; }
-auto mod_2048::get_best_score() noexcept -> points_t & { return g_best_score; }
+  return g_slot_size;
+}
+
+auto mod_2048::get_slot_delta() noexcept -> float {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_slot_delta()");
+#endif
+
+  return g_slot_delta;
+}
+
+auto mod_2048::get_game_score() noexcept -> points_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_game_score()");
+#endif
+
+  return g_game_points;
+}
+void mod_2048::add_game_score(points_t points) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::add_game_score()");
+#endif
+
+  g_game_points += points;
+}
+auto mod_2048::get_best_score() noexcept -> points_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_best_score()");
+#endif
+
+  return g_best_score;
+}
 
 auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::inside_new_game_button()");
+#endif
+
   const auto in_x{g_new_game_button_corner[0] < x
                   && x < (g_new_game_button_corner[0] + g_new_game_button_extent[0])};
   const auto in_y{g_new_game_button_corner[1] < y
@@ -151,26 +249,60 @@ auto mod_2048::inside_new_game_button(double x, double y) noexcept -> bool {
 }
 
 auto mod_2048::pieces::get_piece_positions() noexcept -> piece_positions_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_positions()");
+#endif
+
   return g_piece_positions;
 }
 
 auto mod_2048::pieces::get_piece_exponents() noexcept -> piece_exponents_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_exponents()");
+#endif
+
   return g_piece_exponents;
 }
 
 auto mod_2048::pieces::get_piece_target_exponents() noexcept -> piece_exponents_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_target_exponents()");
+#endif
+
   return g_piece_target_exponents;
 }
 
-auto mod_2048::pieces::get_piece_slots() noexcept -> piece_slots_t & { return g_piece_slots; }
+auto mod_2048::pieces::get_piece_slots() noexcept -> piece_slots_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_slots()");
+#endif
+
+  return g_piece_slots;
+}
 
 auto mod_2048::pieces::get_piece_target_slots() noexcept -> piece_slots_t & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_piece_target_slots()");
+#endif
+
   return g_piece_target_slots;
 }
 
-auto mod_2048::view_state_queue() noexcept -> const state_queue & { return g_state_queue; }
+auto mod_2048::view_state_queue() noexcept -> const state_queue & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::view_state_queue()");
+#endif
 
-auto mod_2048::get_state_queue() noexcept -> state_queue & { return g_state_queue; }
+  return g_state_queue;
+}
+
+auto mod_2048::get_state_queue() noexcept -> state_queue & {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::get_state_queue()");
+#endif
+
+  return g_state_queue;
+}
 
 auto mod_2048::pieces::create_piece(exponent_t exponent, slot_t slot) noexcept
     -> mod_2048::pieces::piece_id_t {
@@ -216,6 +348,10 @@ void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
 }
 
 void mod_2048::pieces::mark_stale(piece_id_t piece) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::mark_stale");
+#endif
+
   g_stale_pieces_queue.push_back(piece);
 }
 
@@ -228,9 +364,19 @@ void mod_2048::pieces::remove_stale() noexcept {
   }
 }
 
-void mod_2048::pieces::should_add_new_piece(bool v) noexcept { g_should_add_new_piece = v; }
+void mod_2048::pieces::should_add_new_piece(bool v) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::should_add_new_piece");
+#endif
+
+  g_should_add_new_piece = v;
+}
 
 void mod_2048::new_game() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::pieces::new_game");
+#endif
+
   // Clear all state
   g_piece_positions.clear();
   g_piece_exponents.clear();
@@ -468,6 +614,10 @@ auto update(double dt) noexcept -> std::uint32_t {
 }
 
 void keyboard_event(GLFWwindow *, int key, int, int action, int) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("mod_2048::keyboard_event");
+#endif
+
   using namespace mod_2048;
 
   // Examine state stack. Only push a move if the board is idle
