@@ -4,8 +4,6 @@
 #include <string>
 #include <tl/expected.hpp>
 #include <tuple>
-#include <vector>
-#include <yaml-cpp/yaml.h>
 
 namespace surge::config {
 
@@ -31,9 +29,12 @@ struct window_attrs {
   bool vsync;
 };
 
-using module_list = std::vector<std::string>;
-
-using config_data = std::tuple<window_resolution, clear_color, window_attrs, module_list>;
+struct config_data {
+  window_resolution wr;
+  clear_color ccl;
+  window_attrs wattrs;
+  std::string module;
+};
 
 auto parse_config() noexcept -> tl::expected<config_data, cli_error>;
 

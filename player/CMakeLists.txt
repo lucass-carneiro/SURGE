@@ -185,7 +185,7 @@ target_link_libraries(SurgePlayer PUBLIC
   mimalloc-static
   gsl::gsl-lite
   tl::expected
-  yaml-cpp::yaml-cpp
+  unofficial::inih::libinih
   EASTL
   glfw
   glm::glm

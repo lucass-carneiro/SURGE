@@ -3,58 +3,76 @@
 #include "files.hpp"
 #include "logging.hpp"
 
+#include <cstring>
 #include <filesystem>
+#include <format>
+#include <stdexcept>
+
+// clang-format off
+#include <ini.h>
+// clang-format on
+
+static auto config_handler(void *user, const char *section, const char *name,
+                           const char *value) noexcept -> int {
+  auto match{[&](const char *s, const char *n) {
+    return strcmp(section, s) == 0 && strcmp(name, n) == 0;
+  }};
+
+  auto config{static_cast<surge::config::config_data *>(user)};
+
+  if (match("window", "name")) {
+    config->wattrs.name = std::string{value};
+  } else if (match("window", "monitor_index")) {
+    config->wattrs.monitor_index = std::atoi(value);
+  } else if (match("window", "windowed")) {
+    config->wattrs.windowed = static_cast<bool>(std::atoi(value));
+  } else if (match("window", "cursor")) {
+    config->wattrs.cursor = static_cast<bool>(std::atoi(value));
+  } else if (match("resolution", "width")) {
+    config->wr.width = std::atoi(value);
+  } else if (match("resolution", "height")) {
+    config->wr.height = std::atoi(value);
+  } else if (match("renderer", "VSync")) {
+    config->wattrs.vsync = static_cast<bool>(std::atoi(value));
+  } else if (match("clear_color", "r")) {
+    config->ccl.r = std::strtof(value, nullptr);
+  } else if (match("clear_color", "g")) {
+    config->ccl.g = std::strtof(value, nullptr);
+  } else if (match("clear_color", "b")) {
+    config->ccl.b = std::strtof(value, nullptr);
+  } else if (match("clear_color", "a")) {
+    config->ccl.a = std::strtof(value, nullptr);
+  } else if (match("modules", "first_module")) {
+    config->module = std::string{value};
+#ifdef SURGE_SYSTEM_Windows
+    module_name.append(".dll");
+#else
+    config->module.insert(0, "/");
+    config->module.insert(0, std::filesystem::current_path().string());
+    config->module.append(".so");
+#endif
+  } else {
+    log_error("Unable section / name entry in config.ini: %s/%s", section, name);
+    return 0;
+  }
+
+  return 1;
+}
 
 auto surge::config::parse_config() noexcept -> tl::expected<config_data, cli_error> {
-  const auto config_file{files::load_file("config.yaml", true)};
+  auto config_file{files::load_file("config.ini", true)};
 
   if (!config_file) {
-    log_error("Unable to load config.yaml file");
+    log_error("Unable to load config.ini file");
     return tl::unexpected(cli_error::config_file_load);
   }
 
-  try {
-    const auto yaml_file{YAML::Load(reinterpret_cast<const char *>(config_file->data()))};
+  config_data cd{};
+  const auto file_str{reinterpret_cast<const char *>(config_file->data())};
 
-    // Window resolution
-    const auto width{yaml_file["window"]["resolution"]["width"].as<int>()};
-    const auto height{yaml_file["window"]["resolution"]["height"].as<int>()};
-    const window_resolution res{width, height};
-
-    // Window clear color
-    const auto r{yaml_file["renderer"]["clear_color"]["r"].as<float>()};
-    const auto g{yaml_file["renderer"]["clear_color"]["g"].as<float>()};
-    const auto b{yaml_file["renderer"]["clear_color"]["b"].as<float>()};
-    const auto a{yaml_file["renderer"]["clear_color"]["a"].as<float>()};
-    const clear_color ccl{r, g, b, a};
-
-    // Window attributes
-    const auto name{yaml_file["window"]["name"].as<std::string>()};
-    const auto monitor_index{yaml_file["window"]["monitor_index"].as<int>()};
-    const auto windowed{yaml_file["window"]["windowed"].as<bool>()};
-    const auto cursor{yaml_file["window"]["cursor"].as<bool>()};
-    const auto vsync{yaml_file["window"]["VSync"]["enabled"].as<bool>()};
-    const window_attrs attrs{name, monitor_index, windowed, cursor, vsync};
-
-    // Module list
-    module_list mlist{};
-
-    for (const auto &node : yaml_file["modules"]) {
-      auto module_name{node.as<std::string>()};
-#ifdef SURGE_SYSTEM_Windows
-      module_name.append(".dll");
-#else
-      module_name.insert(0, "/");
-      module_name.insert(0, std::filesystem::current_path().string());
-      module_name.append(".so");
-#endif
-      mlist.push_back(module_name);
-    }
-
-    return std::make_tuple(res, ccl, attrs, mlist);
-
-  } catch (const std::exception &e) {
-    log_error("Error while parsing config.yaml: %s", e.what());
+  if (ini_parse_string(file_str, config_handler, static_cast<void *>(&cd)) != 0) {
     return tl::unexpected(cli_error::config_file_parse);
+  } else {
+    return cd;
   }
 }

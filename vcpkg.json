@@ -16,7 +16,7 @@
     },
     "gsl-lite",
     "tl-expected",
-    "yaml-cpp",
+    "inih",
     "eastl",
     "stb",
     "glfw3",

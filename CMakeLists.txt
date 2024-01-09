@@ -37,7 +37,7 @@ endif()
 
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
-find_package(yaml-cpp CONFIG REQUIRED)
+find_package(unofficial-inih CONFIG REQUIRED)
 find_package(EASTL CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 find_package(Stb REQUIRED)

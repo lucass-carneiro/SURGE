@@ -38,7 +38,7 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  const auto [w_res, w_ccl, w_attrs, m_list] = *config_data;
+  const auto [w_res, w_ccl, w_attrs, first_mod] = *config_data;
 
   /****************************
    * Init window and renderer *
@@ -51,12 +51,7 @@ auto main(int, char **) noexcept -> int {
   /*********************
    * Load First module *
    *********************/
-  if (m_list.size() == 0) {
-    log_error("No module to initialize");
-    return EXIT_FAILURE;
-  }
-
-  const auto &first_mod_name{m_list[0].c_str()};
+  const auto &first_mod_name{first_mod.c_str()};
 
   if (!module::set_module_path()) {
     log_error("Unable to set the module path");
