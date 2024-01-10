@@ -1,16 +1,20 @@
 #ifndef SURGE_ATOM_STATIC_IMAGE
 #define SURGE_ATOM_STATIC_IMAGE
 
+#include "allocators.hpp"
 #include "renderer.hpp"
 
+#include <foonathan/memory/std_allocator.hpp>
 #include <glm/fwd.hpp>
+#include <vector>
 
 /**
  * Drawable static image quad
  */
 namespace surge::atom::static_image {
 
-template <typename T> using vec = eastl::vector<T, allocators::eastl::gp_allocator>;
+template <typename T> using vec
+    = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
 template <typename T, std::size_t N> using arr = std::array<T, N>;
 
 enum class error : std::uint32_t { load_error = 1, stbi_error = 2, shader_creation = 3 };

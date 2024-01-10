@@ -333,7 +333,7 @@ void mod_2048::pieces::delete_piece(piece_id_t piece_id) noexcept {
   ZoneScopedN("mod_2048::pieces::delete_piece");
 #endif
 
-  if (eastl::find(g_piece_id_queue.begin(), g_piece_id_queue.end(), piece_id)
+  if (std::find(g_piece_id_queue.begin(), g_piece_id_queue.end(), piece_id)
       != g_piece_id_queue.end()) {
     log_debug("Unable to remove piece id %u because it is already non existant", piece_id);
   } else {

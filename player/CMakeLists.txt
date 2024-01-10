@@ -187,6 +187,7 @@ target_link_libraries(SurgePlayer PUBLIC
   tl::expected
   unofficial::inih::libinih
   EASTL
+  foonathan_memory
   glfw
   glm::glm
   OpenGL::GL

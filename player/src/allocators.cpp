@@ -1,35 +1,20 @@
 // clang-format off
 #include "options.hpp"
 #include "allocators.hpp"
+#include "logging.hpp"
 
 #include <mimalloc.h>
+#include <stdexcept>
 #include "override_new_delete.hpp"
 // clang-format on
 
-// TODO: Tracy detects a double free and cannot profile. Fix this
-#undef SURGE_BUILD_TYPE_Profile
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
-void surge::allocators::mimalloc::free(void *p) noexcept {
+void surge::allocators::mimalloc::free(void *p) noexcept { mi_free(p); }
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  TracyFree(p);
-#endif
-
-  mi_free(p);
-}
-
-auto surge::allocators::mimalloc::malloc(size_t size) noexcept -> void * {
-  auto p{mi_malloc(size)};
-
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  TracyAlloc(p, size);
-#endif
-
-  return p;
-}
+auto surge::allocators::mimalloc::malloc(size_t size) noexcept -> void * { return mi_malloc(size); }
 
 auto surge::allocators::mimalloc::zalloc(size_t size) noexcept -> void * { return mi_zalloc(size); }
 
@@ -134,4 +119,59 @@ auto surge::allocators::eastl::operator==(const gp_allocator &, const gp_allocat
 auto surge::allocators::eastl::operator!=(const gp_allocator &, const gp_allocator &) noexcept
     -> bool {
   return false;
+}
+
+auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
+                                                               std::size_t alignment) -> void * {
+  auto p{mi_aligned_alloc(alignment, size)};
+
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: alloc\n"
+            "allocator: \"fnm_allocator\"\n"
+            "size: %lu\n"
+            "alignment: %lu\n"
+            "address: %p\n"
+            "failed: %s",
+            size, alignment, p, p ? "false" : "true");
+#endif
+
+  if (!p) {
+    log_error("Memory Event Failed\n"
+              "---\n"
+              "type: alloc\n"
+              "allocator: \"fnm_allocator\"\n"
+              "size: %lu\n"
+              "alignment: %lu",
+              size, alignment);
+
+    throw std::runtime_error("fnm_allocator alloc failure");
+  }
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  TracyAlloc(p, size);
+#endif
+
+  return p;
+}
+
+void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, std::size_t size,
+                                                                 std::size_t alignment) noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: free\n"
+            "allocator: \"fnm_allocator\"\n"
+            "size: %lu\n"
+            "alignment: %lu\n"
+            "address: %p",
+            size, alignment, p);
+#endif
+
+  mi_free_aligned(p, alignment);
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  TracyFree(p);
+#endif
 }

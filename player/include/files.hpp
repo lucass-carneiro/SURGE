@@ -4,8 +4,9 @@
 #include "allocators.hpp"
 #include "options.hpp"
 
-#include <EASTL/vector.h>
+#include <foonathan/memory/std_allocator.hpp>
 #include <tl/expected.hpp>
+#include <vector>
 
 namespace surge::files {
 
@@ -13,8 +14,10 @@ enum class file_error { invalid_path, read_error, invalid_format, unknow_error }
 
 using file_size_t = std::uintmax_t;
 
-using file
-    = tl::expected<eastl::vector<std::byte, surge::allocators::eastl::gp_allocator>, file_error>;
+using file_data_t
+    = std::vector<std::byte,
+                  foonathan::memory::std_allocator<std::byte, allocators::mimalloc::fnm_allocator>>;
+using file = tl::expected<file_data_t, file_error>;
 
 auto validate_path(const char *path) noexcept -> bool;
 

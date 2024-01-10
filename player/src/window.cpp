@@ -8,7 +8,6 @@
 #include "renderer.hpp"
 
 #include <gsl/gsl-lite.hpp>
-#include <string>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/TracyOpenGL.hpp>

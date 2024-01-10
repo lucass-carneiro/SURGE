@@ -1,12 +1,17 @@
 #include "static_mesh.hpp"
 
+#include "allocators.hpp"
 #include "logging.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <EASTL/vector.h>
+#include <foonathan/memory/std_allocator.hpp>
 #include <gsl/gsl-lite.hpp>
 #include <tiny_obj_loader.h>
 #include <vector>
+
+template <typename T> using vector
+    = std::vector<T,
+                  foonathan::memory::std_allocator<T, surge::allocators::mimalloc::fnm_allocator>>;
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
@@ -123,7 +128,7 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
   const auto &shape{shapes[0]};
   const auto &vtx{attrib.vertices};
 
-  eastl::vector<GLuint, allocators::eastl::gp_allocator> idx(shape.mesh.indices.size());
+  vector<GLuint> idx(shape.mesh.indices.size());
   idx.reserve(shapes[0].mesh.indices.size());
 
   for (const auto &index : shape.mesh.indices) {

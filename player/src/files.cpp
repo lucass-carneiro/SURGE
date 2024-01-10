@@ -106,7 +106,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
       file_size += 1;
     }
 
-    eastl::vector<std::byte, allocators::eastl::gp_allocator> buffer(file_size);
+    file_data_t buffer(file_size);
     buffer.reserve(file_size);
     std::fill(buffer.begin(), buffer.end(), std::byte{0});
 

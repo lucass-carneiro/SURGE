@@ -5,10 +5,11 @@
 #include "files.hpp"
 #include "renderer.hpp"
 
-#include <EASTL/vector.h>
 #include <array>
 #include <cstddef>
+#include <foonathan/memory/std_allocator.hpp>
 #include <tuple>
+#include <vector>
 
 /**
  * Drawable mesh with the following properties:
@@ -19,7 +20,8 @@
  */
 namespace surge::atom::static_mesh {
 
-template <typename T> using vec = eastl::vector<T, allocators::eastl::gp_allocator>;
+template <typename T> using vec
+    = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
 template <typename T, std::size_t N> using arr = std::array<T, N>;
 
 struct one_buffer_data {

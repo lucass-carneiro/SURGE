@@ -14,22 +14,26 @@
 #include <freetype/fttypes.h>
 // clang-format on
 
-#include <EASTL/vector.h>
+#include <foonathan/memory/std_allocator.hpp>
 #include <glm/glm.hpp>
 #include <string>
 #include <string_view>
+#include <vector>
 
 /**
  * Drawable text
  */
 namespace surge::atom::text {
 
-using font_name_vec_t = eastl::vector<std::string, allocators::eastl::gp_allocator>;
-using face_vec_t = eastl::vector<FT_Face, allocators::eastl::gp_allocator>;
-using tid_vec_t = eastl::vector<GLuint, allocators::eastl::gp_allocator>;
-using size_vec_t = eastl::vector<FT_UInt, allocators::eastl::gp_allocator>;
-using bea_vec_t = eastl::vector<FT_Int, allocators::eastl::gp_allocator>;
-using adv_vec_t = eastl::vector<FT_Pos, allocators::eastl::gp_allocator>;
+template <typename T> using vec_t
+    = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
+
+using font_name_vec_t = vec_t<std::string>;
+using face_vec_t = vec_t<FT_Face>;
+using tid_vec_t = vec_t<GLuint>;
+using size_vec_t = vec_t<FT_UInt>;
+using bea_vec_t = vec_t<FT_Int>;
+using adv_vec_t = vec_t<FT_Pos>;
 
 enum class error : std::uint32_t {
   freetype_init = 1,

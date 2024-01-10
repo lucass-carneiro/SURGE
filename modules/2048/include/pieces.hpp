@@ -3,8 +3,9 @@
 
 #include "allocators.hpp"
 
-#include <EASTL/deque.h>
 #include <EASTL/fixed_hash_map.h>
+#include <deque>
+#include <foonathan/memory/std_allocator.hpp>
 #include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
@@ -13,7 +14,9 @@ using exponent_t = unsigned short;
 using slot_t = unsigned short;
 
 using piece_id_t = unsigned short;
-using piece_id_queue_t = eastl::deque<piece_id_t, surge::allocators::eastl::gp_allocator>;
+using piece_id_queue_t = std::deque<
+    piece_id_t,
+    foonathan::memory::std_allocator<piece_id_t, surge::allocators::mimalloc::fnm_allocator>>;
 
 using piece_pos_t = glm::vec3;
 using piece_positions_t = eastl::fixed_hash_map<piece_id_t, piece_pos_t, 16, 17, false>;

@@ -7,8 +7,9 @@
 #include "text.hpp"
 #include "window.hpp"
 
-#include <EASTL/deque.h>
 #include <cstdint>
+#include <deque>
+#include <foonathan/memory/std_allocator.hpp>
 #include <glm/fwd.hpp>
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_2048
@@ -54,7 +55,9 @@ enum class game_state : state_code_t {
   add_piece = 10
 };
 
-using state_queue = eastl::deque<game_state, surge::allocators::eastl::gp_allocator>;
+using state_queue = std::deque<
+    game_state,
+    foonathan::memory::std_allocator<game_state, surge::allocators::mimalloc::fnm_allocator>>;
 
 auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;

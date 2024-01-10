@@ -55,18 +55,22 @@ auto main(int, char **) noexcept -> int {
 
   if (!module::set_module_path()) {
     log_error("Unable to set the module path");
+    window::terminate(*window);
     return EXIT_FAILURE;
   }
 
   auto mod{module::load(first_mod_name)};
   if (!mod) {
     log_error("Unable to load first module %s", first_mod_name);
+    window::terminate(*window);
     return EXIT_FAILURE;
   }
 
   auto mod_api{module::get_api(*mod)};
   if (!mod_api) {
     log_error("Unable to recover first module %s API", first_mod_name);
+    window::terminate(*window);
+    module::unload(*mod);
     return EXIT_FAILURE;
   }
 
