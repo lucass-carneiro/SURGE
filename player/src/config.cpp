@@ -21,7 +21,7 @@ static auto config_handler(void *user, const char *section, const char *name,
   auto config{static_cast<surge::config::config_data *>(user)};
 
   if (match("window", "name")) {
-    config->wattrs.name = std::string{value};
+    config->wattrs.name = surge::config::string_t{value};
   } else if (match("window", "monitor_index")) {
     config->wattrs.monitor_index = std::atoi(value);
   } else if (match("window", "windowed")) {
@@ -43,7 +43,7 @@ static auto config_handler(void *user, const char *section, const char *name,
   } else if (match("clear_color", "a")) {
     config->ccl.a = std::strtof(value, nullptr);
   } else if (match("modules", "first_module")) {
-    config->module = std::string{value};
+    config->module = surge::config::string_t{value};
 #ifdef SURGE_SYSTEM_Windows
     module_name.append(".dll");
 #else

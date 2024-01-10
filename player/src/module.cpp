@@ -7,9 +7,9 @@
 #ifdef SURGE_SYSTEM_Windows
 
 auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
-    -> tl::expected<std::string, module_error> {
+    -> tl::expected<string_t, module_error> {
 
-  auto module_name{std::string(max_size, '\0')};
+  auto module_name{string_t(max_size, '\0')};
   const auto actual_name_size{
       GetModuleFileNameA(module, module_name.data(), gsl::narrow_cast<DWORD>(max_size))};
 
@@ -192,7 +192,7 @@ auto surge::module::set_module_path() noexcept -> bool {
 #else
 
 auto surge::module::get_name(handle_t module, std::size_t) noexcept
-    -> tl::expected<std::string, module_error> {
+    -> tl::expected<string_t, module_error> {
 
   Dl_info info;
   const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
@@ -201,7 +201,7 @@ auto surge::module::get_name(handle_t module, std::size_t) noexcept
     log_error("Unable to retrieve module %p name.", module);
     return tl::unexpected(module_error::name_retrival);
   } else {
-    return std::string(info.dli_fname);
+    return string_t{info.dli_fname};
   }
 }
 

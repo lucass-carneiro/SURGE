@@ -25,10 +25,14 @@
  */
 namespace surge::atom::text {
 
+using string_t = std::basic_string<
+    char, std::char_traits<char>,
+    foonathan::memory::std_allocator<char, allocators::mimalloc::fnm_allocator>>;
+
 template <typename T> using vec_t
     = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
 
-using font_name_vec_t = vec_t<std::string>;
+using font_name_vec_t = vec_t<string_t>;
 using face_vec_t = vec_t<FT_Face>;
 using tid_vec_t = vec_t<GLuint>;
 using size_vec_t = vec_t<FT_UInt>;

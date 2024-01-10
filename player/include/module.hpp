@@ -16,8 +16,8 @@
 #endif
 
 #include <cstdint>
+#include <foonathan/memory/std_allocator.hpp>
 #include <gsl/gsl-lite.hpp>
-#include <memory>
 #include <string>
 #include <tl/expected.hpp>
 
@@ -52,8 +52,12 @@ struct api {
   mouse_scroll_event_t mouse_scroll_event;
 };
 
+using string_t = std::basic_string<
+    char, std::char_traits<char>,
+    foonathan::memory::std_allocator<char, allocators::mimalloc::fnm_allocator>>;
+
 auto get_name(handle_t module, std::size_t max_size = 256) noexcept
-    -> tl::expected<std::string, module_error>;
+    -> tl::expected<string_t, module_error>;
 
 auto load(const char *path) noexcept -> tl::expected<handle_t, module_error>;
 void unload(handle_t module) noexcept;
