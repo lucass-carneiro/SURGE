@@ -14,7 +14,6 @@
 #include <glm/glm.hpp>
 // clang-format on
 
-#include <EASTL/vector.h>
 #include <tl/expected.hpp>
 
 namespace surge::renderer {

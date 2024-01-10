@@ -75,52 +75,6 @@ void surge::allocators::mimalloc::init() noexcept {
   mi_option_set(mi_option_eager_commit_delay, 100);
 }
 
-auto surge::allocators::eastl::gp_allocator::allocate(size_t n, int) const noexcept -> void * {
-#ifdef SURGE_ENABLE_TRACY
-  void *p = mi_malloc(n);
-  TracyAlloc(p, n);
-  return p;
-#else
-  return mi_malloc(n);
-#endif
-}
-
-auto surge::allocators::eastl::gp_allocator::allocate(size_t n, size_t alignment, size_t,
-                                                      int) const noexcept -> void * {
-#ifdef SURGE_ENABLE_TRACY
-  void *p = mi_aligned_alloc(alignment, n);
-  TracyAlloc(p, n);
-  return p;
-#else
-  return mi_aligned_alloc(alignment, n);
-#endif
-}
-
-void surge::allocators::eastl::gp_allocator::deallocate(void *p, size_t n) const noexcept {
-#ifdef SURGE_ENABLE_TRACY
-  TracyFree(p);
-  mi_free_size(p, n);
-#else
-  mi_free_size(p, n);
-#endif
-}
-
-auto surge::allocators::eastl::gp_allocator::get_name() const noexcept -> const char * {
-  return "mimalloc backed general porpouse EASTL allocator";
-}
-
-void surge::allocators::eastl::gp_allocator::set_name(const char *) {}
-
-auto surge::allocators::eastl::operator==(const gp_allocator &, const gp_allocator &) noexcept
-    -> bool {
-  return true;
-}
-
-auto surge::allocators::eastl::operator!=(const gp_allocator &, const gp_allocator &) noexcept
-    -> bool {
-  return false;
-}
-
 auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
                                                                std::size_t alignment) -> void * {
   auto p{mi_aligned_alloc(alignment, size)};

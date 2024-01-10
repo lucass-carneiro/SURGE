@@ -6,9 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace surge::allocators {
-
-namespace mimalloc {
+namespace surge::allocators::mimalloc {
 
 void init() noexcept;
 
@@ -33,30 +31,6 @@ struct fnm_allocator {
   void deallocate_node(void *node, std::size_t size, std::size_t alignment) noexcept;
 };
 
-} // namespace mimalloc
-
-namespace eastl {
-
-// See https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html#eastl_allocator
-class gp_allocator {
-public:
-  gp_allocator(const char * = nullptr) noexcept {}
-  gp_allocator(const gp_allocator &a, const char *) noexcept : gp_allocator(a) {}
-
-  [[nodiscard]] auto allocate(size_t n, int flags = 0) const noexcept -> void *;
-  [[nodiscard]] auto allocate(size_t n, size_t alignment, size_t, int flags = 0) const noexcept
-      -> void *;
-  void deallocate(void *p, size_t n) const noexcept;
-
-  [[nodiscard]] auto get_name() const noexcept -> const char *;
-  void set_name(const char *);
-};
-
-[[nodiscard]] auto operator==(const gp_allocator &, const gp_allocator &) noexcept -> bool;
-[[nodiscard]] auto operator!=(const gp_allocator &, const gp_allocator &) noexcept -> bool;
-
-} // namespace eastl
-
-} // namespace surge::allocators
+} // namespace surge::allocators::mimalloc
 
 #endif // SURGE_ALLOCATORS_HPP

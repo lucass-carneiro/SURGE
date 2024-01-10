@@ -186,7 +186,6 @@ target_link_libraries(SurgePlayer PUBLIC
   gsl::gsl-lite
   tl::expected
   unofficial::inih::libinih
-  EASTL
   foonathan_memory
   glfw
   glm::glm

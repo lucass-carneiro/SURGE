@@ -18,7 +18,6 @@
     "tl-expected",
     "inih",
     "foonathan-memory",
-    "eastl",
     "stb",
     "glfw3",
     "glm",

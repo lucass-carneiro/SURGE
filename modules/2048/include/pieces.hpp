@@ -3,9 +3,8 @@
 
 #include "allocators.hpp"
 
-#include <EASTL/fixed_hash_map.h>
 #include <deque>
-#include <foonathan/memory/std_allocator.hpp>
+#include <foonathan/memory/container.hpp>
 #include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
@@ -14,16 +13,17 @@ using exponent_t = unsigned short;
 using slot_t = unsigned short;
 
 using piece_id_t = unsigned short;
-using piece_id_queue_t = std::deque<
-    piece_id_t,
-    foonathan::memory::std_allocator<piece_id_t, surge::allocators::mimalloc::fnm_allocator>>;
+using piece_id_queue_t
+    = foonathan::memory::deque<piece_id_t, surge::allocators::mimalloc::fnm_allocator>;
 
 using piece_pos_t = glm::vec3;
-using piece_positions_t = eastl::fixed_hash_map<piece_id_t, piece_pos_t, 16, 17, false>;
 
-using piece_exponents_t = eastl::fixed_hash_map<piece_id_t, exponent_t, 16, 17, false>;
+template <typename Key, typename Value> using hash_map_t
+    = foonathan::memory::unordered_map<Key, Value, surge::allocators::mimalloc::fnm_allocator>;
 
-using piece_slots_t = eastl::fixed_hash_map<piece_id_t, slot_t, 16, 17, false>;
+using piece_positions_t = hash_map_t<piece_id_t, piece_pos_t>;
+using piece_exponents_t = hash_map_t<piece_id_t, exponent_t>;
+using piece_slots_t = hash_map_t<piece_id_t, slot_t>;
 
 enum class board_element_type : unsigned short { row, column };
 

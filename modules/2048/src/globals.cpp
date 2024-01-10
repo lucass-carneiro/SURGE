@@ -12,6 +12,7 @@
 #include "text.hpp"
 // clang-format on
 
+#include <foonathan/memory/static_allocator.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -488,6 +489,15 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
 
   // Init state stack
   g_state_queue.push_back(game_state::idle);
+
+  // Reserve memory for hash maps
+  g_piece_positions.reserve(16);
+
+  g_piece_exponents.reserve(16);
+  g_piece_target_exponents.reserve(16);
+
+  g_piece_slots.reserve(16);
+  g_piece_target_slots.reserve(16);
 
 // Init debug window
 #ifdef SURGE_BUILD_TYPE_Debug
