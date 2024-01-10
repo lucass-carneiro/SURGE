@@ -178,9 +178,11 @@ auto surge::window::init(const config::window_resolution &wres,
   }
 
   if (w_attrs.vsync) {
+    log_info("VSync enabled");
     glfwSwapInterval(1);
   } else {
     glfwSwapInterval(0);
+    log_info("VSync disabled");
   }
 
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
