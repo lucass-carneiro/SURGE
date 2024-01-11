@@ -84,8 +84,8 @@ auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
             "---\n"
             "type: alloc\n"
             "allocator: \"fnm_allocator\"\n"
-            "size: %lu\n"
-            "alignment: %lu\n"
+            "size: %zu\n"
+            "alignment: %zu\n"
             "address: %p\n"
             "failed: %s",
             size, alignment, p, p ? "false" : "true");
@@ -96,8 +96,8 @@ auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
               "---\n"
               "type: alloc\n"
               "allocator: \"fnm_allocator\"\n"
-              "size: %lu\n"
-              "alignment: %lu",
+              "size: %zu\n"
+              "alignment: %zu",
               size, alignment);
 
     throw std::runtime_error("fnm_allocator alloc failure");
@@ -117,8 +117,8 @@ void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, std::s
             "---\n"
             "type: free\n"
             "allocator: \"fnm_allocator\"\n"
-            "size: %lu\n"
-            "alignment: %lu\n"
+            "size: %zu\n"
+            "alignment: %zu\n"
             "address: %p",
             size, alignment, p);
 #endif

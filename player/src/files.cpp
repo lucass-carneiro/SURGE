@@ -4,10 +4,6 @@
 #include "logging.hpp"
 #include "options.hpp"
 
-// clang-format off
-#include <yaml-cpp/yaml.h>
-// clang-format on
-
 #ifdef SURGE_SYSTEM_IS_POSIX
 #  include <fcntl.h>
 #elif defined(SURGE_SYSTEM_Windows)

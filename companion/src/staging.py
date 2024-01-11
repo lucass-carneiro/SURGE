@@ -111,8 +111,8 @@ def populate(args, output_folder):
             output_folder, module_name))
 
     # Copy config
-    src_config_path = os.path.join(args["--prefix"], "modules", args["<module>"], "config.yaml")
-    dst_config_path = os.path.join(output_folder, "config.yaml")
+    src_config_path = os.path.join(args["--prefix"], "modules", args["<module>"], "config.ini")
+    dst_config_path = os.path.join(output_folder, "config.ini")
     shutil.copy2(src_config_path, dst_config_path)
 
     # Copy resources folder if it exists

@@ -45,7 +45,7 @@ static auto config_handler(void *user, const char *section, const char *name,
   } else if (match("modules", "first_module")) {
     config->module = surge::config::string_t{value};
 #ifdef SURGE_SYSTEM_Windows
-    module_name.append(".dll");
+    config->module.append(".dll");
 #else
     config->module.insert(0, "/");
     config->module.insert(0, std::filesystem::current_path().string());
