@@ -143,3 +143,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)
+
+# -----------------------------------------
+#  Drizzle: The Unveiling
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/DTU)

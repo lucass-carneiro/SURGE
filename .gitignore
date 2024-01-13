@@ -12,4 +12,6 @@ companion/src/__pycache__
 
 player/include/options.hpp
 
+DTU/include/player/*
+
 compile_commands.json
