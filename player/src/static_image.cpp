@@ -26,13 +26,10 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::static_image::create(const char *p,
-                                       renderer::texture_filtering filtering) noexcept
-    -> tl::expected<one_buffer_data, error> {
-
+auto surge::atom::static_image::load_image(const char *p) noexcept
+    -> tl::expected<image_data, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::static_image::create");
-  TracyGpuZone("GPU surge::atom::static_image::create");
+  ZoneScopedN("surge::atom::static_image::load_image");
 #endif
 
   /**************
@@ -56,8 +53,18 @@ auto surge::atom::static_image::create(const char *p,
   if (img_data == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
     return tl::unexpected(error::stbi_error);
-    ;
+  } else {
+    return image_data{img_data, iw, ih, channels_in_file};
   }
+}
+
+auto surge::atom::static_image::make_texture(image_data &img_data,
+                                             renderer::texture_filtering filtering) noexcept
+    -> one_buffer_data {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::make_texture");
+  TracyGpuZone("GPU surge::atom::static_image::make_texture");
+#endif
 
   /***************
    * Gen texture *
@@ -77,11 +84,12 @@ auto surge::atom::static_image::create(const char *p,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(filtering));
 
   // Loading and mip mapping
-  const int format{channels_in_file == 4 ? GL_RGBA : GL_RGB};
+  const int format{img_data.channels_in_file == 4 ? GL_RGBA : GL_RGB};
 
-  glTexImage2D(GL_TEXTURE_2D, 0, format, iw, ih, 0, format, GL_UNSIGNED_BYTE, img_data);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, img_data.iw, img_data.ih, 0, format, GL_UNSIGNED_BYTE,
+               img_data.data);
   glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(img_data);
+  stbi_image_free(img_data.data);
 
   // Unbinding
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -130,13 +138,28 @@ auto surge::atom::static_image::create(const char *p,
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float)));
 
-  return one_buffer_data{
-      glm::vec2{iw, ih},
-      glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)},
-      texture_id,
-      VBO,
-      EBO,
-      VAO};
+  return one_buffer_data{glm::vec2{img_data.iw, img_data.ih},
+                         glm::vec2{1.0f / gsl::narrow_cast<float>(img_data.iw),
+                                   1.0f / gsl::narrow_cast<float>(img_data.ih)},
+                         texture_id,
+                         VBO,
+                         EBO,
+                         VAO};
+}
+
+auto surge::atom::static_image::create(const char *p,
+                                       renderer::texture_filtering filtering) noexcept
+    -> tl::expected<one_buffer_data, error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::create");
+#endif
+
+  auto img_data{load_image(p)};
+  if (!img_data) {
+    return tl::unexpected(img_data.error());
+  }
+
+  return make_texture(*img_data, filtering);
 }
 
 void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &ctx,

@@ -6,6 +6,7 @@
 
 #include <foonathan/memory/std_allocator.hpp>
 #include <glm/fwd.hpp>
+#include <tl/expected.hpp>
 #include <vector>
 
 /**
@@ -34,6 +35,8 @@ template <std::size_t N> struct st_buffer_data {
   arr<glm::vec2, N> ds;
 
   arr<GLuint, N> texture_ids;
+  arr<GLuint, N> VBOs;
+  arr<GLuint, N> EBOs;
   arr<GLuint, N> VAOs;
 };
 
@@ -78,9 +81,21 @@ struct draw_data {
   vec<bool> v_flip{false};
 };
 
+struct image_data {
+  unsigned char *data{nullptr};
+  int iw{0};
+  int ih{0};
+  int channels_in_file{0};
+};
+
 auto create(const char *p,
             renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
     -> tl::expected<one_buffer_data, error>;
+
+auto load_image(const char *p) noexcept -> tl::expected<image_data, error>;
+auto make_texture(image_data &img_data, renderer::texture_filtering filtering
+                                        = renderer::texture_filtering::linear) noexcept
+    -> one_buffer_data;
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
 void draw(GLuint shader_program, const one_buffer_data &&ctx, one_draw_data &&dctx) noexcept;
