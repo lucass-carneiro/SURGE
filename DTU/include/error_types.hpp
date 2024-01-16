@@ -15,6 +15,9 @@ enum class error : u32 {
 
   mouse_scroll_event_binding,
   mouse_scroll_event_unbinding,
+
+  image_shader_creation,
+  image_load
 };
 
 } // namespace DTU

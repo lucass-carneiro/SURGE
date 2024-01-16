@@ -28,11 +28,13 @@ set(
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/config.hpp"
+  "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/error_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
-  "${PROJECT_SOURCE_DIR}/include/override_new_delete.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/static_image.hpp"
   "${PROJECT_SOURCE_DIR}/include/static_mesh.hpp"
@@ -194,3 +196,7 @@ target_link_libraries(SurgePlayer PUBLIC
   imgui::imgui
   Freetype::Freetype
 )
+
+if(SURGE_MULTITHREADING)
+  target_link_libraries(SurgePlayer PUBLIC OpenMP::OpenMP_CXX)
+endif()

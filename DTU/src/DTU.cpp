@@ -48,28 +48,6 @@ auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> u32 {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> DTU::u32 {
-  using namespace DTU;
-
-  const auto bind_callback_stat{bind_callbacks(window)};
-  if (bind_callback_stat != 0) {
-    return bind_callback_stat;
-  }
-
-  return 0;
-}
-
-extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> DTU::u32 {
-  using namespace DTU;
-
-  const auto unbind_callback_stat{unbind_callbacks(window)};
-  if (unbind_callback_stat != 0) {
-    return unbind_callback_stat;
-  }
-
-  return 0;
-}
-
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> DTU::u32 { return 0; }
 
 extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> DTU::u32 { return 0; }

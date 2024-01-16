@@ -28,7 +28,6 @@ void surge::renderer::blend_function(const blend_src src, const blend_dest dest)
 }
 
 void surge::renderer::clear(const config::clear_color &ccl) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::clear");
 #endif

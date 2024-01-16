@@ -9,8 +9,7 @@
 #endif
 
 static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
-    -> tl::expected<GLuint, surge::renderer::renderer_error> {
-
+    -> tl::expected<GLuint, surge::error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::load_and_compile_shader");
   TracyGpuZone("GPU load_and_compile_shader");
@@ -25,12 +24,12 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     file = files::load_file(p, true);
   } else {
     log_error("Unrecognized shader type %u", shader_type);
-    return tl::unexpected(surge::renderer::renderer_error::unrecognized_shader);
+    return tl::unexpected(surge::error::unrecognized_shader);
   }
 
   if (!file) {
     log_error("Unable to load shader file %s", p);
-    return tl::unexpected(surge::renderer::renderer_error::shader_load_error);
+    return tl::unexpected(surge::error::shader_load_error);
   }
 
   // Get the source code in GL format
@@ -65,7 +64,7 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     log_error("Shader %s handle %u compilation failed:\n  %s", p, shader_handle_tmp,
               info_log.data());
 
-    return tl::unexpected(surge::renderer::renderer_error::shader_load_error);
+    return tl::unexpected(surge::error::shader_load_error);
   } else {
     log_info("Shader %s handle %u compilation succesfull", p, shader_handle_tmp);
     return shader_handle_tmp;
@@ -74,7 +73,7 @@ static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
 
 static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_shader_handle,
                                 bool destroy_shaders = true) noexcept
-    -> tl::expected<GLuint, surge::renderer::renderer_error> {
+    -> tl::expected<GLuint, surge::error> {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::link_shader_program");
@@ -114,7 +113,7 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
 
     log_info("Failed to link shader handles %u and %u to create program:\n  %s",
              vertex_shader_handle, fragment_shader_handle, info_log.data());
-    return tl::unexpected(surge::renderer::renderer_error::shader_link_error);
+    return tl::unexpected(surge::error::shader_link_error);
 
   } else {
 
@@ -137,7 +136,7 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
 
 auto surge::renderer::create_shader_program(const char *vertex_shader_path,
                                             const char *fragment_shader_path) noexcept
-    -> tl::expected<GLuint, renderer_error> {
+    -> tl::expected<GLuint, error> {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::create_shader_program");
@@ -163,6 +162,6 @@ void surge::renderer::cleanup_shader_program(GLuint program) noexcept {
   ZoneScopedN("surge::renderer::cleanup_shader_program");
   TracyGpuZone("GPU surge::renderer::cleanup_shader_program");
 #endif
-
+  log_info("Deleting shader program handle %u", program);
   glDeleteProgram(program);
 }

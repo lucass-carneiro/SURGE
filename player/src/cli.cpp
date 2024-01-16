@@ -2,7 +2,6 @@
 
 #include "options.hpp"
 
-#include <array>
 #include <cstdio>
 
 namespace surge::cli {

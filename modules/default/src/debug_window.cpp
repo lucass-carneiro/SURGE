@@ -1,7 +1,7 @@
 #include "debug_window.hpp"
 
-#include "logging.hpp"
-#include "options.hpp"
+#include "player/logging.hpp"
+#include "player/options.hpp"
 
 // clang-format off
 #include <imgui.h>

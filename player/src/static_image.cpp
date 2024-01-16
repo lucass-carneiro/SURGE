@@ -5,8 +5,6 @@
 #include "logging.hpp"
 #include "renderer.hpp"
 
-#include <utility>
-
 // clang-format off
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_MALLOC(sz)           surge::allocators::mimalloc::malloc(sz)
@@ -14,7 +12,6 @@
 #define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
 #include <stb_image.h>
 
-#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 // clang-format on
@@ -26,8 +23,7 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::static_image::load_image(const char *p) noexcept
-    -> tl::expected<image_data, error> {
+auto surge::atom::static_image::load_image(const char *p) noexcept -> load_image_t {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::load_image");
 #endif
@@ -40,7 +36,7 @@ auto surge::atom::static_image::load_image(const char *p) noexcept
   auto file{surge::files::load_file(p, false)};
   if (!file) {
     log_error("Unable to load image file %s", p);
-    return tl::unexpected(error::load_error);
+    return tl::unexpected(error::static_image_load_error);
   }
 
   int iw{0}, ih{0}, channels_in_file{0};
@@ -52,7 +48,7 @@ auto surge::atom::static_image::load_image(const char *p) noexcept
 
   if (img_data == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
-    return tl::unexpected(error::stbi_error);
+    return tl::unexpected(error::static_image_stbi_error);
   } else {
     return image_data{img_data, iw, ih, channels_in_file};
   }
@@ -148,8 +144,7 @@ auto surge::atom::static_image::make_texture(image_data &img_data,
 }
 
 auto surge::atom::static_image::create(const char *p,
-                                       renderer::texture_filtering filtering) noexcept
-    -> tl::expected<one_buffer_data, error> {
+                                       renderer::texture_filtering filtering) noexcept -> create_t {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::create");
 #endif
@@ -199,11 +194,12 @@ void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_dat
 }
 
 void surge::atom::static_image::cleanup(one_buffer_data &ctx) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::cleanup");
   TracyGpuZone("GPU surge::atom::static_image::cleanup");
 #endif
+  log_info("Deleting image buffer data (%u, %u, %u, %u)", ctx.VBO, ctx.EBO, ctx.texture_id,
+           ctx.VAO);
 
   glDeleteBuffers(1, &(ctx.VBO));
   glDeleteBuffers(1, &(ctx.EBO));

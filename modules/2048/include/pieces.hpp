@@ -1,10 +1,9 @@
 #ifndef SURGE_MODULE_2048_PIECES
 #define SURGE_MODULE_2048_PIECES
 
-#include "allocators.hpp"
+#include "container_types.hpp"
+#include "player/container_types.hpp"
 
-#include <deque>
-#include <foonathan/memory/container.hpp>
 #include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
@@ -13,17 +12,13 @@ using exponent_t = unsigned short;
 using slot_t = unsigned short;
 
 using piece_id_t = unsigned short;
-using piece_id_queue_t
-    = foonathan::memory::deque<piece_id_t, surge::allocators::mimalloc::fnm_allocator>;
+using piece_id_queue_t = surge::deque<piece_id_t>;
 
 using piece_pos_t = glm::vec3;
 
-template <typename Key, typename Value> using hash_map_t
-    = foonathan::memory::unordered_map<Key, Value, surge::allocators::mimalloc::fnm_allocator>;
-
-using piece_positions_t = hash_map_t<piece_id_t, piece_pos_t>;
-using piece_exponents_t = hash_map_t<piece_id_t, exponent_t>;
-using piece_slots_t = hash_map_t<piece_id_t, slot_t>;
+using piece_positions_t = surge::hash_map<piece_id_t, piece_pos_t>;
+using piece_exponents_t = surge::hash_map<piece_id_t, exponent_t>;
+using piece_slots_t = surge::hash_map<piece_id_t, slot_t>;
 
 enum class board_element_type : unsigned short { row, column };
 

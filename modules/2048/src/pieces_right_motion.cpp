@@ -1,8 +1,6 @@
 #include "2048.hpp"
-#include "logging.hpp"
 #include "pieces.hpp"
-
-#include <cstdint>
+#include "player/logging.hpp"
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>

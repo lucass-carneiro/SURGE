@@ -1,20 +1,17 @@
 #include "2048.hpp"
 
-#include "logging.hpp"
+#include "player/error_types.hpp"
+#include "player/logging.hpp"
 
 #ifdef SURGE_BUILD_TYPE_Debug
 #  include "debug_window.hpp"
 #endif
 
-// clang-format off
-#include <GLFW/glfw3.h>
-// clang-format on
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::bind_callbacks");
 #endif
@@ -24,25 +21,25 @@ auto mod_2048::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
   glfwSetKeyCallback(window, keyboard_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_debug("Unable to bind keyboard event callback");
-    return static_cast<std::uint32_t>(mod_2048::error::keyboard_event_unbinding);
+    return static_cast<int>(surge::error::keyboard_event_unbinding);
   }
 
   glfwSetMouseButtonCallback(window, mouse_button_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_debug("Unable to bind mouse button event callback");
-    return static_cast<std::uint32_t>(mod_2048::error::mouse_button_event_unbinding);
+    return static_cast<int>(surge::error::mouse_button_event_unbinding);
   }
 
   glfwSetScrollCallback(window, mouse_scroll_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_debug("Unable to bind mouse scroll event callback");
-    return static_cast<std::uint32_t>(mod_2048::error::mouse_scroll_event_unbinding);
+    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
   }
 
   return 0;
 }
 
-auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_2048::unbind_callbacks(GLFWwindow *window) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::unbind_callbacks");
 #endif

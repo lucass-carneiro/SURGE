@@ -1,24 +1,16 @@
 #ifndef SURGE_ATOM_STATIC_IMAGE
 #define SURGE_ATOM_STATIC_IMAGE
 
-#include "allocators.hpp"
+#include "error_types.hpp"
 #include "renderer.hpp"
 
-#include <foonathan/memory/std_allocator.hpp>
 #include <glm/fwd.hpp>
 #include <tl/expected.hpp>
-#include <vector>
 
 /**
  * Drawable static image quad
  */
 namespace surge::atom::static_image {
-
-template <typename T> using vec
-    = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
-template <typename T, std::size_t N> using arr = std::array<T, N>;
-
-enum class error : std::uint32_t { load_error = 1, stbi_error = 2, shader_creation = 3 };
 
 struct one_buffer_data {
   glm::vec2 dimentions{0.0f};
@@ -28,24 +20,6 @@ struct one_buffer_data {
   GLuint VBO;
   GLuint EBO;
   GLuint VAO;
-};
-
-template <std::size_t N> struct st_buffer_data {
-  arr<glm::vec2, N> dimentions;
-  arr<glm::vec2, N> ds;
-
-  arr<GLuint, N> texture_ids;
-  arr<GLuint, N> VBOs;
-  arr<GLuint, N> EBOs;
-  arr<GLuint, N> VAOs;
-};
-
-struct buffer_data {
-  vec<glm::vec2> dimentions;
-  vec<glm::vec2> ds;
-
-  vec<GLuint> texture_ids;
-  vec<GLuint> VAOs;
 };
 
 struct one_draw_data {
@@ -59,28 +33,6 @@ struct one_draw_data {
   bool v_flip{false};
 };
 
-template <std::size_t N> struct st_draw_data {
-  arr<glm::mat4, N> projection;
-  arr<glm::mat4, N> view;
-  arr<glm::vec3, N> pos;
-  arr<glm::vec3, N> scale;
-  arr<glm::vec2, N> region_origin;
-  arr<glm::vec2, N> region_dims;
-  arr<bool, N> h_flip{false};
-  arr<bool, N> v_flip{false};
-};
-
-struct draw_data {
-  vec<glm::mat4> projection;
-  vec<glm::mat4> view;
-  vec<glm::vec3> pos;
-  vec<glm::vec3> scale;
-  vec<glm::vec2> region_origin;
-  vec<glm::vec2> region_dims;
-  vec<bool> h_flip{false};
-  vec<bool> v_flip{false};
-};
-
 struct image_data {
   unsigned char *data{nullptr};
   int iw{0};
@@ -88,14 +40,17 @@ struct image_data {
   int channels_in_file{0};
 };
 
-auto create(const char *p,
-            renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
-    -> tl::expected<one_buffer_data, error>;
+using load_image_t = tl::expected<image_data, error>;
+using create_t = tl::expected<one_buffer_data, error>;
 
-auto load_image(const char *p) noexcept -> tl::expected<image_data, error>;
+auto load_image(const char *p) noexcept -> load_image_t;
+
 auto make_texture(image_data &img_data, renderer::texture_filtering filtering
                                         = renderer::texture_filtering::linear) noexcept
     -> one_buffer_data;
+
+auto create(const char *p, renderer::texture_filtering filtering
+                           = renderer::texture_filtering::linear) noexcept -> create_t;
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
 void draw(GLuint shader_program, const one_buffer_data &&ctx, one_draw_data &&dctx) noexcept;

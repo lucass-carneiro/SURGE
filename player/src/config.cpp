@@ -21,7 +21,7 @@ static auto config_handler(void *user, const char *section, const char *name,
   auto config{static_cast<surge::config::config_data *>(user)};
 
   if (match("window", "name")) {
-    config->wattrs.name = surge::config::string_t{value};
+    config->wattrs.name = surge::string{value};
   } else if (match("window", "monitor_index")) {
     config->wattrs.monitor_index = std::atoi(value);
   } else if (match("window", "windowed")) {
@@ -43,7 +43,7 @@ static auto config_handler(void *user, const char *section, const char *name,
   } else if (match("clear_color", "a")) {
     config->ccl.a = std::strtof(value, nullptr);
   } else if (match("modules", "first_module")) {
-    config->module = surge::config::string_t{value};
+    config->module = surge::string{value};
 #ifdef SURGE_SYSTEM_Windows
     config->module.append(".dll");
 #else
@@ -59,19 +59,19 @@ static auto config_handler(void *user, const char *section, const char *name,
   return 1;
 }
 
-auto surge::config::parse_config() noexcept -> tl::expected<config_data, cli_error> {
+auto surge::config::parse_config() noexcept -> tl::expected<config_data, error> {
   auto config_file{files::load_file("config.ini", true)};
 
   if (!config_file) {
     log_error("Unable to load config.ini file");
-    return tl::unexpected(cli_error::config_file_load);
+    return tl::unexpected(error::config_file_load);
   }
 
   config_data cd{};
   const auto file_str{reinterpret_cast<const char *>(config_file->data())};
 
   if (ini_parse_string(file_str, config_handler, static_cast<void *>(&cd)) != 0) {
-    return tl::unexpected(cli_error::config_file_parse);
+    return tl::unexpected(error::config_file_parse);
   } else {
     return cd;
   }

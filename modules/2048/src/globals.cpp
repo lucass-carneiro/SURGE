@@ -1,7 +1,8 @@
 #include "2048.hpp"
-#include "logging.hpp"
-#include "renderer.hpp"
-#include "static_image.hpp"
+#include "player/error_types.hpp"
+#include "player/logging.hpp"
+#include "player/renderer.hpp"
+#include "player/static_image.hpp"
 
 #ifdef SURGE_BUILD_TYPE_Debug
 #  include "debug_window.hpp"
@@ -12,7 +13,6 @@
 #include "text.hpp"
 // clang-format on
 
-#include <foonathan/memory/static_allocator.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -408,7 +408,7 @@ void mod_2048::new_game() noexcept {
   pieces::create_random();
 }
 
-auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
+auto on_load(GLFWwindow *window) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::on_load");
 #endif
@@ -431,28 +431,28 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   const auto img_shader{
       renderer::create_shader_program("shaders/image.vert", "shaders/image.frag")};
   if (!img_shader) {
-    return static_cast<std::uint32_t>(error::img_shader_load);
+    return static_cast<int>(img_shader.error());
   }
   g_img_shader = *img_shader;
 
   // Load text rendering shader
   const auto text_shader{renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
   if (!text_shader) {
-    return static_cast<std::uint32_t>(error::img_shader_load);
+    return static_cast<int>(text_shader.error());
   }
   g_txt_shader = *text_shader;
 
   // Load board image
   const auto board_buffer{static_image::create("resources/board.png")};
   if (!board_buffer) {
-    return static_cast<std::uint32_t>(error::board_img_load);
+    return static_cast<int>(board_buffer.error());
   }
   g_board_buffer = *board_buffer;
 
   // Load pieces image
   const auto pieces_buffer{static_image::create("resources/pieces.png")};
   if (!pieces_buffer) {
-    return static_cast<std::uint32_t>(error::pieces_img_load);
+    return static_cast<int>(pieces_buffer.error());
   }
   g_pieces_buffer = *pieces_buffer;
 
@@ -462,13 +462,13 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
                               "resources/clear-sans/ClearSans-Medium.ttf"};
   const auto text_buffer{text::create(fonts)};
   if (!text_buffer) {
-    return static_cast<std::uint32_t>(error::fonts_load);
+    return static_cast<int>(text_buffer.error());
   }
   g_text_buffer = *text_buffer;
 
   const auto text_charmap{text::create_charmap(g_text_buffer, 25)};
   if (!text_charmap) {
-    return static_cast<std::uint32_t>(error::charmap_create);
+    return static_cast<int>(text_buffer.error());
   }
   g_text_charmap = *text_charmap;
 
@@ -510,7 +510,7 @@ auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
   return 0;
 }
 
-auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+auto on_unload(GLFWwindow *window) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::on_unload");
 #endif
@@ -537,7 +537,7 @@ auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
   return 0;
 }
 
-auto update(double dt) noexcept -> std::uint32_t {
+auto update(double dt) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::update");
 #endif

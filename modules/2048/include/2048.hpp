@@ -1,16 +1,11 @@
 #ifndef SURGE_MODULE_2048
 #define SURGE_MODULE_2048
 
-#include "allocators.hpp"
-#include "options.hpp"
-#include "static_image.hpp"
-#include "text.hpp"
-#include "window.hpp"
-
-#include <cstdint>
-#include <deque>
-#include <foonathan/memory/std_allocator.hpp>
-#include <glm/fwd.hpp>
+#include "player/container_types.hpp"
+#include "player/options.hpp"
+#include "player/static_image.hpp"
+#include "player/text.hpp"
+#include "player/window.hpp"
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_2048
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
@@ -23,22 +18,6 @@
 #endif
 
 namespace mod_2048 {
-
-enum class error : std::uint32_t {
-  keyboard_event_binding,
-  mouse_button_event_binding,
-  mouse_scroll_event_binding,
-  keyboard_event_unbinding,
-  mouse_button_event_unbinding,
-  mouse_scroll_event_unbinding,
-  img_shader_load,
-  txt_shader_load,
-  board_img_load,
-  pieces_img_load,
-  numbers_img_load,
-  fonts_load,
-  charmap_create
-};
 
 using state_code_t = unsigned short;
 enum class game_state : state_code_t {
@@ -55,12 +34,10 @@ enum class game_state : state_code_t {
   add_piece = 10
 };
 
-using state_queue = std::deque<
-    game_state,
-    foonathan::memory::std_allocator<game_state, surge::allocators::mimalloc::fnm_allocator>>;
+using state_queue = surge::deque<game_state>;
 
-auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
-auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
+auto bind_callbacks(GLFWwindow *window) noexcept -> int;
+auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
 
 auto get_projection() noexcept -> const glm::mat4 &;
 auto get_view() noexcept -> const glm::mat4 &;
@@ -108,10 +85,10 @@ auto get_best_score() noexcept -> points_t &;
 } // namespace mod_2048
 
 extern "C" {
-SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto update(double dt) noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int;
+SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int;
+SURGE_MODULE_EXPORT auto draw() noexcept -> int;
+SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int;
 
 SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,
                                         int mods) noexcept;

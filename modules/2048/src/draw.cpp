@@ -5,15 +5,15 @@
 #endif
 
 #include "pieces.hpp"
+#include "player/static_image.hpp"
+#include "player/text.hpp"
 #include "score.hpp"
-#include "static_image.hpp"
-#include "text.hpp"
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto draw() noexcept -> std::uint32_t {
+auto draw() noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("mod_2048::draw()");
 #endif

@@ -1,50 +1,29 @@
 #ifndef SURGE_ATOM_TEXT
 #define SURGE_ATOM_TEXT
 
-#include "allocators.hpp"
+#include "container_types.hpp"
 #include "renderer.hpp"
 
 // clang-format off
 #include <ft2build.h>
-#include <glm/fwd.hpp>
-#include <tl/expected.hpp>
 #include FT_FREETYPE_H
-
 #include <freetype/ftimage.h>
 #include <freetype/fttypes.h>
 // clang-format on
 
-#include <foonathan/memory/std_allocator.hpp>
-#include <glm/glm.hpp>
-#include <string>
-#include <string_view>
-#include <vector>
+#include <tl/expected.hpp>
 
 /**
  * Drawable text
  */
 namespace surge::atom::text {
 
-using string_t = std::basic_string<
-    char, std::char_traits<char>,
-    foonathan::memory::std_allocator<char, allocators::mimalloc::fnm_allocator>>;
-
-template <typename T> using vec_t
-    = std::vector<T, foonathan::memory::std_allocator<T, allocators::mimalloc::fnm_allocator>>;
-
-using font_name_vec_t = vec_t<string_t>;
-using face_vec_t = vec_t<FT_Face>;
-using tid_vec_t = vec_t<GLuint>;
-using size_vec_t = vec_t<FT_UInt>;
-using bea_vec_t = vec_t<FT_Int>;
-using adv_vec_t = vec_t<FT_Pos>;
-
-enum class error : std::uint32_t {
-  freetype_init = 1,
-  freetype_face_not_found = 2,
-  freetype_set_face_size = 3,
-  freetype_character_load = 4
-};
+using font_name_vec_t = vector<string>;
+using face_vec_t = vector<FT_Face>;
+using tid_vec_t = vector<GLuint>;
+using size_vec_t = vector<FT_UInt>;
+using bea_vec_t = vector<FT_Int>;
+using adv_vec_t = vector<FT_Pos>;
 
 struct buffer_data {
   FT_Library library;

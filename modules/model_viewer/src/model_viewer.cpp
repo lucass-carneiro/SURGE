@@ -1,11 +1,10 @@
 #include "model_viewer.hpp"
 
-#include "logging.hpp"
-#include "renderer.hpp"
-#include "static_mesh.hpp"
-#include "window.hpp"
+#include "player/logging.hpp"
+#include "player/renderer.hpp"
+#include "player/static_mesh.hpp"
+#include "player/window.hpp"
 
-#include <GLFW/glfw3.h>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
@@ -19,31 +18,31 @@ static surge::atom::static_mesh::one_buffer_data static_mesh_bd{};
 
 static GLuint static_mesh_shader{0};
 
-auto mod_model_viewer::bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_model_viewer::bind_callbacks(GLFWwindow *window) noexcept -> int {
   log_info("Binding interaction callbacks");
 
   glfwSetKeyCallback(window, keyboard_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_warn("Unable to bind keyboard event callback");
-    return static_cast<std::uint32_t>(mod_model_viewer::error::keyboard_event_unbinding);
+    return static_cast<int>(surge::error::keyboard_event_unbinding);
   }
 
   glfwSetMouseButtonCallback(window, mouse_button_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_warn("Unable to bind mouse button event callback");
-    return static_cast<std::uint32_t>(mod_model_viewer::error::mouse_button_event_unbinding);
+    return static_cast<int>(surge::error::mouse_button_event_unbinding);
   }
 
   glfwSetScrollCallback(window, mouse_scroll_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_warn("Unable to bind mouse scroll event callback");
-    return static_cast<std::uint32_t>(mod_model_viewer::error::mouse_scroll_event_unbinding);
+    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
   }
 
   return 0;
 }
 
-auto mod_model_viewer::unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t {
+auto mod_model_viewer::unbind_callbacks(GLFWwindow *window) noexcept -> int {
   log_info("Unbinding interaction callbacks");
 
   glfwSetKeyCallback(window, nullptr);
@@ -64,7 +63,7 @@ auto mod_model_viewer::unbind_callbacks(GLFWwindow *window) noexcept -> std::uin
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t {
+extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
   using namespace mod_model_viewer;
 
   const auto bind_callback_stat{bind_callbacks(window)};
@@ -82,13 +81,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std:
   const auto shader{surge::renderer::create_shader_program("shaders/static_mesh.vert",
                                                            "shaders/static_mesh.frag")};
   if (!shader) {
-    return static_cast<std::uint32_t>(shader.error());
+    return static_cast<int>(shader.error());
   }
 
   log_info("Creating static mesh");
-  const auto model{surge::atom::static_mesh::load("model.obj")};
+  const auto model{surge::atom::static_mesh::load("resources/suzanne.obj")};
   if (!model) {
-    return static_cast<std::uint32_t>(model.error());
+    return static_cast<int>(model.error());
   } else {
     static_mesh_shader = *shader;
     static_mesh_bd = *model;
@@ -97,7 +96,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std:
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t {
+extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int {
   using namespace mod_model_viewer;
 
   const auto unbind_callback_stat{unbind_callbacks(window)};
@@ -108,7 +107,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> st
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t {
+extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   using namespace surge::atom;
 
   const static_mesh::one_draw_data static_mesh_dd{projection, view, model,
@@ -117,7 +116,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> std::uint32_t {
+extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
   model = glm::rotate(model, glm::radians(15.0f * static_cast<float>(dt)),
                       glm::vec3{0.0f, 0.0f, 1.0f});
   return 0;

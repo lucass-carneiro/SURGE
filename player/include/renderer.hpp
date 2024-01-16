@@ -1,12 +1,10 @@
 #ifndef SURGE_RENDERER_HPP
 #define SURGE_RENDERER_HPP
 
-#include "allocators.hpp"
 #include "config.hpp"
+#include "error_types.hpp"
 
 // clang-format off
-#include <cstddef>
-#include <glm/fwd.hpp>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -17,12 +15,6 @@
 #include <tl/expected.hpp>
 
 namespace surge::renderer {
-
-enum class renderer_error : std::uint32_t {
-  unrecognized_shader = 1,
-  shader_load_error,
-  shader_link_error
-};
 
 enum class capability : GLenum { depth_test = GL_DEPTH_TEST, blend = GL_BLEND, wireframe };
 
@@ -41,7 +33,7 @@ void clear(const config::clear_color &ccl) noexcept;
 
 auto create_shader_program(const char *vertex_shader_path,
                            const char *fragment_shader_path) noexcept
-    -> tl::expected<GLuint, renderer_error>;
+    -> tl::expected<GLuint, error>;
 
 void cleanup_shader_program(GLuint program) noexcept;
 

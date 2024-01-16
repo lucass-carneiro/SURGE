@@ -1,10 +1,8 @@
 #ifndef SURGE_MODULE_MODEL_VIEWER
 #define SURGE_MODULE_MODEL_VIEWER
 
-#include "options.hpp"
-#include "window.hpp"
-
-#include <cstdint>
+#include "player/options.hpp"
+#include "player/window.hpp"
 
 #if defined(SURGE_COMPILER_Clang)                                                                  \
     || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_MODEL_VIEWER
@@ -19,25 +17,16 @@
 
 namespace mod_model_viewer {
 
-enum class error : std::uint32_t {
-  keyboard_event_binding,
-  mouse_button_event_binding,
-  mouse_scroll_event_binding,
-  keyboard_event_unbinding,
-  mouse_button_event_unbinding,
-  mouse_scroll_event_unbinding,
-};
-
-auto bind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
-auto unbind_callbacks(GLFWwindow *window) noexcept -> std::uint32_t;
+auto bind_callbacks(GLFWwindow *window) noexcept -> int;
+auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
 
 } // namespace mod_model_viewer
 
 extern "C" {
-SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto draw() noexcept -> std::uint32_t;
-SURGE_MODULE_EXPORT auto update(double dt) noexcept -> std::uint32_t;
+SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int;
+SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int;
+SURGE_MODULE_EXPORT auto draw() noexcept -> int;
+SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int;
 
 SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,
                                         int mods) noexcept;

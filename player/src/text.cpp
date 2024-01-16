@@ -1,18 +1,16 @@
 #include "text.hpp"
 
+#include "allocators.hpp"
 #include "logging.hpp"
 
 // clang-format off
-#include <cstdint>
 #include <freetype/freetype.h>
 #include <freetype/ftsystem.h>
 #include <freetype/ftmodapi.h>
 // clang-format on
 
-#include <algorithm>
-#include <cstdio>
+// #include <algorithm>
 #include <gsl/gsl-lite.hpp>
-#include <limits>
 #include <tl/expected.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
@@ -34,7 +32,6 @@ static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
 auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
     -> tl::expected<buffer_data, error> {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::create");
   TracyGpuZone("GPU surge::atom::text::create");
@@ -88,7 +85,6 @@ auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
 }
 
 void surge::atom::text::terminate(buffer_data &data) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::terminate");
 #endif
@@ -118,7 +114,6 @@ static constexpr const auto chars_per_face{char_end - char_start};
 auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
                                        renderer::texture_filtering filtering) noexcept
     -> tl::expected<charmap_data, error> {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::create_charmap");
   TracyGpuZone("GPU surge::atom::text::create_charmap");
@@ -194,7 +189,6 @@ auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
 void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
                              const draw_data &dd, std::string_view text,
                              float extra_vskip) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw");
   TracyGpuZone("GPU surge::atom::text::draw");
@@ -284,7 +278,6 @@ void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const
 
 void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
                              const draw_data &dd, unsigned long long number) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw(number)");
 #endif

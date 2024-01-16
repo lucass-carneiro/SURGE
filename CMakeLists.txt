@@ -74,6 +74,16 @@ option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
 
 # -----------------------------------------
+# Threads
+# -----------------------------------------
+
+option(SURGE_MULTITHREADING "Enables parallelization" ON)
+
+if(SURGE_MULTITHREADING)
+  find_package(OpenMP REQUIRED)
+endif()
+
+# -----------------------------------------
 # Compilation flag options
 # -----------------------------------------
 
@@ -148,4 +158,4 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)
 #  Drizzle: The Unveiling
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/DTU)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/DTU)

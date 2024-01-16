@@ -1,6 +1,8 @@
 #ifndef SURGE_MODULE_HPP
 #define SURGE_MODULE_HPP
 
+#include "container_types.hpp"
+#include "error_types.hpp"
 #include "options.hpp"
 #include "window.hpp"
 
@@ -15,15 +17,9 @@
 #  include <dlfcn.h>
 #endif
 
-#include <cstdint>
-#include <foonathan/memory/std_allocator.hpp>
-#include <gsl/gsl-lite.hpp>
-#include <string>
 #include <tl/expected.hpp>
 
 namespace surge::module {
-
-enum class module_error { loading, name_retrival, symbol_retrival };
 
 #ifdef SURGE_SYSTEM_Windows
 using handle_t = HMODULE;
@@ -31,10 +27,10 @@ using handle_t = HMODULE;
 using handle_t = void *;
 #endif
 
-using on_load_t = std::uint32_t (*)(GLFWwindow *);
-using on_unload_t = std::uint32_t (*)(GLFWwindow *window);
-using draw_t = std::uint32_t (*)();
-using update_t = std::uint32_t (*)(double);
+using on_load_t = int (*)(GLFWwindow *);
+using on_unload_t = int (*)(GLFWwindow *window);
+using draw_t = int (*)();
+using update_t = int (*)(double);
 
 using keyboard_event_t = void (*)(GLFWwindow *, int, int, int, int);
 using mouse_button_event_t = void (*)(GLFWwindow *, int, int, int);
@@ -52,18 +48,13 @@ struct api {
   mouse_scroll_event_t mouse_scroll_event;
 };
 
-using string_t = std::basic_string<
-    char, std::char_traits<char>,
-    foonathan::memory::std_allocator<char, allocators::mimalloc::fnm_allocator>>;
+auto get_name(handle_t module, usize max_size = 256) noexcept -> tl::expected<string, error>;
 
-auto get_name(handle_t module, std::size_t max_size = 256) noexcept
-    -> tl::expected<string_t, module_error>;
-
-auto load(const char *path) noexcept -> tl::expected<handle_t, module_error>;
+auto load(const char *path) noexcept -> tl::expected<handle_t, error>;
 void unload(handle_t module) noexcept;
-auto reload(handle_t module) noexcept -> tl::expected<handle_t, module_error>;
+auto reload(handle_t module) noexcept -> tl::expected<handle_t, error>;
 
-auto get_api(handle_t module) noexcept -> tl::expected<api, module_error>;
+auto get_api(handle_t module) noexcept -> tl::expected<api, error>;
 
 auto set_module_path() noexcept -> bool;
 

@@ -1,11 +1,8 @@
 #include "pieces.hpp"
 
 #include "2048.hpp"
-#include "logging.hpp"
+#include "player/logging.hpp"
 
-#include <array>
-#include <cstddef>
-#include <gsl/gsl-lite.hpp>
 #include <random>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)

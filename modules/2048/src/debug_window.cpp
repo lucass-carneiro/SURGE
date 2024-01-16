@@ -1,8 +1,8 @@
 #include "debug_window.hpp"
 
 #include "2048.hpp"
-#include "logging.hpp"
 #include "pieces.hpp"
+#include "player/logging.hpp"
 
 #include <imgui.h>
 

@@ -1,21 +1,18 @@
 #include "files.hpp"
 
-#include "allocators.hpp"
 #include "logging.hpp"
 #include "options.hpp"
 
-#ifdef SURGE_SYSTEM_IS_POSIX
-#  include <fcntl.h>
-#elif defined(SURGE_SYSTEM_Windows)
-#  include <fcntl.h>
+#include <fcntl.h>
+
+#ifdef SURGE_SYSTEM_Windows
+#  include <array>
 #  include <gsl/gsl-lite.hpp>
 #  include <io.h>
 #endif
 
-#include <array>
 #include <cstring>
 #include <filesystem>
-#include <limits>
 
 auto surge::files::validate_path(const char *path) noexcept -> bool {
   try {
@@ -94,7 +91,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
              append_null_byte ? "true" : "false");
 
     if (!validate_path(path)) {
-      return tl::unexpected(file_error::invalid_path);
+      return tl::unexpected(error::invalid_path);
     }
 
     std::uintmax_t file_size{std::filesystem::file_size(path)};
@@ -109,11 +106,11 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
     if (os_open_read(path, buffer.data(), file_size)) {
       return buffer;
     } else {
-      return tl::unexpected(file_error::read_error);
+      return tl::unexpected(error::read_error);
     }
 
   } catch (const std::exception &e) {
     log_error("Unable to load file %s: %s", path, e.what());
-    return tl::unexpected(file_error::unknow_error);
+    return tl::unexpected(error::unknow_error);
   }
 }

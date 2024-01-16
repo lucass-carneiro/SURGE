@@ -1,14 +1,13 @@
-#ifndef SURGE_MODULE_DTU_CONTAINER_TYPES_HPP
-#define SURGE_MODULE_DTU_CONTAINER_TYPES_HPP
+#ifndef SURGE_CONTAINER_TYPES_HPP
+#define SURGE_CONTAINER_TYPES_HPP
 
-#include "player/allocators.hpp"
+#include "allocators.hpp"
 
-#include <array>
 #include <foonathan/memory/container.hpp>
 #include <foonathan/memory/std_allocator.hpp>
 #include <string>
 
-namespace DTU {
+namespace surge {
 
 // Allocators
 using mfa = surge::allocators::mimalloc::fnm_allocator;
@@ -20,6 +19,9 @@ template <typename T> using deque = foonathan::memory::deque<T, mfa>;
 template <typename T> using vector = foonathan::memory::vector<T, mfa>;
 using string = std::basic_string<char, std::char_traits<char>, std_mfa<char>>;
 
-} // namespace DTU
+template <typename Key, typename Value> using hash_map
+    = foonathan::memory::unordered_map<Key, Value, mfa>;
 
-#endif // SURGE_MODULE_DTU_CONTAINER_TYPES_HPP
+} // namespace surge
+
+#endif // SURGE_CONTAINER_TYPES_HPP

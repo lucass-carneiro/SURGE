@@ -5,56 +5,53 @@
 
 #include <mimalloc.h>
 #include <stdexcept>
-#include "override_new_delete.hpp"
 // clang-format on
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
-void surge::allocators::mimalloc::free(void *p) noexcept { mi_free(p); }
-
-auto surge::allocators::mimalloc::malloc(size_t size) noexcept -> void * { return mi_malloc(size); }
-
-auto surge::allocators::mimalloc::zalloc(size_t size) noexcept -> void * { return mi_zalloc(size); }
-
-auto surge::allocators::mimalloc::calloc(size_t count, size_t size) noexcept -> void * {
-  return mi_calloc(count, size);
+auto surge::allocators::mimalloc::malloc(usize size) noexcept -> void * {
+  auto p{mi_malloc(size)};
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: alloc\n"
+            "allocator: \"mimalloc::malloc\"\n"
+            "size: %zu\n"
+            "address: %p\n"
+            "failed: %s",
+            size, p, p ? "false" : "true");
+#endif
+  return p;
 }
 
-auto surge::allocators::mimalloc::realloc(void *p, size_t newsize) noexcept -> void * {
-  return mi_realloc(p, newsize);
+auto surge::allocators::mimalloc::realloc(void *p, usize newsize) noexcept -> void * {
+  auto q{mi_realloc(p, newsize)};
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: realloc\n"
+            "allocator: \"mimalloc::realloc\"\n"
+            "new size: %zu\n"
+            "old address: %p\n"
+            "new address: %p\n"
+            "failed: %s",
+            newsize, p, q, q ? "false" : "true");
+#endif
+  return q;
 }
 
-auto surge::allocators::mimalloc::recalloc(void *p, size_t count, size_t size) noexcept -> void * {
-  return mi_recalloc(p, count, size);
-}
-
-auto surge::allocators::mimalloc::expand(void *p, size_t newsize) noexcept -> void * {
-  return mi_expand(p, newsize);
-}
-
-auto surge::allocators::mimalloc::mallocn(size_t count, size_t size) noexcept -> void * {
-  return mi_mallocn(count, size);
-}
-
-auto surge::allocators::mimalloc::reallocn(void *p, size_t count, size_t size) noexcept -> void * {
-  return mi_reallocn(p, count, size);
-}
-
-auto surge::allocators::mimalloc::reallocf(void *p, size_t newsize) noexcept -> void * {
-  return mi_reallocf(p, newsize);
-}
-
-auto surge::allocators::mimalloc::strdup(const char *s) noexcept -> char * { return mi_strdup(s); }
-
-auto surge::allocators::mimalloc::strndup(const char *s, size_t n) noexcept -> char * {
-  return mi_strndup(s, n);
-}
-
-auto surge::allocators::mimalloc::realpath(const char *fname, char *resolved_name) noexcept
-    -> char * {
-  return mi_realpath(fname, resolved_name);
+void surge::allocators::mimalloc::free(void *p) noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: free\n"
+            "allocator: \"mimalloc::free\"\n"
+            "address: %p",
+            p);
+#endif
+  mi_free(p);
 }
 
 void surge::allocators::mimalloc::init() noexcept {
@@ -75,8 +72,8 @@ void surge::allocators::mimalloc::init() noexcept {
   mi_option_set(mi_option_eager_commit_delay, 100);
 }
 
-auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
-                                                               std::size_t alignment) -> void * {
+auto surge::allocators::mimalloc::fnm_allocator::allocate_node(usize size, usize alignment)
+    -> void * {
   auto p{mi_aligned_alloc(alignment, size)};
 
 #ifdef SURGE_DEBUG_MEMORY
@@ -110,8 +107,8 @@ auto surge::allocators::mimalloc::fnm_allocator::allocate_node(std::size_t size,
   return p;
 }
 
-void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, std::size_t size,
-                                                                 std::size_t alignment) noexcept {
+void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, usize size,
+                                                                 usize alignment) noexcept {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"

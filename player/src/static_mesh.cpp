@@ -1,12 +1,15 @@
 #include "static_mesh.hpp"
 
-#include "allocators.hpp"
+#include "container_types.hpp"
+#include "files.hpp"
 #include "logging.hpp"
 
+// clang-format off
 #define TINYOBJLOADER_IMPLEMENTATION
-#include <foonathan/memory/std_allocator.hpp>
-#include <gsl/gsl-lite.hpp>
 #include <tiny_obj_loader.h>
+// clang-format on
+
+#include <gsl/gsl-lite.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
@@ -14,21 +17,20 @@
 #endif
 
 auto surge::atom::static_mesh::gen_triangle() noexcept -> std::tuple<GLuint, std::size_t> {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::gen_triangle");
   TracyGpuZone("GPU surge::atom::static_mesh::gen_triangle");
 #endif
 
   // clang-format off
-  arr<float, 9> vd{
+  array<float, 9> vd{
     0.0, 1.0, 0.0,
     1.0, 1.0, 0.0,
     0.5, 0.5, 0.0
   };
   // clang-format on
 
-  arr<GLuint, 6> ed{0, 1, 2};
+  array<GLuint, 6> ed{0, 1, 2};
 
   GLuint VAO{0};
   GLuint VBO{0};
@@ -60,7 +62,7 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
 #endif
 
   // clang-format off
-  arr<float, 12> vd{
+  array<float, 12> vd{
     0.0, 0.0, 0.0,
     1.0, 0.0, 0.0,
     1.0, 1.0, 0.0,
@@ -68,7 +70,7 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
   };
   // clang-format on
 
-  arr<GLuint, 6> ed{0, 1, 2, 2, 3, 0};
+  array<GLuint, 6> ed{0, 1, 2, 2, 3, 0};
 
   GLuint VAO{0};
   GLuint VBO{0};
@@ -93,8 +95,7 @@ auto surge::atom::static_mesh::gen_square() noexcept -> std::tuple<GLuint, std::
 }
 
 auto surge::atom::static_mesh::load(const char *path) noexcept
-    -> tl::expected<one_buffer_data, files::file_error> {
-
+    -> tl::expected<one_buffer_data, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::load");
   TracyGpuZone("GPU surge::atom::static_mesh::load");
@@ -103,7 +104,7 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
   log_info("Loading OBJ file %s", path);
 
   if (!files::validate_path(path)) {
-    return tl::unexpected(files::file_error::invalid_path);
+    return tl::unexpected(error::invalid_path);
   }
 
   // Tiny OBJ Loader does not allow custom allocator containers :(
@@ -118,13 +119,13 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
     } else {
       log_error("%s", err.c_str());
     }
-    return tl::unexpected(files::file_error::invalid_format);
+    return tl::unexpected(error::invalid_format);
   }
 
   const auto &shape{shapes[0]};
   const auto &vtx{attrib.vertices};
 
-  vec<GLuint> idx(shape.mesh.indices.size());
+  vector<GLuint> idx(shape.mesh.indices.size());
   idx.reserve(shapes[0].mesh.indices.size());
 
   for (const auto &index : shape.mesh.indices) {
@@ -155,7 +156,6 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
 
 void surge::atom::static_mesh::draw(GLuint shader_program, const one_buffer_data &bd,
                                     const one_draw_data &dd) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN(" surge::atom::static_mesh::draw");
   TracyGpuZone("GPU surge::atom::static_mesh::draw");

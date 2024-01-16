@@ -1,7 +1,7 @@
 #ifndef SURGE_MODULE_DEFAULT_DEBUG_WINDOW_HPP
 #define SURGE_MODULE_DEFAULT_DEBUG_WINDOW_HPP
 
-#include "window.hpp"
+#include "player/window.hpp"
 
 namespace mod_default::debug_window {
 

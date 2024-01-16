@@ -27,6 +27,19 @@ set(
 )
 
 # -----------------------------------------
+# Link Target
+# -----------------------------------------
+
+# This target creates links to the player include files in the
+# module source tree. This avoids name conflicts between includes
+
+add_custom_target(
+  SurgeDefaultModule_link_player_includes
+  ALL
+  COMMAND ${CMAKE_COMMAND} -E create_symlink ${SurgePlayer_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/include/player
+)
+
+# -----------------------------------------
 # Executable engine target
 # -----------------------------------------
 
@@ -47,7 +60,6 @@ endif()
 target_include_directories(
   SurgeDefaultModule PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${SurgePlayer_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 

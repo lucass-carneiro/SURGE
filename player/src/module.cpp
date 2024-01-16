@@ -7,9 +7,9 @@
 #ifdef SURGE_SYSTEM_Windows
 
 auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
-    -> tl::expected<string_t, module_error> {
+    -> tl::expected<string, error> {
 
-  auto module_name{string_t(max_size, '\0')};
+  auto module_name{string(max_size, '\0')};
   const auto actual_name_size{
       GetModuleFileNameA(module, module_name.data(), gsl::narrow_cast<DWORD>(max_size))};
 
@@ -22,14 +22,14 @@ auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to retrieve module %p name: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::name_retrival);
+    return tl::unexpected(error::name_retrival);
   } else {
     module_name.resize(actual_name_size);
     return module_name;
   }
 }
 
-auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, module_error> {
+auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
   log_info("Loading module %s", path);
 
   handle_t handle{LoadLibraryA(path)};
@@ -42,7 +42,7 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, mo
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to load module %s: %s", path, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::loading);
+    return tl::unexpected(error::loading);
   } else {
     log_info("Loaded module %s, address %p", path, handle);
     return handle;
@@ -70,7 +70,7 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, module_error> {
+auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
   // on_load
   const auto on_load_addr{GetProcAddress(module, "on_load")};
   if (!on_load_addr) {
@@ -82,7 +82,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to on_load in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // on_unload
@@ -96,7 +96,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to on_unload in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // draw
@@ -110,7 +110,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to draw in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // update
@@ -124,7 +124,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to update in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // keyboard_event
@@ -138,7 +138,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to keyboard_event in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // mouse_button_event
@@ -152,7 +152,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to mouse_button_event in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // mouse_scroll_event
@@ -166,7 +166,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to obtain handle to mouse_scroll_event in module %p: %s", module, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // clang-format off
@@ -191,28 +191,27 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-auto surge::module::get_name(handle_t module, std::size_t) noexcept
-    -> tl::expected<string_t, module_error> {
+auto surge::module::get_name(handle_t module, usize) noexcept -> tl::expected<string, error> {
 
   Dl_info info;
   const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
 
   if (dladdr_stats == 0) {
     log_error("Unable to retrieve module %p name.", module);
-    return tl::unexpected(module_error::name_retrival);
+    return tl::unexpected(error::name_retrival);
   } else {
-    return string_t{info.dli_fname};
+    return string{info.dli_fname};
   }
 }
 
-auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, module_error> {
+auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
   log_info("Loading module %s", path);
 
   // Load and get handle
   auto handle{dlopen(path, RTLD_NOW)};
   if (!handle) {
     log_error("Unable to load library %s", dlerror());
-    return tl::unexpected(module_error::loading);
+    return tl::unexpected(error::loading);
   } else {
     log_info("Loaded module %s, address %p", path, handle);
     return handle;
@@ -234,12 +233,12 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, module_error> {
+auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
   // on_load
   auto on_load_addr{dlsym(module, "on_load")};
   if (!on_load_addr) {
     log_error("Unable to obtain handle to on_unload in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // on_unload
@@ -247,7 +246,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto on_unload_addr{dlsym(module, "on_unload")};
   if (!on_unload_addr) {
     log_error("Unable to obtain handle to on_unload in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // draw
@@ -255,7 +254,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto draw_addr{dlsym(module, "draw")};
   if (!draw_addr) {
     log_error("Unable to obtain handle to draw in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // update
@@ -263,7 +262,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto update_addr{dlsym(module, "update")};
   if (!update_addr) {
     log_error("Unable to obtain handle to update in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // keyboard_event
@@ -271,7 +270,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto keyboard_event_addr{dlsym(module, "keyboard_event")};
   if (!keyboard_event_addr) {
     log_error("Unable to obtain handle to keyboard_event in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // mouse_button_event
@@ -279,7 +278,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto mouse_button_event_addr{dlsym(module, "mouse_button_event")};
   if (!mouse_button_event_addr) {
     log_error("Unable to obtain handle to mouse_button_event in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // mouse_scroll_event
@@ -287,7 +286,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, modul
   auto mouse_scroll_event_addr{dlsym(module, "mouse_scroll_event")};
   if (!mouse_scroll_event_addr) {
     log_error("Unable to obtain handle to mouse_scroll_event in module %p: %s", module, dlerror());
-    return tl::unexpected(module_error::symbol_retrival);
+    return tl::unexpected(error::symbol_retrival);
   }
 
   // clang-format off
@@ -307,7 +306,7 @@ auto surge::module::set_module_path() noexcept -> bool { return true; }
 
 #endif
 
-auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, module_error> {
+auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, error> {
   // Get module file name
   const auto module_file_name{get_name(module)};
   if (!module_file_name) {
