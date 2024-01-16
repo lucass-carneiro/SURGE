@@ -33,24 +33,9 @@ struct one_draw_data {
   bool v_flip{false};
 };
 
-struct image_data {
-  unsigned char *data{nullptr};
-  int iw{0};
-  int ih{0};
-  int channels_in_file{0};
-};
-
-using load_image_t = tl::expected<image_data, error>;
-using create_t = tl::expected<one_buffer_data, error>;
-
-auto load_image(const char *p) noexcept -> load_image_t;
-
-auto make_texture(image_data &img_data, renderer::texture_filtering filtering
-                                        = renderer::texture_filtering::linear) noexcept
-    -> one_buffer_data;
-
-auto create(const char *p, renderer::texture_filtering filtering
-                           = renderer::texture_filtering::linear) noexcept -> create_t;
+auto create(const char *p,
+            renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
+    -> tl::expected<one_buffer_data, error>;
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
 void draw(GLuint shader_program, const one_buffer_data &&ctx, one_draw_data &&dctx) noexcept;
