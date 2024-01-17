@@ -1,7 +1,9 @@
 #ifndef SURGE_ATOM_NONUNIFORM_TILES_HPP
 #define SURGE_ATOM_NONUNIFORM_TILES_HPP
 
+#include "container_types.hpp"
 #include "error_types.hpp"
+#include "integer_types.hpp"
 #include "renderer.hpp"
 
 #include <glm/glm.hpp>
@@ -15,6 +17,9 @@
  */
 namespace surge::atom::nonuniform_tiles {
 
+// Keep it in sync with the shader
+constexpr const usize max_tiles{8};
+
 struct buffer_data {
   GLuint VBO;
   GLuint EBO;
@@ -24,8 +29,8 @@ struct buffer_data {
 struct draw_data {
   glm::mat4 projection;
   glm::mat4 view;
-  glm::vec3 pos;
-  glm::vec3 scale;
+  surge::vector<glm::vec3> positions;
+  surge::vector<glm::vec3> scales;
 };
 
 auto create(const char *p,
@@ -33,6 +38,8 @@ auto create(const char *p,
     -> tl::expected<buffer_data, error>;
 
 void draw(GLuint shader_program, const buffer_data &ctx, const draw_data &dctx) noexcept;
+
+void cleanup(buffer_data &ctx) noexcept;
 
 } // namespace surge::atom::nonuniform_tiles
 

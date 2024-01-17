@@ -72,20 +72,27 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
   TracyGpuZone("GPU surge::atom::nonuniform_tiles::draw");
 #endif
 
-  const auto model_0{glm::scale(glm::translate(glm::mat4{1.0f}, dctx.pos), dctx.scale)};
-  const auto model_1{glm::scale(
-      glm::translate(glm::mat4{1.0f}, (dctx.pos + glm::vec3{100.0f, 100.0f, 0.0f})), dctx.scale)};
-
-  std::array<glm::mat4, 2> models{};
-  models[0] = model_0;
-  models[1] = model_1;
-
   glUseProgram(shader_program);
 
   renderer::uniforms::set(shader_program, "projection", dctx.projection);
   renderer::uniforms::set(shader_program, "view", dctx.view);
-  renderer::uniforms::set(shader_program, "models", models.data(), models.size());
+
+  renderer::uniforms::set(shader_program, "positions", dctx.positions.data(),
+                          dctx.positions.size());
+  renderer::uniforms::set(shader_program, "scales", dctx.scales.data(), dctx.scales.size());
 
   glBindVertexArray(ctx.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, 2);
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, dctx.positions.size());
+}
+
+void surge::atom::nonuniform_tiles::cleanup(buffer_data &ctx) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::cleanup");
+  TracyGpuZone("GPU surge::atom::static_image::cleanup");
+#endif
+  log_info("Deleting nonuniform tile buffer data (%u, %u, %u)", ctx.VBO, ctx.EBO, ctx.VAO);
+
+  glDeleteBuffers(1, &(ctx.VBO));
+  glDeleteBuffers(1, &(ctx.EBO));
+  glDeleteVertexArrays(1, &(ctx.VAO));
 }

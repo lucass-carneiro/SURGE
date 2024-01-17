@@ -132,6 +132,14 @@ void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_n
 }
 
 void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
+                                    const glm::fvec3 *values, GLsizei size) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::unifors::set(glm::mat4 array)");
+#endif
+  glUniform3fv(glGetUniformLocation(program_handle, uniform_name), size, glm::value_ptr(values[0]));
+}
+
+void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
                                     const glm::mat4 *values, GLsizei size) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::unifors::set(glm::mat4 array)");

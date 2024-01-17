@@ -62,6 +62,7 @@ static DTU::game_state &g_current_state{g_front_state};
 #include "player/nonuniform_tiles.hpp"
 static GLuint g_temp_shader{0};
 static surge::atom::nonuniform_tiles::buffer_data g_buffer_data{};
+static surge::atom::nonuniform_tiles::draw_data g_draw_data{};
 
 // On load
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
@@ -91,6 +92,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_temp_shader = *temp_shader;
   g_buffer_data = *(surge::atom::nonuniform_tiles::create("temp"));
+  g_draw_data.projection = g_projection_matrix;
+  g_draw_data.view = g_view_matrix;
+  g_draw_data.positions
+      = surge::vector<glm::vec3>{glm::vec3{0.0f, 0.0f, 0.1f}, glm::vec3{100.0f, 100.0f, 0.1f},
+                                 glm::vec3{250.0f, 250.0f, 0.1f}};
+  g_draw_data.scales
+      = surge::vector<glm::vec3>{glm::vec3{50.0f}, glm::vec3{25.0f}, glm::vec3{25.0f, 50.0f, 1.0f}};
 
   // Pre allocate memory for component lists
   constexpr const std::size_t base_component_list_size{8};
@@ -126,9 +134,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
-  const surge::atom::nonuniform_tiles::draw_data draw_data{g_projection_matrix, g_view_matrix,
-                                                           glm::vec3{0.0f}, glm::vec3{50.0}};
-  surge::atom::nonuniform_tiles::draw(g_temp_shader, g_buffer_data, draw_data);
+  surge::atom::nonuniform_tiles::draw(g_temp_shader, g_buffer_data, g_draw_data);
   return g_current_state.state_draw();
 }
 
