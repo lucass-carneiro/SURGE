@@ -84,9 +84,7 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
 
   renderer::uniforms::set(shader_program, "projection", dctx.projection);
   renderer::uniforms::set(shader_program, "view", dctx.view);
-
-  glUniformMatrix4fv(glGetUniformLocation(shader_program, "models"), 2, GL_FALSE,
-                     glm::value_ptr(models[0]));
+  renderer::uniforms::set(shader_program, "models", models.data(), models.size());
 
   glBindVertexArray(ctx.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, 2);

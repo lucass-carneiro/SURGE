@@ -130,3 +130,12 @@ void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_n
   glUniformMatrix4fv(glGetUniformLocation(program_handle, uniform_name), 1, GL_FALSE,
                      glm::value_ptr(value));
 }
+
+void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
+                                    const glm::mat4 *values, GLsizei size) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::unifors::set(glm::mat4 array)");
+#endif
+  glUniformMatrix4fv(glGetUniformLocation(program_handle, uniform_name), size, GL_FALSE,
+                     glm::value_ptr(values[0]));
+}

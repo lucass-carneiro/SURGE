@@ -52,6 +52,8 @@ void set(GLuint program_handle, const char *uniform_name, const glm::bvec4 &valu
 void set(GLuint program_handle, const char *uniform_name, const glm::ivec4 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::fvec4 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value) noexcept;
+void set(GLuint program_handle, const char *uniform_name, const glm::mat4 *values,
+         GLsizei size) noexcept;
 
 } // namespace uniforms
 
