@@ -18,10 +18,8 @@ set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
   
-  "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
-  "${PROJECT_SOURCE_DIR}/include/error_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/game_state.hpp"
 )
 
 set(
@@ -29,7 +27,6 @@ set(
   "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/DTU.cpp"
-  "${PROJECT_SOURCE_DIR}/src/global_init.cpp"
 )
 
 # -----------------------------------------

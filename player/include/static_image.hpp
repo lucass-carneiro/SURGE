@@ -4,7 +4,7 @@
 #include "error_types.hpp"
 #include "renderer.hpp"
 
-#include <glm/fwd.hpp>
+#include <glm/glm.hpp>
 #include <tl/expected.hpp>
 
 /**

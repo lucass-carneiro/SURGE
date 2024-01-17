@@ -1,9 +1,13 @@
 #include "static_image.hpp"
 
 #include "allocators.hpp"
+#include "container_types.hpp"
 #include "files.hpp"
+#include "integer_types.hpp"
 #include "logging.hpp"
 #include "renderer.hpp"
+
+#include <tl/expected.hpp>
 
 // clang-format off
 #define STB_IMAGE_IMPLEMENTATION
@@ -23,6 +27,41 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
+struct image {
+  int iw;
+  int ih;
+  int channels;
+  stbi_uc *texels;
+};
+
+static auto load_image(const char *p) -> tl::expected<image, surge::error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::load_image");
+#endif
+
+  log_info("Loading image file %s", p);
+
+  auto file{surge::files::load_file(p, false)};
+  if (!file) {
+    log_error("Unable to load image file %s", p);
+    return tl::unexpected(surge::error::static_image_load_error);
+  }
+
+  int iw{0}, ih{0}, channels_in_file{0};
+  stbi_set_flip_vertically_on_load(static_cast<int>(true));
+  auto image_data{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
+                                        gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
+                                        &channels_in_file, 0)};
+  stbi_set_flip_vertically_on_load(static_cast<int>(false));
+
+  if (image_data == nullptr) {
+    log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
+    return tl::unexpected(surge::error::static_image_stbi_error);
+  }
+
+  return image{iw, ih, channels_in_file, image_data};
+}
+
 auto surge::atom::static_image::create(const char *p,
                                        renderer::texture_filtering filtering) noexcept
     -> tl::expected<one_buffer_data, error> {
@@ -34,24 +73,9 @@ auto surge::atom::static_image::create(const char *p,
   /**************
    * Load Image *
    **************/
-  log_info("Loading image file %s", p);
-
-  auto file{surge::files::load_file(p, false)};
-  if (!file) {
-    log_error("Unable to load image file %s", p);
-    return tl::unexpected(error::static_image_load_error);
-  }
-
-  int iw{0}, ih{0}, channels_in_file{0};
-  stbi_set_flip_vertically_on_load(static_cast<int>(true));
-  auto img_data{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
-                                      gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
-                                      &channels_in_file, 0)};
-  stbi_set_flip_vertically_on_load(static_cast<int>(false));
-
-  if (img_data == nullptr) {
-    log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
-    return tl::unexpected(error::static_image_stbi_error);
+  auto image_data{load_image(p)};
+  if (!image_data) {
+    return tl::unexpected{image_data.error()};
   }
 
   /***************
@@ -72,11 +96,12 @@ auto surge::atom::static_image::create(const char *p,
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(filtering));
 
   // Loading and mip mapping
-  const int format{channels_in_file == 4 ? GL_RGBA : GL_RGB};
+  const int format{image_data->channels == 4 ? GL_RGBA : GL_RGB};
 
-  glTexImage2D(GL_TEXTURE_2D, 0, format, iw, ih, 0, format, GL_UNSIGNED_BYTE, img_data);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image_data->iw, image_data->ih, 0, format,
+               GL_UNSIGNED_BYTE, image_data->texels);
   glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(img_data);
+  stbi_image_free(image_data->texels);
 
   // Unbinding
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -125,18 +150,17 @@ auto surge::atom::static_image::create(const char *p,
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float)));
 
-  return one_buffer_data{
-      glm::vec2{iw, ih},
-      glm::vec2{1.0f / gsl::narrow_cast<float>(iw), 1.0f / gsl::narrow_cast<float>(ih)},
-      texture_id,
-      VBO,
-      EBO,
-      VAO};
+  return one_buffer_data{glm::vec2{image_data->iw, image_data->ih},
+                         glm::vec2{1.0f / gsl::narrow_cast<float>(image_data->iw),
+                                   1.0f / gsl::narrow_cast<float>(image_data->ih)},
+                         texture_id,
+                         VBO,
+                         EBO,
+                         VAO};
 }
 
 void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_data &ctx,
                                      const one_draw_data &dctx) noexcept {
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::draw");
   TracyGpuZone("GPU surge::atom::static_image::draw");

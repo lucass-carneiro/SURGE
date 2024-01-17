@@ -1,14 +1,13 @@
 #ifndef SURGE_DTU_STATE_MAIN_MENU
 #define SURGE_DTU_STATE_MAIN_MENU
 
-#include "error_types.hpp"
-
-#include <optional>
+#include "game_state.hpp"
 
 namespace DTU::state::main_menu {
 
-auto state_load() noexcept -> std::optional<DTU::error>;
-auto state_unload() noexcept -> std::optional<DTU::error>;
+auto state_load() noexcept -> int;
+auto state_unload() noexcept -> int;
+auto draw() noexcept -> int;
 
 } // namespace DTU::state::main_menu
 
