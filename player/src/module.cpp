@@ -3,6 +3,7 @@
 #include "logging.hpp"
 
 #include <filesystem>
+#include <gsl/gsl-lite.hpp>
 
 #ifdef SURGE_SYSTEM_Windows
 

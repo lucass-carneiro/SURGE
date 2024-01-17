@@ -8,6 +8,8 @@
 
 #endif
 
+#include <array>
+
 static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     -> tl::expected<GLuint, surge::error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)

@@ -1,6 +1,7 @@
 #ifndef SURGE_INTEGER_TYPES_HPP
 #define SURGE_INTEGER_TYPES_HPP
 
+#include <cstddef>
 #include <cstdint>
 
 namespace surge {

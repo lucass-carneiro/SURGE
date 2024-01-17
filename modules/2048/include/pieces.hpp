@@ -4,6 +4,7 @@
 #include "container_types.hpp"
 #include "player/container_types.hpp"
 
+#include <array>
 #include <glm/matrix.hpp>
 
 namespace mod_2048::pieces {
