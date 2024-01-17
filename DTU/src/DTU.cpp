@@ -91,14 +91,16 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return static_cast<int>(surge::error::static_image_shader_creation);
   }
   g_temp_shader = *temp_shader;
-  g_buffer_data = *(surge::atom::nonuniform_tiles::create("temp"));
+  surge::atom::nonuniform_tiles::tile_structure ts{"resources/main_menu/tiles.png", 2};
+  g_buffer_data = *(surge::atom::nonuniform_tiles::create(ts));
+
   g_draw_data.projection = g_projection_matrix;
   g_draw_data.view = g_view_matrix;
   g_draw_data.positions
       = surge::vector<glm::vec3>{glm::vec3{0.0f, 0.0f, 0.1f}, glm::vec3{100.0f, 100.0f, 0.1f},
                                  glm::vec3{250.0f, 250.0f, 0.1f}};
   g_draw_data.scales
-      = surge::vector<glm::vec3>{glm::vec3{50.0f}, glm::vec3{25.0f}, glm::vec3{25.0f, 50.0f, 1.0f}};
+      = surge::vector<glm::vec3>{glm::vec3{100.0f}, glm::vec3{100.0f}, glm::vec3{100.0f}};
 
   // Pre allocate memory for component lists
   constexpr const std::size_t base_component_list_size{8};

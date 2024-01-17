@@ -16,6 +16,16 @@ auto validate_path(const char *path) noexcept -> bool;
 
 auto load_file(const char *path, bool append_null_byte) noexcept -> file;
 
+struct image {
+  int iw;
+  int ih;
+  int channels;
+  unsigned char *texels;
+};
+
+auto load_image(const char *path) noexcept -> tl::expected<image, error>;
+void free_image(image &) noexcept;
+
 } // namespace surge::files
 
 #endif // SURGE_FILES_HPP

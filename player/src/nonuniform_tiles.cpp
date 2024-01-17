@@ -1,5 +1,6 @@
 #include "nonuniform_tiles.hpp"
 
+#include "files.hpp"
 #include "logging.hpp"
 
 #include <array>
@@ -11,12 +12,68 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::nonuniform_tiles::create(const char *, renderer::texture_filtering) noexcept
+auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noexcept
     -> tl::expected<buffer_data, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::nonuniform_tiles::create");
   TracyGpuZone("GPU surge::atom::nonuniform_tiles::create");
 #endif
+
+  /**************
+   * Load Image *
+   **************/
+  auto image_data{files::load_image(structure.file)};
+  if (!image_data) {
+    return tl::unexpected{image_data.error()};
+  }
+
+  const int channels = 4;
+  const int format{image_data->channels == channels ? GL_RGBA : GL_RGB};
+
+  /***************
+   * Gen texture *
+   ***************/
+  log_info("Creating nonuniform tile texture");
+
+  GLuint texture_id{0};
+  glGenTextures(1, &texture_id);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, texture_id);
+
+  // Warpping
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+  // Filtering
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
+                  static_cast<GLenum>(structure.filtering));
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,
+                  static_cast<GLenum>(structure.filtering));
+
+  // Allocating and transfering texture memory
+  // Tiles are a vertical strip. Its is way easier to load them into texture arrays like this.
+  // See https://stackoverflow.com/a/59261544
+
+  // clang-format off
+  glTexImage3D(
+    GL_TEXTURE_2D_ARRAY,
+    0,
+    format,
+    image_data->iw,
+    image_data->ih / structure.num_tiles,
+    structure.num_tiles,
+    0,
+    format,
+    GL_UNSIGNED_BYTE,
+    image_data->texels
+  );
+  // clang-format off
+
+  glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+  surge::files::free_image(*image_data);
+
+  // Unbinding
+  glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
   /***************
    * Gen Buffers *
@@ -62,7 +119,7 @@ auto surge::atom::nonuniform_tiles::create(const char *, renderer::texture_filte
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float)));
 
-  return buffer_data{VBO, EBO, VAO};
+  return buffer_data{texture_id, VBO, EBO, VAO};
 }
 
 void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_data &ctx,
@@ -81,6 +138,11 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
                           dctx.positions.size());
   renderer::uniforms::set(shader_program, "scales", dctx.scales.data(), dctx.scales.size());
 
+  renderer::uniforms::set(shader_program, "texture_sampler", GLint{0});
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, ctx.texture_id);
+
   glBindVertexArray(ctx.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, dctx.positions.size());
 }
@@ -90,9 +152,11 @@ void surge::atom::nonuniform_tiles::cleanup(buffer_data &ctx) noexcept {
   ZoneScopedN("surge::atom::static_image::cleanup");
   TracyGpuZone("GPU surge::atom::static_image::cleanup");
 #endif
-  log_info("Deleting nonuniform tile buffer data (%u, %u, %u)", ctx.VBO, ctx.EBO, ctx.VAO);
+  log_info("Deleting image buffer data (%u, %u, %u, %u)", ctx.VBO, ctx.EBO, ctx.texture_id,
+           ctx.VAO);
 
   glDeleteBuffers(1, &(ctx.VBO));
   glDeleteBuffers(1, &(ctx.EBO));
+  glDeleteTextures(1, &(ctx.texture_id));
   glDeleteVertexArrays(1, &(ctx.VAO));
 }

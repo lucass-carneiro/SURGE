@@ -7,60 +7,15 @@
 #include "logging.hpp"
 #include "renderer.hpp"
 
-#include <tl/expected.hpp>
-
-// clang-format off
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)           surge::allocators::mimalloc::malloc(sz)
-#define STBI_REALLOC(p,newsz)     surge::allocators::mimalloc::realloc(p,newsz)
-#define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
-#include <stb_image.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-// clang-format on
-
 #include <gsl/gsl-lite.hpp>
+#include <tl/expected.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
-
-struct image {
-  int iw;
-  int ih;
-  int channels;
-  stbi_uc *texels;
-};
-
-static auto load_image(const char *p) -> tl::expected<image, surge::error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::static_image::load_image");
-#endif
-
-  log_info("Loading image file %s", p);
-
-  auto file{surge::files::load_file(p, false)};
-  if (!file) {
-    log_error("Unable to load image file %s", p);
-    return tl::unexpected(surge::error::static_image_load_error);
-  }
-
-  int iw{0}, ih{0}, channels_in_file{0};
-  stbi_set_flip_vertically_on_load(static_cast<int>(true));
-  auto image_data{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
-                                        gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
-                                        &channels_in_file, 0)};
-  stbi_set_flip_vertically_on_load(static_cast<int>(false));
-
-  if (image_data == nullptr) {
-    log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
-    return tl::unexpected(surge::error::static_image_stbi_error);
-  }
-
-  return image{iw, ih, channels_in_file, image_data};
-}
 
 auto surge::atom::static_image::create(const char *p,
                                        renderer::texture_filtering filtering) noexcept
@@ -73,7 +28,7 @@ auto surge::atom::static_image::create(const char *p,
   /**************
    * Load Image *
    **************/
-  auto image_data{load_image(p)};
+  auto image_data{files::load_image(p)};
   if (!image_data) {
     return tl::unexpected{image_data.error()};
   }
@@ -101,7 +56,7 @@ auto surge::atom::static_image::create(const char *p,
   glTexImage2D(GL_TEXTURE_2D, 0, format, image_data->iw, image_data->ih, 0, format,
                GL_UNSIGNED_BYTE, image_data->texels);
   glGenerateMipmap(GL_TEXTURE_2D);
-  stbi_image_free(image_data->texels);
+  surge::files::free_image(*image_data);
 
   // Unbinding
   glBindTexture(GL_TEXTURE_2D, 0);

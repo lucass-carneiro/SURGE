@@ -21,6 +21,7 @@ namespace surge::atom::nonuniform_tiles {
 constexpr const usize max_tiles{8};
 
 struct buffer_data {
+  GLuint texture_id;
   GLuint VBO;
   GLuint EBO;
   GLuint VAO;
@@ -33,9 +34,14 @@ struct draw_data {
   surge::vector<glm::vec3> scales;
 };
 
-auto create(const char *p,
-            renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
-    -> tl::expected<buffer_data, error>;
+// Tiles need to be in a vertical strip
+struct tile_structure {
+  const char *file{nullptr};
+  GLsizei num_tiles{0};
+  renderer::texture_filtering filtering{renderer::texture_filtering::nearest};
+};
+
+auto create(const tile_structure &structure) noexcept -> tl::expected<buffer_data, error>;
 
 void draw(GLuint shader_program, const buffer_data &ctx, const draw_data &dctx) noexcept;
 

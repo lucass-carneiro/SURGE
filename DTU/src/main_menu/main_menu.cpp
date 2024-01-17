@@ -47,7 +47,7 @@ auto DTU::state::main_menu::draw() noexcept -> int {
     DTU::get_projection(),
     DTU::get_view(),
     glm::vec3{0},
-    glm::vec3{800.0, 600.0, 1.0f},
+    glm::vec3{800.0, 600.0, 0.0f},
     glm::vec2{0},
     glm::vec2{576.0f, 324.0f},
     false,
@@ -59,12 +59,6 @@ auto DTU::state::main_menu::draw() noexcept -> int {
   const auto &buffer{DTU::components::static_image_buffer::get().back()};
 
   // Level 0
-  surge::atom::static_image::draw(shader, buffer, draw_data);
-
-  // Level 1
-  draw_data.pos = glm::vec3{0.0f, 428.0f, 0.1f};
-  draw_data.region_origin = glm::vec2{0.0f, 326.0f};
-  draw_data.region_dims = glm::vec2{576.0f, 172.0f};
   surge::atom::static_image::draw(shader, buffer, draw_data);
 
   return 0;

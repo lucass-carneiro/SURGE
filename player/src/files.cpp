@@ -1,5 +1,6 @@
 #include "files.hpp"
 
+#include "allocators.hpp"
 #include "logging.hpp"
 #include "options.hpp"
 
@@ -11,8 +12,22 @@
 #  include <io.h>
 #endif
 
+// clang-format off
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_MALLOC(sz)           surge::allocators::mimalloc::malloc(sz)
+#define STBI_REALLOC(p,newsz)     surge::allocators::mimalloc::realloc(p,newsz)
+#define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
+#include <stb_image.h>
+// clang-format on
+
 #include <cstring>
 #include <filesystem>
+#include <gsl/gsl-lite.hpp>
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
 
 auto surge::files::validate_path(const char *path) noexcept -> bool {
   try {
@@ -114,3 +129,33 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
     return tl::unexpected(error::unknow_error);
   }
 }
+
+auto surge::files::load_image(const char *p) noexcept -> tl::expected<image, surge::error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::static_image::load_image");
+#endif
+
+  log_info("Loading image file %s", p);
+
+  auto file{load_file(p, false)};
+  if (!file) {
+    log_error("Unable to load image file %s", p);
+    return tl::unexpected(surge::error::static_image_load_error);
+  }
+
+  int iw{0}, ih{0}, channels_in_file{0};
+  stbi_set_flip_vertically_on_load(static_cast<int>(true));
+  auto image_data{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
+                                        gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
+                                        &channels_in_file, 0)};
+  stbi_set_flip_vertically_on_load(static_cast<int>(false));
+
+  if (image_data == nullptr) {
+    log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
+    return tl::unexpected(surge::error::static_image_stbi_error);
+  }
+
+  return image{iw, ih, channels_in_file, image_data};
+}
+
+void surge::files::free_image(image &image) noexcept { stbi_image_free(image.texels); }
