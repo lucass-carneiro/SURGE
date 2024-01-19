@@ -134,9 +134,8 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
   renderer::uniforms::set(shader_program, "projection", dctx.projection);
   renderer::uniforms::set(shader_program, "view", dctx.view);
 
-  renderer::uniforms::set(shader_program, "positions", dctx.positions.data(),
-                          dctx.positions.size());
-  renderer::uniforms::set(shader_program, "scales", dctx.scales.data(), dctx.scales.size());
+  renderer::uniforms::set(shader_program, "models", dctx.models.data(),
+                          dctx.models.size());
 
   renderer::uniforms::set(shader_program, "texture_sampler", GLint{0});
 
@@ -144,7 +143,7 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
   glBindTexture(GL_TEXTURE_2D_ARRAY, ctx.texture_id);
 
   glBindVertexArray(ctx.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, dctx.positions.size());
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, dctx.models.size());
 }
 
 void surge::atom::nonuniform_tiles::cleanup(buffer_data &ctx) noexcept {

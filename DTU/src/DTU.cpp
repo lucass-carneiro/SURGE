@@ -96,11 +96,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
 
   g_draw_data.projection = g_projection_matrix;
   g_draw_data.view = g_view_matrix;
-  g_draw_data.positions
-      = surge::vector<glm::vec3>{glm::vec3{0.0f, 0.0f, 0.1f}, glm::vec3{100.0f, 100.0f, 0.1f},
-                                 glm::vec3{250.0f, 250.0f, 0.1f}};
-  g_draw_data.scales
-      = surge::vector<glm::vec3>{glm::vec3{100.0f}, glm::vec3{100.0f}, glm::vec3{100.0f}};
+
+  g_draw_data.models.push_back(
+      glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{10.0f, 10.0f, 0.5f}),
+                 glm::vec3{100.0f, 100.0f, 1.0f}));
+  g_draw_data.models.push_back(
+      glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{110.0f, 10.0f, 0.5f}),
+                 glm::vec3{100.0f, 100.0f, 1.0f}));
 
   // Pre allocate memory for component lists
   constexpr const std::size_t base_component_list_size{8};

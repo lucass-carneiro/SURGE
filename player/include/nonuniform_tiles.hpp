@@ -30,8 +30,7 @@ struct buffer_data {
 struct draw_data {
   glm::mat4 projection;
   glm::mat4 view;
-  surge::vector<glm::vec3> positions;
-  surge::vector<glm::vec3> scales;
+  surge::vector<glm::mat4> models;
 };
 
 // Tiles need to be in a vertical strip
