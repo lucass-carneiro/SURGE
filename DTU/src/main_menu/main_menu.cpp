@@ -13,7 +13,7 @@ static surge::atom::nonuniform_tiles::draw_data g_background_draw_data{};
 
 static constexpr const GLsizei background_layer_count{5};
 static constexpr const std::array<float, background_layer_count> background_drift_speeds{
-    0.1f, 0.1f, 0.1f, 0.1f, 0.1f};
+    0.0f, 0.01f, 0.02f, 0.04f, 0.08f};
 
 auto DTU::state::main_menu::load(float ww, float wh) noexcept -> int {
   using namespace surge;
@@ -71,7 +71,7 @@ auto DTU::state::main_menu::update(double dt) noexcept -> int {
 
     if (relative_positions[i] < 0.5f) {
       model = glm::translate(model, glm::vec3{-drift_speed * dt, 0.0f, 0.0f});
-      relative_positions[i] += 0.1f * gsl::narrow_cast<float>(dt);
+      relative_positions[i] += drift_speed * gsl::narrow_cast<float>(dt);
     } else {
       model = glm::translate(model, glm::vec3{0.5f, 0.0f, 0.0f});
       relative_positions[i] = 0;
