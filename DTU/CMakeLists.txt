@@ -16,17 +16,17 @@ project(
 
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
-  
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
-  "${PROJECT_SOURCE_DIR}/include/game_state.hpp"
+  "${PROJECT_SOURCE_DIR}/include/states.hpp"
+  
+  "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
 )
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
-  
   "${PROJECT_SOURCE_DIR}/src/DTU.cpp"
+  
+  "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
 )
 
 # -----------------------------------------

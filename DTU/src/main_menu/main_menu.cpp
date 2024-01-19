@@ -1,93 +1,83 @@
-#include "DTU.hpp"
-
-// clang-format off
 #include "main_menu/main_menu.hpp"
-// clang-format on
 
 #include "player/logging.hpp"
-#include "player/static_image.hpp"
-#include "renderer.hpp"
-#include "static_image.hpp"
-#include "window.hpp"
+#include "player/nonuniform_tiles.hpp"
 
-#include <glm/fwd.hpp>
-#include <omp.h>
+#include <array>
+#include <glm/gtc/matrix_transform.hpp>
+#include <gsl/gsl-lite.hpp>
 
-auto DTU::state::main_menu::state_load() noexcept -> int {
+// NOLINTNEXTLINE
+static surge::atom::nonuniform_tiles::buffer_data g_background_buffer{};
+static surge::atom::nonuniform_tiles::draw_data g_background_draw_data{};
+
+static constexpr const GLsizei background_layer_count{5};
+static constexpr const std::array<float, background_layer_count> background_drift_speeds{
+    0.1f, 0.1f, 0.1f, 0.1f, 0.1f};
+
+auto DTU::state::main_menu::load(float ww, float wh) noexcept -> int {
   using namespace surge;
 
   log_info("Loading main_menu state");
 
   // Load background
   log_info("Loading background images");
-  auto img_data{atom::static_image::create("resources/main_menu/background.png",
-                                           renderer::texture_filtering::nearest)};
 
-  if (!img_data) {
-    return static_cast<int>(img_data.error());
+  atom::nonuniform_tiles::tile_structure background_ts{"resources/main_menu/background.png",
+                                                       background_layer_count};
+  auto background_buffer{atom::nonuniform_tiles::create(background_ts)};
+
+  if (!background_buffer) {
+    return static_cast<int>(background_buffer.error());
+  }
+  g_background_buffer = *background_buffer;
+
+  g_background_draw_data.models.reserve(background_layer_count);
+
+  for (surge::usize i = 0; i < background_layer_count; i++) {
+    const float z{gsl::narrow_cast<float>(i) / 10.0f};
+    g_background_draw_data.models.push_back(glm::scale(
+        glm::translate(glm::mat4{1.0f}, glm::vec3{0.0, 0.0, z}), glm::vec3{2 * ww, wh, 1.0f}));
   }
 
-  components::static_image_buffer::get().push_back(*img_data);
-
   return 0;
 }
 
-auto DTU::state::main_menu::state_unload() noexcept -> int {
+auto DTU::state::main_menu::unload() noexcept -> int {
+  using namespace surge;
   log_info("Unloading main_menu state");
 
-  components::static_image_buffer::reset();
-  components::static_image_draw::reset();
+  atom::nonuniform_tiles::cleanup(g_background_buffer);
 
   return 0;
 }
 
-auto DTU::state::main_menu::draw() noexcept -> int {
-  // clang-format off
-  surge::atom::static_image::one_draw_data draw_data{
-    DTU::get_projection(),
-    DTU::get_view(),
-    glm::vec3{0},
-    glm::vec3{800.0, 600.0, 0.0f},
-    glm::vec2{0},
-    glm::vec2{576.0f, 324.0f},
-    false,
-    false
-  };
-  // clang-format on
+auto DTU::state::main_menu::draw(unsigned int nuts, glm::mat4 &proj, glm::mat4 &view) noexcept
+    -> int {
+  using namespace surge;
 
-  const auto &shader{DTU::get_img_shader()};
-  const auto &buffer{DTU::components::static_image_buffer::get().back()};
-
-  // Level 0
-  surge::atom::static_image::draw(shader, buffer, draw_data);
-
+  g_background_draw_data.projection = proj;
+  g_background_draw_data.view = view;
+  atom::nonuniform_tiles::draw(nuts, g_background_buffer, g_background_draw_data);
   return 0;
 }
 
-/*
-.0 {
-   background: url('spritesheet.png') no-repeat -0px -0px;
-   width: 1152px;
-   height: 324px;
+auto DTU::state::main_menu::update(double dt) noexcept -> int {
+  // Background parallax
+  static std::array<float, background_layer_count> relative_positions{0};
+
+  for (surge::usize i = 0; auto &model : g_background_draw_data.models) {
+    const auto drift_speed{background_drift_speeds[i]};
+
+    if (relative_positions[i] < 0.5f) {
+      model = glm::translate(model, glm::vec3{-drift_speed * dt, 0.0f, 0.0f});
+      relative_positions[i] += 0.1f * gsl::narrow_cast<float>(dt);
+    } else {
+      model = glm::translate(model, glm::vec3{0.5f, 0.0f, 0.0f});
+      relative_positions[i] = 0;
+    }
+    i++;
+  }
+
+  return 0;
 }
-.1 {
-   background: url('spritesheet.png') no-repeat -0px -326px;
-   width: 1152px;
-   height: 172px;
-}
-.2 {
-   background: url('spritesheet.png') no-repeat -0px -500px;
-   width: 1152px;
-   height: 144px;
-}
-.3 {
-   background: url('spritesheet.png') no-repeat -0px -646px;
-   width: 1151px;
-   height: 141px;
-}
-.4 {
-   background: url('spritesheet.png') no-repeat -0px -789px;
-   width: 1152px;
-   height: 95px;
-}
-*/

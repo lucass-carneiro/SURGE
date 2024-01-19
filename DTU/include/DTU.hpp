@@ -21,29 +21,6 @@
 
 namespace DTU {
 
-// Global accessors
-auto get_projection() noexcept -> const glm::mat4 &;
-auto get_view() noexcept -> glm::mat4 &;
-auto get_img_shader() noexcept -> GLuint;
-
-namespace components {
-
-namespace static_image_buffer {
-
-auto get() noexcept -> surge::vector<surge::atom::static_image::one_buffer_data> &;
-void reset() noexcept;
-
-} // namespace static_image_buffer
-
-namespace static_image_draw {
-
-auto get() noexcept -> surge::vector<surge::atom::static_image::one_draw_data> &;
-void reset() noexcept;
-
-} // namespace static_image_draw
-
-} // namespace components
-
 // Callbacks
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
