@@ -24,6 +24,13 @@ enum class blend_dest : GLenum { one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA };
 
 enum class texture_filtering : GLenum { nearest = GL_NEAREST, linear = GL_LINEAR };
 
+enum class texture_wrap : GLenum {
+  repeat = GL_REPEAT,
+  mirrored_repeat = GL_MIRRORED_REPEAT,
+  clamp_to_edge = GL_CLAMP_TO_EDGE,
+  clamp_to_border = GL_CLAMP_TO_BORDER
+};
+
 void enable(const capability cap) noexcept;
 void disable(const capability cap) noexcept;
 

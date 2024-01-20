@@ -26,7 +26,6 @@
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
-#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto surge::files::validate_path(const char *path) noexcept -> bool {

@@ -186,6 +186,12 @@ auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
   return map;
 }
 
+void surge::atom::text::destroy_charmap(const charmap_data &charmap) noexcept {
+  for (auto map : charmap.texture_ids) {
+    glDeleteTextures(1, &map);
+  }
+}
+
 void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
                              const draw_data &dd, std::string_view text,
                              float extra_vskip) noexcept {

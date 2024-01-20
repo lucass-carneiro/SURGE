@@ -17,8 +17,8 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::static_image::create(const char *p,
-                                       renderer::texture_filtering filtering) noexcept
+auto surge::atom::static_image::create(const char *p, renderer::texture_filtering filtering,
+                                       renderer::texture_wrap wrap) noexcept
     -> tl::expected<one_buffer_data, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::create");
@@ -43,8 +43,8 @@ auto surge::atom::static_image::create(const char *p,
   glBindTexture(GL_TEXTURE_2D, texture_id);
 
   // Warpping
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
 
   // Filtering
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(filtering));
@@ -136,6 +136,8 @@ void surge::atom::static_image::draw(GLuint shader_program, const one_buffer_dat
 
   renderer::uniforms::set(shader_program, "h_flip", dctx.h_flip);
   renderer::uniforms::set(shader_program, "v_flip", dctx.v_flip);
+
+  renderer::uniforms::set(shader_program, "alpha", dctx.alpha);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, ctx.texture_id);

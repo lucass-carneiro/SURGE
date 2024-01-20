@@ -59,6 +59,8 @@ auto create_charmap(buffer_data &data, FT_UInt pixel_height,
                     = renderer::texture_filtering::linear) noexcept
     -> tl::expected<charmap_data, error>;
 
+void destroy_charmap(const charmap_data &charmap) noexcept;
+
 void draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd, const draw_data &dd,
           std::string_view text, float extra_vskip = 5.0f) noexcept;
 

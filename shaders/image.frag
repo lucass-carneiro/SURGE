@@ -7,6 +7,8 @@ fs_in;
 
 uniform sampler2D txt_0;
 
+uniform float alpha;
+
 uniform bool h_flip;
 uniform bool v_flip;
 
@@ -52,4 +54,4 @@ vec2 get_sprite_coord() {
   return (M * ext_txt_pos).xy;
 }
 
-void main() { fragment_color = texture(txt_0, get_sprite_coord()); }
+void main() { fragment_color = texture(txt_0, get_sprite_coord()) * vec4(1.0, 1.0, 1.0, alpha); }

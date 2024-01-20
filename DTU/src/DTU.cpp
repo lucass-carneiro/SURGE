@@ -21,8 +21,14 @@ static glm::mat4 g_view{};
 // NOLINTNEXTLINE
 static GLuint g_nonuniform_tile_shader{0};
 
-// NOLINTNEXTLIN
+// NOLINTNEXTLINE
+static GLuint g_image_shader{0};
+
+// NOLINTNEXTLINE
 static DTU::state_id g_current_state_id{DTU::state_id::main_menu};
+
+// NOLINTNEXTLINE
+surge::queue<surge::u32> g_command_queue{};
 
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
   // Bind callbacks
@@ -47,7 +53,14 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_nonuniform_tile_shader = *nonuniform_tiles_shader;
 
-  return DTU::state::main_menu::load(ww, wh);
+  const auto image_shader{
+      surge::renderer::create_shader_program("shaders/image.vert", "shaders/image.frag")};
+  if (!nonuniform_tiles_shader) {
+    return static_cast<int>(surge::error::static_image_shader_creation);
+  }
+  g_image_shader = *image_shader;
+
+  return DTU::state::main_menu::load(g_command_queue, ww, wh);
 }
 
 extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int {
@@ -57,10 +70,11 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   }
 
   surge::renderer::cleanup_shader_program(g_nonuniform_tile_shader);
+  surge::renderer::cleanup_shader_program(g_image_shader);
 
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
-    return DTU::state::main_menu::unload();
+    return DTU::state::main_menu::unload(g_command_queue);
   default:
     break;
   }
@@ -69,7 +83,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
-    return DTU::state::main_menu::draw(g_nonuniform_tile_shader, g_projection, g_view);
+    return DTU::state::main_menu::draw(
+        DTU::state::main_menu::shader_indices{g_nonuniform_tile_shader, g_image_shader},
+        g_projection, g_view);
   default:
     break;
   }
@@ -78,13 +94,21 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
-    return DTU::state::main_menu::update(dt);
+    return DTU::state::main_menu::update(g_command_queue, dt);
   default:
     break;
   }
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int scancode, int action,
+                                                   int mods) noexcept {
+  switch (g_current_state_id) {
+  case DTU::state_id::main_menu:
+    return DTU::state::main_menu::keyboard_event(g_command_queue, key, scancode, action, mods);
+  default:
+    break;
+  }
+}
 
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *, int, int, int) noexcept {}
 

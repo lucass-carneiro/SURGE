@@ -29,12 +29,14 @@ struct one_draw_data {
   glm::vec3 scale;
   glm::vec2 region_origin;
   glm::vec2 region_dims;
+  float alpha{1.0f};
   bool h_flip{false};
   bool v_flip{false};
 };
 
 auto create(const char *p,
-            renderer::texture_filtering filtering = renderer::texture_filtering::linear) noexcept
+            renderer::texture_filtering filtering = renderer::texture_filtering::linear,
+            renderer::texture_wrap wrap = renderer::texture_wrap::repeat) noexcept
     -> tl::expected<one_buffer_data, error>;
 
 void draw(GLuint shader_program, const one_buffer_data &ctx, const one_draw_data &dctx) noexcept;
