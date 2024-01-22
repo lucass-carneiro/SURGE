@@ -21,6 +21,9 @@ static surge::atom::static_image::one_buffer_data g_title_buffer{};
 // NOLINTNEXTLINE
 static surge::atom::static_image::one_draw_data g_title_draw_data{};
 
+// NOLINTNEXTLINE
+static surge::atom::text::draw_data g_text_draw_data{};
+
 // Parallax background
 static constexpr const GLsizei background_layer_count{5};
 
@@ -82,6 +85,12 @@ auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq, float ww, float
   g_title_draw_data.region_origin = glm::vec2{0.0};
   g_title_draw_data.alpha = 0.0f;
 
+  // Options
+  g_text_draw_data.face_idx = 0;
+  g_text_draw_data.position = glm::vec2{100.0};
+  g_text_draw_data.scale = 1.0f;
+  g_text_draw_data.color = glm::vec3{175.0f / 255.0f, 17.0f / 255.0f, 28.0f / 255.0f};
+
   // First command
   cmdq.push(commands::show_title);
 
@@ -102,7 +111,9 @@ auto DTU::state::main_menu::unload(surge::queue<surge::u32> &cmdq) noexcept -> i
   return 0;
 }
 
-auto DTU::state::main_menu::draw(const shader_indices &&si, glm::mat4 &proj,
+auto DTU::state::main_menu::draw(const shader_indices &&si,
+                                 const surge::atom::text::buffer_data &tbd,
+                                 const surge::atom::text::charmap_data &tcd, glm::mat4 &proj,
                                  glm::mat4 &view) noexcept -> int {
   using namespace surge;
 
@@ -114,6 +125,9 @@ auto DTU::state::main_menu::draw(const shader_indices &&si, glm::mat4 &proj,
 
   atom::nonuniform_tiles::draw(si.nonuniform_tiles, g_background_buffer, g_background_draw_data);
   atom::static_image::draw(si.static_image, g_title_buffer, g_title_draw_data);
+
+  g_text_draw_data.projection = proj;
+  atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "Hello World!");
 
   return 0;
 }
@@ -140,7 +154,7 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq, double dt) no
 
   case commands::show_title:
     if (g_title_draw_data.alpha < 1.0f) {
-      g_title_draw_data.alpha += 0.5f * gsl::narrow_cast<float>(dt);
+      g_title_draw_data.alpha += 1.0f * gsl::narrow_cast<float>(dt);
     } else {
       g_title_draw_data.alpha = 1.0;
       cmdq.pop();
@@ -148,11 +162,12 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq, double dt) no
     break;
 
   case commands::shift_title:
-    if (g_title_draw_data.pos[1] < 0.0f) {
-      g_title_draw_data.pos[1] -= 0.5f * gsl::narrow_cast<float>(dt);
+    if (g_title_draw_data.pos[1] > 0.0f) {
+      g_title_draw_data.pos[1] -= 1000.0f * gsl::narrow_cast<float>(dt);
     } else {
       g_title_draw_data.pos[1] = 0.0;
       cmdq.pop();
+      cmdq.push(commands::show_menu);
     }
     break;
 
@@ -163,10 +178,10 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq, double dt) no
   return 0;
 }
 
-void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int key, int, int action,
-                                           int) noexcept {
+void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int /*key*/, int,
+                                           int action, int) noexcept {
   static bool title_shifted{false};
-  if (key == GLFW_KEY_ENTER && action == GLFW_PRESS && !title_shifted) {
+  if (action == GLFW_PRESS && !title_shifted) {
     cmdq.push(commands::shift_title);
     title_shifted = true;
   }

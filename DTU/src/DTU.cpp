@@ -4,9 +4,9 @@
 
 // clang-format off
 #include "player/renderer.hpp"
-#include "player/nonuniform_tiles.hpp"
 #include "player/error_types.hpp"
 #include "player/logging.hpp"
+#include "player/text.hpp"
 // clang-format on
 
 #include "main_menu/main_menu.hpp"
@@ -23,6 +23,15 @@ static GLuint g_nonuniform_tile_shader{0};
 
 // NOLINTNEXTLINE
 static GLuint g_image_shader{0};
+
+// NOLINTNEXTLINE
+static GLuint g_text_shader{0};
+
+// NOLINTNEXTLINE
+static surge::atom::text::buffer_data g_text_buffer{};
+
+// NOLINTNEXTLINE
+static surge::atom::text::charmap_data g_text_charmap{};
 
 // NOLINTNEXTLINE
 static DTU::state_id g_current_state_id{DTU::state_id::main_menu};
@@ -60,6 +69,28 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_image_shader = *image_shader;
 
+  // Load text rendering shader
+  const auto text_shader{
+      surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
+  if (!text_shader) {
+    return static_cast<int>(text_shader.error());
+  }
+  g_text_shader = *text_shader;
+
+  // Load font cache
+  surge::atom::text::font_name_vec_t fonts{"resources/fonts/ITC_Benguiat_Bold.ttf"};
+  const auto text_buffer{surge::atom::text::create(fonts)};
+  if (!text_buffer) {
+    return static_cast<int>(text_buffer.error());
+  }
+  g_text_buffer = *text_buffer;
+
+  const auto text_charmap{surge::atom::text::create_charmap(g_text_buffer, 50)};
+  if (!text_charmap) {
+    return static_cast<int>(text_buffer.error());
+  }
+  g_text_charmap = *text_charmap;
+
   return DTU::state::main_menu::load(g_command_queue, ww, wh);
 }
 
@@ -71,6 +102,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
   surge::renderer::cleanup_shader_program(g_nonuniform_tile_shader);
   surge::renderer::cleanup_shader_program(g_image_shader);
+
+  surge::atom::text::destroy_charmap(g_text_charmap);
+  surge::atom::text::terminate(g_text_buffer);
+  surge::renderer::cleanup_shader_program(g_text_shader);
 
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
@@ -84,8 +119,9 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
     return DTU::state::main_menu::draw(
-        DTU::state::main_menu::shader_indices{g_nonuniform_tile_shader, g_image_shader},
-        g_projection, g_view);
+        DTU::state::main_menu::shader_indices{g_nonuniform_tile_shader, g_image_shader,
+                                              g_text_shader},
+        g_text_buffer, g_text_charmap, g_projection, g_view);
   default:
     break;
   }
