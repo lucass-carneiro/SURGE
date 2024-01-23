@@ -27,6 +27,9 @@ static surge::atom::text::draw_data g_text_draw_data{};
 // Parallax background
 static constexpr const GLsizei background_layer_count{5};
 
+// NOLINTNEXTLINE
+static DTU::state::main_menu::ui_states g_ui_state{DTU::state::main_menu::ui_states::hidden};
+
 // clang-format off
 // Obtained from the cubic polynomial (4 + x + x^2) / 400
 static constexpr const std::array<float, background_layer_count> background_drift_speeds{
@@ -87,7 +90,6 @@ auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq, float ww, float
 
   // Options
   g_text_draw_data.face_idx = 0;
-  g_text_draw_data.position = glm::vec2{100.0};
   g_text_draw_data.scale = 1.0f;
   g_text_draw_data.color = glm::vec3{175.0f / 255.0f, 17.0f / 255.0f, 28.0f / 255.0f};
 
@@ -127,7 +129,28 @@ auto DTU::state::main_menu::draw(const shader_indices &&si,
   atom::static_image::draw(si.static_image, g_title_buffer, g_title_draw_data);
 
   g_text_draw_data.projection = proj;
-  atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "Hello World!");
+  switch (g_ui_state) {
+
+  default:
+    break;
+
+  case ui_states::new_game:
+    g_text_draw_data.color = glm::vec3{1.0f, 1.0f, 1.0f};
+    g_text_draw_data.position = glm::vec2{0.0f, g_title_draw_data.region_dims[1] + 100.0f};
+    surge::atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "NEW GAME");
+
+    g_text_draw_data.color = glm::vec3{175.0f / 255.0f, 17.0f / 255.0f, 28.0f / 255.0f};
+    g_text_draw_data.position += glm::vec2{0.0f, 100.0f};
+    surge::atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "Load Game");
+
+    g_text_draw_data.position += glm::vec2{0.0f, 100.0f};
+    surge::atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "Options");
+
+    g_text_draw_data.position += glm::vec2{0.0f, 100.0f};
+    surge::atom::text::draw(si.text, tbd, tcd, g_text_draw_data, "Exit");
+
+    break;
+  }
 
   return 0;
 }
@@ -168,7 +191,12 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq, double dt) no
       g_title_draw_data.pos[1] = 0.0;
       cmdq.pop();
       cmdq.push(commands::show_menu);
+      g_ui_state = ui_states::new_game;
     }
+    break;
+
+  case commands::show_menu:
+    // TOO
     break;
 
   default:

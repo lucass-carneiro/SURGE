@@ -15,6 +15,7 @@ struct shader_indices {
 };
 
 enum commands : surge::u32 { show_title, shift_title, show_menu };
+enum ui_states : surge::u8 { hidden, new_game, load_game, options, exit };
 
 auto load(surge::queue<surge::u32> &cmdq, float ww, float wh) noexcept -> int;
 auto unload(surge::queue<surge::u32> &cmdq) noexcept -> int;
