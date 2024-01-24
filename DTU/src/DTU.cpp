@@ -7,6 +7,7 @@
 #include "player/error_types.hpp"
 #include "player/logging.hpp"
 #include "player/text.hpp"
+#include "player/sprite.hpp"
 // clang-format on
 
 #include "main_menu/main_menu.hpp"
@@ -28,10 +29,19 @@ static GLuint g_image_shader{0};
 static GLuint g_text_shader{0};
 
 // NOLINTNEXTLINE
+static GLuint g_sprite_shader{0};
+
+// NOLINTNEXTLINE
 static surge::atom::text::buffer_data g_text_buffer{};
 
 // NOLINTNEXTLINE
 static surge::atom::text::charmap_data g_text_charmap{};
+
+// NOLINTNEXTLINE
+static surge::atom::sprite::buffer_data g_sprite_buffer{};
+
+static surge::vector<glm::mat4> g_sprite_models{};
+static surge::vector<GLuint64> g_sprite_texture_handles{};
 
 // NOLINTNEXTLINE
 static DTU::state_id g_current_state_id{DTU::state_id::main_menu};
@@ -64,12 +74,35 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
 
   const auto image_shader{
       surge::renderer::create_shader_program("shaders/image.vert", "shaders/image.frag")};
-  if (!nonuniform_tiles_shader) {
+  if (!image_shader) {
     return static_cast<int>(surge::error::static_image_shader_creation);
   }
   g_image_shader = *image_shader;
 
-  // Load text rendering shader
+  const auto sprite_shader{
+      surge::renderer::create_shader_program("shaders/sprite.vert", "shaders/sprite.frag")};
+  if (!sprite_shader) {
+    return static_cast<int>(sprite_shader.error());
+  }
+  g_sprite_shader = *sprite_shader;
+  g_sprite_buffer = surge::atom::sprite::create_buffers();
+  g_sprite_models.reserve(8);
+  g_sprite_texture_handles.reserve(8);
+
+  auto img{*surge::files::load_image("resources/main_menu/background.png")};
+  const auto img_handle{surge::atom::sprite::create_texture(img)};
+  if (!img_handle) {
+    surge::files::free_image(img);
+    return static_cast<int>(img_handle.error());
+  }
+  g_sprite_texture_handles.push_back(*img_handle);
+  surge::files::free_image(img);
+
+  g_sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{100.0, 100.0, 1.0}), glm::vec3{608.0, 174.0, 1.0}));
+
+  surge::atom::sprite::make_resident(g_sprite_texture_handles);
+
   const auto text_shader{
       surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
   if (!text_shader) {
@@ -103,6 +136,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   surge::renderer::cleanup_shader_program(g_nonuniform_tile_shader);
   surge::renderer::cleanup_shader_program(g_image_shader);
 
+  surge::atom::sprite::make_non_resident(g_sprite_texture_handles);
+  surge::atom::sprite::destroy_buffers(g_sprite_buffer);
+  surge::renderer::cleanup_shader_program(g_sprite_shader);
+
   surge::atom::text::destroy_charmap(g_text_charmap);
   surge::atom::text::terminate(g_text_buffer);
   surge::renderer::cleanup_shader_program(g_text_shader);
@@ -116,7 +153,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
-  switch (g_current_state_id) {
+  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view, g_sprite_models,
+                            g_sprite_texture_handles);
+
+  /*switch (g_current_state_id) {
   case DTU::state_id::main_menu:
     return DTU::state::main_menu::draw(
         DTU::state::main_menu::shader_indices{g_nonuniform_tile_shader, g_image_shader,
@@ -124,7 +164,8 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
         g_text_buffer, g_text_charmap, g_projection, g_view);
   default:
     break;
-  }
+  }*/
+  return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {

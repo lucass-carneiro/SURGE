@@ -53,7 +53,7 @@ auto surge::atom::static_image::create(const char *p, renderer::texture_filterin
   // Loading and mip mapping
   const int format{image_data->channels == 4 ? GL_RGBA : GL_RGB};
 
-  glTexImage2D(GL_TEXTURE_2D, 0, format, image_data->iw, image_data->ih, 0, format,
+  glTexImage2D(GL_TEXTURE_2D, 0, format, image_data->width, image_data->height, 0, format,
                GL_UNSIGNED_BYTE, image_data->texels);
   glGenerateMipmap(GL_TEXTURE_2D);
   surge::files::free_image(*image_data);
@@ -105,9 +105,9 @@ auto surge::atom::static_image::create(const char *p, renderer::texture_filterin
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float)));
 
-  return one_buffer_data{glm::vec2{image_data->iw, image_data->ih},
-                         glm::vec2{1.0f / gsl::narrow_cast<float>(image_data->iw),
-                                   1.0f / gsl::narrow_cast<float>(image_data->ih)},
+  return one_buffer_data{glm::vec2{image_data->width, image_data->height},
+                         glm::vec2{1.0f / gsl::narrow_cast<float>(image_data->width),
+                                   1.0f / gsl::narrow_cast<float>(image_data->height)},
                          texture_id,
                          VBO,
                          EBO,

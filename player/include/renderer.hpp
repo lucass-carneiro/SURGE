@@ -3,6 +3,7 @@
 
 #include "config.hpp"
 #include "error_types.hpp"
+#include "integer_types.hpp"
 
 // clang-format off
 #define GLFW_INCLUDE_NONE
@@ -48,6 +49,7 @@ namespace uniforms {
 
 void set(GLuint program_handle, const char *uniform_name, bool value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, GLint value) noexcept;
+void set(GLuint program_handle, const char *uniform_name, GLuint64 value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, float value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::bvec2 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::ivec2 &value) noexcept;
@@ -60,10 +62,12 @@ void set(GLuint program_handle, const char *uniform_name, const glm::ivec4 &valu
 void set(GLuint program_handle, const char *uniform_name, const glm::fvec4 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value) noexcept;
 
+void set(GLuint program_handle, const char *uniform_name, const GLuint64 *values,
+         usize size) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::fvec3 *values,
-         GLsizei size) noexcept;
+         usize size) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 *values,
-         GLsizei size) noexcept;
+         usize size) noexcept;
 
 } // namespace uniforms
 

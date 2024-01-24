@@ -23,6 +23,7 @@ enum error : int {
   unrecognized_shader,
   shader_load_error,
   shader_link_error,
+  texture_handle_creation,
 
   // Static Image errors
   static_image_load_error,
@@ -53,6 +54,7 @@ enum error : int {
   glfw_vsync,
   glfw_resize_callback,
   glad_loading,
+  opengl_feature_missing,
 
   // Module callback binding
   keyboard_event_binding,

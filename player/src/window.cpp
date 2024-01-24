@@ -20,6 +20,19 @@ static void glfw_framebuffer_size_callback(GLFWwindow *, int width, int height) 
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
 
+// See https://www.khronos.org/opengl/wiki/OpenGL_Error#Catching_errors_.28the_easy_way.29
+void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsizei,
+                                  const GLchar *message, const void *) {
+
+  if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+    log_info("OpenGL info: %s", message);
+  } else if (severity == GL_DEBUG_SEVERITY_LOW || GL_DEBUG_SEVERITY_MEDIUM) {
+    log_warn("OpenGL warning: %s", message);
+  } else {
+    log_error("OpenGL error: %s", message);
+  }
+}
+
 auto surge::window::init(const config::window_resolution &wres,
                          const config::window_attrs &w_attrs) noexcept
     -> tl::expected<GLFWwindow *, error> {
@@ -201,6 +214,26 @@ auto surge::window::init(const config::window_resolution &wres,
     return tl::unexpected(error::glad_loading);
   }
 
+  // Check extension support
+  if (!GLAD_GL_ARB_bindless_texture) {
+    log_error("SURGE needs an OpenGL implementation that supports bindless textures and the "
+              "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
+              "until your graphics card vendor adds this support or it becomes a standardized "
+              "OpenGL feature and your vendor produces drivers that support it.");
+    glfwTerminate();
+    return tl::unexpected(error::opengl_feature_missing);
+  }
+
+  if (!GLAD_GL_ARB_gpu_shader_int64) {
+    log_error("SURGE needs an OpenGL implementation that supports int64 in GPU shaders and the "
+              "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
+              "until your graphics card vendor adds this support or it becomes a standardized "
+              "OpenGL feature and your vendor produces drivers that support it.");
+    glfwTerminate();
+    return tl::unexpected(error::opengl_feature_missing);
+  }
+
+  // Resize callback
   glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
@@ -211,6 +244,12 @@ auto surge::window::init(const config::window_resolution &wres,
    * OpenGL options *
    ******************/
   log_info("Using OpenGL Version %s", glGetString(GL_VERSION));
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  glEnable(GL_DEBUG_OUTPUT);
+  glDebugMessageCallback(gl_error_callback, nullptr);
+#endif
+
   renderer::enable(renderer::capability::depth_test);
   renderer::enable(renderer::capability::blend);
   renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);

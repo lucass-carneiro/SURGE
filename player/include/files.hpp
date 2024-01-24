@@ -17,8 +17,8 @@ auto validate_path(const char *path) noexcept -> bool;
 auto load_file(const char *path, bool append_null_byte) noexcept -> file;
 
 struct image {
-  int iw;
-  int ih;
+  int width;
+  int height;
   int channels;
   unsigned char *texels;
 };

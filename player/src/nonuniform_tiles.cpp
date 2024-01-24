@@ -58,8 +58,8 @@ auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noex
     GL_TEXTURE_2D_ARRAY,
     0,
     format,
-    image_data->iw,
-    image_data->ih / structure.num_tiles,
+    image_data->width,
+    image_data->height / structure.num_tiles,
     structure.num_tiles,
     0,
     format,
@@ -148,8 +148,8 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
 
 void surge::atom::nonuniform_tiles::cleanup(buffer_data &ctx) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::static_image::cleanup");
-  TracyGpuZone("GPU surge::atom::static_image::cleanup");
+  ZoneScopedN("surge::atom::nonuniform_tiles::cleanup");
+  TracyGpuZone("GPU surge::atom::nonuniform_tiles::cleanup");
 #endif
   log_info("Deleting image buffer data (%u, %u, %u, %u)", ctx.VBO, ctx.EBO, ctx.texture_id,
            ctx.VAO);

@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <gsl/gsl-lite.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
@@ -24,6 +25,14 @@ void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_n
 #endif
 
   glUniform1i(glGetUniformLocation(program_handle, uniform_name), value);
+}
+
+void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
+                                    GLuint64 value) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::unifors::set(GLuint64)");
+#endif
+  glUniformHandleui64ARB(glGetUniformLocation(program_handle, uniform_name), value);
 }
 
 void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
@@ -132,18 +141,28 @@ void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_n
 }
 
 void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
-                                    const glm::fvec3 *values, GLsizei size) noexcept {
+                                    const GLuint64 *values, usize size) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::renderer::unifors::set(glm::mat4 array)");
+  ZoneScopedN("surge::renderer::unifors::set(GLuint64 array)");
 #endif
-  glUniform3fv(glGetUniformLocation(program_handle, uniform_name), size, glm::value_ptr(values[0]));
+  glUniformHandleui64vARB(glGetUniformLocation(program_handle, uniform_name),
+                          gsl::narrow_cast<GLsizei>(size), values);
 }
 
 void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
-                                    const glm::mat4 *values, GLsizei size) noexcept {
+                                    const glm::fvec3 *values, usize size) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::renderer::unifors::set(glm::fvec3 array)");
+#endif
+  glUniform3fv(glGetUniformLocation(program_handle, uniform_name), gsl::narrow_cast<GLsizei>(size),
+               glm::value_ptr(values[0]));
+}
+
+void surge::renderer::uniforms::set(GLuint program_handle, const char *uniform_name,
+                                    const glm::mat4 *values, usize size) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::unifors::set(glm::mat4 array)");
 #endif
-  glUniformMatrix4fv(glGetUniformLocation(program_handle, uniform_name), size, GL_FALSE,
-                     glm::value_ptr(values[0]));
+  glUniformMatrix4fv(glGetUniformLocation(program_handle, uniform_name),
+                     gsl::narrow_cast<GLsizei>(size), GL_FALSE, glm::value_ptr(values[0]));
 }
