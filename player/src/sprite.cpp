@@ -75,8 +75,9 @@ void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
   glDeleteVertexArrays(1, &(bd.VAO));
 }
 
-auto surge::atom::sprite::create_texture(const files::image &image, renderer::texture_filtering,
-                                         renderer::texture_wrap) noexcept
+auto surge::atom::sprite::create_texture(const files::image &image,
+                                         renderer::texture_filtering filtering,
+                                         renderer::texture_wrap wrap) noexcept
     -> tl::expected<GLuint64, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::create_texture");
@@ -88,12 +89,12 @@ auto surge::atom::sprite::create_texture(const files::image &image, renderer::te
   glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
   // Warpping
-  // glTextureParameteri(texture, GL_TEXTURE_WRAP_S, gsl::narrow_cast<GLint>(wrap));
-  // glTextureParameteri(texture, GL_TEXTURE_WRAP_T, gsl::narrow_cast<GLint>(wrap));
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_S, gsl::narrow_cast<GLint>(wrap));
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_T, gsl::narrow_cast<GLint>(wrap));
 
   // Filtering
-  // glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, gsl::narrow_cast<GLint>(filtering));
-  // glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(filtering));
+  glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, gsl::narrow_cast<GLint>(filtering));
+  glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(filtering));
 
   // Loading and mip mapping
   const int internal_format{image.channels == 4 ? GL_RGBA8 : GL_RGB8};
@@ -111,6 +112,14 @@ auto surge::atom::sprite::create_texture(const files::image &image, renderer::te
   }
 
   return handle;
+}
+
+void surge::atom::sprite::make_resident(GLuint64 handles) noexcept {
+  glMakeTextureHandleResidentARB(handles);
+}
+
+void surge::atom::sprite::make_non_resident(GLuint64 handles) noexcept {
+  glMakeTextureHandleNonResidentARB(handles);
 }
 
 void surge::atom::sprite::make_resident(const vector<GLuint64> &texture_handles) noexcept {
@@ -142,7 +151,7 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
   renderer::uniforms::set(sp, "view", view);
 
   renderer::uniforms::set(sp, "models", models.data(), models.size());
-  renderer::uniforms::set(sp, "textures", texture_handles[0]);
+  renderer::uniforms::set(sp, "textures", texture_handles.data(), texture_handles.size());
 
   glBindVertexArray(bd.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

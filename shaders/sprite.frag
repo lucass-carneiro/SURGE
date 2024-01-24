@@ -10,6 +10,6 @@ in VS_OUT {
 }
 fs_in;
 
-layout(bindless_sampler) uniform sampler2D textures;
+layout(bindless_sampler) uniform sampler2D textures[8];
 
-void main() { fragment_color = texture(textures, fs_in.uv_coords); }
+void main() { fragment_color = texture(textures[fs_in.instance_ID], fs_in.uv_coords); }

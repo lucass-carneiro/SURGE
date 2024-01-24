@@ -24,6 +24,9 @@ auto create_texture(const files::image &image,
                     renderer::texture_wrap wrap = renderer::texture_wrap::clamp_to_edge) noexcept
     -> tl::expected<GLuint64, error>;
 
+void make_resident(GLuint64 handle) noexcept;
+void make_non_resident(GLuint64 handle) noexcept;
+
 void make_resident(const vector<GLuint64> &texture_handles) noexcept;
 void make_non_resident(const vector<GLuint64> &texture_handles) noexcept;
 
