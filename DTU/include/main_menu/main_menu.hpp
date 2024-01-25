@@ -8,23 +8,17 @@
 
 namespace DTU::state::main_menu {
 
-struct shader_indices {
-  unsigned int nonuniform_tiles;
-  unsigned int static_image;
-  unsigned int text;
-};
-
-enum commands : surge::u32 { show_title, shift_title, show_menu };
-enum ui_states : surge::u8 { hidden, new_game, load_game, options, exit };
+enum commands : surge::u32 { show_title, show_menu };
 
 auto load(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
-          surge::vector<GLuint64> &sprite_textures, float ww, float wh) noexcept -> int;
+          surge::vector<GLuint64> &sprite_textures, surge::vector<float> &sprite_alphas, float ww,
+          float wh) noexcept -> int;
 
 auto unload(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
             surge::vector<GLuint64> &sprite_textures) noexcept -> int;
 
 auto update(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
-            double dt) noexcept -> int;
+            surge::vector<float> &sprite_alphas, double dt) noexcept -> int;
 
 void keyboard_event(surge::queue<surge::u32> &cmdq, int key, int scancode, int action,
                     int mods) noexcept;

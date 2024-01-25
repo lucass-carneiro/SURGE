@@ -13,7 +13,7 @@ vs_out;
 
 uniform mat4 projection;
 uniform mat4 view;
-uniform mat4 models[8];
+uniform mat4 models[16];
 
 void main() {
   gl_Position = projection * view * models[gl_InstanceID] * vec4(vtx_pos, 1.0);

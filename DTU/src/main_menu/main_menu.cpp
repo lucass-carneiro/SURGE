@@ -28,7 +28,8 @@ static constexpr const std::array<float, background_layer_count> background_drif
 };
 // clang-format on
 
-static void load_background_images(surge::vector<GLuint64> &sprite_textures) noexcept {
+static void load_background_images(surge::vector<GLuint64> &sprite_textures,
+                                   surge::vector<float> &sprite_alphas) noexcept {
   using namespace surge;
 
   log_info("Loading background images");
@@ -59,6 +60,7 @@ static void load_background_images(surge::vector<GLuint64> &sprite_textures) noe
   for (const auto &handle : background_handles) {
     sprite_textures.push_back(handle.value_or(0));
     atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(1.0f);
   }
 }
 
@@ -93,17 +95,77 @@ static void update_background_quads(surge::vector<glm::mat4> &sprite_models, dou
   }
 }
 
-auto DTU::state::main_menu::load(surge::queue<surge::u32> &,
+static void load_title_image(surge::vector<GLuint64> &sprite_textures,
+                             surge::vector<float> &sprite_alphas) noexcept {
+  using namespace surge;
+
+  log_info("Loading title images");
+
+  auto title_image{files::load_image("resources/main_menu/title.png")};
+
+  if (title_image) {
+    const auto handle{atom::sprite::create_texture(*title_image)};
+    files::free_image(*title_image);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+}
+
+static void load_title_quad(surge::vector<glm::mat4> &sprite_models, float ww, float wh) noexcept {
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 608.0f) / 2.0f, (wh - 174.0f) / 2.0f, 0.5f}),
+      glm::vec3{608.0f, 174.0f, 1.0}));
+}
+
+static void load_options_images(surge::vector<GLuint64> &sprite_textures,
+                                surge::vector<float> &sprite_alphas) noexcept {
+  using namespace surge;
+
+  log_info("Loading options images");
+
+  auto opt_images{files::load_image("resources/main_menu/new_game.png")};
+
+  if (opt_images) {
+    const auto handle{atom::sprite::create_texture(*opt_images)};
+    files::free_image(*opt_images);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+}
+
+static void load_options_quads(surge::vector<glm::mat4> &sprite_models, float ww,
+                               float wh) noexcept {
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f},
+                     glm::vec3{(ww - 413.0f) / 2.0f, (wh - 174.0f) / 2.0f + 174.0f + 50.0f, 1.0f}),
+      glm::vec3{413.0f, 58.0f, 1.0}));
+}
+
+auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq,
                                  surge::vector<glm::mat4> &sprite_models,
-                                 surge::vector<GLuint64> &sprite_textures, float ww,
-                                 float wh) noexcept -> int {
+                                 surge::vector<GLuint64> &sprite_textures,
+                                 surge::vector<float> &sprite_alphas, float ww, float wh) noexcept
+    -> int {
   using namespace surge;
 
   log_info("Loading main_menu state");
 
   // Background
-  load_background_images(sprite_textures);
+  load_background_images(sprite_textures, sprite_alphas);
   load_background_quads(sprite_models, ww, wh);
+
+  // Title
+  load_title_image(sprite_textures, sprite_alphas);
+  load_title_quad(sprite_models, ww, wh);
+
+  // Options
+  load_options_images(sprite_textures, sprite_alphas);
+  load_options_quads(sprite_models, ww, wh);
+
+  // First command
+  cmdq.push(commands::show_title);
 
   return 0;
 }
@@ -122,14 +184,40 @@ auto DTU::state::main_menu::unload(surge::queue<surge::u32> &,
   return 0;
 }
 
-auto DTU::state::main_menu::update(surge::queue<surge::u32> &,
-                                   surge::vector<glm::mat4> &sprite_models, double dt) noexcept
-    -> int {
+auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
+                                   surge::vector<glm::mat4> &sprite_models,
+                                   surge::vector<float> &sprite_alphas, double dt) noexcept -> int {
+
   update_background_quads(sprite_models, dt);
+
+  const auto title_idx{sprite_models.size() - 2};
+  const auto opts_idx{sprite_models.size() - 1};
+
+  switch (cmdq.front()) {
+
+  case commands::show_title:
+    if (sprite_alphas[title_idx] < 1.0f) {
+      sprite_alphas[title_idx] += 0.5f * dt;
+    } else {
+      sprite_alphas[title_idx] = 1.0f;
+      cmdq.push(commands::show_menu);
+      cmdq.pop();
+    }
+    break;
+
+  case commands::show_menu:
+    sprite_alphas[opts_idx] = 1.0f;
+    cmdq.pop();
+    break;
+
+  default:
+    break;
+  }
+
   return 0;
 }
 
-void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &, int /*key*/, int, int,
+void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &, int, int, int,
                                            int) noexcept {
-  // TODO
+  // todo
 }

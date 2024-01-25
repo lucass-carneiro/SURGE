@@ -10,6 +10,15 @@ in VS_OUT {
 }
 fs_in;
 
-layout(bindless_sampler) uniform sampler2D textures[8];
+uniform float alphas[16];
 
-void main() { fragment_color = texture(textures[fs_in.instance_ID], fs_in.uv_coords); }
+layout(bindless_sampler) uniform sampler2D textures[16];
+
+void main() {
+  sampler2D texture_sampler = textures[fs_in.instance_ID];
+  vec4 texture_color = texture(texture_sampler, fs_in.uv_coords);
+
+  vec4 alpha_mod = vec4(1.0, 1.0, 1.0, alphas[fs_in.instance_ID]);
+
+  fragment_color = texture_color * alpha_mod;
+}

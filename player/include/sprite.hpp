@@ -31,7 +31,8 @@ void make_resident(const vector<GLuint64> &texture_handles) noexcept;
 void make_non_resident(const vector<GLuint64> &texture_handles) noexcept;
 
 void draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj, const glm::mat4 &view,
-          const vector<glm::mat4> &models, const vector<GLuint64> &texture_handles) noexcept;
+          const vector<glm::mat4> &models, const vector<GLuint64> &texture_handles,
+          const vector<float> &alphas) noexcept;
 
 } // namespace surge::atom::sprite
 

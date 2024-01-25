@@ -136,7 +136,8 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 
 void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
                                const glm::mat4 &view, const vector<glm::mat4> &models,
-                               const vector<GLuint64> &texture_handles) noexcept {
+                               const vector<GLuint64> &texture_handles,
+                               const vector<float> &alphas) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
@@ -152,6 +153,7 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
 
   renderer::uniforms::set(sp, "models", models.data(), models.size());
   renderer::uniforms::set(sp, "textures", texture_handles.data(), texture_handles.size());
+  renderer::uniforms::set(sp, "alphas", alphas.data(), alphas.size());
 
   glBindVertexArray(bd.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

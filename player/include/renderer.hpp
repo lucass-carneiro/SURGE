@@ -64,6 +64,7 @@ void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value
 
 void set(GLuint program_handle, const char *uniform_name, const GLuint64 *values,
          usize size) noexcept;
+void set(GLuint program_handle, const char *uniform_name, const float *values, usize size) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::fvec3 *values,
          usize size) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 *values,

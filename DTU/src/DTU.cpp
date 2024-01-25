@@ -34,6 +34,9 @@ static surge::vector<glm::mat4> g_sprite_models{};
 static surge::vector<GLuint64> g_sprite_texture_handles{};
 
 // NOLINTNEXTLINE
+static surge::vector<float> g_sprite_alphas{};
+
+// NOLINTNEXTLINE
 static DTU::state_id g_current_state_id{DTU::state_id::main_menu};
 
 // NOLINTNEXTLINE
@@ -62,11 +65,12 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_sprite_shader = *sprite_shader;
   g_sprite_buffer = surge::atom::sprite::create_buffers();
-  g_sprite_models.reserve(8);
-  g_sprite_texture_handles.reserve(8);
+  g_sprite_models.reserve(16);
+  g_sprite_texture_handles.reserve(16);
+  g_sprite_alphas.reserve(16);
 
-  return DTU::state::main_menu::load(g_command_queue, g_sprite_models, g_sprite_texture_handles, ww,
-                                     wh);
+  return DTU::state::main_menu::load(g_command_queue, g_sprite_models, g_sprite_texture_handles,
+                                     g_sprite_alphas, ww, wh);
 }
 
 extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int {
@@ -91,7 +95,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view, g_sprite_models,
-                            g_sprite_texture_handles);
+                            g_sprite_texture_handles, g_sprite_alphas);
 
   /*switch (g_current_state_id) {
   case DTU::state_id::main_menu:
@@ -108,7 +112,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
   switch (g_current_state_id) {
   case DTU::state_id::main_menu:
-    return DTU::state::main_menu::update(g_command_queue, g_sprite_models, dt);
+    return DTU::state::main_menu::update(g_command_queue, g_sprite_models, g_sprite_alphas, dt);
   default:
     break;
   }
