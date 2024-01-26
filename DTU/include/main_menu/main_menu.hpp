@@ -8,7 +8,13 @@
 
 namespace DTU::state::main_menu {
 
-enum commands : surge::u32 { show_title, show_menu };
+enum commands : surge::u32 {
+  show_title,
+  show_menu,
+  shift_opt_left,
+  shift_opt_right,
+  handle_menu_entry
+};
 
 auto load(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
           surge::vector<GLuint64> &sprite_textures, surge::vector<float> &sprite_alphas, float ww,

@@ -124,11 +124,56 @@ static void load_options_images(surge::vector<GLuint64> &sprite_textures,
 
   log_info("Loading options images");
 
-  auto opt_images{files::load_image("resources/main_menu/new_game.png")};
+  auto opt_img_new{files::load_image("resources/main_menu/menu_new_game.png")};
+  auto opt_img_load{files::load_image("resources/main_menu/menu_load_game.png")};
+  auto opt_img_options{files::load_image("resources/main_menu/menu_options.png")};
+  auto border_credits{files::load_image("resources/main_menu/menu_credits.png")};
+  auto border_exit{files::load_image("resources/main_menu/menu_exit.png")};
+  auto border_img{files::load_image("resources/main_menu/menu_border.png")};
 
-  if (opt_images) {
-    const auto handle{atom::sprite::create_texture(*opt_images)};
-    files::free_image(*opt_images);
+  if (opt_img_new) {
+    const auto handle{atom::sprite::create_texture(*opt_img_new)};
+    files::free_image(*opt_img_new);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+
+  if (opt_img_load) {
+    const auto handle{atom::sprite::create_texture(*opt_img_load)};
+    files::free_image(*opt_img_load);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+
+  if (opt_img_options) {
+    const auto handle{atom::sprite::create_texture(*opt_img_options)};
+    files::free_image(*opt_img_options);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+
+  if (border_credits) {
+    const auto handle{atom::sprite::create_texture(*border_credits)};
+    files::free_image(*border_credits);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+
+  if (border_exit) {
+    const auto handle{atom::sprite::create_texture(*border_exit)};
+    files::free_image(*border_exit);
+    sprite_textures.push_back(handle.value_or(0));
+    atom::sprite::make_resident(handle.value_or(0));
+    sprite_alphas.push_back(0.0f);
+  }
+
+  if (border_img) {
+    const auto handle{atom::sprite::create_texture(*border_img)};
+    files::free_image(*border_img);
     sprite_textures.push_back(handle.value_or(0));
     atom::sprite::make_resident(handle.value_or(0));
     sprite_alphas.push_back(0.0f);
@@ -137,10 +182,36 @@ static void load_options_images(surge::vector<GLuint64> &sprite_textures,
 
 static void load_options_quads(surge::vector<glm::mat4> &sprite_models, float ww,
                                float wh) noexcept {
+
   sprite_models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f},
-                     glm::vec3{(ww - 413.0f) / 2.0f, (wh - 174.0f) / 2.0f + 174.0f + 50.0f, 1.0f}),
-      glm::vec3{413.0f, 58.0f, 1.0}));
+                     glm::vec3{(ww - 448.0f) / 2.0f, (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
+
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
+                                                (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
+
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
+                                                (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
+
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
+                                                (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
+
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
+                                                (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
+
+  sprite_models.push_back(glm::scale(
+      glm::translate(glm::mat4{1.0f},
+                     glm::vec3{(ww - 448.0f) / 2.0f, (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.7f}),
+      glm::vec3{448.0f, 133.0f, 1.0}));
 }
 
 auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq,
@@ -184,30 +255,96 @@ auto DTU::state::main_menu::unload(surge::queue<surge::u32> &,
   return 0;
 }
 
+struct entity_indices {
+  surge::usize title_idx;
+  surge::usize new_game_idx;
+  surge::usize load_game_idx;
+  surge::usize options_index;
+  surge::usize credits_idx;
+  surge::usize exit_idx;
+  surge::usize border_idx;
+};
+
+static auto do_shift_opt_left(const entity_indices &ei, surge::vector<glm::mat4> &sprite_models,
+                              surge::vector<float> &sprite_alphas, float dt) noexcept -> bool {
+
+  const float speed{1.5f * dt};
+
+  bool shift_opts_left{false};
+  bool fade_current_opt{false};
+  bool unfade_next_opt{false};
+
+  static auto current_opt_idx{ei.new_game_idx};
+  static auto next_opt_index{ei.load_game_idx};
+
+  static const auto opt_initial_x_pos{sprite_models[current_opt_idx][3][0]};
+
+  if (sprite_models[current_opt_idx][3][0] > (opt_initial_x_pos - 448.0f)) {
+    sprite_models[current_opt_idx]
+        = glm::translate(sprite_models[current_opt_idx], glm::vec3{-speed, 0.0f, 0.0f});
+    sprite_models[next_opt_index]
+        = glm::translate(sprite_models[next_opt_index], glm::vec3{-speed, 0.0f, 0.0f});
+  } else {
+    sprite_models[current_opt_idx][3][0] = opt_initial_x_pos - 448.0f;
+    sprite_models[next_opt_index][3][0] = opt_initial_x_pos;
+    shift_opts_left = true;
+  }
+
+  if (sprite_alphas[current_opt_idx] > 0.0f) {
+    sprite_alphas[current_opt_idx] -= speed;
+  } else {
+    sprite_alphas[current_opt_idx] = 0.0f;
+    fade_current_opt = true;
+  }
+
+  if (sprite_alphas[next_opt_index] < 1.0f) {
+    sprite_alphas[next_opt_index] += speed;
+  } else {
+    sprite_alphas[next_opt_index] = 1.0f;
+    unfade_next_opt = true;
+  }
+
+  if (shift_opts_left && fade_current_opt && unfade_next_opt) {
+    current_opt_idx = next_opt_index;
+    next_opt_index += 1;
+    return true;
+  } else {
+    return false;
+  }
+}
+
 auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
                                    surge::vector<glm::mat4> &sprite_models,
                                    surge::vector<float> &sprite_alphas, double dt) noexcept -> int {
 
   update_background_quads(sprite_models, dt);
 
-  const auto title_idx{sprite_models.size() - 2};
-  const auto opts_idx{sprite_models.size() - 1};
+  const entity_indices ei{sprite_models.size() - 7, sprite_models.size() - 6,
+                          sprite_models.size() - 5, sprite_models.size() - 4,
+                          sprite_models.size() - 3, sprite_models.size() - 2,
+                          sprite_models.size() - 1};
 
   switch (cmdq.front()) {
 
   case commands::show_title:
-    if (sprite_alphas[title_idx] < 1.0f) {
-      sprite_alphas[title_idx] += 0.5f * dt;
+    if (sprite_alphas[ei.title_idx] < 1.0f) {
+      sprite_alphas[ei.title_idx] += 1.0f * gsl::narrow_cast<float>(dt);
     } else {
-      sprite_alphas[title_idx] = 1.0f;
-      cmdq.push(commands::show_menu);
+      sprite_alphas[ei.title_idx] = 1.0f;
       cmdq.pop();
     }
     break;
 
   case commands::show_menu:
-    sprite_alphas[opts_idx] = 1.0f;
+    sprite_alphas[ei.border_idx] = 1.0f;
+    sprite_alphas[ei.new_game_idx] = 1.0f;
     cmdq.pop();
+    break;
+
+  case commands::shift_opt_left:
+    if (do_shift_opt_left(ei, sprite_models, sprite_alphas, gsl::narrow_cast<float>(dt))) {
+      cmdq.pop();
+    }
     break;
 
   default:
@@ -217,7 +354,25 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
   return 0;
 }
 
-void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &, int, int, int,
+void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int key, int, int action,
+
                                            int) noexcept {
-  // todo
+  static bool menu_shown{false};
+
+  if (action == GLFW_PRESS && !menu_shown) {
+    cmdq.push(commands::show_menu);
+    menu_shown = true;
+  }
+
+  if (action == GLFW_PRESS && key == GLFW_KEY_LEFT && menu_shown) {
+    cmdq.push(commands::shift_opt_left);
+  }
+
+  if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT && menu_shown) {
+    cmdq.push(commands::shift_opt_right);
+  }
+
+  if (action == GLFW_PRESS && key == GLFW_KEY_ENTER && menu_shown) {
+    cmdq.push(commands::handle_menu_entry);
+  }
 }
