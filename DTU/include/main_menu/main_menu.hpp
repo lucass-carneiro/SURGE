@@ -9,6 +9,7 @@
 namespace DTU::state::main_menu {
 
 enum commands : surge::u32 {
+  idle,
   show_title,
   show_menu,
   shift_opt_left,

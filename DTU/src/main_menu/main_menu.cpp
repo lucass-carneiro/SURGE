@@ -324,7 +324,7 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
                           sprite_models.size() - 3, sprite_models.size() - 2,
                           sprite_models.size() - 1};
 
-  switch (cmdq.front()) {
+  switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
 
   case commands::show_title:
     if (sprite_alphas[ei.title_idx] < 1.0f) {
@@ -365,11 +365,11 @@ void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int k
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_LEFT && menu_shown) {
-    cmdq.push(commands::shift_opt_left);
+    cmdq.push(commands::shift_opt_right);
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT && menu_shown) {
-    cmdq.push(commands::shift_opt_right);
+    cmdq.push(commands::shift_opt_left);
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_ENTER && menu_shown) {
