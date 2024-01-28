@@ -14,7 +14,8 @@ enum commands : surge::u32 {
   show_menu,
   shift_opt_left,
   shift_opt_right,
-  handle_menu_entry
+  enter_option,
+  exit_game
 };
 
 auto load(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,

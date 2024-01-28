@@ -265,17 +265,22 @@ struct entity_indices {
   surge::usize border_idx;
 };
 
-static auto do_shift_opt_left(const entity_indices &ei, surge::vector<glm::mat4> &sprite_models,
+static auto do_shift_opt_left(surge::usize &current_opt_idx,
+                              surge::vector<glm::mat4> &sprite_models,
                               surge::vector<float> &sprite_alphas, float dt) noexcept -> bool {
+
+  // Do not shift past the exit option
+  const auto next_opt_index{current_opt_idx + 1};
+
+  if (next_opt_index > 10) {
+    return true;
+  }
 
   const float speed{1.5f * dt};
 
-  bool shift_opts_left{false};
+  bool shift_opts{false};
   bool fade_current_opt{false};
   bool unfade_next_opt{false};
-
-  static auto current_opt_idx{ei.new_game_idx};
-  static auto next_opt_index{ei.load_game_idx};
 
   static const auto opt_initial_x_pos{sprite_models[current_opt_idx][3][0]};
 
@@ -287,7 +292,7 @@ static auto do_shift_opt_left(const entity_indices &ei, surge::vector<glm::mat4>
   } else {
     sprite_models[current_opt_idx][3][0] = opt_initial_x_pos - 448.0f;
     sprite_models[next_opt_index][3][0] = opt_initial_x_pos;
-    shift_opts_left = true;
+    shift_opts = true;
   }
 
   if (sprite_alphas[current_opt_idx] > 0.0f) {
@@ -304,12 +309,75 @@ static auto do_shift_opt_left(const entity_indices &ei, surge::vector<glm::mat4>
     unfade_next_opt = true;
   }
 
-  if (shift_opts_left && fade_current_opt && unfade_next_opt) {
+  if (shift_opts && fade_current_opt && unfade_next_opt) {
     current_opt_idx = next_opt_index;
-    next_opt_index += 1;
     return true;
   } else {
     return false;
+  }
+}
+
+static auto do_shift_opt_right(surge::usize &current_opt_idx,
+                               surge::vector<glm::mat4> &sprite_models,
+                               surge::vector<float> &sprite_alphas, float dt) noexcept -> bool {
+
+  // Do not shift past the exit new game
+  const auto next_opt_index{current_opt_idx - 1};
+
+  if (next_opt_index < 6) {
+    return true;
+  }
+
+  const float speed{1.5f * dt};
+
+  bool shift_opts{false};
+  bool fade_current_opt{false};
+  bool unfade_next_opt{false};
+
+  static const auto opt_initial_x_pos{sprite_models[current_opt_idx][3][0]};
+
+  if (sprite_models[current_opt_idx][3][0] < (opt_initial_x_pos + 448.0f)) {
+    sprite_models[current_opt_idx]
+        = glm::translate(sprite_models[current_opt_idx], glm::vec3{speed, 0.0f, 0.0f});
+    sprite_models[next_opt_index]
+        = glm::translate(sprite_models[next_opt_index], glm::vec3{speed, 0.0f, 0.0f});
+  } else {
+    sprite_models[current_opt_idx][3][0] = opt_initial_x_pos + 448.0f;
+    sprite_models[next_opt_index][3][0] = opt_initial_x_pos;
+    shift_opts = true;
+  }
+
+  if (sprite_alphas[current_opt_idx] > 0.0f) {
+    sprite_alphas[current_opt_idx] -= speed;
+  } else {
+    sprite_alphas[current_opt_idx] = 0.0f;
+    fade_current_opt = true;
+  }
+
+  if (sprite_alphas[next_opt_index] < 1.0f) {
+    sprite_alphas[next_opt_index] += speed;
+  } else {
+    sprite_alphas[next_opt_index] = 1.0f;
+    unfade_next_opt = true;
+  }
+
+  if (shift_opts && fade_current_opt && unfade_next_opt) {
+    current_opt_idx = next_opt_index;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void do_enter_option(surge::queue<surge::u32> &cmdq, surge::usize current_opt_idx) noexcept {
+  switch (current_opt_idx) {
+  case 10:
+    log_info("opt_exit selected");
+    cmdq.push(DTU::state::main_menu::commands::exit_game);
+    break;
+
+  default:
+    break;
   }
 }
 
@@ -324,6 +392,8 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
                           sprite_models.size() - 3, sprite_models.size() - 2,
                           sprite_models.size() - 1};
 
+  static auto current_opt_idx{ei.new_game_idx};
+
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
 
   case commands::show_title:
@@ -336,15 +406,37 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
     break;
 
   case commands::show_menu:
-    sprite_alphas[ei.border_idx] = 1.0f;
-    sprite_alphas[ei.new_game_idx] = 1.0f;
-    cmdq.pop();
+    if (sprite_alphas[ei.border_idx] < 1.0f) {
+      sprite_alphas[ei.border_idx] += 1.0f * gsl::narrow_cast<float>(dt);
+      sprite_alphas[ei.new_game_idx] += 1.0f * gsl::narrow_cast<float>(dt);
+    } else {
+      sprite_alphas[ei.border_idx] = 1.0f;
+      sprite_alphas[ei.new_game_idx] = 1.0f;
+      cmdq.pop();
+    }
     break;
 
   case commands::shift_opt_left:
-    if (do_shift_opt_left(ei, sprite_models, sprite_alphas, gsl::narrow_cast<float>(dt))) {
+    if (do_shift_opt_left(current_opt_idx, sprite_models, sprite_alphas,
+                          gsl::narrow_cast<float>(dt))) {
       cmdq.pop();
     }
+    break;
+
+  case commands::shift_opt_right:
+    if (do_shift_opt_right(current_opt_idx, sprite_models, sprite_alphas,
+                           gsl::narrow_cast<float>(dt))) {
+      cmdq.pop();
+    }
+    break;
+
+  case commands::enter_option:
+    do_enter_option(cmdq, current_opt_idx);
+    cmdq.pop();
+    break;
+
+  case commands::exit_game:
+    return surge::error::normal_exit;
     break;
 
   default:
@@ -373,6 +465,6 @@ void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int k
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_ENTER && menu_shown) {
-    cmdq.push(commands::handle_menu_entry);
+    cmdq.push(commands::enter_option);
   }
 }
