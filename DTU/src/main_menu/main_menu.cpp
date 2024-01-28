@@ -454,6 +454,7 @@ void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int k
   if (action == GLFW_PRESS && !menu_shown) {
     cmdq.push(commands::show_menu);
     menu_shown = true;
+    return;
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_LEFT && menu_shown) {
