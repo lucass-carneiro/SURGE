@@ -91,21 +91,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   surge::atom::sprite::make_non_resident(g_sprite_texture_handles);
   surge::atom::sprite::destroy_buffers(g_sprite_buffer);
   surge::renderer::cleanup_shader_program(g_sprite_shader);
+
+  return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view, g_sprite_models,
                             g_sprite_texture_handles, g_sprite_alphas);
-
-  /*switch (g_current_state_id) {
-  case DTU::state_id::main_menu:
-    return DTU::state::main_menu::draw(
-        DTU::state::main_menu::shader_indices{g_nonuniform_tile_shader, g_image_shader,
-                                              g_text_shader},
-        g_text_buffer, g_text_charmap, g_projection, g_view);
-  default:
-    break;
-  }*/
   return 0;
 }
 
