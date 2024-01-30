@@ -4,6 +4,7 @@
 #include "player/logging.hpp"
 #include "player/sprite.hpp"
 #include "player/window.hpp"
+#include "states.hpp"
 
 #include <array>
 #include <glm/gtc/matrix_transform.hpp>
@@ -241,9 +242,9 @@ auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq,
   return 0;
 }
 
-auto DTU::state::main_menu::unload(surge::queue<surge::u32> &,
+void DTU::state::main_menu::unload(surge::queue<surge::u32> &cmdq,
                                    surge::vector<glm::mat4> &sprite_models,
-                                   surge::vector<GLuint64> &sprite_textures) noexcept -> int {
+                                   surge::vector<GLuint64> &sprite_textures) noexcept {
   using namespace surge;
 
   log_info("Unloading main_menu state");
@@ -252,7 +253,9 @@ auto DTU::state::main_menu::unload(surge::queue<surge::u32> &,
   sprite_textures.clear();
   sprite_models.clear();
 
-  return 0;
+  while (!cmdq.empty()) {
+    cmdq.pop();
+  }
 }
 
 struct entity_indices {
@@ -369,11 +372,14 @@ static auto do_shift_opt_right(surge::usize &current_opt_idx,
   }
 }
 
-void do_enter_option(surge::queue<surge::u32> &cmdq, surge::usize current_opt_idx) noexcept {
+void do_enter_option(surge::usize current_opt_idx) noexcept {
   switch (current_opt_idx) {
   case 10:
-    log_info("opt_exit selected");
-    cmdq.push(DTU::state::main_menu::commands::exit_game);
+    DTU::state_machine::push_state(DTU::state_machine::states::exit_game);
+    break;
+
+  case 6:
+    DTU::state_machine::push_state(DTU::state_machine::states::new_game);
     break;
 
   default:
@@ -381,9 +387,9 @@ void do_enter_option(surge::queue<surge::u32> &cmdq, surge::usize current_opt_id
   }
 }
 
-auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
+void DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
                                    surge::vector<glm::mat4> &sprite_models,
-                                   surge::vector<float> &sprite_alphas, double dt) noexcept -> int {
+                                   surge::vector<float> &sprite_alphas, double dt) noexcept {
 
   update_background_quads(sprite_models, dt);
 
@@ -431,19 +437,13 @@ auto DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
     break;
 
   case commands::enter_option:
-    do_enter_option(cmdq, current_opt_idx);
+    do_enter_option(current_opt_idx);
     cmdq.pop();
-    break;
-
-  case commands::exit_game:
-    return surge::error::normal_exit;
     break;
 
   default:
     break;
   }
-
-  return 0;
 }
 
 void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int key, int, int action,
