@@ -132,3 +132,4 @@ cmake --build Debug --config Debug -j20
 ## Creating Stagings
 
 A staging is a folder that contains a copy of the `SURGE` player executable and a module to be executed alongside dependencies such as configuration files and game resources. The idea being that when a game is to be shipped, users can distribute the staging folder "as-is" to be executed on the end user's machine. `SCOP` facilitates the creation of staging directories for the various build configurations possible. These facilities are available via the `scomp staging` family of commands
+
