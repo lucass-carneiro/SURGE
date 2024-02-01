@@ -6,9 +6,10 @@
 #include "integer_types.hpp"
 
 // clang-format off
+#include "glad/gl.h"
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
 // clang-format on
 
 #include <glm/glm.hpp>

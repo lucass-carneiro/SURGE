@@ -208,7 +208,7 @@ auto surge::window::init(const config::window_resolution &wres,
   log_info("Initializing GLAD");
 
   // NOLINTNEXTLINE
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+  if (gladLoadGL(glfwGetProcAddress) == 0) {
     log_error("Failed to initialize GLAD");
     glfwTerminate();
     return tl::unexpected(error::glad_loading);

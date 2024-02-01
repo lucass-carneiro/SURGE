@@ -51,6 +51,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/glad_gl_impl.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/nonuniform_tiles.cpp"
@@ -196,7 +197,7 @@ target_link_libraries(SurgePlayer PUBLIC
   glfw
   glm::glm
   OpenGL::GL
-  glad::glad
+  #glad::glad
   imgui::imgui
   Freetype::Freetype
 )

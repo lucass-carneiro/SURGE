@@ -24,14 +24,6 @@
     "tinyobjloader",
     "opengl",
     {
-      "name": "glad",
-      "features": [
-        "loader",
-        "gl-api-latest",
-        "extensions"
-      ]
-    },
-    {
       "name": "imgui",
       "features": [
         "freetype",
