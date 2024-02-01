@@ -6,8 +6,6 @@
 #include "options.hpp"
 #include "window.hpp"
 
-#include <GLFW/glfw3.h>
-
 #ifdef SURGE_SYSTEM_Windows
 // clang-format off
 #  include <windows.h>

@@ -9,10 +9,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
-
-#include <glm/glm.hpp>
 // clang-format on
 
+#include <glm/glm.hpp>
 #include <tl/expected.hpp>
 
 namespace surge::renderer {
