@@ -21,6 +21,8 @@ set(
   "${PROJECT_SOURCE_DIR}/include/states.hpp"
   
   "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
+  
+  "${PROJECT_SOURCE_DIR}/include/new_game/new_game.hpp"
 )
 
 set(
@@ -29,6 +31,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/DTU.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
+  
+  "${PROJECT_SOURCE_DIR}/src/new_game/new_game.cpp"
 )
 
 # -----------------------------------------

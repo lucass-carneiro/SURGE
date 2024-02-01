@@ -13,6 +13,7 @@
 // clang-format on
 
 #include "main_menu/main_menu.hpp"
+#include "new_game/new_game.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -62,6 +63,10 @@ static void unload_a() noexcept {
     DTU::state::main_menu::unload(g_command_queue, g_sprite_models, g_sprite_texture_handles);
     break;
 
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::unload(g_command_queue, g_sprite_models, g_sprite_texture_handles);
+    break;
+
   default:
     break;
   }
@@ -73,6 +78,11 @@ static void load_a(float ww, float wh) noexcept {
   case DTU::state_machine::states::main_menu:
     DTU::state::main_menu::load(g_command_queue, g_sprite_models, g_sprite_texture_handles,
                                 g_sprite_alphas, ww, wh);
+    break;
+
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::load(g_command_queue, g_sprite_models, g_sprite_texture_handles,
+                               g_sprite_alphas, ww, wh);
     break;
 
   default:
@@ -201,6 +211,10 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
     DTU::state::main_menu::update(g_command_queue, g_sprite_models, g_sprite_alphas, dt);
     break;
 
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::update(g_command_queue, g_sprite_models, g_sprite_alphas, dt);
+    break;
+
   case DTU::state_machine::states::exit_game:
     return static_cast<int>(surge::error::normal_exit);
 
@@ -217,6 +231,10 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int sc
 
   case DTU::state_machine::states::main_menu:
     DTU::state::main_menu::keyboard_event(g_command_queue, key, scancode, action, mods);
+    break;
+
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::keyboard_event(g_command_queue, key, scancode, action, mods);
     break;
 
   default:
