@@ -13,7 +13,6 @@
 // clang-format on
 
 #include <glm/glm.hpp>
-#include <tl/expected.hpp>
 
 namespace surge::renderer {
 

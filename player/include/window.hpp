@@ -5,8 +5,6 @@
 #include "error_types.hpp"
 #include "renderer.hpp"
 
-#include <tl/expected.hpp>
-
 namespace surge::window {
 
 auto init(const config::window_resolution &wres, const config::window_attrs &w_attrs) noexcept

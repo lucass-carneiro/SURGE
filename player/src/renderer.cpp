@@ -1,9 +1,8 @@
 #include "renderer.hpp"
 
-#include "options.hpp"
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 void surge::renderer::enable(const capability cap) noexcept {
@@ -30,6 +29,7 @@ void surge::renderer::blend_function(const blend_src src, const blend_dest dest)
 void surge::renderer::clear(const config::clear_color &ccl) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::renderer::clear");
+  TracyGpuZone("GPU surge::renderer::clear");
 #endif
 
   glClearColor(ccl.r, ccl.g, ccl.b, ccl.a);
