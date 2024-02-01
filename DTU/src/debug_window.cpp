@@ -1,5 +1,6 @@
 #include "debug_window.hpp"
 
+#include "DTU.hpp"
 #include "player/logging.hpp"
 #include "states.hpp"
 
@@ -82,6 +83,28 @@ void DTU::debug_window::main_window(bool *p_open) noexcept {
 
       ImGui::TableSetColumnIndex(2);
       ImGui::Text("%s", DTU::state_machine::to_str(state_b));
+
+      ImGui::EndTable();
+    }
+  }
+
+  if (ImGui::CollapsingHeader("DTU Command queue")) {
+    if (ImGui::BeginTable("command_queue_table", 2, table_flags)) {
+      ImGui::TableSetupColumn("Position");
+      ImGui::TableSetupColumn("Command ID");
+      ImGui::TableHeadersRow();
+
+      for (surge::usize i = 0; const auto &cmd : DTU::get_command_queue()) {
+        ImGui::TableNextRow();
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%lu", i);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%u", cmd);
+
+        i++;
+      }
 
       ImGui::EndTable();
     }

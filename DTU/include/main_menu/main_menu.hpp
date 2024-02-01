@@ -18,17 +18,17 @@ enum commands : surge::u32 {
   enter_option
 };
 
-auto load(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
+auto load(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
           surge::vector<GLuint64> &sprite_textures, surge::vector<float> &sprite_alphas, float ww,
           float wh) noexcept -> int;
 
-void unload(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
+void unload(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
             surge::vector<GLuint64> &sprite_textures) noexcept;
 
-void update(surge::queue<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
+void update(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
             surge::vector<float> &sprite_alphas, double dt) noexcept;
 
-void keyboard_event(surge::queue<surge::u32> &cmdq, int key, int scancode, int action,
+void keyboard_event(surge::deque<surge::u32> &cmdq, int key, int scancode, int action,
                     int mods) noexcept;
 
 } // namespace DTU::state::main_menu

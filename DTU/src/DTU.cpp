@@ -39,13 +39,19 @@ static surge::vector<GLuint64> g_sprite_texture_handles{};
 static surge::vector<float> g_sprite_alphas{};
 
 // NOLINTNEXTLINE
-static surge::queue<surge::u32> g_command_queue{};
+static surge::deque<surge::u32> g_command_queue{};
 
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_state};
 
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_b{DTU::state_machine::states::no_state};
+
+#ifdef SURGE_BUILD_TYPE_Debug
+auto DTU::get_command_queue() noexcept -> const surge::deque<surge::u32> & {
+  return g_command_queue;
+}
+#endif
 
 void DTU::state_machine::push_state(state_t state) noexcept { g_state_b = state; }
 
@@ -184,8 +190,8 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 
 extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
   // Handle state transition
-  const auto ww{g_projection[0][0] * 2.0f}; // TODO: Could be wrong
-  const auto wh{g_projection[1][1] * 2.0f}; // TODO: Could be wrong
+  const auto ww{2.0f / g_projection[0][0]};
+  const auto wh{2.0f / g_projection[1][1]};
   DTU::state_machine::transition(ww, wh);
 
   // Update current state

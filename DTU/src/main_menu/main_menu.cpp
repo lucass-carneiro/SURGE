@@ -215,7 +215,7 @@ static void load_options_quads(surge::vector<glm::mat4> &sprite_models, float ww
       glm::vec3{448.0f, 133.0f, 1.0}));
 }
 
-auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq,
+auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq,
                                  surge::vector<glm::mat4> &sprite_models,
                                  surge::vector<GLuint64> &sprite_textures,
                                  surge::vector<float> &sprite_alphas, float ww, float wh) noexcept
@@ -237,12 +237,12 @@ auto DTU::state::main_menu::load(surge::queue<surge::u32> &cmdq,
   load_options_quads(sprite_models, ww, wh);
 
   // First command
-  cmdq.push(commands::show_title);
+  cmdq.push_back(commands::show_title);
 
   return 0;
 }
 
-void DTU::state::main_menu::unload(surge::queue<surge::u32> &cmdq,
+void DTU::state::main_menu::unload(surge::deque<surge::u32> &cmdq,
                                    surge::vector<glm::mat4> &sprite_models,
                                    surge::vector<GLuint64> &sprite_textures) noexcept {
   using namespace surge;
@@ -253,9 +253,7 @@ void DTU::state::main_menu::unload(surge::queue<surge::u32> &cmdq,
   sprite_textures.clear();
   sprite_models.clear();
 
-  while (!cmdq.empty()) {
-    cmdq.pop();
-  }
+  cmdq.clear();
 }
 
 struct entity_indices {
@@ -387,7 +385,7 @@ void do_enter_option(surge::usize current_opt_idx) noexcept {
   }
 }
 
-void DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
+void DTU::state::main_menu::update(surge::deque<surge::u32> &cmdq,
                                    surge::vector<glm::mat4> &sprite_models,
                                    surge::vector<float> &sprite_alphas, double dt) noexcept {
 
@@ -407,7 +405,7 @@ void DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
       sprite_alphas[ei.title_idx] += 1.0f * gsl::narrow_cast<float>(dt);
     } else {
       sprite_alphas[ei.title_idx] = 1.0f;
-      cmdq.pop();
+      cmdq.pop_front();
     }
     break;
 
@@ -418,27 +416,27 @@ void DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
     } else {
       sprite_alphas[ei.border_idx] = 1.0f;
       sprite_alphas[ei.new_game_idx] = 1.0f;
-      cmdq.pop();
+      cmdq.pop_front();
     }
     break;
 
   case commands::shift_opt_left:
     if (do_shift_opt_left(current_opt_idx, sprite_models, sprite_alphas,
                           gsl::narrow_cast<float>(dt))) {
-      cmdq.pop();
+      cmdq.pop_front();
     }
     break;
 
   case commands::shift_opt_right:
     if (do_shift_opt_right(current_opt_idx, sprite_models, sprite_alphas,
                            gsl::narrow_cast<float>(dt))) {
-      cmdq.pop();
+      cmdq.pop_front();
     }
     break;
 
   case commands::enter_option:
     do_enter_option(current_opt_idx);
-    cmdq.pop();
+    cmdq.pop_front();
     break;
 
   default:
@@ -446,26 +444,26 @@ void DTU::state::main_menu::update(surge::queue<surge::u32> &cmdq,
   }
 }
 
-void DTU::state::main_menu::keyboard_event(surge::queue<surge::u32> &cmdq, int key, int, int action,
+void DTU::state::main_menu::keyboard_event(surge::deque<surge::u32> &cmdq, int key, int, int action,
 
                                            int) noexcept {
   static bool menu_shown{false};
 
   if (action == GLFW_PRESS && !menu_shown) {
-    cmdq.push(commands::show_menu);
+    cmdq.push_back(commands::show_menu);
     menu_shown = true;
     return;
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_LEFT && menu_shown) {
-    cmdq.push(commands::shift_opt_right);
+    cmdq.push_back(commands::shift_opt_right);
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_RIGHT && menu_shown) {
-    cmdq.push(commands::shift_opt_left);
+    cmdq.push_back(commands::shift_opt_left);
   }
 
   if (action == GLFW_PRESS && key == GLFW_KEY_ENTER && menu_shown) {
-    cmdq.push(commands::enter_option);
+    cmdq.push_back(commands::enter_option);
   }
 }
