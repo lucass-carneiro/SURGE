@@ -11,7 +11,7 @@ in VS_OUT {
 fs_in;
 
 layout(bindless_sampler) uniform sampler2D textures[64];
-uniform vec4 text_color;
+uniform vec4 color;
 
 void main() {
   const mat3 v_flip = mat3(1, 0, 0, 0, -1, 0, 0, 1, 1);
@@ -22,5 +22,5 @@ void main() {
 
   const vec4 sampled = vec4(1.0, 1.0, 1.0, texture(texture_sampler, uv_coords).r);
 
-  fragment_color = text_color * sampled;
+  fragment_color = color * sampled;
 }

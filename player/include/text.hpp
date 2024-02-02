@@ -36,6 +36,8 @@ struct glyph_data {
 struct text_draw_data {
   vector<GLuint64> texture_handles;
   vector<glm::mat4> glyph_models;
+  glm::vec4 bounding_box;
+  glm::vec4 color;
 };
 
 auto init_freetype() noexcept -> tl::expected<FT_Library, error>;
@@ -51,11 +53,13 @@ void unload_glyphs(glyph_data &gd) noexcept;
 void make_glyphs_resident(glyph_data &gd);
 void make_glyphs_non_resident(glyph_data &gd);
 
-auto create_text_draw_data(const glyph_data &gd, std::string_view text,
-                           glm::vec3 &&baseline_origin) noexcept -> text_draw_data;
+void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
+                           glm::vec3 &&baseline_origin, glm::vec4 &&color) noexcept;
+auto create_text_draw_data(const glyph_data &gd, std::string_view text, glm::vec3 &&baseline_origin,
+                           glm::vec4 &&color) noexcept -> text_draw_data;
 
 void draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
-          const glm::mat4 &view, const text_draw_data &tdd, glm::vec4 &&color) noexcept;
+          const glm::mat4 &view, const text_draw_data &tdd) noexcept;
 
 } // namespace surge::atom::text
 
