@@ -3,6 +3,7 @@
 
 #include "container_types.hpp"
 #include "renderer.hpp"
+#include "sprite.hpp"
 
 // clang-format off
 #include <ft2build.h>
@@ -35,7 +36,6 @@ struct glyph_data {
 struct text_draw_data {
   vector<GLuint64> texture_handles;
   vector<glm::mat4> glyph_models;
-  vector<float> alphas;
 };
 
 auto init_freetype() noexcept -> tl::expected<FT_Library, error>;
@@ -53,6 +53,9 @@ void make_glyphs_non_resident(glyph_data &gd);
 
 auto create_text_draw_data(const glyph_data &gd, std::string_view text,
                            glm::vec3 &&baseline_origin) noexcept -> text_draw_data;
+
+void draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
+          const glm::mat4 &view, const text_draw_data &tdd) noexcept;
 
 } // namespace surge::atom::text
 

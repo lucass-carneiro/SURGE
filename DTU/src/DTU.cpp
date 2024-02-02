@@ -29,6 +29,9 @@ static glm::mat4 g_view{};
 static GLuint g_sprite_shader{0};
 
 // NOLINTNEXTLINE
+static GLuint g_text_shader{0};
+
+// NOLINTNEXTLINE
 static surge::atom::sprite::buffer_data g_sprite_buffer{};
 
 // NOLINTNEXTLINE
@@ -160,6 +163,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   g_sprite_texture_handles.reserve(16);
   g_sprite_alphas.reserve(16);
 
+  const auto text_shader{
+      surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
+  if (!text_shader) {
+    return static_cast<int>(text_shader.error());
+  }
+  g_text_shader = *text_shader;
+
   // Load fonts used in the game and make their textures resident
   auto ft_lib{surge::atom::text::init_freetype()};
   if (!ft_lib) {
@@ -210,6 +220,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
 
   surge::renderer::cleanup_shader_program(g_sprite_shader);
+  surge::renderer::cleanup_shader_program(g_text_shader);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::cleanup();
@@ -226,11 +237,10 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   DTU::debug_window::draw();
 #endif
 
-  static const auto temp{surge::atom::text::create_text_draw_data(g_itc_benguiat_book_glyphs, "Ab",
-                                                                  glm::vec3{512.0f, 700.0f, 1.0f})};
+  static const auto temp{surge::atom::text::create_text_draw_data(
+      g_itc_benguiat_book_glyphs, "Hello world", glm::vec3{512.0f, 700.0f, 1.0f})};
 
-  surge::atom::sprite::draw_hv_flip(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
-                                    temp.glyph_models, temp.texture_handles, temp.alphas);
+  surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, temp);
 
   return 0;
 }

@@ -152,37 +152,6 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
 
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
-  renderer::uniforms::set(sp, "uv_transform_matrix", glm::mat3{1.0f});
-
-  renderer::uniforms::set(sp, "models", models.data(), models.size());
-  renderer::uniforms::set(sp, "textures", texture_handles.data(), texture_handles.size());
-  renderer::uniforms::set(sp, "alphas", alphas.data(), alphas.size());
-
-  glBindVertexArray(bd.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                          gsl::narrow_cast<GLsizei>(models.size()));
-}
-
-void surge::atom::sprite::draw_hv_flip(const GLuint &sp, const buffer_data &bd,
-                                       const glm::mat4 &proj, const glm::mat4 &view,
-                                       const vector<glm::mat4> &models,
-                                       const vector<GLuint64> &texture_handles,
-                                       const vector<float> &alphas) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::draw_hv_flip");
-  TracyGpuZone("GPU surge::atom::sprite::draw_hv_flip");
-#endif
-  if (models.size() == 0) {
-    return;
-  }
-
-  glUseProgram(sp);
-
-  renderer::uniforms::set(sp, "projection", proj);
-  renderer::uniforms::set(sp, "view", view);
-  renderer::uniforms::set(sp, "uv_transform_matrix",
-                          glm::mat3{-1, 0, 0, 0, 1, 0, 1, 0, 1}
-                              * glm::mat3{1, 0, 0, 0, -1, 0, 0, 1, 1});
 
   renderer::uniforms::set(sp, "models", models.data(), models.size());
   renderer::uniforms::set(sp, "textures", texture_handles.data(), texture_handles.size());

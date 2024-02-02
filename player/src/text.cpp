@@ -228,13 +228,10 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
   tdd.texture_handles.reserve(text.size());
   tdd.glyph_models.reserve(text.size());
 
-  tdd.alphas.reserve(text.size());
-  std::fill(tdd.alphas.begin(), tdd.alphas.end(), 1.0f);
-
   for (const auto &c : text) {
     // White space
     if (c == ' ') {
-      pen_origin[0] += static_cast<float>(gd.whitespace_advance);
+      pen_origin[0] += static_cast<float>(gd.whitespace_advance >> 6);
       continue;
     }
 
@@ -261,8 +258,31 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
     tdd.glyph_models.push_back(glyph_model);
     tdd.texture_handles.push_back(gd.texture_handle[char_idx]);
 
-    pen_origin[0] += static_cast<float>(gd.advance[char_idx]);
+    pen_origin[0] += static_cast<float>(gd.advance[char_idx] >> 6);
   }
 
   return tdd;
+}
+
+void surge::atom::text::draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
+                             const glm::mat4 &view, const text_draw_data &tdd) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::draw");
+  TracyGpuZone("GPU surge::atom::text::draw");
+#endif
+  if (tdd.glyph_models.size() == 0 || tdd.texture_handles.size() == 0) {
+    return;
+  }
+
+  glUseProgram(sp);
+
+  renderer::uniforms::set(sp, "projection", proj);
+  renderer::uniforms::set(sp, "view", view);
+
+  renderer::uniforms::set(sp, "models", tdd.glyph_models.data(), tdd.glyph_models.size());
+  renderer::uniforms::set(sp, "textures", tdd.texture_handles.data(), tdd.texture_handles.size());
+
+  glBindVertexArray(bd.VAO);
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
+                          gsl::narrow_cast<GLsizei>(tdd.glyph_models.size()));
 }

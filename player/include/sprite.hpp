@@ -34,10 +34,6 @@ void draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj, const 
           const vector<glm::mat4> &models, const vector<GLuint64> &texture_handles,
           const vector<float> &alphas) noexcept;
 
-void draw_hv_flip(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
-                  const glm::mat4 &view, const vector<glm::mat4> &models,
-                  const vector<GLuint64> &texture_handles, const vector<float> &alphas) noexcept;
-
 } // namespace surge::atom::sprite
 
 #endif // SURGE_ATOM_SPRITE_HPP
