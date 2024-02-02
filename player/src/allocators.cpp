@@ -107,8 +107,13 @@ auto surge::allocators::mimalloc::fnm_allocator::allocate_node(usize size, usize
   return p;
 }
 
+#ifdef SURGE_DEBUG_MEMORY
 void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, usize size,
                                                                  usize alignment) noexcept {
+#else
+void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, usize,
+                                                                 usize alignment) noexcept {
+#endif
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"

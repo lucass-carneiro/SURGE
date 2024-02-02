@@ -59,6 +59,7 @@ void set(GLuint program_handle, const char *uniform_name, const glm::fvec3 &valu
 void set(GLuint program_handle, const char *uniform_name, const glm::bvec4 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::ivec4 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::fvec4 &value) noexcept;
+void set(GLuint program_handle, const char *uniform_name, const glm::mat3 &value) noexcept;
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 &value) noexcept;
 
 void set(GLuint program_handle, const char *uniform_name, const GLuint64 *values,

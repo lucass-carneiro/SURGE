@@ -9,6 +9,7 @@
 #include "player/container_types.hpp"
 #include "player/logging.hpp"
 #include "player/sprite.hpp"
+#include "player/text.hpp"
 #include "player/options.hpp"
 // clang-format on
 
@@ -47,6 +48,9 @@ static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_stat
 
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_b{DTU::state_machine::states::no_state};
+
+// NOLINTNEXTLINE
+static surge::atom::text::glyph_data g_itc_benguiat_book_glyphs{};
 
 #ifdef SURGE_BUILD_TYPE_Debug
 auto DTU::get_command_queue() noexcept -> const surge::deque<surge::u32> & {
@@ -156,6 +160,29 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   g_sprite_texture_handles.reserve(16);
   g_sprite_alphas.reserve(16);
 
+  // Load fonts used in the game and make their textures resident
+  auto ft_lib{surge::atom::text::init_freetype()};
+  if (!ft_lib) {
+    return static_cast<int>(ft_lib.error());
+  }
+
+  auto itc_benguiat_book{
+      surge::atom::text::load_face(*ft_lib, "resources/fonts/ITC_Benguiat_Book.ttf")};
+  if (!itc_benguiat_book) {
+    return static_cast<int>(itc_benguiat_book.error());
+  }
+
+  auto itc_benguiat_book_glyphs{surge::atom::text::load_glyphs(*ft_lib, *itc_benguiat_book, 64)};
+  if (!itc_benguiat_book_glyphs) {
+    return static_cast<int>(itc_benguiat_book_glyphs.error());
+  }
+
+  surge::atom::text::unload_face(*itc_benguiat_book);
+  surge::atom::text::destroy_freetype(*ft_lib);
+
+  g_itc_benguiat_book_glyphs = *itc_benguiat_book_glyphs;
+  surge::atom::text::make_glyphs_resident(g_itc_benguiat_book_glyphs);
+
   // First state
   DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
   DTU::state_machine::transition(ww, wh);
@@ -178,6 +205,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
   surge::atom::sprite::make_non_resident(g_sprite_texture_handles);
   surge::atom::sprite::destroy_buffers(g_sprite_buffer);
+
+  surge::atom::text::make_glyphs_non_resident(g_itc_benguiat_book_glyphs);
+  surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
+
   surge::renderer::cleanup_shader_program(g_sprite_shader);
 
 #ifdef SURGE_BUILD_TYPE_Debug
@@ -194,6 +225,12 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw();
 #endif
+
+  static const auto temp{surge::atom::text::create_text_draw_data(g_itc_benguiat_book_glyphs, "Ab",
+                                                                  glm::vec3{512.0f, 700.0f, 1.0f})};
+
+  surge::atom::sprite::draw_hv_flip(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
+                                    temp.glyph_models, temp.texture_handles, temp.alphas);
 
   return 0;
 }

@@ -11,6 +11,9 @@
 #include <freetype/fttypes.h>
 // clang-format on
 
+#include <glm/glm.hpp>
+#include <optional>
+#include <string_view>
 #include <tl/expected.hpp>
 
 /**
@@ -18,54 +21,38 @@
  */
 namespace surge::atom::text {
 
-using font_name_vec_t = vector<string>;
-using face_vec_t = vector<FT_Face>;
-using tid_vec_t = vector<GLuint>;
-using size_vec_t = vector<FT_UInt>;
-using bea_vec_t = vector<FT_Int>;
-using adv_vec_t = vector<FT_Pos>;
-
-struct buffer_data {
-  FT_Library library;
-  face_vec_t faces;
-  GLuint VAO;
-  GLuint VBO;
+struct glyph_data {
+  vector<GLuint> texture_id;
+  vector<GLuint64> texture_handle;
+  vector<u32> bitmap_width;
+  vector<u32> bitmap_height;
+  vector<i32> bearing_x;
+  vector<i32> bearing_y;
+  vector<i64> advance;
+  i64 whitespace_advance;
 };
 
-struct charmap_data {
-  std::size_t chars_per_face;
-
-  tid_vec_t texture_ids;
-  size_vec_t sizes_x;
-  size_vec_t sizes_y;
-  bea_vec_t bearings_x;
-  bea_vec_t bearings_y;
-  adv_vec_t advances;
+struct text_draw_data {
+  vector<GLuint64> texture_handles;
+  vector<glm::mat4> glyph_models;
+  vector<float> alphas;
 };
 
-struct draw_data {
-  glm::mat4 projection;
-  std::uint64_t face_idx;
-  glm::vec2 position;
-  float scale;
-  glm::vec3 color;
-};
+auto init_freetype() noexcept -> tl::expected<FT_Library, error>;
+auto destroy_freetype(FT_Library lib) noexcept -> std::optional<error>;
 
-auto create(const font_name_vec_t &fonts) noexcept -> tl::expected<buffer_data, error>;
-void terminate(buffer_data &data) noexcept;
+auto load_face(FT_Library lib, const char *name) noexcept -> tl::expected<FT_Face, error>;
+auto unload_face(FT_Face face) noexcept -> std::optional<error>;
 
-auto create_charmap(buffer_data &data, FT_UInt pixel_height,
-                    renderer::texture_filtering filtering
-                    = renderer::texture_filtering::linear) noexcept
-    -> tl::expected<charmap_data, error>;
+auto load_glyphs(FT_Library lib, FT_Face face, FT_UInt pixel_size = 16) noexcept
+    -> tl::expected<glyph_data, error>;
+void unload_glyphs(glyph_data &gd) noexcept;
 
-void destroy_charmap(const charmap_data &charmap) noexcept;
+void make_glyphs_resident(glyph_data &gd);
+void make_glyphs_non_resident(glyph_data &gd);
 
-void draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd, const draw_data &dd,
-          std::string_view text, float extra_vskip = 5.0f) noexcept;
-
-void draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd, const draw_data &dd,
-          unsigned long long number) noexcept;
+auto create_text_draw_data(const glyph_data &gd, std::string_view text,
+                           glm::vec3 &&baseline_origin) noexcept -> text_draw_data;
 
 } // namespace surge::atom::text
 

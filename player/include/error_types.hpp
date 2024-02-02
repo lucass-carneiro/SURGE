@@ -35,7 +35,9 @@ enum error : int {
 
   // Text errors
   freetype_init,
-  freetype_face_not_found,
+  freetype_deinit,
+  freetype_face_load,
+  freetype_face_unload,
   freetype_set_face_size,
   freetype_character_load,
 

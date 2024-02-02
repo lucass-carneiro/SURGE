@@ -9,7 +9,7 @@
 #include <freetype/ftmodapi.h>
 // clang-format on
 
-// #include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 #include <tl/expected.hpp>
 
@@ -28,15 +28,13 @@ static auto FT_realloc(FT_Memory, long, long new_size, void *block) noexcept -> 
   return surge::allocators::mimalloc::realloc(block, new_size);
 }
 
+// NOLINTNEXTLINE
 static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
-auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
-    -> tl::expected<buffer_data, error> {
+auto surge::atom::text::init_freetype() noexcept -> tl::expected<FT_Library, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::create");
-  TracyGpuZone("GPU surge::atom::text::create");
+  ZoneScopedN("surge::atom::text::init_freetype()");
 #endif
-
   log_info("Creating FreeType library");
 
   FT_Library lib{};
@@ -50,251 +48,221 @@ auto surge::atom::text::create(const font_name_vec_t &fonts) noexcept
   log_info("Adding FreeType modules");
   FT_Add_Default_Modules(lib);
 
-  log_info("Allocating face vector");
-  face_vec_t face_vec{};
-  face_vec.reserve(fonts.size());
-
-  log_info("Loading faces");
-  for (const auto &name : fonts) {
-    FT_Face face{};
-    const auto status{FT_New_Face(lib, name.c_str(), 0, &face)};
-
-    if (status != 0) {
-      log_error("Error loading face %s: %s", name.c_str(), FT_Error_String(status));
-      FT_Done_Library(lib);
-      return tl::unexpected{error::freetype_face_not_found};
-    } else
-      face_vec.push_back(face);
-  }
-
-  log_info("Creating text vertex buffers");
-  GLuint VAO{0}, VBO{0};
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, nullptr, GL_DYNAMIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-
-  log_info("Font cache initialized");
-  return buffer_data{lib, face_vec, VAO, VBO};
+  return lib;
 }
 
-void surge::atom::text::terminate(buffer_data &data) noexcept {
+auto surge::atom::text::destroy_freetype(FT_Library lib) noexcept -> std::optional<error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::terminate");
+  ZoneScopedN("surge::atom::text::destroy_freetype()");
 #endif
 
-  log_info("Closing faces");
-  for (const auto &face : data.faces) {
-    FT_Done_Face(face);
-  }
+  log_info("Destroying FreeType library");
 
-  log_info("Terminating FreeType library");
-  const auto status{FT_Done_Library(data.library)};
+  const auto status{FT_Done_Library(lib)};
+
   if (status != 0) {
-    log_error("Unable to terminate FreeType library: %s", FT_Error_String(status));
+    log_error("Error destroying FreeType library: %s", FT_Error_String(status));
+    return error::freetype_deinit;
+  } else {
+    return {};
   }
 }
 
-/* We will only save the ASCII characters ranging from codes char_start to char_end
- * see https://en.cppreference.com/w/cpp/language/ascii
- *
- * Each array in the charcater map will store (char_end - char_start) character data for each face
- * loaded.
- */
-static constexpr const FT_ULong char_start{0};
-static constexpr const FT_ULong char_end{126};
-static constexpr const auto chars_per_face{char_end - char_start};
-
-auto surge::atom::text::create_charmap(buffer_data &data, FT_UInt pixel_height,
-                                       renderer::texture_filtering filtering) noexcept
-    -> tl::expected<charmap_data, error> {
+auto surge::atom::text::load_face(FT_Library lib, const char *name) noexcept
+    -> tl::expected<FT_Face, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::create_charmap");
-  TracyGpuZone("GPU surge::atom::text::create_charmap");
+  ZoneScopedN("surge::atom::text::append_face()");
 #endif
 
-  const auto charmap_sizes{chars_per_face * data.faces.size()};
+  log_info("Loading face %s", name);
 
-  log_info("Allocating memory for character maps");
-  charmap_data map;
-  map.chars_per_face = chars_per_face;
-  map.texture_ids.reserve(charmap_sizes);
-  map.sizes_x.reserve(charmap_sizes);
-  map.sizes_y.reserve(charmap_sizes);
-  map.bearings_x.reserve(charmap_sizes);
-  map.bearings_y.reserve(charmap_sizes);
-  map.advances.reserve(charmap_sizes);
+  FT_Face face{};
+  const auto status{FT_New_Face(lib, name, 0, &face)};
 
-  // Loop over faces
-  for (auto &face : data.faces) {
-    log_info("Face name: %s", face->family_name);
+  if (status != 0) {
+    log_error("Error loading face %s: %s", name, FT_Error_String(status));
+    return tl::unexpected{error::freetype_face_load};
+  } else {
+    return face;
+  }
+}
 
-    log_info("  Setting size");
-    auto status{FT_Set_Pixel_Sizes(face, 0, pixel_height)};
+auto surge::atom::text::unload_face(FT_Face face) noexcept -> std::optional<error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::unload_face()");
+#endif
+
+  log_info("Unloading face %s", face->family_name);
+
+  const auto status = FT_Done_Face(face);
+  if (status != 0) {
+    log_error("Error unloading face %s: %s", face->family_name, FT_Error_String(status));
+    return error::freetype_face_unload;
+  } else {
+    return {};
+  }
+}
+
+auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size) noexcept
+    -> tl::expected<glyph_data, error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::load_glyphs()");
+  TracyGpuZone("GPU surge::atom::text::load_glyphs()");
+#endif
+
+  log_info("Loading glyphs metrics in %s", face->family_name);
+
+  auto status{FT_Set_Pixel_Sizes(face, 0, pixel_size)};
+  if (status != 0) {
+    log_error("Unable to set face %s glyphs to size: %s", face->family_name,
+              FT_Error_String(status));
+    return tl::unexpected{error::freetype_set_face_size};
+  }
+
+  glyph_data gd;
+  gd.texture_id.reserve(94);
+  gd.texture_handle.reserve(94);
+  gd.bitmap_width.reserve(94);
+  gd.bitmap_height.reserve(94);
+  gd.bearing_x.reserve(94);
+  gd.bearing_y.reserve(94);
+  gd.advance.reserve(94);
+
+  // White space
+  status = FT_Load_Char(face, ' ', FT_LOAD_RENDER);
+  if (status != 0) {
+    log_error("Unable to load white space ASCII character for face %s: %s", face->family_name,
+              FT_Error_String(status));
+    return tl::unexpected{error::freetype_character_load};
+  } else {
+    gd.whitespace_advance = face->glyph->advance.x;
+  }
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  // Printable ASCII characters
+  for (auto c = 33; c <= 126; c++) {
+    status = FT_Load_Char(face, c, FT_LOAD_RENDER);
     if (status != 0) {
-      log_error("Unable to set face %s size: %s", face->family_name, FT_Error_String(status));
-      return tl::unexpected{error::freetype_set_face_size};
-    }
+      log_error("Unable to load ASCII character %c for face %s: %s", static_cast<char>(c),
+                face->family_name, FT_Error_String(status));
+      return tl::unexpected{error::freetype_character_load};
+    } else {
 
-    // Loop over characters
-    log_info("  Loading characters");
-    for (auto c = char_start; c <= char_end; c++) {
+      const auto bw{face->glyph->bitmap.width};
+      const auto bh{face->glyph->bitmap.rows};
 
-      status = FT_Load_Char(face, c, FT_LOAD_RENDER);
-      if (status != 0) {
-        log_error("Unable to load character %c for face %s: %s", static_cast<char>(c),
-                  face->family_name, FT_Error_String(status));
-        return tl::unexpected{error::freetype_character_load};
-      }
+      gd.bitmap_width.push_back(bw);
+      gd.bitmap_height.push_back(bh);
+      gd.bearing_x.push_back(face->glyph->bitmap_left);
+      gd.bearing_y.push_back(face->glyph->bitmap_top);
+      gd.advance.push_back(face->glyph->advance.x);
 
-      // Disable OpenGL byte-alignment restriction
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-      // Generate texture
       GLuint texture{0};
-      glGenTextures(1, &texture);
-      glBindTexture(GL_TEXTURE_2D, texture);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, gsl::narrow_cast<GLsizei>(face->glyph->bitmap.width),
-                   gsl::narrow_cast<GLsizei>(face->glyph->bitmap.rows), 0, GL_RED, GL_UNSIGNED_BYTE,
-                   face->glyph->bitmap.buffer);
+      glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
-      /// Set texture options
+      // Wrapping
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(filtering));
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(filtering));
 
-      // Restore unpack alignment
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+      // Filtering
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-      // Store
-      map.texture_ids.push_back(texture);
-      map.sizes_x.push_back(face->glyph->bitmap.width);
-      map.sizes_y.push_back(face->glyph->bitmap.rows);
-      map.bearings_x.push_back(face->glyph->bitmap_left);
-      map.bearings_y.push_back(face->glyph->bitmap_top);
-      map.advances.push_back(face->glyph->advance.x);
+      constexpr const auto internal_format{GL_R8};
+      constexpr const auto format{GL_RED};
+
+      glTextureStorage2D(texture, 1, internal_format, static_cast<GLsizei>(bw),
+                         static_cast<GLsizei>(bh));
+      glTextureSubImage2D(texture, 0, 0, 0, static_cast<GLsizei>(bw), static_cast<GLsizei>(bh),
+                          format, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+
+      const auto handle{glGetTextureHandleARB(texture)};
+      if (handle == 0) {
+        log_error("Unable to create texture handle for character %c", static_cast<char>(c));
+        return tl::unexpected{error::texture_handle_creation};
+      } else {
+        gd.texture_id.push_back(texture);
+        gd.texture_handle.push_back(handle);
+      }
     }
   }
 
-  return map;
+  return gd;
 }
 
-void surge::atom::text::destroy_charmap(const charmap_data &charmap) noexcept {
-  for (auto map : charmap.texture_ids) {
-    glDeleteTextures(1, &map);
+void surge::atom::text::unload_glyphs(glyph_data &gd) noexcept {
+  glDeleteTextures(static_cast<GLsizei>(gd.texture_id.size()), gd.texture_id.data());
+
+  gd.texture_id.clear();
+  gd.texture_handle.clear();
+  gd.bitmap_width.clear();
+  gd.bitmap_height.clear();
+  gd.bearing_x.clear();
+  gd.bearing_y.clear();
+  gd.advance.clear();
+}
+
+void surge::atom::text::make_glyphs_resident(glyph_data &gd) {
+  for (auto handle : gd.texture_handle) {
+    glMakeTextureHandleResidentARB(handle);
   }
 }
 
-void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
-                             const draw_data &dd, std::string_view text,
-                             float extra_vskip) noexcept {
+void surge::atom::text::make_glyphs_non_resident(glyph_data &gd) {
+  for (auto handle : gd.texture_handle) {
+    glMakeTextureHandleNonResidentARB(handle);
+  }
+}
+
+auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_view text,
+                                              glm::vec3 &&baseline_origin) noexcept
+    -> text_draw_data {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::draw");
-  TracyGpuZone("GPU surge::atom::text::draw");
+  ZoneScopedN("surge::atom::create_text_draw_data");
 #endif
 
-  // Set OpenGL state
-  glUseProgram(shader_program);
+  auto pen_origin{baseline_origin};
 
-  renderer::uniforms::set(shader_program, "projection", dd.projection);
-  renderer::uniforms::set(shader_program, "text_color", dd.color);
-  glActiveTexture(GL_TEXTURE0);
+  text_draw_data tdd{};
+  tdd.texture_handles.reserve(text.size());
+  tdd.glyph_models.reserve(text.size());
 
-  glBindVertexArray(bd.VAO);
-
-  float x{dd.position[0]};
-  float y{dd.position[1]};
+  tdd.alphas.reserve(text.size());
+  std::fill(tdd.alphas.begin(), tdd.alphas.end(), 1.0f);
 
   for (const auto &c : text) {
-
-    // Skip null character
-    if (c == '\0') {
+    // White space
+    if (c == ' ') {
+      pen_origin[0] += static_cast<float>(gd.whitespace_advance);
       continue;
     }
 
-    const auto char_idx{static_cast<std::size_t>(c - char_start)
-                        + dd.face_idx * (cd.chars_per_face + 1)};
-
-    const float size_y{gsl::narrow_cast<float>(cd.sizes_y[char_idx])};
-
-    // Render newline
+    // New line + carrige return
     if (c == '\n') {
-      x = dd.position[0];
-      y += (size_y + extra_vskip) * dd.scale;
+      // TODO
       continue;
     }
 
-    // Skip rendering whitespace
-    if (c == ' ' || c == '\t') {
-      x += gsl::narrow_cast<float>(cd.advances[char_idx] >> 6) * dd.scale;
+    // Unsupported characters
+    if (c < 33 || c > 126) {
+      // TODO: print �
       continue;
     }
 
-    const float size_x{gsl::narrow_cast<float>(cd.sizes_x[char_idx])};
+    // Printable characters
+    const auto char_idx{static_cast<usize>(c) - 33};
 
-    const float bearing_x{gsl::narrow_cast<float>(cd.bearings_x[char_idx])};
-    const float bearing_y{gsl::narrow_cast<float>(cd.bearings_y[char_idx])};
+    const auto bearing{glm::vec3{gd.bearing_x[char_idx], -gd.bearing_y[char_idx], 0.0f}};
+    const auto glyph_origin{pen_origin + bearing};
+    const auto glyph_scale{glm::vec3{gd.bitmap_width[char_idx], gd.bitmap_height[char_idx], 1.0f}};
+    const auto glyph_model{glm::scale(glm::translate(glm::mat4{1.0f}, glyph_origin), glyph_scale)};
 
-    const float xpos{x + bearing_x * dd.scale};
+    tdd.glyph_models.push_back(glyph_model);
+    tdd.texture_handles.push_back(gd.texture_handle[char_idx]);
 
-    /* The user specifies the baseline position so the glyphs need to be shifted up by their size,
-     * otherwise they would align their top to their baseline instead of their bottoms */
-    const float ypos{(y - size_y * dd.scale) - (size_y - bearing_y) * dd.scale};
-
-    const float w{size_x * dd.scale};
-    const float h{size_y * dd.scale};
-
-    // Update VBO
-    // clang-format off
-    std::array<float, 24> vertices{
-      xpos,     ypos + h,   0.0f, 1.0f,
-      xpos,     ypos,       0.0f, 0.0f,
-      xpos + w, ypos,       1.0f, 0.0f,
-      xpos,     ypos + h,   0.0f, 1.0f,
-      xpos + w, ypos,       1.0f, 0.0f,
-      xpos + w, ypos + h,   1.0f, 1.0f,
-    };
-    // clang-format on
-
-    // Recover texture, update buffer and rener
-    glBindTexture(GL_TEXTURE_2D, cd.texture_ids[char_idx]);
-
-    // update content of VBO memory
-    glBindBuffer(GL_ARRAY_BUFFER, bd.VBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // render quad
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    /* Advance cursors for next glyph
-     * The `advance` parameter is measured in 1/64 parts of a pixel
-     * To get the vale in pixels, bitshift by 6. Remember that 2^6 = 64.
-     */
-    x += gsl::narrow_cast<float>(cd.advances[char_idx] >> 6) * dd.scale;
+    pen_origin[0] += static_cast<float>(gd.advance[char_idx]);
   }
-}
 
-void surge::atom::text::draw(GLuint shader_program, const buffer_data &bd, const charmap_data &cd,
-                             const draw_data &dd, unsigned long long number) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::draw(number)");
-#endif
-
-  using std::snprintf;
-
-  // Parse number into array of digits (repreented by chars)
-  constexpr auto max_score_digits{std::numeric_limits<unsigned long long>::digits10};
-  std::array<char, max_score_digits + 1> digits{};
-  std::fill(digits.begin(), digits.end(), '\0');
-  snprintf(digits.data(), max_score_digits, "%llu", number);
-
-  draw(shader_program, bd, cd, dd, digits.data());
+  return tdd;
 }
