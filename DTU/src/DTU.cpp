@@ -240,7 +240,8 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   static const auto temp{surge::atom::text::create_text_draw_data(
       g_itc_benguiat_book_glyphs, "Hello world", glm::vec3{512.0f, 700.0f, 1.0f})};
 
-  surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, temp);
+  surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, temp,
+                          glm::vec4{1.0, 1.0, 1.0, 1.0});
 
   return 0;
 }

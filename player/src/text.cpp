@@ -265,7 +265,8 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
 }
 
 void surge::atom::text::draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
-                             const glm::mat4 &view, const text_draw_data &tdd) noexcept {
+                             const glm::mat4 &view, const text_draw_data &tdd,
+                             glm::vec4 &&color) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw");
   TracyGpuZone("GPU surge::atom::text::draw");
@@ -278,6 +279,8 @@ void surge::atom::text::draw(const GLuint &sp, const sprite::buffer_data &bd, co
 
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
+
+  renderer::uniforms::set(sp, "text_color", color);
 
   renderer::uniforms::set(sp, "models", tdd.glyph_models.data(), tdd.glyph_models.size());
   renderer::uniforms::set(sp, "textures", tdd.texture_handles.data(), tdd.texture_handles.size());
