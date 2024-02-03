@@ -197,14 +197,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   surge::atom::text::make_glyphs_resident(g_itc_benguiat_book_glyphs);
 
   // Allocate memory for the text buffers
-  g_text_draw_buffer.texture_handles.reserve(64);
-  g_text_draw_buffer.glyph_models.reserve(64);
-  surge::atom::text::append_text_draw_data(
-      g_text_draw_buffer, g_itc_benguiat_book_glyphs, "The Quick Brown Fox Jumps Over The Lazy dog",
-      glm::vec3{147.0f, 371.5f, 1.0f}, glm::vec4{175.0 / 255.0, 17.0 / 255.0, 28.0 / 255.0, 1.0});
-  log_info("bbox %f %f %f %f", g_text_draw_buffer.bounding_box[0],
-           g_text_draw_buffer.bounding_box[1], g_text_draw_buffer.bounding_box[2],
-           g_text_draw_buffer.bounding_box[3]);
+  g_text_draw_buffer.texture_handles.reserve(32);
+  g_text_draw_buffer.glyph_models.reserve(32);
 
   // First state
   DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
@@ -227,10 +221,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   }
 
   surge::atom::sprite::make_non_resident(g_sprite_texture_handles);
-  surge::atom::sprite::destroy_buffers(g_sprite_buffer);
-
   surge::atom::text::make_glyphs_non_resident(g_itc_benguiat_book_glyphs);
+
   surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
+  surge::atom::sprite::destroy_buffers(g_sprite_buffer);
 
   surge::renderer::cleanup_shader_program(g_sprite_shader);
   surge::renderer::cleanup_shader_program(g_text_shader);
