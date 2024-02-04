@@ -29,8 +29,7 @@ static constexpr const std::array<float, background_layer_count> background_drif
 };
 // clang-format on
 
-static void load_background_images(surge::vector<GLuint64> &sprite_textures,
-                                   surge::vector<float> &sprite_alphas) noexcept {
+static void load_background_images(DTU::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading background images");
@@ -39,50 +38,46 @@ static void load_background_images(surge::vector<GLuint64> &sprite_textures,
       "resources/main_menu/1.png", "resources/main_menu/2.png", "resources/main_menu/3.png",
       "resources/main_menu/4.png", "resources/main_menu/5.png"};
 
-  std::array<tl::expected<files::image, error>, background_layer_count> background_images{};
-  std::array<tl::expected<GLuint64, error>, background_layer_count> background_handles{};
-
   // Load images
-  for (usize i = 0; i < background_layer_count; i++) {
-    background_images[i] = files::load_image(background_image_names[i]);
-  }
+  for (const auto &image_name : background_image_names) {
+    auto img{files::load_image(image_name)};
 
-  // Create handles for valid images
-  for (usize i = 0; auto &img : background_images) {
     if (img) {
-      background_handles[i]
-          = atom::sprite::create_texture(*img, renderer::texture_filtering::nearest);
+      const auto texture_data{
+          atom::sprite::create_texture(*img, renderer::texture_filtering::nearest)};
+
+      if (texture_data) {
+        dl.texture_ids.push_back(std::get<0>(*texture_data));
+        dl.texture_handles.push_back(std::get<1>(*texture_data));
+        dl.alphas.push_back(1.0f);
+      } else {
+        dl.texture_ids.push_back(0);
+        dl.texture_handles.push_back(0);
+        dl.alphas.push_back(0.0f);
+      }
+
       files::free_image(*img);
     }
-    i++;
-  }
-
-  // Push valid handles to draw list and make textures resident
-  for (const auto &handle : background_handles) {
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(1.0f);
   }
 }
 
-static void load_background_quads(surge::vector<glm::mat4> &sprite_models, float ww,
-                                  float wh) noexcept {
+static void load_background_quads(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
   using namespace surge;
 
   for (usize i = 0; i < background_layer_count; i++) {
-    sprite_models.push_back(
+    dl.models.push_back(
         glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, 0.0f + i / 10.0f}),
                    glm::vec3{ww * 2.0f, wh, 1.0}));
   }
 }
 
-static void update_background_quads(surge::vector<glm::mat4> &sprite_models, double dt) noexcept {
+static void update_background_quads(DTU::sprite::data_list &dl, double dt) noexcept {
   using namespace surge;
 
   static std::array<float, background_layer_count> relative_positions{0};
   const auto dtf{gsl::narrow_cast<float>(dt)};
 
-  for (usize i = 0; auto &model : std::span(sprite_models).first(background_layer_count)) {
+  for (usize i = 0; auto &model : std::span(dl.models).first(background_layer_count)) {
     const auto drift_speed{background_drift_speeds[i]};
 
     if (relative_positions[i] < 0.5f) {
@@ -96,8 +91,7 @@ static void update_background_quads(surge::vector<glm::mat4> &sprite_models, dou
   }
 }
 
-static void load_title_image(surge::vector<GLuint64> &sprite_textures,
-                             surge::vector<float> &sprite_alphas) noexcept {
+static void load_title_image(DTU::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading title images");
@@ -107,153 +101,88 @@ static void load_title_image(surge::vector<GLuint64> &sprite_textures,
   if (title_image) {
     const auto handle{atom::sprite::create_texture(*title_image)};
     files::free_image(*title_image);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
+
+    if (handle) {
+      dl.texture_ids.push_back(std::get<0>(*handle));
+      dl.texture_handles.push_back(std::get<1>(*handle));
+    } else {
+      dl.texture_ids.push_back(0);
+      dl.texture_handles.push_back(0);
+    }
+
+    dl.alphas.push_back(0.0f);
   }
 }
 
-static void load_title_quad(surge::vector<glm::mat4> &sprite_models, float ww, float wh) noexcept {
-  sprite_models.push_back(glm::scale(
+static void load_title_quad(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 608.0f) / 2.0f, (wh - 174.0f) / 2.0f, 0.5f}),
       glm::vec3{608.0f, 174.0f, 1.0}));
 }
 
-static void load_options_images(surge::vector<GLuint64> &sprite_textures,
-                                surge::vector<float> &sprite_alphas) noexcept {
+static void load_options_images(DTU::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading options images");
 
-  auto opt_img_new{files::load_image("resources/main_menu/menu_new_game.png")};
-  auto opt_img_load{files::load_image("resources/main_menu/menu_load_game.png")};
-  auto opt_img_options{files::load_image("resources/main_menu/menu_options.png")};
-  auto border_credits{files::load_image("resources/main_menu/menu_credits.png")};
-  auto border_exit{files::load_image("resources/main_menu/menu_exit.png")};
-  auto border_img{files::load_image("resources/main_menu/menu_border.png")};
+  const std::array<const char *, 6> opt_img_names{
+      "resources/main_menu/menu_new_game.png", "resources/main_menu/menu_load_game.png",
+      "resources/main_menu/menu_options.png",  "resources/main_menu/menu_credits.png",
+      "resources/main_menu/menu_exit.png",     "resources/main_menu/menu_border.png"};
 
-  if (opt_img_new) {
-    const auto handle{atom::sprite::create_texture(*opt_img_new)};
-    files::free_image(*opt_img_new);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
-  }
+  // Load images
+  for (const auto &image_name : opt_img_names) {
+    auto img{files::load_image(image_name)};
 
-  if (opt_img_load) {
-    const auto handle{atom::sprite::create_texture(*opt_img_load)};
-    files::free_image(*opt_img_load);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
-  }
+    if (img) {
+      const auto texture_data{
+          atom::sprite::create_texture(*img, renderer::texture_filtering::nearest)};
 
-  if (opt_img_options) {
-    const auto handle{atom::sprite::create_texture(*opt_img_options)};
-    files::free_image(*opt_img_options);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
-  }
+      if (texture_data) {
+        dl.texture_ids.push_back(std::get<0>(*texture_data));
+        dl.texture_handles.push_back(std::get<1>(*texture_data));
+      } else {
+        dl.texture_ids.push_back(0);
+        dl.texture_handles.push_back(0);
+      }
 
-  if (border_credits) {
-    const auto handle{atom::sprite::create_texture(*border_credits)};
-    files::free_image(*border_credits);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
-  }
-
-  if (border_exit) {
-    const auto handle{atom::sprite::create_texture(*border_exit)};
-    files::free_image(*border_exit);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
-  }
-
-  if (border_img) {
-    const auto handle{atom::sprite::create_texture(*border_img)};
-    files::free_image(*border_img);
-    sprite_textures.push_back(handle.value_or(0));
-    atom::sprite::make_resident(handle.value_or(0));
-    sprite_alphas.push_back(0.0f);
+      files::free_image(*img);
+      dl.alphas.push_back(0.0f);
+    }
   }
 }
 
-static void load_options_quads(surge::vector<glm::mat4> &sprite_models, float ww,
-                               float wh) noexcept {
+static void load_options_quads(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f},
                      glm::vec3{(ww - 448.0f) / 2.0f, (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
                                                 (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
                                                 (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
                                                 (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 448.0f) / 2.0f + 448.0f,
                                                 (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.6f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
 
-  sprite_models.push_back(glm::scale(
+  dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f},
                      glm::vec3{(ww - 448.0f) / 2.0f, (wh - 133.0f) / 2.0f + 133.0f + 50.0f, 0.7f}),
       glm::vec3{448.0f, 133.0f, 1.0}));
-}
-
-auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq,
-                                 surge::vector<glm::mat4> &sprite_models,
-                                 surge::vector<GLuint64> &sprite_textures,
-                                 surge::vector<float> &sprite_alphas, float ww, float wh) noexcept
-    -> int {
-  using namespace surge;
-
-  log_info("Loading main_menu state");
-
-  // Background
-  load_background_images(sprite_textures, sprite_alphas);
-  load_background_quads(sprite_models, ww, wh);
-
-  // Title
-  load_title_image(sprite_textures, sprite_alphas);
-  load_title_quad(sprite_models, ww, wh);
-
-  // Options
-  load_options_images(sprite_textures, sprite_alphas);
-  load_options_quads(sprite_models, ww, wh);
-
-  // First command
-  cmdq.push_back(commands::show_title);
-
-  return 0;
-}
-
-void DTU::state::main_menu::unload(surge::deque<surge::u32> &cmdq,
-                                   surge::vector<glm::mat4> &sprite_models,
-                                   surge::vector<GLuint64> &sprite_textures) noexcept {
-  using namespace surge;
-
-  log_info("Unloading main_menu state");
-
-  atom::sprite::make_non_resident(sprite_textures);
-  sprite_textures.clear();
-  sprite_models.clear();
-
-  cmdq.clear();
 }
 
 struct entity_indices {
@@ -266,9 +195,8 @@ struct entity_indices {
   surge::usize border_idx;
 };
 
-static auto do_shift_opt_left(surge::usize &current_opt_idx,
-                              surge::vector<glm::mat4> &sprite_models,
-                              surge::vector<float> &sprite_alphas, float dt) noexcept -> bool {
+static auto do_shift_opt_left(surge::usize &current_opt_idx, DTU::sprite::data_list &dl,
+                              float dt) noexcept -> bool {
 
   // Do not shift past the exit option
   const auto next_opt_index{current_opt_idx + 1};
@@ -283,30 +211,30 @@ static auto do_shift_opt_left(surge::usize &current_opt_idx,
   bool fade_current_opt{false};
   bool unfade_next_opt{false};
 
-  static const auto opt_initial_x_pos{sprite_models[current_opt_idx][3][0]};
+  static const auto opt_initial_x_pos{dl.models[current_opt_idx][3][0]};
 
-  if (sprite_models[current_opt_idx][3][0] > (opt_initial_x_pos - 448.0f)) {
-    sprite_models[current_opt_idx]
-        = glm::translate(sprite_models[current_opt_idx], glm::vec3{-speed, 0.0f, 0.0f});
-    sprite_models[next_opt_index]
-        = glm::translate(sprite_models[next_opt_index], glm::vec3{-speed, 0.0f, 0.0f});
+  if (dl.models[current_opt_idx][3][0] > (opt_initial_x_pos - 448.0f)) {
+    dl.models[current_opt_idx]
+        = glm::translate(dl.models[current_opt_idx], glm::vec3{-speed, 0.0f, 0.0f});
+    dl.models[next_opt_index]
+        = glm::translate(dl.models[next_opt_index], glm::vec3{-speed, 0.0f, 0.0f});
   } else {
-    sprite_models[current_opt_idx][3][0] = opt_initial_x_pos - 448.0f;
-    sprite_models[next_opt_index][3][0] = opt_initial_x_pos;
+    dl.models[current_opt_idx][3][0] = opt_initial_x_pos - 448.0f;
+    dl.models[next_opt_index][3][0] = opt_initial_x_pos;
     shift_opts = true;
   }
 
-  if (sprite_alphas[current_opt_idx] > 0.0f) {
-    sprite_alphas[current_opt_idx] -= speed;
+  if (dl.alphas[current_opt_idx] > 0.0f) {
+    dl.alphas[current_opt_idx] -= speed;
   } else {
-    sprite_alphas[current_opt_idx] = 0.0f;
+    dl.alphas[current_opt_idx] = 0.0f;
     fade_current_opt = true;
   }
 
-  if (sprite_alphas[next_opt_index] < 1.0f) {
-    sprite_alphas[next_opt_index] += speed;
+  if (dl.alphas[next_opt_index] < 1.0f) {
+    dl.alphas[next_opt_index] += speed;
   } else {
-    sprite_alphas[next_opt_index] = 1.0f;
+    dl.alphas[next_opt_index] = 1.0f;
     unfade_next_opt = true;
   }
 
@@ -318,9 +246,8 @@ static auto do_shift_opt_left(surge::usize &current_opt_idx,
   }
 }
 
-static auto do_shift_opt_right(surge::usize &current_opt_idx,
-                               surge::vector<glm::mat4> &sprite_models,
-                               surge::vector<float> &sprite_alphas, float dt) noexcept -> bool {
+static auto do_shift_opt_right(surge::usize &current_opt_idx, DTU::sprite::data_list &dl,
+                               float dt) noexcept -> bool {
 
   // Do not shift past the exit new game
   const auto next_opt_index{current_opt_idx - 1};
@@ -335,30 +262,30 @@ static auto do_shift_opt_right(surge::usize &current_opt_idx,
   bool fade_current_opt{false};
   bool unfade_next_opt{false};
 
-  static const auto opt_initial_x_pos{sprite_models[current_opt_idx][3][0]};
+  static const auto opt_initial_x_pos{dl.models[current_opt_idx][3][0]};
 
-  if (sprite_models[current_opt_idx][3][0] < (opt_initial_x_pos + 448.0f)) {
-    sprite_models[current_opt_idx]
-        = glm::translate(sprite_models[current_opt_idx], glm::vec3{speed, 0.0f, 0.0f});
-    sprite_models[next_opt_index]
-        = glm::translate(sprite_models[next_opt_index], glm::vec3{speed, 0.0f, 0.0f});
+  if (dl.models[current_opt_idx][3][0] < (opt_initial_x_pos + 448.0f)) {
+    dl.models[current_opt_idx]
+        = glm::translate(dl.models[current_opt_idx], glm::vec3{speed, 0.0f, 0.0f});
+    dl.models[next_opt_index]
+        = glm::translate(dl.models[next_opt_index], glm::vec3{speed, 0.0f, 0.0f});
   } else {
-    sprite_models[current_opt_idx][3][0] = opt_initial_x_pos + 448.0f;
-    sprite_models[next_opt_index][3][0] = opt_initial_x_pos;
+    dl.models[current_opt_idx][3][0] = opt_initial_x_pos + 448.0f;
+    dl.models[next_opt_index][3][0] = opt_initial_x_pos;
     shift_opts = true;
   }
 
-  if (sprite_alphas[current_opt_idx] > 0.0f) {
-    sprite_alphas[current_opt_idx] -= speed;
+  if (dl.alphas[current_opt_idx] > 0.0f) {
+    dl.alphas[current_opt_idx] -= speed;
   } else {
-    sprite_alphas[current_opt_idx] = 0.0f;
+    dl.alphas[current_opt_idx] = 0.0f;
     fade_current_opt = true;
   }
 
-  if (sprite_alphas[next_opt_index] < 1.0f) {
-    sprite_alphas[next_opt_index] += speed;
+  if (dl.alphas[next_opt_index] < 1.0f) {
+    dl.alphas[next_opt_index] += speed;
   } else {
-    sprite_alphas[next_opt_index] = 1.0f;
+    dl.alphas[next_opt_index] = 1.0f;
     unfade_next_opt = true;
   }
 
@@ -370,7 +297,7 @@ static auto do_shift_opt_right(surge::usize &current_opt_idx,
   }
 }
 
-void do_enter_option(surge::usize current_opt_idx) noexcept {
+static void do_enter_option(surge::usize current_opt_idx) noexcept {
   switch (current_opt_idx) {
   case 10:
     DTU::state_machine::push_state(DTU::state_machine::states::exit_game);
@@ -385,51 +312,90 @@ void do_enter_option(surge::usize current_opt_idx) noexcept {
   }
 }
 
-void DTU::state::main_menu::update(surge::deque<surge::u32> &cmdq,
-                                   surge::vector<glm::mat4> &sprite_models,
-                                   surge::vector<float> &sprite_alphas, double dt) noexcept {
+auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl,
+                                 float ww, float wh) noexcept -> int {
+  using namespace surge;
 
-  update_background_quads(sprite_models, dt);
+  log_info("Loading main_menu state");
 
-  const entity_indices ei{sprite_models.size() - 7, sprite_models.size() - 6,
-                          sprite_models.size() - 5, sprite_models.size() - 4,
-                          sprite_models.size() - 3, sprite_models.size() - 2,
-                          sprite_models.size() - 1};
+  // Background
+  load_background_images(dl);
+  load_background_quads(dl, ww, wh);
+
+  // Title
+  load_title_image(dl);
+  load_title_quad(dl, ww, wh);
+
+  // Options
+  load_options_images(dl);
+  load_options_quads(dl, ww, wh);
+
+  // Make all loaded resident
+  atom::sprite::make_resident(dl.texture_handles);
+
+  // First command
+  cmdq.push_back(commands::show_title);
+
+  return 0;
+}
+
+void DTU::state::main_menu::unload(surge::deque<surge::u32> &cmdq,
+                                   DTU::sprite::data_list &dl) noexcept {
+  using namespace surge;
+
+  log_info("Unloading main_menu state");
+
+  atom::sprite::make_non_resident(dl.texture_handles);
+  atom::sprite::destroy_texture(dl.texture_ids);
+  dl.texture_handles.clear();
+  dl.texture_ids.clear();
+  dl.alphas.clear();
+  dl.models.clear();
+
+  cmdq.clear();
+}
+
+void DTU::state::main_menu::update(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl,
+                                   double dt) noexcept {
+
+  update_background_quads(dl, dt);
+
+  const entity_indices ei{dl.models.size() - 7, dl.models.size() - 6, dl.models.size() - 5,
+                          dl.models.size() - 4, dl.models.size() - 3, dl.models.size() - 2,
+                          dl.models.size() - 1};
 
   static auto current_opt_idx{ei.new_game_idx};
 
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
 
   case commands::show_title:
-    if (sprite_alphas[ei.title_idx] < 1.0f) {
-      sprite_alphas[ei.title_idx] += 1.0f * gsl::narrow_cast<float>(dt);
+    if (dl.alphas[ei.title_idx] < 1.0f) {
+      dl.alphas[ei.title_idx] += 1.0f * gsl::narrow_cast<float>(dt);
     } else {
-      sprite_alphas[ei.title_idx] = 1.0f;
+      dl.alphas[ei.title_idx] = 1.0f;
       cmdq.pop_front();
     }
     break;
 
   case commands::show_menu:
-    if (sprite_alphas[ei.border_idx] < 1.0f) {
-      sprite_alphas[ei.border_idx] += 1.0f * gsl::narrow_cast<float>(dt);
-      sprite_alphas[ei.new_game_idx] += 1.0f * gsl::narrow_cast<float>(dt);
+    if (dl.alphas[ei.border_idx] < 1.0f) {
+      dl.alphas[ei.border_idx] += 1.0f * gsl::narrow_cast<float>(dt);
+      dl.alphas[ei.new_game_idx] += 1.0f * gsl::narrow_cast<float>(dt);
     } else {
-      sprite_alphas[ei.border_idx] = 1.0f;
-      sprite_alphas[ei.new_game_idx] = 1.0f;
+      dl.alphas[ei.border_idx] = 1.0f;
+      dl.alphas[ei.new_game_idx] = 1.0f;
       cmdq.pop_front();
     }
     break;
 
   case commands::shift_opt_left:
-    if (do_shift_opt_left(current_opt_idx, sprite_models, sprite_alphas,
-                          gsl::narrow_cast<float>(dt))) {
+    if (do_shift_opt_left(current_opt_idx, dl, gsl::narrow_cast<float>(dt))) {
       cmdq.pop_front();
     }
     break;
 
   case commands::shift_opt_right:
-    if (do_shift_opt_right(current_opt_idx, sprite_models, sprite_alphas,
-                           gsl::narrow_cast<float>(dt))) {
+    if (do_shift_opt_right(current_opt_idx, dl, gsl::narrow_cast<float>(dt))) {
       cmdq.pop_front();
     }
     break;

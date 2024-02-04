@@ -78,7 +78,7 @@ void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
 auto surge::atom::sprite::create_texture(const files::image &image,
                                          renderer::texture_filtering filtering,
                                          renderer::texture_wrap wrap) noexcept
-    -> tl::expected<GLuint64, error> {
+    -> tl::expected<std::tuple<GLuint, GLuint64>, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::create_texture");
   TracyGpuZone("GPU surge::atom::sprite::create_texture");
@@ -110,10 +110,18 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   const auto handle{glGetTextureHandleARB(texture)};
   if (handle == 0) {
     log_error("Unable to create texture handle");
-    return error::texture_handle_creation;
+    return tl::unexpected{error::texture_handle_creation};
   }
 
-  return handle;
+  return std::make_tuple(texture, handle);
+}
+
+void surge::atom::sprite::destroy_texture(GLuint texture) noexcept {
+  glDeleteTextures(1, &texture);
+}
+
+void surge::atom::sprite::destroy_texture(const vector<GLuint> &texture) noexcept {
+  glDeleteTextures(texture.size(), texture.data());
 }
 
 void surge::atom::sprite::make_resident(GLuint64 handles) noexcept {

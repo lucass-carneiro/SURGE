@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 #include <tl/expected.hpp>
+#include <tuple>
 
 namespace surge::atom::sprite {
 
@@ -22,7 +23,9 @@ void destroy_buffers(const buffer_data &) noexcept;
 auto create_texture(const files::image &image,
                     renderer::texture_filtering filtering = renderer::texture_filtering::linear,
                     renderer::texture_wrap wrap = renderer::texture_wrap::clamp_to_edge) noexcept
-    -> tl::expected<GLuint64, error>;
+    -> tl::expected<std::tuple<GLuint, GLuint64>, error>;
+void destroy_texture(GLuint texture) noexcept;
+void destroy_texture(const vector<GLuint> &texture) noexcept;
 
 void make_resident(GLuint64 handle) noexcept;
 void make_non_resident(GLuint64 handle) noexcept;

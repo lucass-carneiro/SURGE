@@ -9,6 +9,8 @@
 #include "static_image.hpp"
 // clang-format on
 
+#include <optional>
+
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
 #elif defined(SURGE_COMPILER_MSVC) && COMPILING_SURGE_MODULE_DEFAULT
@@ -28,6 +30,18 @@ auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
 #ifdef SURGE_BUILD_TYPE_Debug
 auto get_command_queue() noexcept -> const surge::deque<surge::u32> &;
 #endif
+
+namespace sprite {
+
+// Data for all loaded sprites. Loading and unloading appends to instances of this type
+struct data_list {
+  surge::vector<GLuint> texture_ids;
+  surge::vector<GLuint64> texture_handles;
+  surge::vector<glm::mat4> models;
+  surge::vector<float> alphas;
+};
+
+} // namespace sprite
 
 } // namespace DTU
 

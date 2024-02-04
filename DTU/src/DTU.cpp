@@ -35,13 +35,7 @@ static GLuint g_text_shader{0};
 static surge::atom::sprite::buffer_data g_sprite_buffer{};
 
 // NOLINTNEXTLINE
-static surge::vector<glm::mat4> g_sprite_models{};
-
-// NOLINTNEXTLINE
-static surge::vector<GLuint64> g_sprite_texture_handles{};
-
-// NOLINTNEXTLINE
-static surge::vector<float> g_sprite_alphas{};
+static DTU::sprite::data_list g_sprite_list_0{};
 
 // NOLINTNEXTLINE
 static surge::atom::text::glyph_data g_itc_benguiat_book_glyphs{};
@@ -70,11 +64,11 @@ static void unload_a() noexcept {
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::unload(g_command_queue, g_sprite_models, g_sprite_texture_handles);
+    DTU::state::main_menu::unload(g_command_queue, g_sprite_list_0);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::unload(g_command_queue, g_sprite_models, g_sprite_texture_handles);
+    DTU::state::new_game::unload(g_command_queue, g_sprite_list_0);
     break;
 
   default:
@@ -86,13 +80,11 @@ static void load_a(float ww, float wh) noexcept {
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::load(g_command_queue, g_sprite_models, g_sprite_texture_handles,
-                                g_sprite_alphas, ww, wh);
+    DTU::state::main_menu::load(g_command_queue, g_sprite_list_0, ww, wh);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::load(g_command_queue, g_sprite_models, g_sprite_texture_handles,
-                               g_sprite_alphas, ww, wh);
+    DTU::state::new_game::load(g_command_queue, g_sprite_list_0, ww, wh);
     break;
 
   default:
@@ -139,6 +131,51 @@ auto DTU::state_machine::to_str(state_t state) noexcept -> const char * {
   }
 }
 
+auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
+  log_info("Binding interaction callbacks");
+
+  glfwSetKeyCallback(window, keyboard_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind keyboard event callback");
+    return static_cast<int>(surge::error::keyboard_event_unbinding);
+  }
+
+  glfwSetMouseButtonCallback(window, mouse_button_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse button event callback");
+    return static_cast<int>(surge::error::mouse_button_event_unbinding);
+  }
+
+  glfwSetScrollCallback(window, mouse_scroll_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse scroll event callback");
+    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
+  }
+
+  return 0;
+}
+
+auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
+  log_info("Unbinding interaction callbacks");
+
+  glfwSetKeyCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind keyboard event callback");
+  }
+
+  glfwSetMouseButtonCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind mouse button event callback");
+  }
+
+  glfwSetScrollCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind mouse scroll event callback");
+  }
+
+  return 0;
+}
+
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
   // Bind callbacks
   const auto bind_callback_stat{DTU::bind_callbacks(window)};
@@ -162,9 +199,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_sprite_shader = *sprite_shader;
   g_sprite_buffer = surge::atom::sprite::create_buffers();
-  g_sprite_models.reserve(16);
-  g_sprite_texture_handles.reserve(16);
-  g_sprite_alphas.reserve(16);
+  g_sprite_list_0.alphas.reserve(16);
+  g_sprite_list_0.models.reserve(16);
+  g_sprite_list_0.texture_handles.reserve(16);
+  g_sprite_list_0.texture_ids.reserve(16);
 
   const auto text_shader{
       surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
@@ -220,10 +258,11 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
     return unbind_callback_stat;
   }
 
-  surge::atom::sprite::make_non_resident(g_sprite_texture_handles);
+  surge::atom::sprite::make_non_resident(g_sprite_list_0.texture_handles);
   surge::atom::text::make_glyphs_non_resident(g_itc_benguiat_book_glyphs);
 
   surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
+  surge::atom::sprite::destroy_texture(g_sprite_list_0.texture_ids);
   surge::atom::sprite::destroy_buffers(g_sprite_buffer);
 
   surge::renderer::cleanup_shader_program(g_sprite_shader);
@@ -237,8 +276,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
-  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view, g_sprite_models,
-                            g_sprite_texture_handles, g_sprite_alphas);
+  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
+                            g_sprite_list_0.models, g_sprite_list_0.texture_handles,
+                            g_sprite_list_0.alphas);
 
   surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, g_text_draw_buffer);
 
@@ -259,11 +299,11 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::update(g_command_queue, g_sprite_models, g_sprite_alphas, dt);
+    DTU::state::main_menu::update(g_command_queue, g_sprite_list_0, dt);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(g_command_queue, g_sprite_models, g_sprite_alphas, dt);
+    DTU::state::new_game::update(g_command_queue, g_sprite_list_0, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -305,49 +345,4 @@ extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, doubl
 #ifdef SURGE_BUILD_TYPE_Debug
   ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 #endif
-}
-
-auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
-  log_info("Binding interaction callbacks");
-
-  glfwSetKeyCallback(window, keyboard_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind keyboard event callback");
-    return static_cast<int>(surge::error::keyboard_event_unbinding);
-  }
-
-  glfwSetMouseButtonCallback(window, mouse_button_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse button event callback");
-    return static_cast<int>(surge::error::mouse_button_event_unbinding);
-  }
-
-  glfwSetScrollCallback(window, mouse_scroll_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse scroll event callback");
-    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
-  }
-
-  return 0;
-}
-
-auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
-  log_info("Unbinding interaction callbacks");
-
-  glfwSetKeyCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind keyboard event callback");
-  }
-
-  glfwSetMouseButtonCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse button event callback");
-  }
-
-  glfwSetScrollCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse scroll event callback");
-  }
-
-  return 0;
 }

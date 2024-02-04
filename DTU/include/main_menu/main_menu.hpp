@@ -3,7 +3,11 @@
 
 #include "player/container_types.hpp"
 #include "player/text.hpp"
+
+// clang-format off
+#include "DTU.hpp"
 #include "states.hpp"
+// clang-format on
 
 #include <glm/glm.hpp>
 
@@ -18,15 +22,12 @@ enum commands : surge::u32 {
   enter_option
 };
 
-auto load(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
-          surge::vector<GLuint64> &sprite_textures, surge::vector<float> &sprite_alphas, float ww,
-          float wh) noexcept -> int;
+auto load(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl, float ww, float wh) noexcept
+    -> int;
 
-void unload(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
-            surge::vector<GLuint64> &sprite_textures) noexcept;
+void unload(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl) noexcept;
 
-void update(surge::deque<surge::u32> &cmdq, surge::vector<glm::mat4> &sprite_models,
-            surge::vector<float> &sprite_alphas, double dt) noexcept;
+void update(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl, double dt) noexcept;
 
 void keyboard_event(surge::deque<surge::u32> &cmdq, int key, int scancode, int action,
                     int mods) noexcept;
