@@ -2,6 +2,7 @@
 
 #include "logging.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <gsl/gsl-lite.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
@@ -65,7 +66,6 @@ auto surge::atom::sprite::create_buffers(usize max_sprites) noexcept -> buffer_d
   log_info("Creating sprite model matrices buffer");
   GLuint MMB{0};
   glCreateBuffers(1, &MMB);
-
   glNamedBufferStorage(MMB, sizeof(glm::mat4) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
   return buffer_data{VBO, EBO, VAO, MMB};
@@ -156,7 +156,7 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 }
 
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
-  glNamedBufferSubData(bd.MMB, 0, dl.models.size(), dl.models.data());
+  glNamedBufferSubData(bd.MMB, 0, sizeof(glm::mat4) * dl.models.size(), dl.models.data());
 }
 
 void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
@@ -168,20 +168,18 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
   if (dl.models.size() == 0) {
     return;
   }
-
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
-  surge::atom::sprite::send_buffers(bd, dl);
 
   glUseProgram(sp);
 
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
 
-  // renderer::uniforms::set(sp, "models", dl.models.data(), dl.models.size());
   renderer::uniforms::set(sp, "textures", dl.texture_handles.data(), dl.texture_handles.size());
   renderer::uniforms::set(sp, "alphas", dl.alphas.data(), dl.alphas.size());
 
   glBindVertexArray(bd.VAO);
+
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                           gsl::narrow_cast<GLsizei>(dl.models.size()));
 }

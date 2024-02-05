@@ -312,6 +312,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
     break;
   }
 
+  surge::atom::sprite::send_buffers(g_sprite_buffer, g_sprite_list_0);
+
   return 0;
 }
 
