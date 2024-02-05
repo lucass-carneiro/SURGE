@@ -16,7 +16,6 @@ project(
 
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/debug_window.hpp"
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
   "${PROJECT_SOURCE_DIR}/include/states.hpp"
   
@@ -27,13 +26,17 @@ set(
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/debug_window.cpp"
   "${PROJECT_SOURCE_DIR}/src/DTU.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/new_game/new_game.cpp"
 )
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  list(APPEND SURGE_MODULE_DEFAULT_HEADER_LIST "${PROJECT_SOURCE_DIR}/include/debug_window.hpp")
+  list(APPEND SURGE_MODULE_DEFAULT_SOURCE_LIST "${PROJECT_SOURCE_DIR}/src/debug_window.cpp")
+endif()
 
 # -----------------------------------------
 # Link Target
