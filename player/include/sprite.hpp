@@ -15,9 +15,17 @@ struct buffer_data {
   GLuint VBO;
   GLuint EBO;
   GLuint VAO;
+  GLuint MMB;
 };
 
-auto create_buffers() noexcept -> buffer_data;
+struct data_list {
+  surge::vector<GLuint> texture_ids;
+  surge::vector<GLuint64> texture_handles;
+  surge::vector<glm::mat4> models;
+  surge::vector<float> alphas;
+};
+
+auto create_buffers(usize max_sprites = 16) noexcept -> buffer_data;
 void destroy_buffers(const buffer_data &) noexcept;
 
 auto create_texture(const files::image &image,
@@ -30,12 +38,13 @@ void destroy_texture(const vector<GLuint> &texture) noexcept;
 void make_resident(GLuint64 handle) noexcept;
 void make_non_resident(GLuint64 handle) noexcept;
 
+void send_buffers(const buffer_data &bd, const data_list &dl) noexcept;
+
 void make_resident(const vector<GLuint64> &texture_handles) noexcept;
 void make_non_resident(const vector<GLuint64> &texture_handles) noexcept;
 
 void draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj, const glm::mat4 &view,
-          const vector<glm::mat4> &models, const vector<GLuint64> &texture_handles,
-          const vector<float> &alphas) noexcept;
+          const data_list &dl) noexcept;
 
 } // namespace surge::atom::sprite
 

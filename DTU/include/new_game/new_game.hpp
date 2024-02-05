@@ -15,12 +15,12 @@ namespace DTU::state::new_game {
 
 enum commands : surge::u32 { idle };
 
-auto load(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl, float ww, float wh) noexcept
-    -> int;
+auto load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, float ww,
+          float wh) noexcept -> int;
 
-void unload(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl) noexcept;
+void unload(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl) noexcept;
 
-void update(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl, double dt) noexcept;
+void update(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, double dt) noexcept;
 
 void keyboard_event(surge::deque<surge::u32> &cmdq, int key, int scancode, int action,
                     int mods) noexcept;

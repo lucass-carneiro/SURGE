@@ -35,7 +35,7 @@ static GLuint g_text_shader{0};
 static surge::atom::sprite::buffer_data g_sprite_buffer{};
 
 // NOLINTNEXTLINE
-static DTU::sprite::data_list g_sprite_list_0{};
+static surge::atom::sprite::data_list g_sprite_list_0{};
 
 // NOLINTNEXTLINE
 static surge::atom::text::glyph_data g_itc_benguiat_book_glyphs{};
@@ -277,8 +277,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
-                            g_sprite_list_0.models, g_sprite_list_0.texture_handles,
-                            g_sprite_list_0.alphas);
+                            g_sprite_list_0);
 
   surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, g_text_draw_buffer);
 

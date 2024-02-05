@@ -9,7 +9,7 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::sprite::create_buffers() noexcept -> buffer_data {
+auto surge::atom::sprite::create_buffers(usize max_sprites) noexcept -> buffer_data {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::create_buffers");
   TracyGpuZone("GPU surge::atom::sprite::create_buffers");
@@ -59,7 +59,16 @@ auto surge::atom::sprite::create_buffers() noexcept -> buffer_data {
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float))); // NOLINT
 
-  return buffer_data{VBO, EBO, VAO};
+  /**************
+   * Create MMB *
+   **************/
+  log_info("Creating sprite model matrices buffer");
+  GLuint MMB{0};
+  glCreateBuffers(1, &MMB);
+
+  glNamedBufferStorage(MMB, sizeof(glm::mat4) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+  return buffer_data{VBO, EBO, VAO, MMB};
 }
 
 void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
@@ -68,11 +77,13 @@ void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
   TracyGpuZone("GPU surge::atom::sprite::destroy_buffers");
 #endif
 
-  log_info("Deleting sprite buffer data (%u, %u, %u)", bd.VBO, bd.EBO, bd.VAO);
+  log_info("Deleting sprite buffer data (%u, %u, %u, %u)", bd.VBO, bd.EBO, bd.VAO, bd.MMB);
 
   glDeleteBuffers(1, &(bd.VBO));
   glDeleteBuffers(1, &(bd.EBO));
   glDeleteVertexArrays(1, &(bd.VAO));
+
+  glDeleteBuffers(1, &(bd.MMB));
 }
 
 auto surge::atom::sprite::create_texture(const files::image &image,
@@ -144,28 +155,33 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
   }
 }
 
+void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
+  glNamedBufferSubData(bd.MMB, 0, dl.models.size(), dl.models.data());
+}
+
 void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
-                               const glm::mat4 &view, const vector<glm::mat4> &models,
-                               const vector<GLuint64> &texture_handles,
-                               const vector<float> &alphas) noexcept {
+                               const glm::mat4 &view, const data_list &dl) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
-  if (models.size() == 0) {
+  if (dl.models.size() == 0) {
     return;
   }
+
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
+  surge::atom::sprite::send_buffers(bd, dl);
 
   glUseProgram(sp);
 
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
 
-  renderer::uniforms::set(sp, "models", models.data(), models.size());
-  renderer::uniforms::set(sp, "textures", texture_handles.data(), texture_handles.size());
-  renderer::uniforms::set(sp, "alphas", alphas.data(), alphas.size());
+  // renderer::uniforms::set(sp, "models", dl.models.data(), dl.models.size());
+  renderer::uniforms::set(sp, "textures", dl.texture_handles.data(), dl.texture_handles.size());
+  renderer::uniforms::set(sp, "alphas", dl.alphas.data(), dl.alphas.size());
 
   glBindVertexArray(bd.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                          gsl::narrow_cast<GLsizei>(models.size()));
+                          gsl::narrow_cast<GLsizei>(dl.models.size()));
 }

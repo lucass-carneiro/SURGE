@@ -29,7 +29,7 @@ static constexpr const std::array<float, background_layer_count> background_drif
 };
 // clang-format on
 
-static void load_background_images(DTU::sprite::data_list &dl) noexcept {
+static void load_background_images(surge::atom::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading background images");
@@ -61,7 +61,7 @@ static void load_background_images(DTU::sprite::data_list &dl) noexcept {
   }
 }
 
-static void load_background_quads(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
+static void load_background_quads(surge::atom::sprite::data_list &dl, float ww, float wh) noexcept {
   using namespace surge;
 
   for (usize i = 0; i < background_layer_count; i++) {
@@ -71,7 +71,7 @@ static void load_background_quads(DTU::sprite::data_list &dl, float ww, float wh
   }
 }
 
-static void update_background_quads(DTU::sprite::data_list &dl, double dt) noexcept {
+static void update_background_quads(surge::atom::sprite::data_list &dl, double dt) noexcept {
   using namespace surge;
 
   static std::array<float, background_layer_count> relative_positions{0};
@@ -91,7 +91,7 @@ static void update_background_quads(DTU::sprite::data_list &dl, double dt) noexc
   }
 }
 
-static void load_title_image(DTU::sprite::data_list &dl) noexcept {
+static void load_title_image(surge::atom::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading title images");
@@ -114,13 +114,13 @@ static void load_title_image(DTU::sprite::data_list &dl) noexcept {
   }
 }
 
-static void load_title_quad(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
+static void load_title_quad(surge::atom::sprite::data_list &dl, float ww, float wh) noexcept {
   dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 608.0f) / 2.0f, (wh - 174.0f) / 2.0f, 0.5f}),
       glm::vec3{608.0f, 174.0f, 1.0}));
 }
 
-static void load_options_images(DTU::sprite::data_list &dl) noexcept {
+static void load_options_images(surge::atom::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Loading options images");
@@ -152,7 +152,7 @@ static void load_options_images(DTU::sprite::data_list &dl) noexcept {
   }
 }
 
-static void load_options_quads(DTU::sprite::data_list &dl, float ww, float wh) noexcept {
+static void load_options_quads(surge::atom::sprite::data_list &dl, float ww, float wh) noexcept {
 
   dl.models.push_back(glm::scale(
       glm::translate(glm::mat4{1.0f},
@@ -195,7 +195,7 @@ struct entity_indices {
   surge::usize border_idx;
 };
 
-static auto do_shift_opt_left(surge::usize &current_opt_idx, DTU::sprite::data_list &dl,
+static auto do_shift_opt_left(surge::usize &current_opt_idx, surge::atom::sprite::data_list &dl,
                               float dt) noexcept -> bool {
 
   // Do not shift past the exit option
@@ -246,7 +246,7 @@ static auto do_shift_opt_left(surge::usize &current_opt_idx, DTU::sprite::data_l
   }
 }
 
-static auto do_shift_opt_right(surge::usize &current_opt_idx, DTU::sprite::data_list &dl,
+static auto do_shift_opt_right(surge::usize &current_opt_idx, surge::atom::sprite::data_list &dl,
                                float dt) noexcept -> bool {
 
   // Do not shift past the exit new game
@@ -312,7 +312,7 @@ static void do_enter_option(surge::usize current_opt_idx) noexcept {
   }
 }
 
-auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl,
+auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl,
                                  float ww, float wh) noexcept -> int {
   using namespace surge;
 
@@ -340,7 +340,7 @@ auto DTU::state::main_menu::load(surge::deque<surge::u32> &cmdq, DTU::sprite::da
 }
 
 void DTU::state::main_menu::unload(surge::deque<surge::u32> &cmdq,
-                                   DTU::sprite::data_list &dl) noexcept {
+                                   surge::atom::sprite::data_list &dl) noexcept {
   using namespace surge;
 
   log_info("Unloading main_menu state");
@@ -355,8 +355,8 @@ void DTU::state::main_menu::unload(surge::deque<surge::u32> &cmdq,
   cmdq.clear();
 }
 
-void DTU::state::main_menu::update(surge::deque<surge::u32> &cmdq, DTU::sprite::data_list &dl,
-                                   double dt) noexcept {
+void DTU::state::main_menu::update(surge::deque<surge::u32> &cmdq,
+                                   surge::atom::sprite::data_list &dl, double dt) noexcept {
 
   update_background_quads(dl, dt);
 
