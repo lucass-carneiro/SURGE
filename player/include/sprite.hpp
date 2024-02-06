@@ -15,7 +15,11 @@ struct buffer_data {
   GLuint VBO;
   GLuint EBO;
   GLuint VAO;
-  GLuint MMB;
+
+  // SSBOs
+  GLuint MMB; // model matrices buffer
+  GLuint AVB; // alpha value buffer
+  GLuint THB; // texture handles buffer
 };
 
 struct data_list {

@@ -2,7 +2,8 @@
 
 #extension GL_ARB_bindless_texture : require
 
-out vec4 fragment_color;
+layout(std430, binding = 3) readonly buffer ssbo2 { float alphas[]; };
+layout(std430, binding = 4) readonly buffer ssbo3 { sampler2D textures[]; };
 
 in VS_OUT {
   vec2 uv_coords;
@@ -10,9 +11,7 @@ in VS_OUT {
 }
 fs_in;
 
-uniform float alphas[16];
-
-layout(bindless_sampler) uniform sampler2D textures[16];
+out vec4 fragment_color;
 
 void main() {
   const sampler2D texture_sampler = textures[fs_in.instance_ID];

@@ -60,15 +60,25 @@ auto surge::atom::sprite::create_buffers(usize max_sprites) noexcept -> buffer_d
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float))); // NOLINT
 
-  /**************
-   * Create MMB *
-   **************/
+  /****************
+   * Create SSBOs *
+   ****************/
   log_info("Creating sprite model matrices buffer");
   GLuint MMB{0};
   glCreateBuffers(1, &MMB);
   glNamedBufferStorage(MMB, sizeof(glm::mat4) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-  return buffer_data{VBO, EBO, VAO, MMB};
+  log_info("Creating sprite model texture alphas buffer");
+  GLuint AVB{0};
+  glCreateBuffers(1, &AVB);
+  glNamedBufferStorage(AVB, sizeof(float) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+  log_info("Creating sprite texture buffer");
+  GLuint THB{0};
+  glCreateBuffers(1, &THB);
+  glNamedBufferStorage(THB, sizeof(GLuint64) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+
+  return buffer_data{VBO, EBO, VAO, MMB, AVB, THB};
 }
 
 void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
@@ -77,13 +87,17 @@ void surge::atom::sprite::destroy_buffers(const buffer_data &bd) noexcept {
   TracyGpuZone("GPU surge::atom::sprite::destroy_buffers");
 #endif
 
-  log_info("Deleting sprite buffer data (%u, %u, %u, %u)", bd.VBO, bd.EBO, bd.VAO, bd.MMB);
+  log_info("Deleting sprite buffer data\n  VBO: %u\n  EBO: %u\n  VAO: %u\n  MMB: %u\n  AVB: %u\n  "
+           "THB: %u",
+           bd.VBO, bd.EBO, bd.VAO, bd.MMB, bd.AVB, bd.THB);
 
   glDeleteBuffers(1, &(bd.VBO));
   glDeleteBuffers(1, &(bd.EBO));
   glDeleteVertexArrays(1, &(bd.VAO));
 
   glDeleteBuffers(1, &(bd.MMB));
+  glDeleteBuffers(1, &(bd.AVB));
+  glDeleteBuffers(1, &(bd.THB));
 }
 
 auto surge::atom::sprite::create_texture(const files::image &image,
@@ -157,6 +171,9 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
   glNamedBufferSubData(bd.MMB, 0, sizeof(glm::mat4) * dl.models.size(), dl.models.data());
+  glNamedBufferSubData(bd.AVB, 0, sizeof(float) * dl.alphas.size(), dl.alphas.data());
+  glNamedBufferSubData(bd.THB, 0, sizeof(GLuint64) * dl.texture_handles.size(),
+                       dl.texture_handles.data());
 }
 
 void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
@@ -165,18 +182,19 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
+
   if (dl.models.size() == 0) {
     return;
   }
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
 
   glUseProgram(sp);
 
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
 
-  renderer::uniforms::set(sp, "textures", dl.texture_handles.data(), dl.texture_handles.size());
-  renderer::uniforms::set(sp, "alphas", dl.alphas.data(), dl.alphas.size());
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.AVB);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
 
   glBindVertexArray(bd.VAO);
 
