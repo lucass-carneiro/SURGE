@@ -52,12 +52,6 @@ static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_stat
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_b{DTU::state_machine::states::no_state};
 
-#ifdef SURGE_BUILD_TYPE_Debug
-auto DTU::get_command_queue() noexcept -> const surge::deque<surge::u32> & {
-  return g_command_queue;
-}
-#endif
-
 void DTU::state_machine::push_state(state_t state) noexcept { g_state_b = state; }
 
 static void unload_a() noexcept {
@@ -282,7 +276,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, g_text_draw_buffer);
 
 #ifdef SURGE_BUILD_TYPE_Debug
-  DTU::debug_window::draw();
+  DTU::debug_window::draw(g_command_queue, g_sprite_list_0);
 #endif
 
   return 0;

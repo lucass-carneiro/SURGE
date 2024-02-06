@@ -27,10 +27,6 @@ namespace DTU {
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
 
-#ifdef SURGE_BUILD_TYPE_Debug
-auto get_command_queue() noexcept -> const surge::deque<surge::u32> &;
-#endif
-
 } // namespace DTU
 
 extern "C" {

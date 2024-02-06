@@ -23,12 +23,13 @@ void DTU::debug_window::init(GLFWwindow *window) noexcept {
   ImGui_ImplOpenGL3_Init("#version 460");
 }
 
-void DTU::debug_window::draw() noexcept {
+void DTU::debug_window::draw(const surge::deque<surge::u32> &cmdq,
+                             const surge::atom::sprite::data_list &sdl) noexcept {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  main_window();
+  main_window(cmdq, sdl);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -40,7 +41,10 @@ void DTU::debug_window::cleanup() noexcept {
   ImGui::DestroyContext();
 }
 
-void DTU::debug_window::main_window(bool *p_open) noexcept {
+void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
+                                    const surge::atom::sprite::data_list &sdl,
+                                    bool *p_open) noexcept {
+
   // We specify a default position/size in case there's no data in the .ini file.
   ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
@@ -90,11 +94,11 @@ void DTU::debug_window::main_window(bool *p_open) noexcept {
 
   if (ImGui::CollapsingHeader("DTU Command queue")) {
     if (ImGui::BeginTable("command_queue_table", 2, table_flags)) {
-      ImGui::TableSetupColumn("Position");
+      ImGui::TableSetupColumn("Index");
       ImGui::TableSetupColumn("Command ID");
       ImGui::TableHeadersRow();
 
-      for (surge::usize i = 0; const auto &cmd : DTU::get_command_queue()) {
+      for (surge::usize i = 0; const auto &cmd : cmdq) {
         ImGui::TableNextRow();
 
         ImGui::TableSetColumnIndex(0);
@@ -104,6 +108,42 @@ void DTU::debug_window::main_window(bool *p_open) noexcept {
         ImGui::Text("%u", cmd);
 
         i++;
+      }
+
+      ImGui::EndTable();
+    }
+  }
+
+  if (ImGui::CollapsingHeader("DTU sprite data")) {
+    if (ImGui::BeginTable("sprite_data_table", 6, table_flags)) {
+      ImGui::TableSetupColumn("Idx.");
+      ImGui::TableSetupColumn("TID");
+      ImGui::TableSetupColumn("TA");
+      ImGui::TableSetupColumn("x");
+      ImGui::TableSetupColumn("y");
+      ImGui::TableSetupColumn("z");
+      ImGui::TableHeadersRow();
+
+      for (surge::usize i = 0; i < sdl.alphas.size(); i++) {
+        ImGui::TableNextRow();
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%lu", i);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%u", sdl.texture_ids[i]);
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%.1f", sdl.alphas[i]);
+
+        ImGui::TableSetColumnIndex(3);
+        ImGui::Text("%.0f", sdl.models[i][3][0]);
+
+        ImGui::TableSetColumnIndex(4);
+        ImGui::Text("%.0f", sdl.models[i][3][1]);
+
+        ImGui::TableSetColumnIndex(5);
+        ImGui::Text("%.2f", sdl.models[i][3][2]);
       }
 
       ImGui::EndTable();
