@@ -108,7 +108,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
       return tl::unexpected(error::invalid_path);
     }
 
-    std::uintmax_t file_size{std::filesystem::file_size(path)};
+    auto file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
     if (append_null_byte) {
       file_size += 1;
     }

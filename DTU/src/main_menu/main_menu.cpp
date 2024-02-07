@@ -66,7 +66,8 @@ static void load_background_quads(surge::atom::sprite::data_list &dl, float ww, 
 
   for (usize i = 0; i < background_layer_count; i++) {
     dl.models.push_back(
-        glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, 0.0f + i / 10.0f}),
+        glm::scale(glm::translate(glm::mat4{1.0f},
+                                  glm::vec3{0.0f, 0.0f, 0.0f + static_cast<float>(i) / 10.0f}),
                    glm::vec3{ww * 2.0f, wh, 1.0}));
   }
 }

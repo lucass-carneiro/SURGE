@@ -142,8 +142,39 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-    target_compile_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -fno-omit-frame-pointer -Wall -Wextra -Werror -pedantic -pedantic-errors)
-    target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic -Wall -Wextra -Werror -pedantic -pedantic-errors)
+      target_compile_options(
+          SurgePlayer
+          PUBLIC
+          -Og
+          -g3
+          -ggdb3
+          -fno-omit-frame-pointer
+          -Werror
+          -Wall
+          -Wextra
+          -Wpedantic
+          -Walloca
+          -Wcast-qual
+          -Wformat=2
+          -Wformat-security
+          -Wnull-dereference
+          -Wstack-protector
+          -Wvla
+          -Wconversion
+          -Warray-bounds
+          -Warray-bounds-pointer-arithmetic
+          -Wconditional-uninitialized
+          -Wimplicit-fallthrough
+          -Wpointer-arith
+          -Wformat-type-confusion
+          -Wfloat-equal
+          -Wassign-enum
+          -Wtautological-constant-in-range-compare
+          -Wswitch-enum
+          -Wshift-sign-overflow
+          -Wloop-analysis
+      )
+      target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -rdynamic)
   else()
     target_compile_options(SurgePlayer PUBLIC /Wall /MP /MDd)
     target_link_options(SurgePlayer PUBLIC /DEBUG:FULL)

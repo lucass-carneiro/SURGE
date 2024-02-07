@@ -43,17 +43,18 @@ auto surge::atom::static_image::create(const char *p, renderer::texture_filterin
   glBindTexture(GL_TEXTURE_2D, texture_id);
 
   // Warpping
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLenum>(wrap));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLenum>(wrap));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrap));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrap));
 
   // Filtering
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(filtering));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(filtering));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(filtering));
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(filtering));
 
   // Loading and mip mapping
-  const int format{image_data->channels == 4 ? GL_RGBA : GL_RGB};
+  const GLint internal_format{image_data->channels == 4 ? GL_RGBA : GL_RGB};
+  const GLenum format{image_data->channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
 
-  glTexImage2D(GL_TEXTURE_2D, 0, format, image_data->width, image_data->height, 0, format,
+  glTexImage2D(GL_TEXTURE_2D, 0, internal_format, image_data->width, image_data->height, 0, format,
                GL_UNSIGNED_BYTE, image_data->texels);
   glGenerateMipmap(GL_TEXTURE_2D);
   surge::files::free_image(*image_data);

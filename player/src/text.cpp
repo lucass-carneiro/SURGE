@@ -19,13 +19,13 @@
 #endif
 
 static auto FT_malloc(FT_Memory, long size) noexcept -> void * {
-  return surge::allocators::mimalloc::malloc(size);
+  return surge::allocators::mimalloc::malloc(static_cast<surge::usize>(size));
 }
 
 static void FT_free(FT_Memory, void *block) noexcept { surge::allocators::mimalloc::free(block); }
 
 static auto FT_realloc(FT_Memory, long, long new_size, void *block) noexcept -> void * {
-  return surge::allocators::mimalloc::realloc(block, new_size);
+  return surge::allocators::mimalloc::realloc(block, static_cast<surge::usize>(new_size));
 }
 
 // NOLINTNEXTLINE
@@ -141,7 +141,7 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
   // Printable ASCII characters
-  for (auto c = 33; c <= 126; c++) {
+  for (FT_ULong c = 33; c <= 126; c++) {
     status = FT_Load_Char(face, c, FT_LOAD_RENDER);
     if (status != 0) {
       log_error("Unable to load ASCII character %c for face %s: %s", static_cast<char>(c),

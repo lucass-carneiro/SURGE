@@ -66,17 +66,20 @@ auto surge::atom::sprite::create_buffers(usize max_sprites) noexcept -> buffer_d
   log_info("Creating sprite model matrices buffer");
   GLuint MMB{0};
   glCreateBuffers(1, &MMB);
-  glNamedBufferStorage(MMB, sizeof(glm::mat4) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+  glNamedBufferStorage(MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_sprites), nullptr,
+                       GL_DYNAMIC_STORAGE_BIT);
 
   log_info("Creating sprite model texture alphas buffer");
   GLuint AVB{0};
   glCreateBuffers(1, &AVB);
-  glNamedBufferStorage(AVB, sizeof(float) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+  glNamedBufferStorage(AVB, static_cast<GLsizeiptr>(sizeof(float) * max_sprites), nullptr,
+                       GL_DYNAMIC_STORAGE_BIT);
 
   log_info("Creating sprite texture buffer");
   GLuint THB{0};
   glCreateBuffers(1, &THB);
-  glNamedBufferStorage(THB, sizeof(GLuint64) * max_sprites, nullptr, GL_DYNAMIC_STORAGE_BIT);
+  glNamedBufferStorage(THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_sprites), nullptr,
+                       GL_DYNAMIC_STORAGE_BIT);
 
   return buffer_data{VBO, EBO, VAO, MMB, AVB, THB};
 }
@@ -124,8 +127,8 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(filtering));
 
   // Loading and mip mapping
-  const int internal_format{image.channels == 4 ? GL_RGBA8 : GL_RGB8};
-  const int format{image.channels == 4 ? GL_RGBA : GL_RGB};
+  const GLenum internal_format{image.channels == 4 ? GLenum{GL_RGBA8} : GLenum{GL_RGB8}};
+  const GLenum format{image.channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
 
   glTextureStorage2D(texture, 1, internal_format, image.width, image.height);
   glTextureSubImage2D(texture, 0, 0, 0, image.width, image.height, format, GL_UNSIGNED_BYTE,
@@ -146,7 +149,7 @@ void surge::atom::sprite::destroy_texture(GLuint texture) noexcept {
 }
 
 void surge::atom::sprite::destroy_texture(const vector<GLuint> &texture) noexcept {
-  glDeleteTextures(texture.size(), texture.data());
+  glDeleteTextures(static_cast<GLsizei>(texture.size()), texture.data());
 }
 
 void surge::atom::sprite::make_resident(GLuint64 handles) noexcept {
@@ -170,9 +173,14 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 }
 
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
-  glNamedBufferSubData(bd.MMB, 0, sizeof(glm::mat4) * dl.models.size(), dl.models.data());
-  glNamedBufferSubData(bd.AVB, 0, sizeof(float) * dl.alphas.size(), dl.alphas.data());
-  glNamedBufferSubData(bd.THB, 0, sizeof(GLuint64) * dl.texture_handles.size(),
+  glNamedBufferSubData(bd.MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * dl.models.size()),
+                       dl.models.data());
+
+  glNamedBufferSubData(bd.AVB, 0, static_cast<GLsizeiptr>(sizeof(float) * dl.alphas.size()),
+                       dl.alphas.data());
+
+  glNamedBufferSubData(bd.THB, 0,
+                       static_cast<GLsizeiptr>(sizeof(GLuint64) * dl.texture_handles.size()),
                        dl.texture_handles.data());
 }
 

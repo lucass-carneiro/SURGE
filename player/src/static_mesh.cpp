@@ -129,7 +129,7 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
   idx.reserve(shapes[0].mesh.indices.size());
 
   for (const auto &index : shape.mesh.indices) {
-    idx.push_back(index.vertex_index);
+    idx.push_back(static_cast<GLuint>(index.vertex_index));
   }
 
   GLuint VAO{0};
@@ -143,10 +143,12 @@ auto surge::atom::static_mesh::load(const char *path) noexcept
   glBindVertexArray(VAO);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, vtx.size() * sizeof(tinyobj::real_t), vtx.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(sizeof(tinyobj::real_t) * vtx.size()),
+               vtx.data(), GL_STATIC_DRAW);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, idx.size() * sizeof(GLuint), idx.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(sizeof(GLuint) * idx.size()),
+               idx.data(), GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);

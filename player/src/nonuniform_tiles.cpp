@@ -27,8 +27,8 @@ auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noex
     return tl::unexpected{image_data.error()};
   }
 
-  const int channels = 4;
-  const int format{image_data->channels == channels ? GL_RGBA : GL_RGB};
+  const GLint internal_format{image_data->channels == 4 ? GL_RGBA : GL_RGB};
+  const GLenum format{image_data->channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
 
   /***************
    * Gen texture *
@@ -45,9 +45,9 @@ auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noex
 
   // Filtering
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
-                  static_cast<GLenum>(structure.filtering));
+                  static_cast<GLint>(structure.filtering));
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER,
-                  static_cast<GLenum>(structure.filtering));
+                  static_cast<GLint>(structure.filtering));
 
   // Allocating and transfering texture memory
   // Tiles are a vertical strip. Its is way easier to load them into texture arrays like this.
@@ -57,7 +57,7 @@ auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noex
   glTexImage3D(
     GL_TEXTURE_2D_ARRAY,
     0,
-    format,
+    internal_format,
     image_data->width,
     image_data->height / structure.num_tiles,
     structure.num_tiles,
@@ -143,7 +143,7 @@ void surge::atom::nonuniform_tiles::draw(GLuint shader_program, const buffer_dat
   glBindTexture(GL_TEXTURE_2D_ARRAY, ctx.texture_id);
 
   glBindVertexArray(ctx.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, dctx.models.size());
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(dctx.models.size()));
 }
 
 void surge::atom::nonuniform_tiles::cleanup(buffer_data &ctx) noexcept {

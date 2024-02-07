@@ -16,15 +16,15 @@
 
 namespace surge::renderer {
 
-enum class capability : GLenum { depth_test = GL_DEPTH_TEST, blend = GL_BLEND, wireframe };
+enum class capability : GLint { depth_test = GL_DEPTH_TEST, blend = GL_BLEND, wireframe };
 
-enum class blend_src : GLenum { alpha = GL_SRC_ALPHA };
+enum class blend_src : GLint { alpha = GL_SRC_ALPHA };
 
-enum class blend_dest : GLenum { one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA };
+enum class blend_dest : GLint { one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA };
 
-enum class texture_filtering : GLenum { nearest = GL_NEAREST, linear = GL_LINEAR };
+enum class texture_filtering : GLint { nearest = GL_NEAREST, linear = GL_LINEAR };
 
-enum class texture_wrap : GLenum {
+enum class texture_wrap : GLint {
   repeat = GL_REPEAT,
   mirrored_repeat = GL_MIRRORED_REPEAT,
   clamp_to_edge = GL_CLAMP_TO_EDGE,
