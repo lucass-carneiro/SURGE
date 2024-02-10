@@ -19,7 +19,8 @@ enum commands : surge::u32 {
   show_menu,
   shift_opt_left,
   shift_opt_right,
-  enter_option
+  enter_option,
+  fade_out_all,
 };
 
 auto load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, float ww,

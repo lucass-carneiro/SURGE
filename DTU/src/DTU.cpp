@@ -16,6 +16,7 @@
 #include "main_menu/main_menu.hpp"
 #include "new_game/new_game.hpp"
 
+#include <cmath>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
@@ -94,7 +95,6 @@ void DTU::state_machine::transition(float ww, float wh) noexcept {
   const auto a_full_b_full{g_state_a != states::no_state && g_state_b != states::no_state};
 
   if (a_empty_b_empty || a_full_b_empty) {
-    return;
   } else if (a_empty_b_full) {
     g_state_a = g_state_b;
     g_state_b = states::no_state;
@@ -283,9 +283,13 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 }
 
 extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
+  using std::abs;
+
+  // TODO: Update should take the window size. Getting it from the proj matrix is not reliable
+  // TODO: State transitions should acomodate failures to load new state
   // Handle state transition
-  const auto ww{2.0f / g_projection[0][0]};
-  const auto wh{2.0f / g_projection[1][1]};
+  const auto ww{2.0f / abs(g_projection[0][0])};
+  const auto wh{2.0f / abs(g_projection[1][1])};
   DTU::state_machine::transition(ww, wh);
 
   // Update current state

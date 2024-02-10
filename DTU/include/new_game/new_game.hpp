@@ -13,7 +13,9 @@
 
 namespace DTU::state::new_game {
 
-enum commands : surge::u32 { idle };
+enum commands : surge::u32 {
+  idle,
+};
 
 auto load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, float ww,
           float wh) noexcept -> int;

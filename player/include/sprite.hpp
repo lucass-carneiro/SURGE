@@ -29,7 +29,7 @@ struct data_list {
   surge::vector<float> alphas;
 };
 
-auto create_buffers(usize max_sprites = 16) noexcept -> buffer_data;
+auto create_buffers(usize max_sprites = 32) noexcept -> buffer_data;
 void destroy_buffers(const buffer_data &) noexcept;
 
 auto create_texture(const files::image &image,
