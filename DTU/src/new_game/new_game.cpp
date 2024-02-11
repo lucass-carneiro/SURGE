@@ -42,8 +42,9 @@ static void load_char_sheet_quads(surge::atom::sprite::data_list &dl, float ww, 
   using namespace surge;
 
   for (usize i = 0; i < char_sheet_img_count; i++) {
-    dl.models.push_back(glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, 0.0f}),
-                                   glm::vec3{ww, wh, 1.0}));
+    dl.models.push_back(glm::scale(
+        glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, static_cast<float>(i) / 10.0f}),
+        glm::vec3{ww, wh, 1.0}));
   }
 }
 

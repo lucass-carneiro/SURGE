@@ -117,7 +117,7 @@ static void load_title_image(surge::atom::sprite::data_list &dl) noexcept {
 
 static void load_title_quad(surge::atom::sprite::data_list &dl, float ww, float wh) noexcept {
   dl.models.push_back(glm::scale(
-      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 608.0f) / 2.0f, (wh - 174.0f) / 2.0f, 0.5f}),
+      glm::translate(glm::mat4{1.0f}, glm::vec3{(ww - 608.0f) / 2.0f, (wh - 174.0f) / 2.0f, 0.7f}),
       glm::vec3{608.0f, 174.0f, 1.0}));
 }
 
