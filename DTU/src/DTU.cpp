@@ -36,6 +36,9 @@ static GLuint g_text_shader{0};
 static surge::atom::sprite::buffer_data g_sprite_buffer{};
 
 // NOLINTNEXTLINE
+static surge::atom::text::buffer_data g_text_buffer{};
+
+// NOLINTNEXTLINE
 static surge::atom::sprite::data_list g_sprite_list_0{};
 
 // NOLINTNEXTLINE
@@ -193,10 +196,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   g_sprite_shader = *sprite_shader;
   g_sprite_buffer = surge::atom::sprite::create_buffers();
-  g_sprite_list_0.alphas.reserve(16);
-  g_sprite_list_0.models.reserve(16);
-  g_sprite_list_0.texture_handles.reserve(16);
-  g_sprite_list_0.texture_ids.reserve(16);
+  g_sprite_list_0.alphas.reserve(32);
+  g_sprite_list_0.models.reserve(32);
+  g_sprite_list_0.texture_handles.reserve(32);
+  g_sprite_list_0.texture_ids.reserve(32);
 
   const auto text_shader{
       surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
@@ -204,6 +207,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return static_cast<int>(text_shader.error());
   }
   g_text_shader = *text_shader;
+  g_text_buffer = surge::atom::text::create_buffers();
 
   // Load fonts used in the game and make their textures resident
   auto ft_lib{surge::atom::text::init_freetype()};
@@ -229,11 +233,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   surge::atom::text::make_glyphs_resident(g_itc_benguiat_book_glyphs);
 
   // Allocate memory for the text buffers
-  g_text_draw_buffer.texture_handles.reserve(32);
-  g_text_draw_buffer.glyph_models.reserve(32);
+  g_text_draw_buffer.texture_handles.reserve(140);
+  g_text_draw_buffer.glyph_models.reserve(140);
+  g_text_draw_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
   DTU::state_machine::push_state(DTU::state_machine::states::new_game);
+  // DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
   DTU::state_machine::transition(ww, wh);
 
   // Init debug window
@@ -257,6 +263,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
   surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
   surge::atom::sprite::destroy_texture(g_sprite_list_0.texture_ids);
+
+  surge::atom::text::destroy_buffers(g_text_buffer);
   surge::atom::sprite::destroy_buffers(g_sprite_buffer);
 
   surge::renderer::cleanup_shader_program(g_sprite_shader);
@@ -273,7 +281,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
                             g_sprite_list_0);
 
-  surge::atom::text::draw(g_text_shader, g_sprite_buffer, g_projection, g_view, g_text_draw_buffer);
+  surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view, g_text_draw_buffer);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(g_command_queue, g_sprite_list_0);
@@ -282,14 +290,12 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
+extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexcept -> int {
   using std::abs;
 
-  // TODO: Update should take the window size. Getting it from the proj matrix is not reliable
   // TODO: State transitions should acomodate failures to load new state
   // Handle state transition
-  const auto ww{2.0f / abs(g_projection[0][0])};
-  const auto wh{2.0f / abs(g_projection[1][1])};
+  const auto [ww, wh] = surge::window::get_dims(window);
   DTU::state_machine::transition(ww, wh);
 
   // Update current state
@@ -300,7 +306,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(g_command_queue, g_sprite_list_0, dt);
+    DTU::state::new_game::update(window, g_command_queue, g_sprite_list_0, g_text_draw_buffer,
+                                 g_itc_benguiat_book_glyphs, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -310,6 +317,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int {
     break;
   }
 
+  surge::atom::text::send_buffers(g_text_buffer, g_text_draw_buffer);
   surge::atom::sprite::send_buffers(g_sprite_buffer, g_sprite_list_0);
 
   return 0;

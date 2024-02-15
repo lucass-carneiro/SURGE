@@ -33,7 +33,7 @@ extern "C" {
 SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int;
 SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> int;
 SURGE_MODULE_EXPORT auto draw() noexcept -> int;
-SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int;
+SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexcept -> int;
 
 SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,
                                         int mods) noexcept;

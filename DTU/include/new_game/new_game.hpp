@@ -40,7 +40,9 @@ auto load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, fl
 
 void unload(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl) noexcept;
 
-void update(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, double dt) noexcept;
+void update(GLFWwindow *window, surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl,
+            surge::atom::text::text_draw_data &tdd, surge::atom::text::glyph_data &tgd,
+            double dt) noexcept;
 
 void mouse_click(GLFWwindow *window, int button, int action, int mods) noexcept;
 void mouse_scroll(GLFWwindow *window, double xoffset, double yoffset) noexcept;

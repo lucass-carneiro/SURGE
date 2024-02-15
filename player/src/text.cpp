@@ -31,10 +31,96 @@ static auto FT_realloc(FT_Memory, long, long new_size, void *block) noexcept -> 
 // NOLINTNEXTLINE
 static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
+auto surge::atom::text::create_buffers(usize max_chars) noexcept -> buffer_data {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::create_buffers");
+  TracyGpuZone("GPU surge::atom::text::create_buffers");
+#endif
+
+  /***************
+   * Gen Buffers *
+   ***************/
+  log_info("Creating text buffers");
+
+  GLuint VAO{0};
+  GLuint VBO{0};
+  GLuint EBO{0};
+
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+  glGenVertexArrays(1, &VAO);
+
+  /***************
+   * Create quad *
+   ***************/
+  log_info("Creating text base quad");
+
+  const std::array<float, 20> vertex_attributes{
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+  };
+
+  const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
+
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, vertex_attributes.size() * sizeof(float), vertex_attributes.data(),
+               GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, draw_indices.size() * sizeof(GLuint), draw_indices.data(),
+               GL_STATIC_DRAW);
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        reinterpret_cast<const void *>(3 * sizeof(float))); // NOLINT
+
+  /****************
+   * Create SSBOs *
+   ****************/
+  log_info("Creating text model matrices buffer");
+  GLuint MMB{0};
+  glCreateBuffers(1, &MMB);
+  glNamedBufferStorage(MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_chars), nullptr,
+                       GL_DYNAMIC_STORAGE_BIT);
+
+  log_info("Creating sprite texture buffer");
+  GLuint THB{0};
+  glCreateBuffers(1, &THB);
+  glNamedBufferStorage(THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_chars), nullptr,
+                       GL_DYNAMIC_STORAGE_BIT);
+
+  return buffer_data{VBO, EBO, VAO, MMB, THB};
+}
+
+void surge::atom::text::destroy_buffers(const buffer_data &bd) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::destroy_buffers");
+  TracyGpuZone("GPU surge::atom::text::destroy_buffers");
+#endif
+
+  log_info("Deleting text buffer data\n  VBO: %u\n  EBO: %u\n  VAO: %u\n  MMB: %u\n  THB: %u",
+           bd.VBO, bd.EBO, bd.VAO, bd.MMB, bd.THB);
+
+  glDeleteBuffers(1, &(bd.VBO));
+  glDeleteBuffers(1, &(bd.EBO));
+  glDeleteVertexArrays(1, &(bd.VAO));
+
+  glDeleteBuffers(1, &(bd.MMB));
+  glDeleteBuffers(1, &(bd.THB));
+}
+
 auto surge::atom::text::init_freetype() noexcept -> tl::expected<FT_Library, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::init_freetype()");
 #endif
+
   log_info("Creating FreeType library");
 
   FT_Library lib{};
@@ -136,6 +222,7 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
     return tl::unexpected{error::freetype_character_load};
   } else {
     gd.whitespace_advance = face->glyph->advance.x;
+    gd.line_spacing = face->size->metrics.height;
   }
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -215,6 +302,16 @@ void surge::atom::text::make_glyphs_non_resident(glyph_data &gd) {
   }
 }
 
+void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept {
+  glNamedBufferSubData(bd.MMB, 0,
+                       static_cast<GLsizeiptr>(sizeof(glm::mat4) * tdd.glyph_models.size()),
+                       tdd.glyph_models.data());
+
+  glNamedBufferSubData(bd.THB, 0,
+                       static_cast<GLsizeiptr>(sizeof(GLuint64) * tdd.texture_handles.size()),
+                       tdd.texture_handles.data());
+}
+
 void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
                                               std::string_view text, glm::vec3 &&baseline_origin,
                                               glm::vec4 &&color) noexcept {
@@ -241,7 +338,9 @@ void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_d
 
     // New line + carrige return
     if (c == '\n') {
-      // TODO
+      pen_origin[0] = baseline_origin[0];
+      pen_origin[1] += static_cast<float>(gd.line_spacing >> 6);
+      bbox[3] += static_cast<float>(gd.line_spacing >> 6);
       continue;
     }
 
@@ -296,7 +395,16 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
   return tdd;
 }
 
-void surge::atom::text::draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
+void surge::atom::text::overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
+                                                 std::string_view text,
+                                                 glm::vec3 &&baseline_origin) noexcept {
+  tdd.texture_handles.clear();
+  tdd.glyph_models.clear();
+
+  append_text_draw_data(tdd, gd, text, std::move(baseline_origin), std::move(tdd.color));
+}
+
+void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
                              const glm::mat4 &view, const text_draw_data &tdd) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw");
@@ -311,9 +419,10 @@ void surge::atom::text::draw(const GLuint &sp, const sprite::buffer_data &bd, co
   renderer::uniforms::set(sp, "projection", proj);
   renderer::uniforms::set(sp, "view", view);
 
-  renderer::uniforms::set(sp, "models", tdd.glyph_models.data(), tdd.glyph_models.size());
-  renderer::uniforms::set(sp, "textures", tdd.texture_handles.data(), tdd.texture_handles.size());
   renderer::uniforms::set(sp, "color", tdd.color);
+
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.THB);
 
   glBindVertexArray(bd.VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

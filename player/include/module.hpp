@@ -26,9 +26,9 @@ using handle_t = void *;
 #endif
 
 using on_load_t = int (*)(GLFWwindow *);
-using on_unload_t = int (*)(GLFWwindow *window);
+using on_unload_t = int (*)(GLFWwindow *);
 using draw_t = int (*)();
-using update_t = int (*)(double);
+using update_t = int (*)(GLFWwindow *, double);
 
 using keyboard_event_t = void (*)(GLFWwindow *, int, int, int, int);
 using mouse_button_event_t = void (*)(GLFWwindow *, int, int, int);

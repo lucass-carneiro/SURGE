@@ -22,6 +22,16 @@
  */
 namespace surge::atom::text {
 
+struct buffer_data {
+  GLuint VBO;
+  GLuint EBO;
+  GLuint VAO;
+
+  // SSBOs
+  GLuint MMB; // model matrices buffer
+  GLuint THB; // texture handles buffer
+};
+
 struct glyph_data {
   vector<GLuint> texture_id;
   vector<GLuint64> texture_handle;
@@ -31,6 +41,7 @@ struct glyph_data {
   vector<i32> bearing_y;
   vector<i64> advance;
   i64 whitespace_advance;
+  i64 line_spacing;
 };
 
 struct text_draw_data {
@@ -39,6 +50,10 @@ struct text_draw_data {
   glm::vec4 bounding_box;
   glm::vec4 color;
 };
+
+// The original Twitter limit
+auto create_buffers(usize max_chars = 140) noexcept -> buffer_data;
+void destroy_buffers(const buffer_data &) noexcept;
 
 auto init_freetype() noexcept -> tl::expected<FT_Library, error>;
 auto destroy_freetype(FT_Library lib) noexcept -> std::optional<error>;
@@ -53,13 +68,17 @@ void unload_glyphs(glyph_data &gd) noexcept;
 void make_glyphs_resident(glyph_data &gd);
 void make_glyphs_non_resident(glyph_data &gd);
 
+void send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept;
+
 void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
                            glm::vec3 &&baseline_origin, glm::vec4 &&color) noexcept;
 auto create_text_draw_data(const glyph_data &gd, std::string_view text, glm::vec3 &&baseline_origin,
                            glm::vec4 &&color) noexcept -> text_draw_data;
+void overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
+                              glm::vec3 &&baseline_origin) noexcept;
 
-void draw(const GLuint &sp, const sprite::buffer_data &bd, const glm::mat4 &proj,
-          const glm::mat4 &view, const text_draw_data &tdd) noexcept;
+void draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj, const glm::mat4 &view,
+          const text_draw_data &tdd) noexcept;
 
 } // namespace surge::atom::text
 

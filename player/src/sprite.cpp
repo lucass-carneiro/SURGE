@@ -69,13 +69,13 @@ auto surge::atom::sprite::create_buffers(usize max_sprites) noexcept -> buffer_d
   glNamedBufferStorage(MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_sprites), nullptr,
                        GL_DYNAMIC_STORAGE_BIT);
 
-  log_info("Creating sprite model texture alphas buffer");
+  log_info("Creating sprite texture alphas buffer");
   GLuint AVB{0};
   glCreateBuffers(1, &AVB);
   glNamedBufferStorage(AVB, static_cast<GLsizeiptr>(sizeof(float) * max_sprites), nullptr,
                        GL_DYNAMIC_STORAGE_BIT);
 
-  log_info("Creating sprite texture buffer");
+  log_info("Creating sprite texture handles buffer");
   GLuint THB{0};
   glCreateBuffers(1, &THB);
   glNamedBufferStorage(THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_sprites), nullptr,
@@ -205,7 +205,6 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
 
   glBindVertexArray(bd.VAO);
-
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                           gsl::narrow_cast<GLsizei>(dl.models.size()));
 }

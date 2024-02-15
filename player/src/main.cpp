@@ -132,7 +132,7 @@ auto main(int, char **) noexcept -> int {
 #endif
 
     // Call module update
-    if (mod_api->update(update_timer.stop()) == error::normal_exit) {
+    if (mod_api->update(*window, update_timer.stop()) == error::normal_exit) {
       glfwSetWindowShouldClose(*window, GLFW_TRUE);
     }
     update_timer.start();
