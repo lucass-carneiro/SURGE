@@ -233,7 +233,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   g_text_draw_buffer.glyph_models.reserve(32);
 
   // First state
-  DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
+  DTU::state_machine::push_state(DTU::state_machine::states::new_game);
   DTU::state_machine::transition(ww, wh);
 
   // Init debug window
@@ -323,10 +323,6 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int sc
     DTU::state::main_menu::keyboard_event(g_command_queue, key, scancode, action, mods);
     break;
 
-  case DTU::state_machine::states::new_game:
-    DTU::state::new_game::keyboard_event(g_command_queue, key, scancode, action, mods);
-    break;
-
   default:
     break;
   }
@@ -334,6 +330,16 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int sc
 
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
                                                        int mods) noexcept {
+  switch (g_state_a) {
+
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::mouse_click(window, button, action, mods);
+    break;
+
+  default:
+    break;
+  }
+
 #ifdef SURGE_BUILD_TYPE_Debug
   ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 #endif
@@ -341,6 +347,16 @@ extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int b
 
 extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
                                                        double yoffset) noexcept {
+  switch (g_state_a) {
+
+  case DTU::state_machine::states::new_game:
+    DTU::state::new_game::mouse_scroll(window, xoffset, yoffset);
+    break;
+
+  default:
+    break;
+  }
+
 #ifdef SURGE_BUILD_TYPE_Debug
   ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
 #endif

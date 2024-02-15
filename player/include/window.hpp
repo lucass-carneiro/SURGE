@@ -5,6 +5,8 @@
 #include "error_types.hpp"
 #include "renderer.hpp"
 
+#include <glm/glm.hpp>
+
 namespace surge::window {
 
 auto init(const config::window_resolution &wres, const config::window_attrs &w_attrs) noexcept
@@ -12,6 +14,7 @@ auto init(const config::window_resolution &wres, const config::window_attrs &w_a
 void terminate(GLFWwindow *window) noexcept;
 
 auto get_dims(GLFWwindow *window) noexcept -> std::tuple<float, float>;
+auto get_cursor_pos(GLFWwindow *window) noexcept -> glm::vec2;
 
 } // namespace surge::window
 

@@ -15,6 +15,24 @@ namespace DTU::state::new_game {
 
 enum commands : surge::u32 {
   idle,
+
+  empathy_up,
+  empathy_down,
+
+  introspection_up,
+  introspection_down,
+
+  linguistics_up,
+  linguistics_down,
+
+  reasoning_up,
+  reasoning_down,
+
+  fitness_up,
+  fitness_down,
+
+  agility_up,
+  agility_down,
 };
 
 auto load(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, float ww,
@@ -24,8 +42,8 @@ void unload(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl) 
 
 void update(surge::deque<surge::u32> &cmdq, surge::atom::sprite::data_list &dl, double dt) noexcept;
 
-void keyboard_event(surge::deque<surge::u32> &cmdq, int key, int scancode, int action,
-                    int mods) noexcept;
+void mouse_click(GLFWwindow *window, int button, int action, int mods) noexcept;
+void mouse_scroll(GLFWwindow *window, double xoffset, double yoffset) noexcept;
 
 } // namespace DTU::state::new_game
 

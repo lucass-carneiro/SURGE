@@ -5,18 +5,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 
-static constexpr const surge::usize char_sheet_img_count{1};
+static constexpr const surge::usize ui_elms{8};
+static std::array<GLuint, ui_elms> g_ui_elms_ids{};
+static std::array<GLuint64, ui_elms> g_ui_elms_handles{};
 
-static void load_char_sheet_imgs(surge::atom::sprite::data_list &dl) noexcept {
+static void load_gui_elms() noexcept {
   using namespace surge;
 
-  log_info("Loading background images");
+  log_info("Loading UI elements");
 
-  const std::array<const char *, char_sheet_img_count> img_names{
-      "resources/new_game/character_sheet.png"};
+  const std::array<const char *, ui_elms> img_names{
+      "resources/new_game/character_sheet.png",
+      "resources/new_game/drop.png",
+      "resources/new_game/d4.png",
+      "resources/new_game/d6.png",
+      "resources/new_game/d8.png",
+      "resources/new_game/d10.png",
+      "resources/new_game/d12.png",
+      "resources/new_game/d20.png",
+  };
 
-  // Load images
-  for (const auto &image_name : img_names) {
+  for (surge::usize i = 0; const auto &image_name : img_names) {
     auto img{files::load_image(image_name)};
 
     if (img) {
@@ -24,27 +33,17 @@ static void load_char_sheet_imgs(surge::atom::sprite::data_list &dl) noexcept {
           atom::sprite::create_texture(*img, renderer::texture_filtering::nearest)};
 
       if (texture_data) {
-        dl.texture_ids.push_back(std::get<0>(*texture_data));
-        dl.texture_handles.push_back(std::get<1>(*texture_data));
-        dl.alphas.push_back(1.0f);
+        g_ui_elms_ids[i] = std::get<0>(*texture_data);
+        g_ui_elms_handles[i] = std::get<1>(*texture_data);
+        surge::atom::sprite::make_resident(std::get<1>(*texture_data));
       } else {
-        dl.texture_ids.push_back(0);
-        dl.texture_handles.push_back(0);
-        dl.alphas.push_back(0.0f);
+        g_ui_elms_handles[i] = 0;
+        g_ui_elms_ids[i] = 0;
       }
 
       files::free_image(*img);
     }
-  }
-}
-
-static void load_char_sheet_quads(surge::atom::sprite::data_list &dl, float ww, float wh) noexcept {
-  using namespace surge;
-
-  for (usize i = 0; i < char_sheet_img_count; i++) {
-    dl.models.push_back(glm::scale(
-        glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, static_cast<float>(i) / 10.0f}),
-        glm::vec3{ww, wh, 1.0}));
+    i++;
   }
 }
 
@@ -55,12 +54,13 @@ auto DTU::state::new_game::load(surge::deque<surge::u32> &, surge::atom::sprite:
   log_info("Loading new_game state");
 
   // Character Sheet
-  load_char_sheet_imgs(dl);
-  load_char_sheet_quads(dl, ww, wh);
+  load_gui_elms();
 
-  atom::sprite::make_resident(dl.texture_handles);
-
-  // First command
+  dl.texture_ids.push_back(g_ui_elms_ids[0]);
+  dl.texture_handles.push_back(g_ui_elms_handles[0]);
+  dl.alphas.push_back(1.0);
+  dl.models.push_back(glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, 0.0f}),
+                                 glm::vec3{ww, wh, 1.0}));
 
   return 0;
 }
@@ -71,8 +71,14 @@ void DTU::state::new_game::unload(surge::deque<surge::u32> &cmdq,
 
   log_info("Unloading main_menu state");
 
-  atom::sprite::make_non_resident(dl.texture_handles);
-  atom::sprite::destroy_texture(dl.texture_ids);
+  for (const auto &handle : g_ui_elms_handles) {
+    atom::sprite::make_non_resident(handle);
+  }
+
+  for (const auto &id : g_ui_elms_ids) {
+    atom::sprite::destroy_texture(id);
+  }
+
   dl.texture_handles.clear();
   dl.texture_ids.clear();
   dl.alphas.clear();
@@ -92,7 +98,50 @@ void DTU::state::new_game::update(surge::deque<surge::u32> &cmdq, surge::atom::s
   }
 }
 
-void DTU::state::new_game::keyboard_event(surge::deque<surge::u32> &, int, int, int, int) noexcept {
-  // TODO
-  return;
+constexpr const glm::vec2 attr_bttn_dims{16.143f, 36.322f};
+
+constexpr const glm::vec2 empathy_pos{212.642f, 152.916f};
+constexpr const glm::vec4 empathy_up_rect{empathy_pos[0], empathy_pos[1], attr_bttn_dims[0],
+                                          attr_bttn_dims[1] / 2.0f};
+constexpr const glm::vec4 empathy_down_rect{empathy_pos[0],
+                                            empathy_pos[1] + attr_bttn_dims[1] / 2.0f,
+                                            attr_bttn_dims[0], attr_bttn_dims[1] / 2.0f};
+
+static auto point_in_rect(const glm::vec2 &point, const glm::vec4 &rect) noexcept -> bool {
+  const auto x0{rect[0]};
+  const auto xf{rect[0] + rect[2]};
+
+  const auto y0{rect[1]};
+  const auto yf{rect[1] + rect[3]};
+
+  const auto xbound{x0 < point[0] && point[0] < xf};
+  const auto ybound{y0 < point[1] && point[1] < yf};
+
+  return xbound && ybound;
+}
+
+void DTU::state::new_game::mouse_click(GLFWwindow *window, int button, int action, int) noexcept {
+  const bool left_click{button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS};
+  const auto cursor_pos{surge::window::get_cursor_pos(window)};
+
+  if (left_click && point_in_rect(cursor_pos, empathy_up_rect)) {
+    log_info("Empathy up");
+  }
+
+  if (left_click && point_in_rect(cursor_pos, empathy_down_rect)) {
+    log_info("Empathy down");
+  }
+}
+
+void DTU::state::new_game::mouse_scroll(GLFWwindow *window, double, double yoffset) noexcept {
+  using namespace surge;
+  const auto cursor_pos{surge::window::get_cursor_pos(window)};
+
+  if (yoffset > 0 && point_in_rect(cursor_pos, empathy_up_rect)) {
+    log_info("Empathy up");
+  }
+
+  if (yoffset < 0 && point_in_rect(cursor_pos, empathy_up_rect)) {
+    log_info("Empathy down");
+  }
 }

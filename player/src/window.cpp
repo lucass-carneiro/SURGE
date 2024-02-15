@@ -278,3 +278,15 @@ auto surge::window::get_dims(GLFWwindow *window) noexcept -> std::tuple<float, f
     return std::make_tuple(gsl::narrow_cast<float>(ww), gsl::narrow_cast<float>(wh));
   }
 }
+
+auto surge::window::get_cursor_pos(GLFWwindow *window) noexcept -> glm::vec2 {
+  double x{0}, y{0};
+  glfwGetCursorPos(window, &x, &y);
+
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to determine window dimentions");
+    return glm::vec2{0.0f};
+  } else {
+    return glm::vec2{static_cast<float>(x), static_cast<float>(y)};
+  }
+}
