@@ -22,6 +22,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
   
   "${PROJECT_SOURCE_DIR}/include/new_game/new_game.hpp"
+  "${PROJECT_SOURCE_DIR}/include/new_game/ui_positional_data.hpp"
 )
 
 set(

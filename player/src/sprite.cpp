@@ -173,15 +173,17 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 }
 
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
-  glNamedBufferSubData(bd.MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * dl.models.size()),
-                       dl.models.data());
+  if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
+    glNamedBufferSubData(bd.MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * dl.models.size()),
+                         dl.models.data());
 
-  glNamedBufferSubData(bd.AVB, 0, static_cast<GLsizeiptr>(sizeof(float) * dl.alphas.size()),
-                       dl.alphas.data());
+    glNamedBufferSubData(bd.AVB, 0, static_cast<GLsizeiptr>(sizeof(float) * dl.alphas.size()),
+                         dl.alphas.data());
 
-  glNamedBufferSubData(bd.THB, 0,
-                       static_cast<GLsizeiptr>(sizeof(GLuint64) * dl.texture_handles.size()),
-                       dl.texture_handles.data());
+    glNamedBufferSubData(bd.THB, 0,
+                         static_cast<GLsizeiptr>(sizeof(GLuint64) * dl.texture_handles.size()),
+                         dl.texture_handles.data());
+  }
 }
 
 void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
@@ -190,21 +192,19 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const gl
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
+  if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
 
-  if (dl.models.size() == 0) {
-    return;
+    glUseProgram(sp);
+
+    renderer::uniforms::set(sp, "projection", proj);
+    renderer::uniforms::set(sp, "view", view);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.AVB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
+
+    glBindVertexArray(bd.VAO);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
+                            gsl::narrow_cast<GLsizei>(dl.models.size()));
   }
-
-  glUseProgram(sp);
-
-  renderer::uniforms::set(sp, "projection", proj);
-  renderer::uniforms::set(sp, "view", view);
-
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.AVB);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
-
-  glBindVertexArray(bd.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                          gsl::narrow_cast<GLsizei>(dl.models.size()));
 }

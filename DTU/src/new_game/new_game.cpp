@@ -1,37 +1,15 @@
 #include "new_game/new_game.hpp"
 
+#include "new_game/ui_positional_data.hpp"
 #include "player/logging.hpp"
 
+#include <cstdio>
 #include <glm/gtc/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 
 static constexpr const surge::usize ui_elms{8};
 static std::array<GLuint, ui_elms> g_ui_elms_ids{};
 static std::array<GLuint64, ui_elms> g_ui_elms_handles{};
-
-// UI positional data
-
-namespace help {
-constexpr const glm::vec4 text_area_rect{542.092f, 569.588f, 451.815f, 176.365f};
-} // namespace help
-
-namespace empathy {
-
-constexpr const glm::vec4 group_rect{29.466f, 152.916f, 199.319f, 36.322f};
-// constexpr const glm::vec4 rank_rect{172.285f, 152.916f, 36.321f, 36.321f};
-constexpr const glm::vec4 button_rect{212.642f, 152.916f, 16.143f, 36.322f};
-
-constexpr const glm::vec4 up_rect{button_rect[0], button_rect[1], button_rect[2],
-                                  button_rect[3] / 2.0f};
-constexpr const glm::vec4 down_rect{button_rect[0], button_rect[1] + button_rect[3] / 2.0f,
-                                    button_rect[2], button_rect[3] / 2.0f};
-} // namespace empathy
-
-namespace introspection {
-
-constexpr const glm::vec4 group_rect{233.784f, 152.916f, 249.272f, 36.321f};
-
-} // namespace introspection
 
 static auto point_in_rect(const glm::vec2 &point, const glm::vec4 &rect) noexcept -> bool {
   const auto x0{rect[0]};
@@ -72,6 +50,25 @@ static void help_text(GLFWwindow *window, surge::atom::text::text_draw_data &tdd
     tdd.texture_handles.clear();
     tdd.glyph_models.clear();
   }
+}
+
+static void ui_text(const DTU::state::new_game::ui_state &state,
+                    surge::atom::text::text_draw_data &ptb, surge::atom::text::glyph_data &tgd) {
+  using std::snprintf;
+
+  constexpr const surge::usize buffer_size{3};
+  std::array<char, buffer_size> buffer{0, 0, 0};
+
+  snprintf(buffer.data(), buffer_size, "%d", state.empathy_rank);
+  surge::atom::text::overwrite_text_draw_data(
+      ptb, tgd, buffer.data(),
+      glm::vec3{empathy::rank_baseline[0], empathy::rank_baseline[1], 0.1f});
+
+  snprintf(buffer.data(), buffer_size, "%d", state.remaining_points);
+  surge::atom::text::append_text_draw_data(
+      ptb, tgd, buffer.data(),
+      glm::vec3{remaining_points::value_baseline[0], remaining_points::value_baseline[1], 0.1f},
+      glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
 }
 
 static void load_gui_elms() noexcept {
@@ -156,39 +153,61 @@ void DTU::state::new_game::unload(surge::deque<surge::u32> &cmdq,
 
 void DTU::state::new_game::update(GLFWwindow *window, surge::deque<surge::u32> &cmdq,
                                   surge::atom::sprite::data_list &,
-                                  surge::atom::text::text_draw_data &tdd,
+                                  surge::atom::text::text_draw_data &ptb,
+                                  surge::atom::text::text_draw_data &etb,
                                   surge::atom::text::glyph_data &tgd, double) noexcept {
-
-  help_text(window, tdd, tgd);
+  static ui_state uistate{};
 
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
+
+  case commands::empathy_up:
+    if (uistate.empathy_rank + 1 <= 5 && uistate.remaining_points >= 1) {
+      uistate.empathy_rank += 1;
+      uistate.remaining_points -= 1;
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::empathy_down:
+    if (uistate.empathy_rank - 1 >= 0) {
+      uistate.empathy_rank -= 1;
+      uistate.remaining_points += 1;
+    }
+    cmdq.pop_front();
+    break;
+
   default:
     break;
   }
+
+  ui_text(uistate, ptb, tgd);
+  help_text(window, etb, tgd);
 }
 
-void DTU::state::new_game::mouse_click(GLFWwindow *window, int button, int action, int) noexcept {
+void DTU::state::new_game::mouse_click(surge::deque<surge::u32> &cmdq, GLFWwindow *window,
+                                       int button, int action, int) noexcept {
   const bool left_click{button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS};
   const auto cursor_pos{surge::window::get_cursor_pos(window)};
 
   if (left_click && point_in_rect(cursor_pos, empathy::up_rect)) {
-    log_info("Empathy up");
+    cmdq.push_back(commands::empathy_up);
   }
 
   if (left_click && point_in_rect(cursor_pos, empathy::down_rect)) {
-    log_info("Empathy down");
+    cmdq.push_back(commands::empathy_down);
   }
 }
 
-void DTU::state::new_game::mouse_scroll(GLFWwindow *window, double, double yoffset) noexcept {
+void DTU::state::new_game::mouse_scroll(surge::deque<surge::u32> &cmdq, GLFWwindow *window, double,
+                                        double yoffset) noexcept {
   using namespace surge;
   const auto cursor_pos{surge::window::get_cursor_pos(window)};
 
   if (yoffset > 0 && point_in_rect(cursor_pos, empathy::group_rect)) {
-    log_info("Empathy up");
+    cmdq.push_back(commands::empathy_up);
   }
 
   if (yoffset < 0 && point_in_rect(cursor_pos, empathy::group_rect)) {
-    log_info("Empathy down");
+    cmdq.push_back(commands::empathy_down);
   }
 }

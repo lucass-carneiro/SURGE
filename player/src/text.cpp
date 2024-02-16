@@ -303,13 +303,15 @@ void surge::atom::text::make_glyphs_non_resident(glyph_data &gd) {
 }
 
 void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept {
-  glNamedBufferSubData(bd.MMB, 0,
-                       static_cast<GLsizeiptr>(sizeof(glm::mat4) * tdd.glyph_models.size()),
-                       tdd.glyph_models.data());
+  if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
+    glNamedBufferSubData(bd.MMB, 0,
+                         static_cast<GLsizeiptr>(sizeof(glm::mat4) * tdd.glyph_models.size()),
+                         tdd.glyph_models.data());
 
-  glNamedBufferSubData(bd.THB, 0,
-                       static_cast<GLsizeiptr>(sizeof(GLuint64) * tdd.texture_handles.size()),
-                       tdd.texture_handles.data());
+    glNamedBufferSubData(bd.THB, 0,
+                         static_cast<GLsizeiptr>(sizeof(GLuint64) * tdd.texture_handles.size()),
+                         tdd.texture_handles.data());
+  }
 }
 
 void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
@@ -410,21 +412,19 @@ void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const glm:
   ZoneScopedN("surge::atom::text::draw");
   TracyGpuZone("GPU surge::atom::text::draw");
 #endif
-  if (tdd.glyph_models.size() == 0 || tdd.texture_handles.size() == 0) {
-    return;
+  if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
+    glUseProgram(sp);
+
+    renderer::uniforms::set(sp, "projection", proj);
+    renderer::uniforms::set(sp, "view", view);
+
+    renderer::uniforms::set(sp, "color", tdd.color);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.THB);
+
+    glBindVertexArray(bd.VAO);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
+                            gsl::narrow_cast<GLsizei>(tdd.glyph_models.size()));
   }
-
-  glUseProgram(sp);
-
-  renderer::uniforms::set(sp, "projection", proj);
-  renderer::uniforms::set(sp, "view", view);
-
-  renderer::uniforms::set(sp, "color", tdd.color);
-
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.THB);
-
-  glBindVertexArray(bd.VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                          gsl::narrow_cast<GLsizei>(tdd.glyph_models.size()));
 }

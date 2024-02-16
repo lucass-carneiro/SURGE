@@ -45,7 +45,10 @@ static surge::atom::sprite::data_list g_sprite_list_0{};
 static surge::atom::text::glyph_data g_itc_benguiat_book_glyphs{};
 
 // NOLINTNEXTLINE
-static surge::atom::text::text_draw_data g_text_draw_buffer{};
+static surge::atom::text::text_draw_data g_persistent_text_buffer{};
+
+// NOLINTNEXTLINE
+static surge::atom::text::text_draw_data g_efemeral_text_buffer{};
 
 // NOLINTNEXTLINE
 static surge::deque<surge::u32> g_command_queue{};
@@ -233,13 +236,17 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   surge::atom::text::make_glyphs_resident(g_itc_benguiat_book_glyphs);
 
   // Allocate memory for the text buffers
-  g_text_draw_buffer.texture_handles.reserve(140);
-  g_text_draw_buffer.glyph_models.reserve(140);
-  g_text_draw_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  g_persistent_text_buffer.texture_handles.reserve(140);
+  g_persistent_text_buffer.glyph_models.reserve(140);
+  g_persistent_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+
+  g_efemeral_text_buffer.texture_handles.reserve(140);
+  g_efemeral_text_buffer.glyph_models.reserve(140);
+  g_efemeral_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
-  DTU::state_machine::push_state(DTU::state_machine::states::new_game);
-  // DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
+  // DTU::state_machine::push_state(DTU::state_machine::states::new_game);
+  DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
   DTU::state_machine::transition(ww, wh);
 
   // Init debug window
@@ -281,7 +288,13 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
                             g_sprite_list_0);
 
-  surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view, g_text_draw_buffer);
+  surge::atom::text::send_buffers(g_text_buffer, g_persistent_text_buffer);
+  surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view,
+                          g_persistent_text_buffer);
+
+  surge::atom::text::send_buffers(g_text_buffer, g_efemeral_text_buffer);
+  surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view,
+                          g_efemeral_text_buffer);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(g_command_queue, g_sprite_list_0);
@@ -306,8 +319,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(window, g_command_queue, g_sprite_list_0, g_text_draw_buffer,
-                                 g_itc_benguiat_book_glyphs, dt);
+    DTU::state::new_game::update(window, g_command_queue, g_sprite_list_0, g_persistent_text_buffer,
+                                 g_efemeral_text_buffer, g_itc_benguiat_book_glyphs, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -317,7 +330,6 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
   }
 
-  surge::atom::text::send_buffers(g_text_buffer, g_text_draw_buffer);
   surge::atom::sprite::send_buffers(g_sprite_buffer, g_sprite_list_0);
 
   return 0;
@@ -341,7 +353,7 @@ extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int b
   switch (g_state_a) {
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::mouse_click(window, button, action, mods);
+    DTU::state::new_game::mouse_click(g_command_queue, window, button, action, mods);
     break;
 
   default:
@@ -358,7 +370,7 @@ extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, doubl
   switch (g_state_a) {
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::mouse_scroll(window, xoffset, yoffset);
+    DTU::state::new_game::mouse_scroll(g_command_queue, window, xoffset, yoffset);
     break;
 
   default:
