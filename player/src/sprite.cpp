@@ -173,6 +173,11 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
 }
 
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::send_buffers");
+  TracyGpuZone("GPU surge::atom::sprite::send_buffers");
+#endif
+
   if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
     glNamedBufferSubData(bd.MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * dl.models.size()),
                          dl.models.data());
