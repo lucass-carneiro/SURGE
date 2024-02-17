@@ -4,12 +4,9 @@
 // clang-format off
 #include "player/options.hpp"
 #include "player/container_types.hpp"
-#include "player/static_image.hpp"
 #include "player/window.hpp"
-#include "static_image.hpp"
+#include "player/sprite.hpp"
 // clang-format on
-
-#include <optional>
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
@@ -23,9 +20,24 @@
 
 namespace DTU {
 
+using vec_glui = surge::vector<GLuint>;
+using vec_glui64 = surge::vector<GLuint64>;
+using sdl_t = surge::atom::sprite::data_list;
+
 // Callbacks
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
+
+auto load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path) noexcept -> GLuint64;
+void unload_textures(vec_glui &ids, vec_glui64 &handles) noexcept;
+
+void push_sprite(sdl_t &sdl, GLuint64 handle, glm::mat4 &&model, float alpha) noexcept;
+void clear_sprites(sdl_t &sdl) noexcept;
+
+void load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_path, sdl_t &sdl,
+                      glm::mat4 &&model, float alpha) noexcept;
+
+auto make_model(glm::vec3 &&pos, glm::vec3 &&scale) noexcept -> glm::mat4;
 
 } // namespace DTU
 

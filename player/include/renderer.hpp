@@ -42,7 +42,7 @@ auto create_shader_program(const char *vertex_shader_path,
                            const char *fragment_shader_path) noexcept
     -> tl::expected<GLuint, error>;
 
-void cleanup_shader_program(GLuint program) noexcept;
+void destroy_shader_program(GLuint program) noexcept;
 
 namespace uniforms {
 

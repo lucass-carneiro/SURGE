@@ -23,13 +23,13 @@ void DTU::debug_window::init(GLFWwindow *window) noexcept {
   ImGui_ImplOpenGL3_Init("#version 460");
 }
 
-void DTU::debug_window::draw(const surge::deque<surge::u32> &cmdq,
-                             const surge::atom::sprite::data_list &sdl) noexcept {
+void DTU::debug_window::draw(const DTU::vec_glui &ids, const vec_glui64 &handles,
+                             const cmdq_t &cmdq, const sdl_t &sdl) noexcept {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  main_window(cmdq, sdl);
+  main_window(ids, handles, cmdq, sdl);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -41,13 +41,12 @@ void DTU::debug_window::cleanup() noexcept {
   ImGui::DestroyContext();
 }
 
-void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
-                                    const surge::atom::sprite::data_list &sdl,
-                                    bool *p_open) noexcept {
+void DTU::debug_window::main_window(const DTU::vec_glui &ids, const vec_glui64 &handles,
+                                    const cmdq_t &cmdq, const sdl_t &sdl, bool *p_open) noexcept {
 
   // We specify a default position/size in case there's no data in the .ini file.
   ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_FirstUseEver);
 
   ImGuiWindowFlags window_flags{ImGuiWindowFlags_NoResize};
   ImGuiTableFlags table_flags{ImGuiTableFlags_Borders};
@@ -58,7 +57,7 @@ void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
     return;
   }
 
-  if (ImGui::CollapsingHeader("DTU State machine")) {
+  if (ImGui::CollapsingHeader("State machine")) {
     if (ImGui::BeginTable("state_machine_table", 3, table_flags)) {
       ImGui::TableSetupColumn("State variable");
       ImGui::TableSetupColumn("ID");
@@ -92,7 +91,7 @@ void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
     }
   }
 
-  if (ImGui::CollapsingHeader("DTU Command queue")) {
+  if (ImGui::CollapsingHeader("Command queue")) {
     if (ImGui::BeginTable("command_queue_table", 2, table_flags)) {
       ImGui::TableSetupColumn("Index");
       ImGui::TableSetupColumn("Command ID");
@@ -114,10 +113,38 @@ void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
     }
   }
 
-  if (ImGui::CollapsingHeader("DTU sprite data")) {
-    if (ImGui::BeginTable("sprite_data_table", 6, table_flags)) {
+  if (ImGui::CollapsingHeader("Sprite Textures")) {
+    if (ImGui::BeginTable("sprite_texture_table", 4, table_flags)) {
+      ImGui::TableSetupColumn("ID");
+      ImGui::TableSetupColumn("Texture ID");
+      ImGui::TableSetupColumn("Texture Handle");
+      ImGui::TableSetupColumn("Resident");
+      ImGui::TableHeadersRow();
+
+      for (surge::usize i = 0; i < ids.size(); i++) {
+        ImGui::TableNextRow();
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%lu", i);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%u", ids[i]);
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%lu", handles[i]);
+
+        ImGui::TableSetColumnIndex(3);
+        ImGui::Text("%s", surge::atom::sprite::is_resident(handles[i]) ? "Yes" : "No");
+      }
+
+      ImGui::EndTable();
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Sprite draw data")) {
+    if (ImGui::BeginTable("sprite_draw_data_table", 6, table_flags)) {
       ImGui::TableSetupColumn("Idx.");
-      ImGui::TableSetupColumn("TID");
+      ImGui::TableSetupColumn("TH");
       ImGui::TableSetupColumn("TA");
       ImGui::TableSetupColumn("x");
       ImGui::TableSetupColumn("y");
@@ -131,7 +158,7 @@ void DTU::debug_window::main_window(const surge::deque<surge::u32> &cmdq,
         ImGui::Text("%lu", i);
 
         ImGui::TableSetColumnIndex(1);
-        ImGui::Text("%u", sdl.texture_ids[i]);
+        ImGui::Text("%lu", sdl.texture_handles[i]);
 
         ImGui::TableSetColumnIndex(2);
         ImGui::Text("%.1f", sdl.alphas[i]);

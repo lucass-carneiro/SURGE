@@ -23,7 +23,6 @@ struct buffer_data {
 };
 
 struct data_list {
-  surge::vector<GLuint> texture_ids;
   surge::vector<GLuint64> texture_handles;
   surge::vector<glm::mat4> models;
   surge::vector<float> alphas;
@@ -45,6 +44,7 @@ void make_non_resident(GLuint64 handle) noexcept;
 
 void make_resident(const vector<GLuint64> &texture_handles) noexcept;
 void make_non_resident(const vector<GLuint64> &texture_handles) noexcept;
+auto is_resident(GLuint64 handle) noexcept -> bool;
 
 void send_buffers(const buffer_data &bd, const data_list &dl) noexcept;
 

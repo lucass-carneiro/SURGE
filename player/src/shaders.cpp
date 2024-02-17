@@ -159,11 +159,11 @@ auto surge::renderer::create_shader_program(const char *vertex_shader_path,
   return link_shader_program(*vertex_shader_handle, *fragment_shader_handle);
 }
 
-void surge::renderer::cleanup_shader_program(GLuint program) noexcept {
+void surge::renderer::destroy_shader_program(GLuint program) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::renderer::cleanup_shader_program");
-  TracyGpuZone("GPU surge::renderer::cleanup_shader_program");
+  ZoneScopedN("surge::renderer::destroy_shader_program");
+  TracyGpuZone("GPU surge::renderer::destroy_shader_program");
 #endif
-  log_info("Deleting shader program handle %u", program);
+  log_info("Destroying shader program handle %u", program);
   glDeleteProgram(program);
 }

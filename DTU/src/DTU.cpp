@@ -12,6 +12,7 @@
 #include "player/mpsb.hpp"
 #include "player/text.hpp"
 #include "player/options.hpp"
+#include "player/files.hpp"
 // clang-format on
 
 #include "main_menu/main_menu.hpp"
@@ -21,34 +22,40 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-// NOLINTNEXTLINE
-static GLuint g_sprite_shader{0};
+namespace shader_programs {
 
-// NOLINTNEXTLINE
-static GLuint g_text_shader{0};
+static GLuint sprite_shader{0}; // NOLINT
+static GLuint text_shader{0};   // NOLINT
 
-static GLuint g_MPSB{0};
+} // namespace shader_programs
 
-// NOLINTNEXTLINE
-static surge::atom::sprite::buffer_data g_sprite_buffer{};
+namespace atom_buffers {
 
-// NOLINTNEXTLINE
-static surge::atom::text::buffer_data g_text_buffer{};
+static GLuint MPSB{0};                                   // NOLINT
+static surge::atom::sprite::buffer_data sprite_buffer{}; // NOLINT
+static surge::atom::text::buffer_data text_buffer{};     // NOLINT
 
-// NOLINTNEXTLINE
-static surge::atom::sprite::data_list g_sprite_list_0{};
+} // namespace atom_buffers
 
-// NOLINTNEXTLINE
-static surge::atom::text::glyph_data g_itc_benguiat_book_glyphs{};
+namespace loaded_data {
 
-// NOLINTNEXTLINE
-static surge::atom::text::text_draw_data g_persistent_text_buffer{};
+static DTU::vec_glui loaded_texture_IDs{};       // NOLINT
+static DTU::vec_glui64 loaded_texture_handles{}; // NOLINT
 
-// NOLINTNEXTLINE
-static surge::atom::text::text_draw_data g_efemeral_text_buffer{};
+static surge::atom::text::glyph_data itc_benguiat_book_glyphs{}; // NOLINT
 
-// NOLINTNEXTLINE
-static surge::deque<surge::u32> g_command_queue{};
+} // namespace loaded_data
+
+namespace draw_buffers {
+
+static DTU::sdl_t sprite{}; // NOLINT
+
+static surge::atom::text::text_draw_data persistent_text_buffer{}; // NOLINT
+static surge::atom::text::text_draw_data efemeral_text_buffer{};   // NOLINT
+
+} // namespace draw_buffers
+
+static surge::deque<surge::u32> g_command_queue{}; // NOLINT
 
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_state};
@@ -56,17 +63,75 @@ static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_stat
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_b{DTU::state_machine::states::no_state};
 
+auto DTU::load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path) noexcept
+    -> GLuint64 {
+  using namespace surge;
+
+  auto img{files::load_image(img_path)};
+
+  if (img) {
+    const auto texture_data{
+        atom::sprite::create_texture(*img, renderer::texture_filtering::nearest)};
+
+    if (texture_data) {
+      const auto [id, handle] = *texture_data;
+      ids.push_back(id);
+      handles.push_back(handle);
+      files::free_image(*img);
+      return handle;
+    } else {
+      ids.push_back(0);
+      handles.push_back(0);
+      files::free_image(*img);
+      return 0;
+    }
+  } else {
+    return 0;
+  }
+}
+
+void DTU::unload_textures(vec_glui &ids, vec_glui64 &handles) noexcept {
+  surge::atom::sprite::make_non_resident(handles);
+  surge::atom::sprite::destroy_texture(ids);
+
+  ids.clear();
+  handles.clear();
+}
+
+void DTU::push_sprite(sdl_t &sdl, GLuint64 handle, glm::mat4 &&model, float alpha) noexcept {
+  sdl.texture_handles.push_back(handle);
+  sdl.models.push_back(model);
+  sdl.alphas.push_back(alpha);
+}
+
+void DTU::clear_sprites(sdl_t &sdl) noexcept {
+  sdl.texture_handles.clear();
+  sdl.models.clear();
+  sdl.alphas.clear();
+}
+
+void DTU::load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_path, sdl_t &sdl,
+                           glm::mat4 &&model, float alpha) noexcept {
+  const auto handle{load_texture(ids, handles, img_path)};
+  push_sprite(sdl, handle, std::move(model), alpha);
+}
+
+auto DTU::make_model(glm::vec3 &&pos, glm::vec3 &&scale) noexcept -> glm::mat4 {
+  return glm::scale(glm::translate(glm::mat4{1.0f}, pos), scale);
+}
+
 void DTU::state_machine::push_state(state_t state) noexcept { g_state_b = state; }
 
 static void unload_a() noexcept {
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::unload(g_command_queue, g_sprite_list_0);
+    DTU::state::main_menu::unload(g_command_queue, loaded_data::loaded_texture_IDs,
+                                  loaded_data::loaded_texture_handles, draw_buffers::sprite);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::unload(g_command_queue, g_sprite_list_0);
+    DTU::state::new_game::unload(g_command_queue, draw_buffers::sprite);
     break;
 
   default:
@@ -78,11 +143,12 @@ static void load_a(float ww, float wh) noexcept {
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::load(g_command_queue, g_sprite_list_0, ww, wh);
+    DTU::state::main_menu::load(g_command_queue, loaded_data::loaded_texture_IDs,
+                                loaded_data::loaded_texture_handles, draw_buffers::sprite, ww, wh);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::load(g_command_queue, g_sprite_list_0, ww, wh);
+    DTU::state::new_game::load(g_command_queue, draw_buffers::sprite, ww, wh);
     break;
 
   default:
@@ -174,6 +240,10 @@ auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
 }
 
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
+  // Limits
+  constexpr const surge::usize max_sprites{32};
+  constexpr const surge::usize max_chars_in_text{140};
+
   // Bind callbacks
   const auto bind_callback_stat{DTU::bind_callbacks(window)};
   if (bind_callback_stat != 0) {
@@ -186,31 +256,28 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(0.0f, 1.0f, 0.0f))};
 
-  g_MPSB = surge::atom::mpsb::create_buffer();
-  surge::atom::mpsb::send_buffer(g_MPSB, &projection, &view);
+  atom_buffers::MPSB = surge::atom::mpsb::create_buffer();
+  surge::atom::mpsb::send_buffer(atom_buffers::MPSB, &projection, &view);
 
-  // Load Shaders
+  // Sprite Shader
   const auto sprite_shader{
       surge::renderer::create_shader_program("shaders/sprite.vert", "shaders/sprite.frag")};
   if (!sprite_shader) {
     return static_cast<int>(sprite_shader.error());
   }
-  g_sprite_shader = *sprite_shader;
-  g_sprite_buffer = surge::atom::sprite::create_buffers();
-  g_sprite_list_0.alphas.reserve(32);
-  g_sprite_list_0.models.reserve(32);
-  g_sprite_list_0.texture_handles.reserve(32);
-  g_sprite_list_0.texture_ids.reserve(32);
+  shader_programs::sprite_shader = *sprite_shader;
+  atom_buffers::sprite_buffer = surge::atom::sprite::create_buffers(max_sprites);
 
+  // Text shader
   const auto text_shader{
       surge::renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
   if (!text_shader) {
     return static_cast<int>(text_shader.error());
   }
-  g_text_shader = *text_shader;
-  g_text_buffer = surge::atom::text::create_buffers();
+  shader_programs::text_shader = *text_shader;
+  atom_buffers::text_buffer = surge::atom::text::create_buffers(max_chars_in_text);
 
-  // Load fonts used in the game and make their textures resident
+  // Load fonts
   auto ft_lib{surge::atom::text::init_freetype()};
   if (!ft_lib) {
     return static_cast<int>(ft_lib.error());
@@ -230,17 +297,26 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   surge::atom::text::unload_face(*itc_benguiat_book);
   surge::atom::text::destroy_freetype(*ft_lib);
 
-  g_itc_benguiat_book_glyphs = *itc_benguiat_book_glyphs;
-  surge::atom::text::make_glyphs_resident(g_itc_benguiat_book_glyphs);
+  loaded_data::itc_benguiat_book_glyphs = *itc_benguiat_book_glyphs;
+  surge::atom::text::make_glyphs_resident(loaded_data::itc_benguiat_book_glyphs);
 
-  // Allocate memory for the text buffers
-  g_persistent_text_buffer.texture_handles.reserve(140);
-  g_persistent_text_buffer.glyph_models.reserve(140);
-  g_persistent_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  // Allocate memory for loaded sprite textures
+  loaded_data::loaded_texture_IDs.reserve(max_sprites);
+  loaded_data::loaded_texture_handles.reserve(max_sprites);
 
-  g_efemeral_text_buffer.texture_handles.reserve(140);
-  g_efemeral_text_buffer.glyph_models.reserve(140);
-  g_efemeral_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  // Allocate memory for sprite draw buffers
+  draw_buffers::sprite.alphas.reserve(max_sprites);
+  draw_buffers::sprite.models.reserve(max_sprites);
+  draw_buffers::sprite.texture_handles.reserve(max_sprites);
+
+  // Allocate memory for text draw buffers
+  draw_buffers::persistent_text_buffer.texture_handles.reserve(max_chars_in_text);
+  draw_buffers::persistent_text_buffer.glyph_models.reserve(max_chars_in_text);
+  draw_buffers::persistent_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+
+  draw_buffers::efemeral_text_buffer.texture_handles.reserve(max_chars_in_text);
+  draw_buffers::efemeral_text_buffer.glyph_models.reserve(max_chars_in_text);
+  draw_buffers::efemeral_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
   // DTU::state_machine::push_state(DTU::state_machine::states::new_game);
@@ -263,19 +339,18 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
     return unbind_callback_stat;
   }
 
-  surge::atom::sprite::make_non_resident(g_sprite_list_0.texture_handles);
-  surge::atom::text::make_glyphs_non_resident(g_itc_benguiat_book_glyphs);
+  surge::atom::sprite::make_non_resident(loaded_data::loaded_texture_handles);
+  surge::atom::sprite::destroy_texture(loaded_data::loaded_texture_IDs);
 
-  surge::atom::text::unload_glyphs(g_itc_benguiat_book_glyphs);
-  surge::atom::sprite::destroy_texture(g_sprite_list_0.texture_ids);
+  surge::atom::text::make_glyphs_non_resident(loaded_data::itc_benguiat_book_glyphs);
+  surge::atom::text::unload_glyphs(loaded_data::itc_benguiat_book_glyphs);
 
-  surge::atom::text::destroy_buffers(g_text_buffer);
-  surge::atom::sprite::destroy_buffers(g_sprite_buffer);
+  surge::atom::text::destroy_buffers(atom_buffers::text_buffer);
+  surge::atom::sprite::destroy_buffers(atom_buffers::sprite_buffer);
+  surge::atom::mpsb::destroy_buffer(atom_buffers::MPSB);
 
-  surge::renderer::cleanup_shader_program(g_sprite_shader);
-  surge::renderer::cleanup_shader_program(g_text_shader);
-
-  surge::atom::mpsb::destroy_buffer(g_MPSB);
+  surge::renderer::destroy_shader_program(shader_programs::sprite_shader);
+  surge::renderer::destroy_shader_program(shader_programs::text_shader);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::cleanup();
@@ -285,16 +360,20 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
-  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_MPSB, g_sprite_list_0);
+  surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::sprite_buffer,
+                            atom_buffers::MPSB, draw_buffers::sprite);
 
-  surge::atom::text::send_buffers(g_text_buffer, g_persistent_text_buffer);
-  surge::atom::text::draw(g_text_shader, g_text_buffer, g_MPSB, g_persistent_text_buffer);
+  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::persistent_text_buffer);
+  surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
+                          atom_buffers::MPSB, draw_buffers::persistent_text_buffer);
 
-  surge::atom::text::send_buffers(g_text_buffer, g_efemeral_text_buffer);
-  surge::atom::text::draw(g_text_shader, g_text_buffer, g_MPSB, g_efemeral_text_buffer);
+  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::efemeral_text_buffer);
+  surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
+                          atom_buffers::MPSB, draw_buffers::efemeral_text_buffer);
 
 #ifdef SURGE_BUILD_TYPE_Debug
-  DTU::debug_window::draw(g_command_queue, g_sprite_list_0);
+  DTU::debug_window::draw(loaded_data::loaded_texture_IDs, loaded_data::loaded_texture_handles,
+                          g_command_queue, draw_buffers::sprite);
 #endif
 
   return 0;
@@ -312,12 +391,13 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
   switch (g_state_a) {
 
   case DTU::state_machine::states::main_menu:
-    DTU::state::main_menu::update(g_command_queue, g_sprite_list_0, dt);
+    DTU::state::main_menu::update(g_command_queue, draw_buffers::sprite, dt);
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(window, g_command_queue, g_sprite_list_0, g_persistent_text_buffer,
-                                 g_efemeral_text_buffer, g_itc_benguiat_book_glyphs, dt);
+    DTU::state::new_game::update(
+        window, g_command_queue, draw_buffers::sprite, draw_buffers::persistent_text_buffer,
+        draw_buffers::efemeral_text_buffer, loaded_data::itc_benguiat_book_glyphs, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -327,7 +407,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
   }
 
-  surge::atom::sprite::send_buffers(g_sprite_buffer, g_sprite_list_0);
+  surge::atom::sprite::send_buffers(atom_buffers::sprite_buffer, draw_buffers::sprite);
 
   return 0;
 }

@@ -118,7 +118,6 @@ auto DTU::state::new_game::load(surge::deque<surge::u32> &, surge::atom::sprite:
   // Character Sheet
   load_gui_elms();
 
-  dl.texture_ids.push_back(g_ui_elms_ids[0]);
   dl.texture_handles.push_back(g_ui_elms_handles[0]);
   dl.alphas.push_back(1.0);
   dl.models.push_back(glm::scale(glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, 0.0f}),
@@ -142,7 +141,6 @@ void DTU::state::new_game::unload(surge::deque<surge::u32> &cmdq,
   }
 
   dl.texture_handles.clear();
-  dl.texture_ids.clear();
   dl.alphas.clear();
   dl.models.clear();
 

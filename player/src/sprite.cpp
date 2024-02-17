@@ -204,6 +204,10 @@ void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_hand
   }
 }
 
+auto surge::atom::sprite::is_resident(GLuint64 handle) noexcept -> bool {
+  return glIsTextureHandleResidentARB(handle);
+}
+
 void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &dl) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::send_buffers");

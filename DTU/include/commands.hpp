@@ -11,6 +11,12 @@ using cmdq_t = surge::deque<cmd_code_t>;
 enum commands : cmd_code_t {
   idle,
 
+  show_title,
+  show_menu,
+  shift_opt_left,
+  shift_opt_right,
+  enter_option,
+
   empathy_up,
   empathy_down,
 
