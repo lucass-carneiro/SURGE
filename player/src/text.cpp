@@ -157,7 +157,7 @@ auto surge::atom::text::destroy_freetype(FT_Library lib) noexcept -> std::option
 auto surge::atom::text::load_face(FT_Library lib, const char *name) noexcept
     -> tl::expected<FT_Face, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::append_face()");
+  ZoneScopedN("surge::atom::text::load_face()");
 #endif
 
   log_info("Loading face %s", name);
@@ -279,6 +279,11 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
 }
 
 void surge::atom::text::unload_glyphs(glyph_data &gd) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::unload_glyphs");
+  TracyGpuZone("GPU surge::atom::text::unload_glyphs");
+#endif
+
   glDeleteTextures(static_cast<GLsizei>(gd.texture_id.size()), gd.texture_id.data());
 
   gd.texture_id.clear();
@@ -291,18 +296,33 @@ void surge::atom::text::unload_glyphs(glyph_data &gd) noexcept {
 }
 
 void surge::atom::text::make_glyphs_resident(glyph_data &gd) {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::make_glyphs_resident(vector)");
+  TracyGpuZone("GPU surge::atom::text::make_glyphs_resident(vector)");
+#endif
+
   for (auto handle : gd.texture_handle) {
     glMakeTextureHandleResidentARB(handle);
   }
 }
 
 void surge::atom::text::make_glyphs_non_resident(glyph_data &gd) {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::make_glyphs_non_resident(vector)");
+  TracyGpuZone("GPU surge::atom::text::make_glyphs_non_resident(vector)");
+#endif
+
   for (auto handle : gd.texture_handle) {
     glMakeTextureHandleNonResidentARB(handle);
   }
 }
 
 void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::send_buffers");
+  TracyGpuZone("GPU surge::atom::text::send_buffers");
+#endif
+
   if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
     glNamedBufferSubData(bd.MMB, 0,
                          static_cast<GLsizeiptr>(sizeof(glm::mat4) * tdd.glyph_models.size()),
@@ -400,28 +420,32 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
 void surge::atom::text::overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
                                                  std::string_view text,
                                                  glm::vec3 &&baseline_origin) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::overwrite_text_draw_data");
+#endif
+
   tdd.texture_handles.clear();
   tdd.glyph_models.clear();
 
   append_text_draw_data(tdd, gd, text, std::move(baseline_origin), std::move(tdd.color));
 }
 
-void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
-                             const glm::mat4 &view, const text_draw_data &tdd) noexcept {
+void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
+                             const text_draw_data &tdd) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::draw");
   TracyGpuZone("GPU surge::atom::text::draw");
 #endif
+
   if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.MMB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
+
     glUseProgram(sp);
 
-    renderer::uniforms::set(sp, "projection", proj);
-    renderer::uniforms::set(sp, "view", view);
-
     renderer::uniforms::set(sp, "color", tdd.color);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.THB);
 
     glBindVertexArray(bd.VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

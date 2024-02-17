@@ -77,7 +77,7 @@ auto create_text_draw_data(const glyph_data &gd, std::string_view text, glm::vec
 void overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
                               glm::vec3 &&baseline_origin) noexcept;
 
-void draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj, const glm::mat4 &view,
+void draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
           const text_draw_data &tdd) noexcept;
 
 } // namespace surge::atom::text

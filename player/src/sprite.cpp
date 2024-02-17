@@ -112,6 +112,7 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   ZoneScopedN("surge::atom::sprite::create_texture");
   TracyGpuZone("GPU surge::atom::sprite::create_texture");
 #endif
+
   log_info("Creating sprite texture");
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -146,28 +147,58 @@ auto surge::atom::sprite::create_texture(const files::image &image,
 }
 
 void surge::atom::sprite::destroy_texture(GLuint texture) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::destroy_texture");
+  TracyGpuZone("GPU surge::atom::sprite::destroy_texture");
+#endif
+
   glDeleteTextures(1, &texture);
 }
 
 void surge::atom::sprite::destroy_texture(const vector<GLuint> &texture) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::destroy_texture(vector)");
+  TracyGpuZone("GPU surge::atom::sprite::destroy_texture(vector)");
+#endif
+
   glDeleteTextures(static_cast<GLsizei>(texture.size()), texture.data());
 }
 
 void surge::atom::sprite::make_resident(GLuint64 handles) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::make_resident");
+  TracyGpuZone("GPU surge::atom::sprite::make_resident");
+#endif
+
   glMakeTextureHandleResidentARB(handles);
 }
 
 void surge::atom::sprite::make_non_resident(GLuint64 handles) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::make_non_resident");
+  TracyGpuZone("GPU surge::atom::sprite::make_non_resident");
+#endif
+
   glMakeTextureHandleNonResidentARB(handles);
 }
 
 void surge::atom::sprite::make_resident(const vector<GLuint64> &texture_handles) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::make_resident(vector)");
+  TracyGpuZone("GPU surge::atom::sprite::make_resident(vector)");
+#endif
+
   for (auto handle : texture_handles) {
     glMakeTextureHandleResidentARB(handle);
   }
 }
 
 void surge::atom::sprite::make_non_resident(const vector<GLuint64> &texture_handles) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::make_non_resident(vector)");
+  TracyGpuZone("GPU surge::atom::sprite::make_non_resident(vector)");
+#endif
+
   for (auto handle : texture_handles) {
     glMakeTextureHandleNonResidentARB(handle);
   }
@@ -198,7 +229,8 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const GL
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
-  if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
+
+  if (dl.models.size() != 0 && dl.alphas.size() != 0) {
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.MMB);
