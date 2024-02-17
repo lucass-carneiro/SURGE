@@ -9,6 +9,7 @@
 #include "player/container_types.hpp"
 #include "player/logging.hpp"
 #include "player/sprite.hpp"
+#include "player/mpsb.hpp"
 #include "player/text.hpp"
 #include "player/options.hpp"
 // clang-format on
@@ -21,16 +22,12 @@
 #include <glm/ext/matrix_transform.hpp>
 
 // NOLINTNEXTLINE
-static glm::mat4 g_projection{};
-
-// NOLINTNEXTLINE
-static glm::mat4 g_view{};
-
-// NOLINTNEXTLINE
 static GLuint g_sprite_shader{0};
 
 // NOLINTNEXTLINE
 static GLuint g_text_shader{0};
+
+static GLuint MPSB{0};
 
 // NOLINTNEXTLINE
 static surge::atom::sprite::buffer_data g_sprite_buffer{};
@@ -183,13 +180,14 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return bind_callback_stat;
   }
 
-  // Initialize global 2D projection matrix
+  // Initialize global 2D projection matrix and view matrix
   const auto [ww, wh] = surge::window::get_dims(window);
-  g_projection = glm::ortho(0.0f, ww, wh, 0.0f, -1.1f, 1.1f);
+  const auto projection{glm::ortho(0.0f, ww, wh, 0.0f, -1.1f, 1.1f)};
+  const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(0.0f, 1.0f, 0.0f))};
 
-  // Initial camera view
-  g_view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                       glm::vec3(0.0f, 1.0f, 0.0f));
+  MPSB = surge::atom::mpsb::create_buffer();
+  surge::atom::mpsb::send_buffer(MPSB, &projection, &view);
 
   // Load Shaders
   const auto sprite_shader{
@@ -277,6 +275,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   surge::renderer::cleanup_shader_program(g_sprite_shader);
   surge::renderer::cleanup_shader_program(g_text_shader);
 
+  surge::atom::mpsb::destroy_buffer(MPSB);
+
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::cleanup();
 #endif
@@ -285,16 +285,15 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
-  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, g_projection, g_view,
-                            g_sprite_list_0);
+  surge::atom::sprite::draw(g_sprite_shader, g_sprite_buffer, MPSB, g_sprite_list_0);
 
-  surge::atom::text::send_buffers(g_text_buffer, g_persistent_text_buffer);
+  /*surge::atom::text::send_buffers(g_text_buffer, g_persistent_text_buffer);
   surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view,
                           g_persistent_text_buffer);
 
   surge::atom::text::send_buffers(g_text_buffer, g_efemeral_text_buffer);
   surge::atom::text::draw(g_text_shader, g_text_buffer, g_projection, g_view,
-                          g_efemeral_text_buffer);
+                          g_efemeral_text_buffer);*/
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(g_command_queue, g_sprite_list_0);

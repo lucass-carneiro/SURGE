@@ -1,6 +1,7 @@
 #include "sprite.hpp"
 
 #include "logging.hpp"
+#include "mpsb.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <gsl/gsl-lite.hpp>
@@ -191,22 +192,20 @@ void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &d
   }
 }
 
-void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const glm::mat4 &proj,
-                               const glm::mat4 &view, const data_list &dl) noexcept {
+void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
+                               const data_list &dl) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::draw");
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
   if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
 
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.MMB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.AVB);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, bd.THB);
+
     glUseProgram(sp);
-
-    renderer::uniforms::set(sp, "projection", proj);
-    renderer::uniforms::set(sp, "view", view);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, bd.MMB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.AVB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
 
     glBindVertexArray(bd.VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

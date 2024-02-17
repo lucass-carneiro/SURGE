@@ -16,7 +16,7 @@ namespace surge::atom::mpsb {
 auto create_buffer() noexcept -> GLuint;
 void destroy_buffer(GLuint) noexcept;
 
-void send_buffer(GLuint MPSB, glm::mat4 *m1, glm::mat4 *m2) noexcept;
+void send_buffer(GLuint MPSB, const glm::mat4 *m1, const glm::mat4 *m2) noexcept;
 void bind_to_location(GLuint MPSB, GLuint location) noexcept;
 
 } // namespace surge::atom::mpsb

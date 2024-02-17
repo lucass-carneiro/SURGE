@@ -29,7 +29,8 @@ void surge::atom::mpsb::destroy_buffer(GLuint MPSB) noexcept {
   glDeleteBuffers(1, &MPSB);
 }
 
-void surge::atom::mpsb::send_buffer(GLuint MPSB, glm::mat4 *m1, glm::mat4 *m2) noexcept {
+void surge::atom::mpsb::send_buffer(GLuint MPSB, const glm::mat4 *m1,
+                                    const glm::mat4 *m2) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::mpsb::send_buffers");
   TracyGpuZone("GPU surge::atom::mpsb::send_buffers");

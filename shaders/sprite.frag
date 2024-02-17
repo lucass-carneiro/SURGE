@@ -2,8 +2,8 @@
 
 #extension GL_ARB_bindless_texture : require
 
-layout(std430, binding = 3) readonly buffer ssbo2 { float alphas[]; };
-layout(std430, binding = 4) readonly buffer ssbo3 { sampler2D textures[]; };
+layout(std430, binding = 4) readonly buffer ssbo2 { float alphas[]; };
+layout(std430, binding = 5) readonly buffer ssbo3 { sampler2D textures[]; };
 
 in VS_OUT {
   vec2 uv_coords;
