@@ -24,12 +24,12 @@ void DTU::debug_window::init(GLFWwindow *window) noexcept {
 }
 
 void DTU::debug_window::draw(const DTU::vec_glui &ids, const vec_glui64 &handles,
-                             const cmdq_t &cmdq, const sdl_t &sdl) noexcept {
+                             const cmdq_t &cmdq, const sdl_t &sdl, const sdl_t &ui_sdl) noexcept {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  main_window(ids, handles, cmdq, sdl);
+  main_window(ids, handles, cmdq, sdl, ui_sdl);
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -42,7 +42,8 @@ void DTU::debug_window::cleanup() noexcept {
 }
 
 void DTU::debug_window::main_window(const DTU::vec_glui &ids, const vec_glui64 &handles,
-                                    const cmdq_t &cmdq, const sdl_t &sdl, bool *p_open) noexcept {
+                                    const cmdq_t &cmdq, const sdl_t &sdl, const sdl_t &ui_sdl,
+                                    bool *p_open) noexcept {
 
   // We specify a default position/size in case there's no data in the .ini file.
   ImGui::SetNextWindowPos(ImVec2(0.0, 0.0), ImGuiCond_FirstUseEver);
@@ -161,16 +162,52 @@ void DTU::debug_window::main_window(const DTU::vec_glui &ids, const vec_glui64 &
         ImGui::Text("%lu", sdl.texture_handles[i]);
 
         ImGui::TableSetColumnIndex(2);
-        ImGui::Text("%.1f", sdl.alphas[i]);
+        ImGui::Text("%.3f", sdl.alphas[i]);
 
         ImGui::TableSetColumnIndex(3);
-        ImGui::Text("%.0f", sdl.models[i][3][0]);
+        ImGui::Text("%.3f", sdl.models[i][3][0]);
 
         ImGui::TableSetColumnIndex(4);
-        ImGui::Text("%.0f", sdl.models[i][3][1]);
+        ImGui::Text("%.3f", sdl.models[i][3][1]);
 
         ImGui::TableSetColumnIndex(5);
-        ImGui::Text("%.2f", sdl.models[i][3][2]);
+        ImGui::Text("%.3f", sdl.models[i][3][2]);
+      }
+
+      ImGui::EndTable();
+    }
+  }
+
+  if (ImGui::CollapsingHeader("UI Sprite draw data")) {
+    if (ImGui::BeginTable("ui_sprite_draw_data_table", 6, table_flags)) {
+      ImGui::TableSetupColumn("Idx.");
+      ImGui::TableSetupColumn("TH");
+      ImGui::TableSetupColumn("TA");
+      ImGui::TableSetupColumn("x");
+      ImGui::TableSetupColumn("y");
+      ImGui::TableSetupColumn("z");
+      ImGui::TableHeadersRow();
+
+      for (surge::usize i = 0; i < ui_sdl.alphas.size(); i++) {
+        ImGui::TableNextRow();
+
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("%lu", i);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text("%lu", ui_sdl.texture_handles[i]);
+
+        ImGui::TableSetColumnIndex(2);
+        ImGui::Text("%.3f", ui_sdl.alphas[i]);
+
+        ImGui::TableSetColumnIndex(3);
+        ImGui::Text("%.3f", ui_sdl.models[i][3][0]);
+
+        ImGui::TableSetColumnIndex(4);
+        ImGui::Text("%.3f", ui_sdl.models[i][3][1]);
+
+        ImGui::TableSetColumnIndex(5);
+        ImGui::Text("%.3f", ui_sdl.models[i][3][2]);
       }
 
       ImGui::EndTable();

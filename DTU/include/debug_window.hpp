@@ -16,10 +16,10 @@ void init(GLFWwindow *window) noexcept;
 void cleanup() noexcept;
 
 void main_window(const DTU::vec_glui &ids, const vec_glui64 &handles, const cmdq_t &cmdq,
-                 const sdl_t &sdl, bool *p_open = nullptr) noexcept;
+                 const sdl_t &sdl, const sdl_t &ui_sdl, bool *p_open = nullptr) noexcept;
 
-void draw(const DTU::vec_glui &ids, const vec_glui64 &handles, const cmdq_t &cmdq,
-          const sdl_t &sdl) noexcept;
+void draw(const DTU::vec_glui &ids, const vec_glui64 &handles, const cmdq_t &cmdq, const sdl_t &sdl,
+          const sdl_t &ui_sdl) noexcept;
 
 } // namespace DTU::debug_window
 

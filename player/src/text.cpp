@@ -335,8 +335,9 @@ void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data
 }
 
 void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
-                                              std::string_view text, glm::vec3 &&baseline_origin,
-                                              glm::vec4 &&color) noexcept {
+                                              std::string_view text,
+                                              const glm::vec3 &baseline_origin,
+                                              const glm::vec4 &color) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::append_text_draw_data");
 #endif
@@ -402,8 +403,8 @@ void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_d
 }
 
 auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_view text,
-                                              glm::vec3 &&baseline_origin,
-                                              glm::vec4 &&color) noexcept -> text_draw_data {
+                                              const glm::vec3 &baseline_origin,
+                                              const glm::vec4 &color) noexcept -> text_draw_data {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::create_text_draw_data");
 #endif
@@ -419,7 +420,7 @@ auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_
 
 void surge::atom::text::overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
                                                  std::string_view text,
-                                                 glm::vec3 &&baseline_origin) noexcept {
+                                                 const glm::vec3 &baseline_origin) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::overwrite_text_draw_data");
 #endif

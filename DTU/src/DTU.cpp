@@ -1,9 +1,12 @@
+// clang-format off
 #include "DTU.hpp"
 
 #include "debug_window.hpp"
 #include "states.hpp"
 
-// clang-format off
+#include "main_menu/main_menu.hpp"
+#include "new_game/new_game.hpp"
+
 #include "player/renderer.hpp"
 #include "player/error_types.hpp"
 #include "player/container_types.hpp"
@@ -13,14 +16,12 @@
 #include "player/text.hpp"
 #include "player/options.hpp"
 #include "player/files.hpp"
-// clang-format on
 
-#include "main_menu/main_menu.hpp"
-#include "new_game/new_game.hpp"
-
-#include <cmath>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+
+#include <cmath>
+// clang-format on
 
 namespace shader_programs {
 
@@ -31,9 +32,10 @@ static GLuint text_shader{0};   // NOLINT
 
 namespace atom_buffers {
 
-static GLuint MPSB{0};                                   // NOLINT
-static surge::atom::sprite::buffer_data sprite_buffer{}; // NOLINT
-static surge::atom::text::buffer_data text_buffer{};     // NOLINT
+static GLuint MPSB{0};                               // NOLINT
+static DTU::sbd_t sprite_buffer{};                   // NOLINT
+static DTU::sbd_t ui_sprite_buffer{};                // NOLINT
+static surge::atom::text::buffer_data text_buffer{}; // NOLINT
 
 } // namespace atom_buffers
 
@@ -50,6 +52,7 @@ namespace draw_buffers {
 
 static DTU::sdl_t sprite{}; // NOLINT
 
+static DTU::sdl_t ui_sprite{};                   // NOLINT
 static surge::atom::text::text_draw_data text{}; // NOLINT
 
 } // namespace draw_buffers
@@ -109,10 +112,18 @@ void DTU::clear_sprites(sdl_t &sdl) noexcept {
   sdl.alphas.clear();
 }
 
-void DTU::load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_path, sdl_t &sdl,
-                           glm::mat4 &&model, float alpha) noexcept {
+void DTU::clear_text(tdd_t &tdd) noexcept {
+  tdd.texture_handles.clear();
+  tdd.glyph_models.clear();
+  tdd.bounding_box = glm::vec4{0.0f};
+  tdd.color = glm::vec4{0.0f};
+}
+
+auto DTU::load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_path, sdl_t &sdl,
+                           glm::mat4 &&model, float alpha) noexcept -> GLuint64 {
   const auto handle{load_texture(ids, handles, img_path)};
   push_sprite(sdl, handle, std::move(model), alpha);
+  return handle;
 }
 
 auto DTU::make_model(glm::vec3 &&pos, glm::vec3 &&scale) noexcept -> glm::mat4 {
@@ -130,7 +141,7 @@ static void unload_a() noexcept {
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::unload(g_command_queue, draw_buffers::sprite);
+    DTU::state::new_game::unload(g_command_queue, draw_buffers::ui_sprite);
     break;
 
   default:
@@ -147,8 +158,8 @@ static void load_a(float ww, float wh) noexcept {
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::load(g_command_queue, loaded_data::loaded_texture_IDs,
-                               loaded_data::loaded_texture_handles, draw_buffers::sprite, ww, wh);
+    DTU::state::new_game::load(loaded_data::loaded_texture_IDs,
+                               loaded_data::loaded_texture_handles);
     break;
 
   default:
@@ -267,6 +278,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   shader_programs::sprite_shader = *sprite_shader;
   atom_buffers::sprite_buffer = surge::atom::sprite::create_buffers(max_sprites);
+  atom_buffers::ui_sprite_buffer = surge::atom::sprite::create_buffers(max_sprites);
 
   // Text shader
   const auto text_shader{
@@ -309,14 +321,18 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   draw_buffers::sprite.models.reserve(max_sprites);
   draw_buffers::sprite.texture_handles.reserve(max_sprites);
 
+  draw_buffers::ui_sprite.alphas.reserve(max_sprites);
+  draw_buffers::ui_sprite.models.reserve(max_sprites);
+  draw_buffers::ui_sprite.texture_handles.reserve(max_sprites);
+
   // Allocate memory for text draw buffer
   draw_buffers::text.texture_handles.reserve(max_chars_in_text);
   draw_buffers::text.glyph_models.reserve(max_chars_in_text);
   draw_buffers::text.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
-  // DTU::state_machine::push_state(DTU::state_machine::states::new_game);
-  DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
+  DTU::state_machine::push_state(DTU::state_machine::states::new_game);
+  // DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
   DTU::state_machine::transition(ww, wh);
 
   // Init debug window
@@ -342,6 +358,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   surge::atom::text::unload_glyphs(loaded_data::itc_benguiat_book_glyphs);
 
   surge::atom::text::destroy_buffers(atom_buffers::text_buffer);
+  surge::atom::sprite::destroy_buffers(atom_buffers::ui_sprite_buffer);
   surge::atom::sprite::destroy_buffers(atom_buffers::sprite_buffer);
   surge::atom::mpsb::destroy_buffer(atom_buffers::MPSB);
 
@@ -359,12 +376,14 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::sprite_buffer,
                             atom_buffers::MPSB, draw_buffers::sprite);
 
+  surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::ui_sprite_buffer,
+                            atom_buffers::MPSB, draw_buffers::ui_sprite);
   surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
                           atom_buffers::MPSB, draw_buffers::text);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(loaded_data::loaded_texture_IDs, loaded_data::loaded_texture_handles,
-                          g_command_queue, draw_buffers::sprite);
+                          g_command_queue, draw_buffers::sprite, draw_buffers::ui_sprite);
 #endif
 
   return 0;
@@ -386,7 +405,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(window, g_command_queue, draw_buffers::sprite, draw_buffers::text,
+    DTU::state::new_game::update(window, g_command_queue, atom_buffers::ui_sprite_buffer,
+                                 draw_buffers::ui_sprite, draw_buffers::text,
                                  loaded_data::itc_benguiat_book_glyphs, dt);
     break;
 

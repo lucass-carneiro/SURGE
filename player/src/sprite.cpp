@@ -214,7 +214,7 @@ void surge::atom::sprite::send_buffers(const buffer_data &bd, const data_list &d
   TracyGpuZone("GPU surge::atom::sprite::send_buffers");
 #endif
 
-  if (dl.models.size() != 0 && dl.alphas.size() != 0 && dl.texture_handles.data() != 0) {
+  if (dl.texture_handles.size() != 0 && dl.models.size() != 0 && dl.alphas.size() != 0) {
     glNamedBufferSubData(bd.MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * dl.models.size()),
                          dl.models.data());
 
@@ -234,7 +234,7 @@ void surge::atom::sprite::draw(const GLuint &sp, const buffer_data &bd, const GL
   TracyGpuZone("GPU surge::atom::sprite::draw");
 #endif
 
-  if (dl.models.size() != 0 && dl.alphas.size() != 0) {
+  if (dl.texture_handles.size() != 0 && dl.models.size() != 0 && dl.alphas.size() != 0) {
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.MMB);
