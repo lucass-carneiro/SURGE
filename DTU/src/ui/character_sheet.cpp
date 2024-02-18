@@ -15,18 +15,20 @@ static constexpr glm::vec4 white{1.0f, 1.0f, 1.0f, 1.0f};
 
 namespace geometry {
 
-static constexpr float baseline_skip{32.0f};
+static constexpr glm::vec3 baseline_skip{7.0f, 27.0f, 0.0f};
 
-static constexpr glm::vec3 empathy_text_baseline{170.285f, 152.916f + baseline_skip, 0.1f};
-static constexpr glm::vec3 introspection_text_baseline{426.556f, 152.916f + baseline_skip, 0.1f};
-static constexpr glm::vec3 reasoning_text_baseline{172.285f, 219.538f + baseline_skip, 0.1f};
-static constexpr glm::vec3 linguistics_text_baseline{426.556f, 219.538f + baseline_skip, 0.1f};
-static constexpr glm::vec3 fitness_text_baseline{172.285f, 282.518f + baseline_skip, 0.1f};
-static constexpr glm::vec3 agility_text_baseline{426.556f, 282.518 + baseline_skip, 0.1f};
+// clang-format off
+static constexpr auto empathy_text_baseline{glm::vec3{170.285f, 152.916f, 0.1f} + baseline_skip};
+static constexpr auto introspection_text_baseline{glm::vec3{426.556f, 152.916f, 0.1f} + baseline_skip};
+static constexpr auto reasoning_text_baseline{glm::vec3{172.285f, 219.538f, 0.1f} + baseline_skip};
+static constexpr auto linguistics_text_baseline{glm::vec3{426.556f, 219.538f, 0.1f} + baseline_skip};
+static constexpr auto fitness_text_baseline{glm::vec3{172.285f, 282.518f, 0.1f} + baseline_skip};
+static constexpr auto agility_text_baseline{glm::vec3{426.556f, 282.518, 0.1f} + baseline_skip};
 
-static constexpr glm::vec3 points_text_baseline{363.968f, 350.0f + baseline_skip, 0.1f};
+static constexpr auto points_text_baseline{glm::vec3{363.968f, 350.0f, 0.1f} + baseline_skip};
 
-static constexpr glm::vec3 help_text_baseline{542.092f, 569.588f + baseline_skip, 0.1f};
+static constexpr auto help_text_baseline{glm::vec3{542.092f, 569.588f, 0.1f} + baseline_skip};
+// clang-format on
 
 } // namespace geometry
 
