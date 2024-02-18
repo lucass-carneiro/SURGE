@@ -50,8 +50,7 @@ namespace draw_buffers {
 
 static DTU::sdl_t sprite{}; // NOLINT
 
-static surge::atom::text::text_draw_data persistent_text_buffer{}; // NOLINT
-static surge::atom::text::text_draw_data efemeral_text_buffer{};   // NOLINT
+static surge::atom::text::text_draw_data text{}; // NOLINT
 
 } // namespace draw_buffers
 
@@ -148,7 +147,8 @@ static void load_a(float ww, float wh) noexcept {
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::load(g_command_queue, draw_buffers::sprite, ww, wh);
+    DTU::state::new_game::load(g_command_queue, loaded_data::loaded_texture_IDs,
+                               loaded_data::loaded_texture_handles, draw_buffers::sprite, ww, wh);
     break;
 
   default:
@@ -309,14 +309,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   draw_buffers::sprite.models.reserve(max_sprites);
   draw_buffers::sprite.texture_handles.reserve(max_sprites);
 
-  // Allocate memory for text draw buffers
-  draw_buffers::persistent_text_buffer.texture_handles.reserve(max_chars_in_text);
-  draw_buffers::persistent_text_buffer.glyph_models.reserve(max_chars_in_text);
-  draw_buffers::persistent_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-
-  draw_buffers::efemeral_text_buffer.texture_handles.reserve(max_chars_in_text);
-  draw_buffers::efemeral_text_buffer.glyph_models.reserve(max_chars_in_text);
-  draw_buffers::efemeral_text_buffer.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+  // Allocate memory for text draw buffer
+  draw_buffers::text.texture_handles.reserve(max_chars_in_text);
+  draw_buffers::text.glyph_models.reserve(max_chars_in_text);
+  draw_buffers::text.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
   // DTU::state_machine::push_state(DTU::state_machine::states::new_game);
@@ -363,13 +359,8 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::sprite_buffer,
                             atom_buffers::MPSB, draw_buffers::sprite);
 
-  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::persistent_text_buffer);
   surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
-                          atom_buffers::MPSB, draw_buffers::persistent_text_buffer);
-
-  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::efemeral_text_buffer);
-  surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
-                          atom_buffers::MPSB, draw_buffers::efemeral_text_buffer);
+                          atom_buffers::MPSB, draw_buffers::text);
 
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(loaded_data::loaded_texture_IDs, loaded_data::loaded_texture_handles,
@@ -395,9 +386,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::update(
-        window, g_command_queue, draw_buffers::sprite, draw_buffers::persistent_text_buffer,
-        draw_buffers::efemeral_text_buffer, loaded_data::itc_benguiat_book_glyphs, dt);
+    DTU::state::new_game::update(window, g_command_queue, draw_buffers::sprite, draw_buffers::text,
+                                 loaded_data::itc_benguiat_book_glyphs, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -408,6 +398,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
   }
 
   surge::atom::sprite::send_buffers(atom_buffers::sprite_buffer, draw_buffers::sprite);
+  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::text);
 
   return 0;
 }

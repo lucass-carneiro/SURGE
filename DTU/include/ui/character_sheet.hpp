@@ -1,12 +1,16 @@
 #ifndef DTU_UI_CHARACTER_SHEET_HPP
 #define DTU_UI_CHARACTER_SHEET_HPP
 
+// clang-format off
+#include "DTU.hpp"
 #include "commands.hpp"
 
 #include <player/sprite.hpp>
 #include <player/text.hpp>
 #include <player/window.hpp>
+
 #include <string_view>
+// clang-format on
 
 namespace DTU::ui::character_sheet {
 
@@ -67,6 +71,8 @@ struct ui_state_desc {
   // Help text
   elements::text help{"", geometry::help_text_baseline, color::white};
 };
+
+void load(vec_glui &ids, vec_glui64 &handles, sdl_t &sdl, float ww, float wh) noexcept;
 
 void update(GLFWwindow *window, cmdq_t &cmdq, ui_state_desc &current_state) noexcept;
 

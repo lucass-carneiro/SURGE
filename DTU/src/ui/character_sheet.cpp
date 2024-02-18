@@ -2,6 +2,14 @@
 
 #include <cmath>
 
+void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles, sdl_t &sdl, float ww,
+                                    float wh) noexcept {
+  DTU::load_push_sprite(ids, handles, "resources/ui/character_sheet/base.png", sdl,
+                        DTU::make_model(glm::vec3{0.0f}, glm::vec3{ww, wh, 1.0f}), 1.0);
+
+  surge::atom::sprite::make_resident(handles);
+}
+
 void DTU::ui::character_sheet::update(GLFWwindow *window, cmdq_t &cmdq,
                                       ui_state_desc &current_state) noexcept {
   using std::abs;
@@ -45,9 +53,9 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, cmdq_t &cmdq,
   }
 }
 
-void DTU::ui::character_sheet::bake_and_send(const ui_state_desc &current_state,
-                                             surge::atom::sprite::data_list &sdl,
-                                             surge::atom::text::text_draw_data &tdd,
-                                             surge::atom::text::glyph_data &tgd) noexcept {
+void DTU::ui::character_sheet::bake_and_send(const ui_state_desc &,
+                                             surge::atom::sprite::data_list &,
+                                             surge::atom::text::text_draw_data &,
+                                             surge::atom::text::glyph_data &) noexcept {
   // TODO
 }

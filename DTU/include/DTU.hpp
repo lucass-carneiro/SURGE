@@ -6,6 +6,7 @@
 #include "player/container_types.hpp"
 #include "player/window.hpp"
 #include "player/sprite.hpp"
+#include "player/text.hpp"
 // clang-format on
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
@@ -23,6 +24,8 @@ namespace DTU {
 using vec_glui = surge::vector<GLuint>;
 using vec_glui64 = surge::vector<GLuint64>;
 using sdl_t = surge::atom::sprite::data_list;
+using tdd_t = surge::atom::text::text_draw_data;
+using tgl_t = surge::atom::text::glyph_data;
 
 // Callbacks
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;

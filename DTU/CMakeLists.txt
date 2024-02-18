@@ -16,13 +16,15 @@ project(
 
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
+  "${PROJECT_SOURCE_DIR}/include/commands.hpp"
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
   "${PROJECT_SOURCE_DIR}/include/states.hpp"
   
   "${PROJECT_SOURCE_DIR}/include/main_menu/main_menu.hpp"
   
   "${PROJECT_SOURCE_DIR}/include/new_game/new_game.hpp"
-  "${PROJECT_SOURCE_DIR}/include/new_game/ui_positional_data.hpp"
+  
+  "${PROJECT_SOURCE_DIR}/include/ui/character_sheet.hpp"
 )
 
 set(
@@ -32,6 +34,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/main_menu/main_menu.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/new_game/new_game.cpp"
+
+  "${PROJECT_SOURCE_DIR}/src/ui/character_sheet.cpp"
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
