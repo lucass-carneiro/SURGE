@@ -41,7 +41,7 @@ struct u8_text {
 };
 
 struct text {
-  std::string_view text{};
+  std::string_view text;
   glm::vec3 baseline{0.0f};
   glm::vec4 color{1.0f};
 };
