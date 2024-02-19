@@ -24,11 +24,13 @@ static constexpr auto reasoning_text_baseline{glm::vec3{172.285f, 219.538f, 0.1f
 static constexpr auto linguistics_text_baseline{glm::vec3{426.556f, 219.538f, 0.1f} + baseline_skip};
 static constexpr auto fitness_text_baseline{glm::vec3{172.285f, 282.518f, 0.1f} + baseline_skip};
 static constexpr auto agility_text_baseline{glm::vec3{426.556f, 282.518, 0.1f} + baseline_skip};
+// clang-format on
 
 static constexpr auto points_text_baseline{glm::vec3{363.968f, 350.0f, 0.1f} + baseline_skip};
 
 static constexpr auto help_text_baseline{glm::vec3{542.092f, 569.588f, 0.1f} + baseline_skip};
-// clang-format on
+
+static constexpr glm::vec4 empathy_rect{29.466f, 152.916f, 199.319f, 36.322};
 
 } // namespace geometry
 
@@ -90,18 +92,18 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
   surge::atom::sprite::make_resident(handles);
 }
 
-static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state, float ww,
-                         float wh) noexcept {
+static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                         const glm::vec2 &window_dims) noexcept {
   using namespace DTU;
   using std::abs;
 
   // Handle window resizes
-  const auto delta_w{abs(current_state.background_scale[0] - ww)};
-  const auto delta_h{abs(current_state.background_scale[1] - wh)};
+  const auto delta_w{abs(current_state.background_scale[0] - window_dims[0])};
+  const auto delta_h{abs(current_state.background_scale[1] - window_dims[1])};
 
   if (delta_w > 1.0f || delta_h > 1.0f) {
-    current_state.background_scale[0] = ww;
-    current_state.background_scale[1] = wh;
+    current_state.background_scale[0] = window_dims[0];
+    current_state.background_scale[1] = window_dims[1];
     current_state.background_scale[2] = 1.0f;
     cmdq.push_back(commands::ui_refresh);
     return;
@@ -135,7 +137,7 @@ static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state, float 
 
 static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
                           const DTU::sbd_t &ui_sbd, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd,
-                          DTU::tgl_t &tgd, float ww, float wh) noexcept {
+                          DTU::tgl_t &tgd, const glm::vec2 &window_dims) noexcept {
   using namespace DTU;
   using std::snprintf;
 
@@ -145,8 +147,8 @@ static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
     DTU::clear_text(tdd);
 
     // Background
-    push_sprite(ui_sdl, g_elm_handles.bckg, make_model(glm::vec3{0.0f}, glm::vec3{ww, wh, 1.0f}),
-                1.0);
+    push_sprite(ui_sdl, g_elm_handles.bckg,
+                make_model(glm::vec3{0.0f}, glm::vec3{window_dims, 1.0f}), 1.0);
 
     // Attributes
     {
@@ -195,8 +197,9 @@ static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
 }
 
 void DTU::ui::character_sheet::update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl, tdd_t &tdd,
-                                      tgl_t &tgd, float ww, float wh) noexcept {
+                                      tgl_t &tgd, const glm::vec2 &window_dims,
+                                      const glm::vec2 &mouse_pos) noexcept {
   static ui_state_desc current_state{};
-  update_state(cmdq, current_state, ww, wh);
-  bake_and_send(cmdq, current_state, ui_sbd, ui_sdl, tdd, tgd, ww, wh);
+  update_state(cmdq, current_state, window_dims);
+  bake_and_send(cmdq, current_state, ui_sbd, ui_sdl, tdd, tgd, window_dims);
 }

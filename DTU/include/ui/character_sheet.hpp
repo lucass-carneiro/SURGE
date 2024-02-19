@@ -10,8 +10,7 @@ namespace DTU::ui::character_sheet {
 
 void load(vec_glui &ids, vec_glui64 &handles) noexcept;
 
-void update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl, tdd_t &tdd, tgl_t &tgd, float ww,
-            float wh) noexcept;
+void update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl, tdd_t &tdd, tgl_t &tgd, const glm::vec2 &window_dims, const glm::vec2 &mouse_pos) noexcept;
 
 } // namespace DTU::ui::character_sheet
 
