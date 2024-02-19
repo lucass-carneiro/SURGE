@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <array>
-#include <string_view>
+#include <string>
 // clang-format on
 
 namespace color {
@@ -30,7 +30,33 @@ static constexpr auto points_text_baseline{glm::vec3{363.968f, 350.0f, 0.1f} + b
 
 static constexpr auto help_text_baseline{glm::vec3{542.092f, 569.588f, 0.1f} + baseline_skip};
 
-static constexpr glm::vec4 empathy_rect{29.466f, 152.916f, 199.319f, 36.322};
+static constexpr glm::vec4 empathy_bttn{212.642, 152.916f, 16.143, 36.322};
+static constexpr glm::vec4 empathy_bttn_up{212.642, 152.916f, 16.143, 36.322 / 2.0};
+static constexpr glm::vec4 empathy_bttn_down{212.642, 152.916f + 36.322 / 2.0, 16.143,
+                                             36.322 / 2.0};
+
+static constexpr glm::vec4 introspection_bttn{466.913, 152.916f, 16.143, 36.322};
+static constexpr glm::vec4 introspection_bttn_up{466.913, 152.916f, 16.143, 36.322 / 2.0};
+static constexpr glm::vec4 introspection_bttn_down{466.913, 152.916f + 36.322 / 2.0, 16.143,
+                                                   36.322 / 2.0};
+
+static constexpr glm::vec4 reasoning_bttn{212.642, 219.538, 16.143, 36.322};
+static constexpr glm::vec4 reasoning_bttn_up{212.642, 219.538, 16.143, 36.322 / 2.0};
+static constexpr glm::vec4 reasoning_bttn_down{212.642, 219.538 + 36.322 / 2.0, 16.143,
+                                               36.322 / 2.0};
+
+static constexpr glm::vec4 linguistics_bttn{466.913, 219.538, 16.143, 36.322};
+static constexpr glm::vec4 linguistics_bttn_up{466.913, 219.538, 16.143, 36.322 / 2.0};
+static constexpr glm::vec4 linguistics_bttn_down{466.913, 219.538 + 36.322 / 2.0, 16.143,
+                                                 36.322 / 2.0};
+
+static constexpr glm::vec4 fitness_bttn{212.642, 282.518, 16.143, 32.322};
+static constexpr glm::vec4 fitness_bttn_up{212.642, 282.518, 16.143, 32.322 / 2.0};
+static constexpr glm::vec4 fitness_bttn_down{212.642, 282.518 + 32.322 / 2.0, 16.143, 32.322 / 2.0};
+
+static constexpr glm::vec4 agility_bttn{466.913, 282.518, 16.143, 36.322};
+static constexpr glm::vec4 agility_bttn_up{466.913, 282.518, 16.143, 36.322 / 2.0};
+static constexpr glm::vec4 agility_bttn_down{466.913, 282.518 + 36.322 / 2.0, 16.143, 36.322 / 2.0};
 
 } // namespace geometry
 
@@ -43,7 +69,7 @@ struct u8_text {
 };
 
 struct text {
-  std::string_view text;
+  surge::string text;
   glm::vec3 baseline{0.0f};
   glm::vec4 color{1.0f};
 };
@@ -79,6 +105,22 @@ struct element_handles {
 
 static element_handles g_elm_handles{}; // NOLINT
 
+static inline auto point_in_rect(const glm::vec2 &point, const glm::vec4 &rect) noexcept {
+  const auto x{point[0]};
+  const auto y{point[1]};
+
+  const auto x0{rect[0]};
+  const auto xf{rect[0] + rect[2]};
+
+  const auto y0{rect[1]};
+  const auto yf{rect[1] + rect[3]};
+
+  const auto in_x_range{x0 < x && x < xf};
+  const auto in_y_range{y0 < y && y < yf};
+
+  return in_x_range && in_y_range;
+}
+
 void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept {
   g_elm_handles.bckg = DTU::load_texture(ids, handles, "resources/ui/character_sheet/base.png");
   g_elm_handles.d4 = DTU::load_texture(ids, handles, "resources/ui/character_sheet/d4.png");
@@ -113,7 +155,7 @@ static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
 
   case commands::empathy_up:
-    if (current_state.empathy.value + 1 <= 5) {
+    if (current_state.empathy.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
       current_state.empathy.value += 1;
       current_state.points.value -= 1;
       cmdq.push_back(commands::ui_refresh);
@@ -124,6 +166,96 @@ static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
   case commands::empathy_down:
     if (current_state.empathy.value - 1 >= 0) {
       current_state.empathy.value -= 1;
+      current_state.points.value += 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::introspection_up:
+    if (current_state.introspection.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
+      current_state.introspection.value += 1;
+      current_state.points.value -= 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::introspection_down:
+    if (current_state.introspection.value - 1 >= 0) {
+      current_state.introspection.value -= 1;
+      current_state.points.value += 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::reasoning_up:
+    if (current_state.reasoning.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
+      current_state.reasoning.value += 1;
+      current_state.points.value -= 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::reasoning_down:
+    if (current_state.reasoning.value - 1 >= 0) {
+      current_state.reasoning.value -= 1;
+      current_state.points.value += 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::linguistics_up:
+    if (current_state.linguistics.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
+      current_state.linguistics.value += 1;
+      current_state.points.value -= 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::linguistics_down:
+    if (current_state.linguistics.value - 1 >= 0) {
+      current_state.linguistics.value -= 1;
+      current_state.points.value += 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::fitness_up:
+    if (current_state.fitness.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
+      current_state.fitness.value += 1;
+      current_state.points.value -= 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::fitness_down:
+    if (current_state.fitness.value - 1 >= 0) {
+      current_state.fitness.value -= 1;
+      current_state.points.value += 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::agility_up:
+    if (current_state.agility.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
+      current_state.agility.value += 1;
+      current_state.points.value -= 1;
+      cmdq.push_back(commands::ui_refresh);
+    }
+    cmdq.pop_front();
+    break;
+
+  case commands::agility_down:
+    if (current_state.agility.value - 1 >= 0) {
+      current_state.agility.value -= 1;
       current_state.points.value += 1;
       cmdq.push_back(commands::ui_refresh);
     }
@@ -190,6 +322,12 @@ static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
           tdd, tgd, buffer.data(), current_state.points.baseline, current_state.points.color);
     }
 
+    // Help text
+    if (current_state.help.text.size() != 0) {
+      surge::atom::text::append_text_draw_data(
+          tdd, tgd, current_state.help.text, current_state.help.baseline, current_state.help.color);
+    }
+
     surge::atom::sprite::send_buffers(ui_sbd, ui_sdl);
 
     cmdq.pop_front();
@@ -197,9 +335,110 @@ static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
 }
 
 void DTU::ui::character_sheet::update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl, tdd_t &tdd,
-                                      tgl_t &tgd, const glm::vec2 &window_dims,
-                                      const glm::vec2 &mouse_pos) noexcept {
+                                      tgl_t &tgd, const glm::vec2 &window_dims) noexcept {
   static ui_state_desc current_state{};
   update_state(cmdq, current_state, window_dims);
   bake_and_send(cmdq, current_state, ui_sbd, ui_sdl, tdd, tgd, window_dims);
+}
+
+void DTU::ui::character_sheet::mouse_left_click(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
+  if (point_in_rect(location, geometry::empathy_bttn_up)) {
+    cmdq.push_back(commands::empathy_up);
+  }
+
+  if (point_in_rect(location, geometry::empathy_bttn_down)) {
+    cmdq.push_back(commands::empathy_down);
+  }
+
+  if (point_in_rect(location, geometry::introspection_bttn_up)) {
+    cmdq.push_back(commands::introspection_up);
+  }
+
+  if (point_in_rect(location, geometry::introspection_bttn_down)) {
+    cmdq.push_back(commands::introspection_down);
+  }
+
+  if (point_in_rect(location, geometry::reasoning_bttn_up)) {
+    cmdq.push_back(commands::reasoning_up);
+  }
+
+  if (point_in_rect(location, geometry::reasoning_bttn_down)) {
+    cmdq.push_back(commands::reasoning_down);
+  }
+
+  if (point_in_rect(location, geometry::linguistics_bttn_up)) {
+    cmdq.push_back(commands::linguistics_up);
+  }
+
+  if (point_in_rect(location, geometry::linguistics_bttn_down)) {
+    cmdq.push_back(commands::linguistics_down);
+  }
+
+  if (point_in_rect(location, geometry::fitness_bttn_up)) {
+    cmdq.push_back(commands::fitness_up);
+  }
+
+  if (point_in_rect(location, geometry::fitness_bttn_down)) {
+    cmdq.push_back(commands::fitness_down);
+  }
+
+  if (point_in_rect(location, geometry::agility_bttn_up)) {
+    cmdq.push_back(commands::agility_up);
+  }
+
+  if (point_in_rect(location, geometry::agility_bttn_down)) {
+    cmdq.push_back(commands::agility_down);
+  }
+}
+
+void DTU::ui::character_sheet::mouse_scroll_up(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
+  if (point_in_rect(location, geometry::empathy_bttn)) {
+    cmdq.push_back(commands::empathy_up);
+  }
+
+  if (point_in_rect(location, geometry::introspection_bttn)) {
+    cmdq.push_back(commands::introspection_up);
+  }
+
+  if (point_in_rect(location, geometry::reasoning_bttn)) {
+    cmdq.push_back(commands::reasoning_up);
+  }
+
+  if (point_in_rect(location, geometry::linguistics_bttn)) {
+    cmdq.push_back(commands::linguistics_up);
+  }
+
+  if (point_in_rect(location, geometry::fitness_bttn)) {
+    cmdq.push_back(commands::fitness_up);
+  }
+
+  if (point_in_rect(location, geometry::agility_bttn)) {
+    cmdq.push_back(commands::agility_up);
+  }
+}
+
+void DTU::ui::character_sheet::mouse_scroll_down(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
+  if (point_in_rect(location, geometry::empathy_bttn)) {
+    cmdq.push_back(commands::empathy_down);
+  }
+
+  if (point_in_rect(location, geometry::introspection_bttn)) {
+    cmdq.push_back(commands::introspection_down);
+  }
+
+  if (point_in_rect(location, geometry::reasoning_bttn)) {
+    cmdq.push_back(commands::reasoning_down);
+  }
+
+  if (point_in_rect(location, geometry::linguistics_bttn)) {
+    cmdq.push_back(commands::linguistics_down);
+  }
+
+  if (point_in_rect(location, geometry::fitness_bttn)) {
+    cmdq.push_back(commands::fitness_down);
+  }
+
+  if (point_in_rect(location, geometry::agility_bttn)) {
+    cmdq.push_back(commands::agility_down);
+  }
 }

@@ -24,15 +24,25 @@ void DTU::state::new_game::update(GLFWwindow *window, cmdq_t &cmdq, const sbd_t 
                                   double) noexcept {
 
   const auto [ww, wh] = surge::window::get_dims(window);
-  const auto mouse_pos{surge::window::get_cursor_pos(window)};
 
-  ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh}, mouse_pos);
+  ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh});
 }
 
-void DTU::state::new_game::mouse_click(cmdq_t &, GLFWwindow *, int, int, int) noexcept {
-  // TODO
+void DTU::state::new_game::mouse_click(cmdq_t &cmdq, GLFWwindow *window, int button, int action,
+                                       int) noexcept {
+
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    ui::character_sheet::mouse_left_click(cmdq, surge::window::get_cursor_pos(window));
+  }
 }
 
-void DTU::state::new_game::mouse_scroll(cmdq_t &, GLFWwindow *, double, double) noexcept {
-  // TODO
+void DTU::state::new_game::mouse_scroll(cmdq_t &cmdq, GLFWwindow *window, double,
+                                        double yoffset) noexcept {
+  if (yoffset > 0) {
+    ui::character_sheet::mouse_scroll_up(cmdq, surge::window::get_cursor_pos(window));
+  }
+
+  if (yoffset < 0) {
+    ui::character_sheet::mouse_scroll_down(cmdq, surge::window::get_cursor_pos(window));
+  }
 }
