@@ -30,30 +30,36 @@ static constexpr auto points_text_baseline{glm::vec3{363.968f, 350.0f, 0.1f} + b
 
 static constexpr auto help_text_baseline{glm::vec3{542.092f, 569.588f, 0.1f} + baseline_skip};
 
+static constexpr glm::vec4 empathy_area{29.466, 152.916, 199.319, 36.322};
 static constexpr glm::vec4 empathy_bttn{212.642, 152.916f, 16.143, 36.322};
 static constexpr glm::vec4 empathy_bttn_up{212.642, 152.916f, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 empathy_bttn_down{212.642, 152.916f + 36.322 / 2.0, 16.143,
                                              36.322 / 2.0};
 
+static constexpr glm::vec4 introspection_area{233.784, 152.916, 249.272, 36.322};
 static constexpr glm::vec4 introspection_bttn{466.913, 152.916f, 16.143, 36.322};
 static constexpr glm::vec4 introspection_bttn_up{466.913, 152.916f, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 introspection_bttn_down{466.913, 152.916f + 36.322 / 2.0, 16.143,
                                                    36.322 / 2.0};
 
+static constexpr glm::vec4 reasoning_area{18, 219.538, 210.785, 36.322};
 static constexpr glm::vec4 reasoning_bttn{212.642, 219.538, 16.143, 36.322};
 static constexpr glm::vec4 reasoning_bttn_up{212.642, 219.538, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 reasoning_bttn_down{212.642, 219.538 + 36.322 / 2.0, 16.143,
                                                36.322 / 2.0};
 
+static constexpr glm::vec4 linguistics_area{256.108, 219.538, 226.947, 36.322};
 static constexpr glm::vec4 linguistics_bttn{466.913, 219.538, 16.143, 36.322};
 static constexpr glm::vec4 linguistics_bttn_up{466.913, 219.538, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 linguistics_bttn_down{466.913, 219.538 + 36.322 / 2.0, 16.143,
                                                  36.322 / 2.0};
 
+static constexpr glm::vec4 fitness_area{43.026, 282.518, 185.759, 32.321};
 static constexpr glm::vec4 fitness_bttn{212.642, 282.518, 16.143, 32.322};
 static constexpr glm::vec4 fitness_bttn_up{212.642, 282.518, 16.143, 32.322 / 2.0};
 static constexpr glm::vec4 fitness_bttn_down{212.642, 282.518 + 32.322 / 2.0, 16.143, 32.322 / 2.0};
 
+static constexpr glm::vec4 agility_area{286.819, 285.518, 196.237, 36.321};
 static constexpr glm::vec4 agility_bttn{466.913, 282.518, 16.143, 36.322};
 static constexpr glm::vec4 agility_bttn_up{466.913, 282.518, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 agility_bttn_down{466.913, 282.518 + 36.322 / 2.0, 16.143, 36.322 / 2.0};
@@ -134,8 +140,167 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
   surge::atom::sprite::make_resident(handles);
 }
 
-static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
-                         const glm::vec2 &window_dims) noexcept {
+static inline void empathy_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                  const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::empathy_area)
+      && !point_in_rect(prev_cp, geometry::empathy_area)) {
+    current_state.help.text = "Your ability to understand, de-\n"
+                              "tect and empathize with the\n"
+                              "feelings of others.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::empathy_area)
+      && point_in_rect(prev_cp, geometry::empathy_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void introspection_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                        const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::introspection_area)
+      && !point_in_rect(prev_cp, geometry::introspection_area)) {
+    current_state.help.text = "Your ability to understand\n"
+                              "yourself, your desires\n"
+                              "fears and overall mental\n"
+                              "state.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::introspection_area)
+      && point_in_rect(prev_cp, geometry::introspection_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void reasoning_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                    const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::reasoning_area)
+      && !point_in_rect(prev_cp, geometry::reasoning_area)) {
+    current_state.help.text = "Your ability to apply logic\n"
+                              "and abstract thinking to\n"
+                              "solve problems.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::reasoning_area)
+      && point_in_rect(prev_cp, geometry::reasoning_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void linguistics_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                      const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::linguistics_area)
+      && !point_in_rect(prev_cp, geometry::linguistics_area)) {
+    current_state.help.text = "Your ability to learn, express\n"
+                              "yourself and understand diff-\n"
+                              "erent languages and forms of\n"
+                              "communication.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::linguistics_area)
+      && point_in_rect(prev_cp, geometry::linguistics_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void fitness_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                  const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::fitness_area)
+      && !point_in_rect(prev_cp, geometry::fitness_area)) {
+    current_state.help.text = "Your overall physical fitness\n"
+                              "including bodily health, mus-\n"
+                              "cle mass and stamina.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::fitness_area)
+      && point_in_rect(prev_cp, geometry::fitness_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void agility_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                  const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::agility_area)
+      && !point_in_rect(prev_cp, geometry::agility_area)) {
+    current_state.help.text = "Your ability to perform com-\n"
+                              "plex and precise bodily mo-\n"
+                              "tions and actions.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::agility_area)
+      && point_in_rect(prev_cp, geometry::agility_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                const glm::vec2 &window_dims,
+                                const glm::vec2 &cursor_pos) noexcept {
   using namespace DTU;
   using std::abs;
 
@@ -148,8 +313,15 @@ static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     current_state.background_scale[1] = window_dims[1];
     current_state.background_scale[2] = 1.0f;
     cmdq.push_back(commands::ui_refresh);
-    return;
   }
+
+  // Handle mouse hovering into specific areas
+  empathy_hoover(cmdq, current_state, cursor_pos);
+  introspection_hoover(cmdq, current_state, cursor_pos);
+  reasoning_hoover(cmdq, current_state, cursor_pos);
+  linguistics_hoover(cmdq, current_state, cursor_pos);
+  fitness_hoover(cmdq, current_state, cursor_pos);
+  agility_hoover(cmdq, current_state, cursor_pos);
 
   // Handle UI commands
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
@@ -267,9 +439,9 @@ static void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
   }
 }
 
-static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
-                          const DTU::sbd_t &ui_sbd, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd,
-                          DTU::tgl_t &tgd, const glm::vec2 &window_dims) noexcept {
+static inline void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
+                                 const DTU::sbd_t &ui_sbd, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd,
+                                 DTU::tgl_t &tgd, const glm::vec2 &window_dims) noexcept {
   using namespace DTU;
   using std::snprintf;
 
@@ -335,110 +507,114 @@ static void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current_state,
 }
 
 void DTU::ui::character_sheet::update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl, tdd_t &tdd,
-                                      tgl_t &tgd, const glm::vec2 &window_dims) noexcept {
+                                      tgl_t &tgd, const glm::vec2 &window_dims,
+                                      const glm::vec2 &cursor_pos) noexcept {
+
   static ui_state_desc current_state{};
-  update_state(cmdq, current_state, window_dims);
+  update_state(cmdq, current_state, window_dims, cursor_pos);
   bake_and_send(cmdq, current_state, ui_sbd, ui_sdl, tdd, tgd, window_dims);
 }
 
-void DTU::ui::character_sheet::mouse_left_click(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
-  if (point_in_rect(location, geometry::empathy_bttn_up)) {
+void DTU::ui::character_sheet::mouse_left_click(cmdq_t &cmdq,
+                                                const glm::vec2 &cursor_pos) noexcept {
+  if (point_in_rect(cursor_pos, geometry::empathy_bttn_up)) {
     cmdq.push_back(commands::empathy_up);
   }
 
-  if (point_in_rect(location, geometry::empathy_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::empathy_bttn_down)) {
     cmdq.push_back(commands::empathy_down);
   }
 
-  if (point_in_rect(location, geometry::introspection_bttn_up)) {
+  if (point_in_rect(cursor_pos, geometry::introspection_bttn_up)) {
     cmdq.push_back(commands::introspection_up);
   }
 
-  if (point_in_rect(location, geometry::introspection_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::introspection_bttn_down)) {
     cmdq.push_back(commands::introspection_down);
   }
 
-  if (point_in_rect(location, geometry::reasoning_bttn_up)) {
+  if (point_in_rect(cursor_pos, geometry::reasoning_bttn_up)) {
     cmdq.push_back(commands::reasoning_up);
   }
 
-  if (point_in_rect(location, geometry::reasoning_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::reasoning_bttn_down)) {
     cmdq.push_back(commands::reasoning_down);
   }
 
-  if (point_in_rect(location, geometry::linguistics_bttn_up)) {
+  if (point_in_rect(cursor_pos, geometry::linguistics_bttn_up)) {
     cmdq.push_back(commands::linguistics_up);
   }
 
-  if (point_in_rect(location, geometry::linguistics_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::linguistics_bttn_down)) {
     cmdq.push_back(commands::linguistics_down);
   }
 
-  if (point_in_rect(location, geometry::fitness_bttn_up)) {
+  if (point_in_rect(cursor_pos, geometry::fitness_bttn_up)) {
     cmdq.push_back(commands::fitness_up);
   }
 
-  if (point_in_rect(location, geometry::fitness_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::fitness_bttn_down)) {
     cmdq.push_back(commands::fitness_down);
   }
 
-  if (point_in_rect(location, geometry::agility_bttn_up)) {
+  if (point_in_rect(cursor_pos, geometry::agility_bttn_up)) {
     cmdq.push_back(commands::agility_up);
   }
 
-  if (point_in_rect(location, geometry::agility_bttn_down)) {
+  if (point_in_rect(cursor_pos, geometry::agility_bttn_down)) {
     cmdq.push_back(commands::agility_down);
   }
 }
 
-void DTU::ui::character_sheet::mouse_scroll_up(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
-  if (point_in_rect(location, geometry::empathy_bttn)) {
+void DTU::ui::character_sheet::mouse_scroll_up(cmdq_t &cmdq, const glm::vec2 &cursor_pos) noexcept {
+  if (point_in_rect(cursor_pos, geometry::empathy_bttn)) {
     cmdq.push_back(commands::empathy_up);
   }
 
-  if (point_in_rect(location, geometry::introspection_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::introspection_bttn)) {
     cmdq.push_back(commands::introspection_up);
   }
 
-  if (point_in_rect(location, geometry::reasoning_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::reasoning_bttn)) {
     cmdq.push_back(commands::reasoning_up);
   }
 
-  if (point_in_rect(location, geometry::linguistics_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::linguistics_bttn)) {
     cmdq.push_back(commands::linguistics_up);
   }
 
-  if (point_in_rect(location, geometry::fitness_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::fitness_bttn)) {
     cmdq.push_back(commands::fitness_up);
   }
 
-  if (point_in_rect(location, geometry::agility_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::agility_bttn)) {
     cmdq.push_back(commands::agility_up);
   }
 }
 
-void DTU::ui::character_sheet::mouse_scroll_down(cmdq_t &cmdq, const glm::vec2 &location) noexcept {
-  if (point_in_rect(location, geometry::empathy_bttn)) {
+void DTU::ui::character_sheet::mouse_scroll_down(cmdq_t &cmdq,
+                                                 const glm::vec2 &cursor_pos) noexcept {
+  if (point_in_rect(cursor_pos, geometry::empathy_bttn)) {
     cmdq.push_back(commands::empathy_down);
   }
 
-  if (point_in_rect(location, geometry::introspection_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::introspection_bttn)) {
     cmdq.push_back(commands::introspection_down);
   }
 
-  if (point_in_rect(location, geometry::reasoning_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::reasoning_bttn)) {
     cmdq.push_back(commands::reasoning_down);
   }
 
-  if (point_in_rect(location, geometry::linguistics_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::linguistics_bttn)) {
     cmdq.push_back(commands::linguistics_down);
   }
 
-  if (point_in_rect(location, geometry::fitness_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::fitness_bttn)) {
     cmdq.push_back(commands::fitness_down);
   }
 
-  if (point_in_rect(location, geometry::agility_bttn)) {
+  if (point_in_rect(cursor_pos, geometry::agility_bttn)) {
     cmdq.push_back(commands::agility_down);
   }
 }

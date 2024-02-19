@@ -24,8 +24,8 @@ void DTU::state::new_game::update(GLFWwindow *window, cmdq_t &cmdq, const sbd_t 
                                   double) noexcept {
 
   const auto [ww, wh] = surge::window::get_dims(window);
-
-  ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh});
+  const auto cursor_pos{surge::window::get_cursor_pos(window)};
+  ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh}, cursor_pos);
 }
 
 void DTU::state::new_game::mouse_click(cmdq_t &cmdq, GLFWwindow *window, int button, int action,
