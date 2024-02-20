@@ -64,6 +64,20 @@ static constexpr glm::vec4 agility_bttn{466.913, 282.518, 16.143, 36.322};
 static constexpr glm::vec4 agility_bttn_up{466.913, 282.518, 16.143, 36.322 / 2.0};
 static constexpr glm::vec4 agility_bttn_down{466.913, 282.518 + 36.322 / 2.0, 16.143, 36.322 / 2.0};
 
+static constexpr glm::vec4 reset_bttn_rect{128.153, 698, 86.063, 57.376};
+
+static constexpr glm::vec4 health_points_area{128.153, 525.604, 243.695, 36.321};
+static constexpr auto health_points_value{glm::vec3{335.526, 525.604, 0.1} + baseline_skip};
+
+static constexpr glm::vec4 actions_points_area{128.153, 567.701, 243.695, 36.321};
+static constexpr auto action_points_value{glm::vec3{335.526, 576.701, 0.1} + baseline_skip};
+
+static constexpr glm::vec4 psyche_points_area{128.153, 612.973, 243.695, 36.321};
+static constexpr auto psyche_points_value{glm::vec3{335.526, 612.973, 0.1} + baseline_skip};
+
+static constexpr glm::vec4 initiative_points_area{128.153, 658.260, 243.695, 36.321};
+static constexpr auto initiative_points_value{glm::vec3{335.526, 658.260, 0.1} + baseline_skip};
+
 } // namespace geometry
 
 namespace elements {
@@ -93,6 +107,11 @@ struct ui_state_desc {
   elements::u8_text fitness{0, geometry::fitness_text_baseline, color::white};
   elements::u8_text agility{0, geometry::agility_text_baseline, color::white};
   elements::u8_text points{12, geometry::points_text_baseline, color::white};
+
+  elements::u8_text hp{2, geometry::health_points_value, color::white};
+  elements::u8_text ap{2, geometry::action_points_value, color::white};
+  elements::u8_text pp{2, geometry::psyche_points_value, color::white};
+  elements::u8_text in{0, geometry::initiative_points_value, color::white};
 
   // Help text
   elements::text help{"", geometry::help_text_baseline, color::white};
@@ -298,11 +317,114 @@ static inline void agility_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_stat
   prev_cp = cursor_pos;
 }
 
+static inline void health_points_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                        const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::health_points_area)
+      && !point_in_rect(prev_cp, geometry::health_points_area)) {
+    current_state.help.text = "Represents the character's\n"
+                              "overall physical health.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::health_points_area)
+      && point_in_rect(prev_cp, geometry::health_points_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void action_points_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                        const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::actions_points_area)
+      && !point_in_rect(prev_cp, geometry::actions_points_area)) {
+    current_state.help.text = "Represents a character's\n"
+                              "overall mental health.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::actions_points_area)
+      && point_in_rect(prev_cp, geometry::actions_points_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void psyche_points_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                        const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::psyche_points_area)
+      && !point_in_rect(prev_cp, geometry::psyche_points_area)) {
+    current_state.help.text = "Represents a character's\n"
+                              "actions and proactivity\n"
+                              "during combat scenarios.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::psyche_points_area)
+      && point_in_rect(prev_cp, geometry::psyche_points_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
+static inline void initiative_points_hoover(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
+                                            const glm::vec2 &cursor_pos) noexcept {
+  using namespace DTU;
+
+  // Cursor position of previous call
+  static glm::vec2 prev_cp{0.0f};
+
+  // Enter
+  if (point_in_rect(cursor_pos, geometry::initiative_points_area)
+      && !point_in_rect(prev_cp, geometry::initiative_points_area)) {
+    current_state.help.text = "Represents a character's\n"
+                              "readiness for combat\n"
+                              "encounters.";
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  // Exit
+  if (!point_in_rect(cursor_pos, geometry::initiative_points_area)
+      && point_in_rect(prev_cp, geometry::initiative_points_area)) {
+    current_state.help.text.clear();
+    cmdq.push_back(commands::ui_refresh);
+  }
+
+  prev_cp = cursor_pos;
+}
+
 static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
                                 const glm::vec2 &window_dims,
                                 const glm::vec2 &cursor_pos) noexcept {
   using namespace DTU;
   using std::abs;
+  using std::ceil;
 
   // Handle window resizes
   const auto delta_w{abs(current_state.background_scale[0] - window_dims[0])};
@@ -322,6 +444,10 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
   linguistics_hoover(cmdq, current_state, cursor_pos);
   fitness_hoover(cmdq, current_state, cursor_pos);
   agility_hoover(cmdq, current_state, cursor_pos);
+  health_points_hoover(cmdq, current_state, cursor_pos);
+  action_points_hoover(cmdq, current_state, cursor_pos);
+  psyche_points_hoover(cmdq, current_state, cursor_pos);
+  initiative_points_hoover(cmdq, current_state, cursor_pos);
 
   // Handle UI commands
   switch (cmdq.size() == 0 ? commands::idle : cmdq.front()) {
@@ -348,6 +474,7 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.introspection.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
       current_state.introspection.value += 1;
       current_state.points.value -= 1;
+      current_state.pp.value = 2 * (current_state.introspection.value + 1);
       cmdq.push_back(commands::ui_refresh);
     }
     cmdq.pop_front();
@@ -357,6 +484,7 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.introspection.value - 1 >= 0) {
       current_state.introspection.value -= 1;
       current_state.points.value += 1;
+      current_state.pp.value = 2 * (current_state.introspection.value + 1);
       cmdq.push_back(commands::ui_refresh);
     }
     cmdq.pop_front();
@@ -402,6 +530,9 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.fitness.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
       current_state.fitness.value += 1;
       current_state.points.value -= 1;
+      current_state.hp.value = 2 * (current_state.fitness.value + 1);
+      current_state.in.value = static_cast<surge::u8>(
+          ceil((current_state.fitness.value + current_state.agility.value) / 2));
       cmdq.push_back(commands::ui_refresh);
     }
     cmdq.pop_front();
@@ -411,6 +542,9 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.fitness.value - 1 >= 0) {
       current_state.fitness.value -= 1;
       current_state.points.value += 1;
+      current_state.hp.value = 2 * (current_state.fitness.value + 1);
+      current_state.in.value = static_cast<surge::u8>(
+          ceil((current_state.fitness.value + current_state.agility.value) / 2));
       cmdq.push_back(commands::ui_refresh);
     }
     cmdq.pop_front();
@@ -420,6 +554,9 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.agility.value + 1 <= 5 && current_state.points.value - 1 >= 0) {
       current_state.agility.value += 1;
       current_state.points.value -= 1;
+      current_state.ap.value = 2 * (current_state.agility.value + 1);
+      current_state.in.value = static_cast<surge::u8>(
+          ceil((current_state.fitness.value + current_state.agility.value) / 2));
       cmdq.push_back(commands::ui_refresh);
     }
     cmdq.pop_front();
@@ -429,8 +566,30 @@ static inline void update_state(DTU::cmdq_t &cmdq, ui_state_desc &current_state,
     if (current_state.agility.value - 1 >= 0) {
       current_state.agility.value -= 1;
       current_state.points.value += 1;
+      current_state.ap.value = 2 * (current_state.agility.value + 1);
+      current_state.in.value = static_cast<surge::u8>(
+          ceil((current_state.fitness.value + current_state.agility.value) / 2));
       cmdq.push_back(commands::ui_refresh);
     }
+    cmdq.pop_front();
+    break;
+
+  case commands::reset_click:
+    current_state.empathy.value = 0;
+    current_state.introspection.value = 0;
+    current_state.reasoning.value = 0;
+    current_state.linguistics.value = 0;
+    current_state.fitness.value = 0;
+    current_state.agility.value = 0;
+
+    current_state.points.value = 12;
+
+    current_state.hp.value = 2;
+    current_state.ap.value = 2;
+    current_state.pp.value = 2;
+    current_state.in.value = 0;
+
+    cmdq.push_back(commands::ui_refresh);
     cmdq.pop_front();
     break;
 
@@ -494,6 +653,42 @@ static inline void bake_and_send(DTU::cmdq_t &cmdq, const ui_state_desc &current
           tdd, tgd, buffer.data(), current_state.points.baseline, current_state.points.color);
     }
 
+    // Health points
+    {
+      std::array<char, 3> buffer{0, 0, 0};
+
+      snprintf(buffer.data(), 3, "%u", current_state.hp.value);
+      surge::atom::text::append_text_draw_data(tdd, tgd, buffer.data(), current_state.hp.baseline,
+                                               current_state.hp.color);
+    }
+
+    // Action points
+    {
+      std::array<char, 3> buffer{0, 0, 0};
+
+      snprintf(buffer.data(), 3, "%u", current_state.ap.value);
+      surge::atom::text::append_text_draw_data(tdd, tgd, buffer.data(), current_state.ap.baseline,
+                                               current_state.ap.color);
+    }
+
+    // Psyche points
+    {
+      std::array<char, 3> buffer{0, 0, 0};
+
+      snprintf(buffer.data(), 3, "%u", current_state.pp.value);
+      surge::atom::text::append_text_draw_data(tdd, tgd, buffer.data(), current_state.pp.baseline,
+                                               current_state.pp.color);
+    }
+
+    // Initiative points
+    {
+      std::array<char, 3> buffer{0, 0, 0};
+
+      snprintf(buffer.data(), 3, "%u", current_state.in.value);
+      surge::atom::text::append_text_draw_data(tdd, tgd, buffer.data(), current_state.in.baseline,
+                                               current_state.in.color);
+    }
+
     // Help text
     if (current_state.help.text.size() != 0) {
       surge::atom::text::append_text_draw_data(
@@ -517,6 +712,11 @@ void DTU::ui::character_sheet::update(cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &
 
 void DTU::ui::character_sheet::mouse_left_click(cmdq_t &cmdq,
                                                 const glm::vec2 &cursor_pos) noexcept {
+
+  if (point_in_rect(cursor_pos, geometry::reset_bttn_rect)) {
+    cmdq.push_back(commands::reset_click);
+  }
+
   if (point_in_rect(cursor_pos, geometry::empathy_bttn_up)) {
     cmdq.push_back(commands::empathy_up);
   }

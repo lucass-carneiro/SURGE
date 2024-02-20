@@ -37,6 +37,8 @@ enum commands : cmd_code_t {
 
   ui_refresh,
 
+  reset_click,
+
   count
 };
 
