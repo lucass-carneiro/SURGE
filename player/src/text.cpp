@@ -249,8 +249,8 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
       glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
       // Wrapping
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
       // Filtering
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -337,7 +337,8 @@ void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data
 void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
                                               std::string_view text,
                                               const glm::vec3 &baseline_origin,
-                                              const glm::vec4 &color) noexcept {
+                                              const glm::vec4 &color,
+                                              const glm::vec2 &scale) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::append_text_draw_data");
 #endif
@@ -354,37 +355,42 @@ void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_d
   for (const auto &c : text) {
     // White space
     if (c == ' ') {
-      pen_origin[0] += static_cast<float>(gd.whitespace_advance >> 6);
-      bbox[2] += static_cast<float>(gd.whitespace_advance >> 6);
+      pen_origin[0] += static_cast<float>(gd.whitespace_advance >> 6) * scale[0];
+      bbox[2] += static_cast<float>(gd.whitespace_advance >> 6) * scale[0];
       continue;
     }
 
     // New line + carrige return
     if (c == '\n') {
       pen_origin[0] = baseline_origin[0];
-      pen_origin[1] += static_cast<float>(gd.line_spacing >> 6);
-      bbox[3] += static_cast<float>(gd.line_spacing >> 6);
+      pen_origin[1] += static_cast<float>(gd.line_spacing >> 6) * scale[1];
+      bbox[3] += static_cast<float>(gd.line_spacing >> 6) * scale[1];
       continue;
     }
 
     // Unsupported characters
     if (c < 33 || c > 126) {
-      // TODO: print �
+      log_warn("Character %c is unsupported", c);
       continue;
     }
 
     // Printable characters
     const auto char_idx{static_cast<usize>(c) - 33};
 
-    const auto bearing{glm::vec3{gd.bearing_x[char_idx], -gd.bearing_y[char_idx], 0.0f}};
+    const glm::vec3 bearing{static_cast<float>(gd.bearing_x[char_idx]) * scale[0],
+                            static_cast<float>(-gd.bearing_y[char_idx]) * scale[1], 0.0f};
+
     const auto glyph_origin{pen_origin + bearing};
-    const auto glyph_scale{glm::vec3{gd.bitmap_width[char_idx], gd.bitmap_height[char_idx], 1.0f}};
+
+    const glm::vec3 glyph_scale{static_cast<float>(gd.bitmap_width[char_idx]) * scale[0],
+                                static_cast<float>(gd.bitmap_height[char_idx]) * scale[1], 1.0f};
+
     const auto glyph_model{glm::scale(glm::translate(glm::mat4{1.0f}, glyph_origin), glyph_scale)};
 
     tdd.glyph_models.push_back(glyph_model);
     tdd.texture_handles.push_back(gd.texture_handle[char_idx]);
 
-    pen_origin[0] += static_cast<float>(gd.advance[char_idx] >> 6);
+    pen_origin[0] += static_cast<float>(gd.advance[char_idx] >> 6) * scale[0];
 
     // Compute bbox
     if (glyph_origin[1] < bbox[1]) {
@@ -400,35 +406,6 @@ void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_d
 
   tdd.color = color;
   tdd.bounding_box = bbox;
-}
-
-auto surge::atom::text::create_text_draw_data(const glyph_data &gd, std::string_view text,
-                                              const glm::vec3 &baseline_origin,
-                                              const glm::vec4 &color) noexcept -> text_draw_data {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::create_text_draw_data");
-#endif
-
-  text_draw_data tdd{};
-  tdd.texture_handles.reserve(text.size());
-  tdd.glyph_models.reserve(text.size());
-
-  append_text_draw_data(tdd, gd, text, std::move(baseline_origin), std::move(color));
-
-  return tdd;
-}
-
-void surge::atom::text::overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
-                                                 std::string_view text,
-                                                 const glm::vec3 &baseline_origin) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::overwrite_text_draw_data");
-#endif
-
-  tdd.texture_handles.clear();
-  tdd.glyph_models.clear();
-
-  append_text_draw_data(tdd, gd, text, std::move(baseline_origin), std::move(tdd.color));
 }
 
 void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,

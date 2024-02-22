@@ -71,14 +71,8 @@ void make_glyphs_non_resident(glyph_data &gd);
 void send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept;
 
 void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
-                           const glm::vec3 &baseline_origin, const glm::vec4 &color) noexcept;
-
-auto create_text_draw_data(const glyph_data &gd, std::string_view text,
-                           const glm::vec3 &baseline_origin, const glm::vec4 &color) noexcept
-    -> text_draw_data;
-
-void overwrite_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
-                              const glm::vec3 &baseline_origin) noexcept;
+                           const glm::vec3 &baseline_origin, const glm::vec4 &color,
+                           const glm::vec2 &scale = glm::vec2{1.0f}) noexcept;
 
 void draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
           const text_draw_data &tdd) noexcept;
