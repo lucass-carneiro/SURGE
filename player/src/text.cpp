@@ -56,10 +56,10 @@ auto surge::atom::text::create_buffers(usize max_chars) noexcept -> buffer_data 
   log_info("Creating text base quad");
 
   const std::array<float, 20> vertex_attributes{
-      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
-      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+      0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 1.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 0.0f, // top left
   };
 
   const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
@@ -249,8 +249,8 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
       glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
       // Wrapping
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
       // Filtering
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
