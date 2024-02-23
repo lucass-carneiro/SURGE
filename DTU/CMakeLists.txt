@@ -24,7 +24,9 @@ set(
   
   "${PROJECT_SOURCE_DIR}/include/new_game/new_game.hpp"
   
+  "${PROJECT_SOURCE_DIR}/include/ui/character_sheet_elements.hpp"
   "${PROJECT_SOURCE_DIR}/include/ui/character_sheet.hpp"
+  "${PROJECT_SOURCE_DIR}/include/ui/ui.hpp"
 )
 
 set(

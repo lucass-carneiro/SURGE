@@ -33,7 +33,9 @@ using tbd_t = surge::atom::text::buffer_data;
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> int;
 
-auto load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path) noexcept -> GLuint64;
+auto load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path,
+                  surge::renderer::texture_filtering filtering
+                  = surge::renderer::texture_filtering::nearest) noexcept -> GLuint64;
 void unload_textures(vec_glui &ids, vec_glui64 &handles) noexcept;
 
 void push_sprite(sdl_t &sdl, GLuint64 handle, glm::mat4 &&model, float alpha) noexcept;
@@ -44,7 +46,7 @@ void clear_text(tdd_t &tdd) noexcept;
 auto load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_path, sdl_t &sdl,
                       glm::mat4 &&model, float alpha) noexcept -> GLuint64;
 
-auto make_model(glm::vec3 &&pos, glm::vec3 &&scale) noexcept -> glm::mat4;
+auto make_model(const glm::vec3 &pos, const glm::vec3 &scale) noexcept -> glm::mat4;
 
 } // namespace DTU
 

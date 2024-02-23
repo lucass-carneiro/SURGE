@@ -65,15 +65,14 @@ static DTU::state_machine::state_t g_state_a{DTU::state_machine::states::no_stat
 // NOLINTNEXTLINE
 static DTU::state_machine::state_t g_state_b{DTU::state_machine::states::no_state};
 
-auto DTU::load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path) noexcept
-    -> GLuint64 {
+auto DTU::load_texture(vec_glui &ids, vec_glui64 &handles, const char *img_path,
+                       surge::renderer::texture_filtering filtering) noexcept -> GLuint64 {
   using namespace surge;
 
   auto img{files::load_image(img_path)};
 
   if (img) {
-    const auto texture_data{
-        atom::sprite::create_texture(*img, renderer::texture_filtering::nearest)};
+    const auto texture_data{atom::sprite::create_texture(*img, filtering)};
 
     if (texture_data) {
       const auto [id, handle] = *texture_data;
@@ -126,7 +125,7 @@ auto DTU::load_push_sprite(vec_glui &ids, vec_glui64 &handles, const char *img_p
   return handle;
 }
 
-auto DTU::make_model(glm::vec3 &&pos, glm::vec3 &&scale) noexcept -> glm::mat4 {
+auto DTU::make_model(const glm::vec3 &pos, const glm::vec3 &scale) noexcept -> glm::mat4 {
   return glm::scale(glm::translate(glm::mat4{1.0f}, pos), scale);
 }
 
@@ -301,7 +300,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return static_cast<int>(itc_benguiat_book.error());
   }
 
-  auto itc_benguiat_book_glyphs{surge::atom::text::load_glyphs(*ft_lib, *itc_benguiat_book, 32)};
+  auto itc_benguiat_book_glyphs{surge::atom::text::load_glyphs(*ft_lib, *itc_benguiat_book, 50)};
   if (!itc_benguiat_book_glyphs) {
     return static_cast<int>(itc_benguiat_book_glyphs.error());
   }

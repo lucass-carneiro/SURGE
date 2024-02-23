@@ -135,6 +135,7 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   glTextureStorage2D(texture, 1, internal_format, image.width, image.height);
   glTextureSubImage2D(texture, 0, 0, 0, image.width, image.height, format, GL_UNSIGNED_BYTE,
                       image.texels);
+
   glGenerateTextureMipmap(texture);
 
   const auto handle{glGetTextureHandleARB(texture)};

@@ -264,6 +264,8 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
       glTextureSubImage2D(texture, 0, 0, 0, static_cast<GLsizei>(bw), static_cast<GLsizei>(bh),
                           format, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 
+      glGenerateTextureMipmap(texture);
+
       const auto handle{glGetTextureHandleARB(texture)};
       if (handle == 0) {
         log_error("Unable to create texture handle for character %c", static_cast<char>(c));
