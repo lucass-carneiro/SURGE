@@ -1,7 +1,7 @@
 // clang-format off
 #include "DTU.hpp"
 
-#include "main_menu/main_menu.hpp"
+#include "main_menu.hpp"
 #include "states.hpp"
 
 #include "player/logging.hpp"

@@ -4,8 +4,8 @@
 #include "debug_window.hpp"
 #include "states.hpp"
 
-#include "main_menu/main_menu.hpp"
-#include "new_game/new_game.hpp"
+#include "main_menu.hpp"
+#include "new_game.hpp"
 
 #include "player/renderer.hpp"
 #include "player/error_types.hpp"

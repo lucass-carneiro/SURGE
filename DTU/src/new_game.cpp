@@ -1,14 +1,14 @@
 // clang-format off
-#include "new_game/new_game.hpp"
-#include "ui/character_sheet.hpp"
+#include "new_game.hpp"
+#include "character_sheet.hpp"
 
 #include "player/logging.hpp"
 // clang-format on
 
-auto DTU::state::new_game::load(vec_glui &, vec_glui64 &) noexcept -> int {
+auto DTU::state::new_game::load(vec_glui &ids, vec_glui64 &handles) noexcept -> int {
   log_info("Loading new_game state");
 
-  // ui::character_sheet::load(ids, handles);
+  ui::character_sheet::load(ids, handles);
 
   return 0;
 }
@@ -18,9 +18,10 @@ void DTU::state::new_game::unload(cmdq_t &, sdl_t &) noexcept {
   return;
 }
 
-void DTU::state::new_game::update(GLFWwindow *, cmdq_t &, const sbd_t &, sdl_t &, DTU::tdd_t &,
-                                  DTU::tgl_t &, double) noexcept {
+void DTU::state::new_game::update(GLFWwindow *window, cmdq_t &, const sbd_t &sbd, sdl_t &sdl,
+                                  DTU::tdd_t &, DTU::tgl_t &, double) noexcept {
 
+  ui::character_sheet::update(window, sbd, sdl);
   // const auto [ww, wh] = surge::window::get_dims(window);
   // const auto cursor_pos{surge::window::get_cursor_pos(window)};
   // ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh}, cursor_pos);
