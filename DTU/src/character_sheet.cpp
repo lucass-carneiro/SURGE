@@ -6,6 +6,8 @@
 #include "ui.hpp"
 
 #include "player/logging.hpp"
+
+#include <array>
 // clang-format on
 
 struct element_handles {
