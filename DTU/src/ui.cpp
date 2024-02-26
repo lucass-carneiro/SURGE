@@ -6,7 +6,8 @@
 
 auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active, surge::i32 &hot,
                           sdl_t &ui_sdl, const glm::vec3 &draw_pos, const glm::vec3 &draw_scale,
-                          const GLuint64 &skin_handle, float alpha, tdd_t &tdd,
+                          const GLuint64 &neutral_handle, const GLuint64 &up_handle,
+                          const GLuint64 &down_handle, float alpha, tdd_t &tdd,
                           const DTU::tgd_t &tgl, const glm::vec4 &t_color,
                           const glm::vec2 &mouse_pos, surge::u8 &value, surge::u8 min,
                           surge::u8 max) noexcept -> bool {
@@ -41,15 +42,16 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
     hot = id;
   }
 
-  // Determine if the press was up or down
+  // Determine if the press was up or down and push the correct skin sprite
   if (bttn_result && point_in_rect(mouse_pos, up_rect) && value + 1 <= max) {
     value += 1;
+    push_sprite(ui_sdl, up_handle, make_model(draw_pos, draw_scale), alpha);
   } else if (bttn_result && point_in_rect(mouse_pos, down_rect) && value - 1 >= min) {
     value -= 1;
+    push_sprite(ui_sdl, down_handle, make_model(draw_pos, draw_scale), alpha);
+  } else {
+    push_sprite(ui_sdl, neutral_handle, make_model(draw_pos, draw_scale), alpha);
   }
-
-  // add widget sprite to draw list
-  push_sprite(ui_sdl, skin_handle, make_model(draw_pos, draw_scale), alpha);
 
   // If the number is small enough, shift it closer to the buttons
   if (value < 10) {

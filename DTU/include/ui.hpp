@@ -34,7 +34,11 @@ auto spinner_box(
   sdl_t &ui_sdl,
   const glm::vec3 &draw_pos,
   const glm::vec3 &draw_scale,
-  const GLuint64 &skin_handle,
+  
+  const GLuint64 &neutral_handle,
+  const GLuint64 &up_handle,
+  const GLuint64 &down_handle,
+  
   float alpha,
 
   tdd_t &tdd,
