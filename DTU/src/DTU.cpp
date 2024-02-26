@@ -300,7 +300,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return static_cast<int>(itc_benguiat_book.error());
   }
 
-  auto itc_benguiat_book_glyphs{surge::atom::text::load_glyphs(*ft_lib, *itc_benguiat_book, 50)};
+  auto itc_benguiat_book_glyphs{surge::atom::text::load_glyphs(*ft_lib, *itc_benguiat_book)};
   if (!itc_benguiat_book_glyphs) {
     return static_cast<int>(itc_benguiat_book_glyphs.error());
   }
@@ -372,14 +372,17 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
+  // Game sprite pass
   surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::sprite_buffer,
                             atom_buffers::MPSB, draw_buffers::sprite);
 
+  // UI pass
   surge::atom::sprite::draw(shader_programs::sprite_shader, atom_buffers::ui_sprite_buffer,
                             atom_buffers::MPSB, draw_buffers::ui_sprite);
   surge::atom::text::draw(shader_programs::text_shader, atom_buffers::text_buffer,
                           atom_buffers::MPSB, draw_buffers::text);
 
+// Debug UI pass
 #ifdef SURGE_BUILD_TYPE_Debug
   DTU::debug_window::draw(loaded_data::loaded_texture_IDs, loaded_data::loaded_texture_handles,
                           g_command_queue, draw_buffers::sprite, draw_buffers::ui_sprite);
@@ -405,8 +408,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
 
   case DTU::state_machine::states::new_game:
     DTU::state::new_game::update(window, g_command_queue, atom_buffers::ui_sprite_buffer,
-                                 draw_buffers::ui_sprite, draw_buffers::text,
-                                 loaded_data::itc_benguiat_book_glyphs, dt);
+                                 draw_buffers::ui_sprite, atom_buffers::text_buffer,
+                                 draw_buffers::text, loaded_data::itc_benguiat_book_glyphs, dt);
     break;
 
   case DTU::state_machine::states::exit_game:
@@ -416,8 +419,13 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     break;
   }
 
+  /* Regular game sprites are resent to the GPU every frame. We assume that updating these sprites
+   * is a very frequent operation, thus it makes sense to assume that the sprite buffer will change
+   * every update call to whatever state is current. UI data, on the other hand is upddated
+   * infrequently. UI update code is responsible for updating the ui sprite and text buffers on the
+   * GPU whenever they feel it to be necessary
+   */
   surge::atom::sprite::send_buffers(atom_buffers::sprite_buffer, draw_buffers::sprite);
-  surge::atom::text::send_buffers(atom_buffers::text_buffer, draw_buffers::text);
 
   return 0;
 }

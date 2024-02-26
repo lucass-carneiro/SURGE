@@ -61,8 +61,8 @@ auto destroy_freetype(FT_Library lib) noexcept -> std::optional<error>;
 auto load_face(FT_Library lib, const char *name) noexcept -> tl::expected<FT_Face, error>;
 auto unload_face(FT_Face face) noexcept -> std::optional<error>;
 
-auto load_glyphs(FT_Library lib, FT_Face face, FT_UInt pixel_size = 16) noexcept
-    -> tl::expected<glyph_data, error>;
+auto load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in_pts = 40,
+                 FT_UInt resolution_dpi = 300) noexcept -> tl::expected<glyph_data, error>;
 void unload_glyphs(glyph_data &gd) noexcept;
 
 void make_glyphs_resident(glyph_data &gd);

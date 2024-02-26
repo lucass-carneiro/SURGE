@@ -128,6 +128,13 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, gsl::narrow_cast<GLint>(filtering));
   glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(filtering));
 
+  if (filtering == renderer::texture_filtering::anisotropic) {
+    GLfloat max_aniso{0};
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
+
+    glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
+  }
+
   // Loading and mip mapping
   const GLenum internal_format{image.channels == 4 ? GLenum{GL_RGBA8} : GLenum{GL_RGB8}};
   const GLenum format{image.channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};

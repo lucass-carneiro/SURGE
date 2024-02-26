@@ -189,7 +189,8 @@ auto surge::atom::text::unload_face(FT_Face face) noexcept -> std::optional<erro
   }
 }
 
-auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size) noexcept
+auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in_pts,
+                                    FT_UInt resolution_dpi) noexcept
     -> tl::expected<glyph_data, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::load_glyphs()");
@@ -198,7 +199,7 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
 
   log_info("Loading glyphs metrics in %s", face->family_name);
 
-  auto status{FT_Set_Pixel_Sizes(face, 0, pixel_size)};
+  auto status{FT_Set_Char_Size(face, 0, size_in_pts * 64, resolution_dpi, resolution_dpi)};
   if (status != 0) {
     log_error("Unable to set face %s glyphs to size: %s", face->family_name,
               FT_Error_String(status));
@@ -255,6 +256,10 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_UInt pixel_size
       // Filtering
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+      GLfloat max_aniso{0};
+      glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
+      glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
 
       constexpr const auto internal_format{GL_R8};
       constexpr const auto format{GL_RED};

@@ -25,7 +25,7 @@ using vec_glui = surge::vector<GLuint>;
 using vec_glui64 = surge::vector<GLuint64>;
 using sdl_t = surge::atom::sprite::data_list;
 using tdd_t = surge::atom::text::text_draw_data;
-using tgl_t = surge::atom::text::glyph_data;
+using tgd_t = surge::atom::text::glyph_data;
 using sbd_t = surge::atom::sprite::buffer_data;
 using tbd_t = surge::atom::text::buffer_data;
 

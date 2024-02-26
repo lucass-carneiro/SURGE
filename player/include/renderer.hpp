@@ -22,7 +22,11 @@ enum class blend_src : GLint { alpha = GL_SRC_ALPHA };
 
 enum class blend_dest : GLint { one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA };
 
-enum class texture_filtering : GLint { nearest = GL_NEAREST, linear = GL_LINEAR };
+enum class texture_filtering : GLint {
+  nearest = GL_NEAREST,
+  linear = GL_LINEAR,
+  anisotropic = GL_LINEAR
+};
 
 enum class texture_wrap : GLint {
   repeat = GL_REPEAT,

@@ -18,10 +18,16 @@ void DTU::state::new_game::unload(cmdq_t &, sdl_t &) noexcept {
   return;
 }
 
-void DTU::state::new_game::update(GLFWwindow *window, cmdq_t &, const sbd_t &sbd, sdl_t &sdl,
-                                  DTU::tdd_t &, DTU::tgl_t &, double) noexcept {
+void DTU::state::new_game::update(GLFWwindow *window, cmdq_t &, const sbd_t &ui_sbd, sdl_t &ui_sdl,
+                                  const DTU::tbd_t &tbd, DTU::tdd_t &tdd, DTU::tgd_t &tgd,
+                                  double) noexcept {
 
-  ui::character_sheet::update(window, sbd, sdl);
+  DTU::clear_sprites(ui_sdl);
+  DTU::clear_text(tdd);
+  ui::character_sheet::update(window, ui_sdl, tdd, tgd);
+  surge::atom::sprite::send_buffers(ui_sbd, ui_sdl);
+  surge::atom::text::send_buffers(tbd, tdd);
+
   // const auto [ww, wh] = surge::window::get_dims(window);
   // const auto cursor_pos{surge::window::get_cursor_pos(window)};
   // ui::character_sheet::update(cmdq, ui_sbd, ui_sdl, tdd, tgd, glm::vec2{ww, wh}, cursor_pos);
