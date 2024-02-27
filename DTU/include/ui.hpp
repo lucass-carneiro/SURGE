@@ -35,9 +35,9 @@ auto spinner_box(
   const glm::vec3 &draw_pos,
   const glm::vec3 &draw_scale,
   
-  const GLuint64 &neutral_handle,
-  const GLuint64 &up_handle,
-  const GLuint64 &down_handle,
+  GLuint64 neutral_handle,
+  GLuint64 up_handle,
+  GLuint64 down_handle,
   
   float alpha,
 
@@ -52,18 +52,6 @@ auto spinner_box(
   surge::u8 max
 ) noexcept -> bool;
 // clang-format on
-
-struct u8_text {
-  surge::u8 value;
-  glm::vec3 baseline{0.0f};
-  glm::vec4 color{1.0f};
-};
-
-struct text {
-  surge::string text;
-  glm::vec3 baseline{0.0f};
-  glm::vec4 color{1.0f};
-};
 
 } // namespace DTU::ui
 

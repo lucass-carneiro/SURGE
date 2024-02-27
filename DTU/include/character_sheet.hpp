@@ -10,7 +10,7 @@ namespace DTU::ui::character_sheet {
 
 void load(vec_glui &ids, vec_glui64 &handles) noexcept;
 
-void update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd, tgd_t &tgd) noexcept;
+void update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd, tgd_t &) noexcept;
 
 } // namespace DTU::ui::character_sheet
 

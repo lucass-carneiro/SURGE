@@ -124,8 +124,21 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   glTextureParameteri(texture, GL_TEXTURE_WRAP_S, gsl::narrow_cast<GLint>(wrap));
   glTextureParameteri(texture, GL_TEXTURE_WRAP_T, gsl::narrow_cast<GLint>(wrap));
 
-  // Filtering
-  glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, gsl::narrow_cast<GLint>(filtering));
+  // Filtering GL_LINEAR_MIPMAP_LINEAR
+
+  switch (filtering) {
+  case renderer::texture_filtering::nearest:
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    break;
+
+  case renderer::texture_filtering::linear:
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    break;
+
+  default:
+    break;
+  }
+
   glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(filtering));
 
   if (filtering == renderer::texture_filtering::anisotropic) {

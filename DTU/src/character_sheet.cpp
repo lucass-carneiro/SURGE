@@ -43,9 +43,17 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
 
   if (ui::spinner_box(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
                       glm::vec3{1024.0f / 2.0f, 768.0f / 2.0f, 0.0f},
-                      glm::vec3{347.0f, 116.0f, 1.0f}, g_elm_handles.spinner_box_neutral,
+                      glm::vec3{347.0f, 124.0f, 1.0f}, g_elm_handles.spinner_box_neutral,
                       g_elm_handles.spinner_box_up, g_elm_handles.spinner_box_down, 1.0, tdd, tgd,
                       glm::vec4{1.0f}, mouse_pos, cs.empathy, 0, 5)) {
+    // TODO
+  }
+
+  if (ui::spinner_box(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+                      glm::vec3{1024.0f / 2.0f, 0.0f, 0.0f}, glm::vec3{347.0f, 124.0f, 1.0f},
+                      g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
+                      g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos,
+                      cs.introspection, 0, 5)) {
     // TODO
   }
 }
