@@ -54,6 +54,11 @@ auto spinner_box(
 ) noexcept -> bool;
 // clang-format on
 
+// Show text if an area in the screen if another widget becomes hot
+auto text_on_hot(surge::i32 id, const surge::i32 &target, const surge::i32 &hot, tdd_t &tdd,
+                 const DTU::tgd_t &tgd, std::string_view text, const glm::vec3 &baseline,
+                 const glm::vec4 &t_color, const glm::vec2 &scale) noexcept -> bool;
+
 } // namespace DTU::ui
 
 #endif // DTU_UI_HPP

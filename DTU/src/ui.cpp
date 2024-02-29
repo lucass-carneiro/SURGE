@@ -1,5 +1,7 @@
 #include "ui.hpp"
 
+#include "player/logging.hpp"
+
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -98,4 +100,15 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
                                            text_scale);
 
   return bttn_result;
+}
+
+auto DTU::ui::text_on_hot(surge::i32, const surge::i32 &target, const surge::i32 &hot, tdd_t &tdd,
+                          const DTU::tgd_t &tgl, std::string_view text, const glm::vec3 &baseline,
+                          const glm::vec4 &t_color, const glm::vec2 &scale) noexcept -> bool {
+  if (target == hot) {
+    surge::atom::text::append_text_draw_data(tdd, tgl, text, baseline, t_color, scale);
+    return true;
+  } else {
+    return false;
+  }
 }
