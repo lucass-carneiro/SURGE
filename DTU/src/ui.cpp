@@ -8,8 +8,8 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
                           sdl_t &ui_sdl, const glm::vec3 &draw_pos, const glm::vec3 &draw_scale,
                           GLuint64 neutral_handle, GLuint64 up_handle, GLuint64 down_handle,
                           float alpha, tdd_t &tdd, const DTU::tgd_t &tgl, const glm::vec4 &t_color,
-                          const glm::vec2 &mouse_pos, surge::u8 &value, surge::u8 min,
-                          surge::u8 max) noexcept -> bool {
+                          const glm::vec2 &mouse_pos, surge::u8 &pool, surge::u8 &value,
+                          surge::u8 min, surge::u8 max) noexcept -> bool {
 
   using std::snprintf;
 
@@ -61,11 +61,14 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
     hot = id;
   }
 
-  // Change value up or down when the button is released
-  if (bttn_result && point_in_rect(mouse_pos, bttn_up_rect) && value + 1 <= max) {
+  // Change value up or down when the button is released while subtracting from or adding to the
+  // pool. If the pool does not allow a size chenge, nothing happens with the values
+  if (bttn_result && point_in_rect(mouse_pos, bttn_up_rect) && value + 1 <= max && pool != 0) {
     value += 1;
+    pool -= 1;
   } else if (bttn_result && point_in_rect(mouse_pos, bttn_down_rect) && value - 1 >= min) {
     value -= 1;
+    pool += 1;
   }
 
   // Display the up or down skin when the button is held

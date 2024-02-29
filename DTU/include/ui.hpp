@@ -47,6 +47,7 @@ auto spinner_box(
 
   const glm::vec2 &mouse_pos,
 
+  surge::u8 &pool,
   surge::u8 &value,
   surge::u8 min,
   surge::u8 max
