@@ -2,10 +2,6 @@
 
 #include "player/logging.hpp"
 
-#include <array>
-#include <cmath>
-#include <cstdio>
-
 auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active, surge::i32 &hot,
                           sdl_t &ui_sdl, const glm::vec3 &draw_pos, const glm::vec3 &draw_scale,
                           GLuint64 neutral_handle, GLuint64 up_handle, GLuint64 down_handle,
@@ -93,11 +89,7 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
     text_baseline[0] += draw_scale[0] / 3.8f;
   }
 
-  // Parse value as text and add it to draw list.
-  std::array<char, 4> buffer{0, 0, 0, 0};
-  snprintf(buffer.data(), 4, "%u", value);
-  surge::atom::text::append_text_draw_data(tdd, tgl, buffer.data(), text_baseline, t_color,
-                                           text_scale);
+  surge::atom::text::append_text_draw_data(tdd, tgl, value, text_baseline, t_color, text_scale);
 
   return bttn_result;
 }

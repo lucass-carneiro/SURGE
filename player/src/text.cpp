@@ -9,6 +9,8 @@
 #include <freetype/ftmodapi.h>
 // clang-format on
 
+#include <array>
+#include <cstdio>
 #include <glm/gtc/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 #include <tl/expected.hpp>
@@ -250,12 +252,12 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in
       glCreateTextures(GL_TEXTURE_2D, 1, &texture);
 
       // Wrapping
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+      glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
       // Filtering
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
       GLfloat max_aniso{0};
       glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
@@ -264,7 +266,7 @@ auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in
       constexpr const auto internal_format{GL_R8};
       constexpr const auto format{GL_RED};
 
-      glTextureStorage2D(texture, 1, internal_format, static_cast<GLsizei>(bw),
+      glTextureStorage2D(texture, 4, internal_format, static_cast<GLsizei>(bw),
                          static_cast<GLsizei>(bh));
       glTextureSubImage2D(texture, 0, 0, 0, static_cast<GLsizei>(bw), static_cast<GLsizei>(bh),
                           format, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
@@ -413,6 +415,16 @@ void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_d
 
   tdd.color = color;
   tdd.bounding_box = bbox;
+}
+
+void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, u8 value,
+                                              const glm::vec3 &baseline_origin,
+                                              const glm::vec4 &color,
+                                              const glm::vec2 &scale) noexcept {
+  using std::snprintf;
+  std::array<char, 4> buffer{0, 0, 0, 0};
+  snprintf(buffer.data(), 4, "%u", value);
+  append_text_draw_data(tdd, gd, buffer.data(), baseline_origin, color, scale);
 }
 
 void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,

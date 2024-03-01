@@ -144,7 +144,6 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   if (filtering == renderer::texture_filtering::anisotropic) {
     GLfloat max_aniso{0};
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
-
     glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
   }
 
@@ -152,7 +151,7 @@ auto surge::atom::sprite::create_texture(const files::image &image,
   const GLenum internal_format{image.channels == 4 ? GLenum{GL_RGBA8} : GLenum{GL_RGB8}};
   const GLenum format{image.channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
 
-  glTextureStorage2D(texture, 1, internal_format, image.width, image.height);
+  glTextureStorage2D(texture, 4, internal_format, image.width, image.height);
   glTextureSubImage2D(texture, 0, 0, 0, image.width, image.height, format, GL_UNSIGNED_BYTE,
                       image.texels);
 

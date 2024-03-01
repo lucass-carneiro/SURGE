@@ -6,6 +6,8 @@
 #include "ui.hpp"
 
 #include "player/logging.hpp"
+
+#include <cmath>
 // clang-format on
 
 struct element_handles {
@@ -37,7 +39,7 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
 
 void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd,
                                       tgd_t &tgd) noexcept {
-  using std::snprintf;
+  using std::ceil;
   using namespace surge;
 
   static character::sheet cs{};
@@ -78,35 +80,70 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
                   cs.attr_pts, cs.reasoning, 0, 5);
 
   // Introspection
-  ui::spinner_box(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
-                  glm::vec3{((1106.868f - sls) / 1920.0f) * ww, (307.863f / 1080.0f) * wh, 0.1f},
-                  glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
-                  g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
-                  g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos,
-                  cs.attr_pts, cs.introspection, 0, 5);
+  if (ui::spinner_box(
+          window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+          glm::vec3{((1106.868f - sls) / 1920.0f) * ww, (307.863f / 1080.0f) * wh, 0.1f},
+          glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
+          g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
+          g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos, cs.attr_pts,
+          cs.introspection, 0, 5)) {
+    cs.psyche_pts = 2 * (cs.introspection + 1);
+  }
 
   // Fitness
-  ui::spinner_box(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
-                  glm::vec3{((1483.158f - sls) / 1920.0f) * ww, (223.304f / 1080.0f) * wh, 0.1f},
-                  glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
-                  g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
-                  g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos,
-                  cs.attr_pts, cs.fitness, 0, 5);
+  if (ui::spinner_box(
+          window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+          glm::vec3{((1483.158f - sls) / 1920.0f) * ww, (223.304f / 1080.0f) * wh, 0.1f},
+          glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
+          g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
+          g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos, cs.attr_pts,
+          cs.fitness, 0, 5)) {
+    cs.health_pts = 2 * (cs.fitness + 1);
+    cs.initiative = static_cast<u8>(
+        std::ceil((static_cast<float>(cs.fitness) + static_cast<float>(cs.agility)) / 2.0f));
+  }
 
   // Agility
-  ui::spinner_box(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
-                  glm::vec3{((1483.158f - sls) / 1920.0f) * ww, (307.356f / 1080.0f) * wh, 0.1f},
-                  glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
-                  g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
-                  g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos,
-                  cs.attr_pts, cs.agility, 0, 5);
+  if (ui::spinner_box(
+          window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+          glm::vec3{((1483.158f - sls) / 1920.0f) * ww, (307.356f / 1080.0f) * wh, 0.1f},
+          glm::vec3{(111.0 / 1920.0f) * ww, (39.520f / 1080.0f) * wh, 1.0f},
+          g_elm_handles.spinner_box_neutral, g_elm_handles.spinner_box_up,
+          g_elm_handles.spinner_box_down, 1.0, tdd, tgd, glm::vec4{1.0f}, mouse_pos, cs.attr_pts,
+          cs.agility, 0, 5)) {
+    cs.action_pts = 2 * (cs.agility + 1);
+    cs.initiative = static_cast<u8>(
+        std::ceil((static_cast<float>(cs.fitness) + static_cast<float>(cs.agility)) / 2.0f));
+  }
 
   // The scale for the following texts is obteined by computing
   // Resolution of background / resolution of loaded glyphs.
   // This is multiplyied with the current screen sizes over the scree size where the texture was
   // created.
 
-  // "The quick brown fox jumps over the lazy dog. Th\n",
+  // HP value
+  surge::atom::text::append_text_draw_data(
+      tdd, tgd, cs.health_pts,
+      glm::vec3{(835.378f / 1920.0f) * ww, (522.421f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
+      (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // AP value
+  surge::atom::text::append_text_draw_data(
+      tdd, tgd, cs.action_pts,
+      glm::vec3{(835.378f / 1920.0f) * ww, (613.806f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
+      (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // PP value
+  surge::atom::text::append_text_draw_data(
+      tdd, tgd, cs.psyche_pts,
+      glm::vec3{(1377.486f / 1920.0f) * ww, (516.901f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
+      (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // IN value
+  surge::atom::text::append_text_draw_data(
+      tdd, tgd, cs.initiative,
+      glm::vec3{(1377.486f / 1920.0f) * ww, (613.779f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
+      (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
 
   // Empathy help text
   ui::text_on_hot(__COUNTER__, 0, hot_widget, tdd, tgd,
@@ -123,6 +160,42 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
                   "express yourself in your language. It is usefull\n"
                   "when articulating your thoughts but also when\n"
                   "attempting to fabricate lies or persuade people.",
+                  glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
+                  glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // Reasoning help text
+  ui::text_on_hot(__COUNTER__, 2, hot_widget, tdd, tgd,
+                  "Reasoning represents your ability to emply lo-\n"
+                  "gical and abstract thinking to solve problems.\n"
+                  "This is usefull when making logical decisions\n"
+                  "and deductions.",
+                  glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
+                  glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // Introspection help text
+  ui::text_on_hot(__COUNTER__, 3, hot_widget, tdd, tgd,
+                  "Introspection is the ability to understand and\n"
+                  "interpret your own feelings towards other people\n"
+                  "and situations. This understanding helps you\n"
+                  "when attempting to fulfill your desires.",
+                  glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
+                  glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // Fitness help text
+  ui::text_on_hot(__COUNTER__, 4, hot_widget, tdd, tgd,
+                  "Fitness represents your overall physical health\n"
+                  "and bodily shape. It is usefull when attempting\n"
+                  "to perform physical feats of strength. It also\n"
+                  "determines how much helath you have.",
+                  glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
+                  glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // Agility help text
+  ui::text_on_hot(__COUNTER__, 5, hot_widget, tdd, tgd,
+                  "Agility represents your overall dexterity and the\n"
+                  "ability over your fine motor skills. This is usefull\n"
+                  "when attempting to perform feats that require\n"
+                  "fine or well coordinated movements of the body.",
                   glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
                   glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
 }

@@ -74,6 +74,10 @@ void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::strin
                            const glm::vec3 &baseline_origin, const glm::vec4 &color,
                            const glm::vec2 &scale = glm::vec2{1.0f}) noexcept;
 
+void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, u8 value,
+                           const glm::vec3 &baseline_origin, const glm::vec4 &color,
+                           const glm::vec2 &scale = glm::vec2{1.0f}) noexcept;
+
 void draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
           const text_draw_data &tdd) noexcept;
 
