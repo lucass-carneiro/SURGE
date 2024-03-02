@@ -145,6 +145,11 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
       glm::vec3{(1377.486f / 1920.0f) * ww, (613.779f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
       (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
 
+  // Remaining points
+  surge::atom::text::append_text_draw_data(
+      tdd, tgd, cs.attr_pts, glm::vec3{(246.418f / 1920.0f) * ww, (526.496f / 1080.0f) * wh, 0.1f},
+      glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
   // Empathy help text
   ui::text_on_hot(__COUNTER__, 0, hot_widget, tdd, tgd,
                   "Empathy urges you to see the world through\n"
