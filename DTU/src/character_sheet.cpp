@@ -57,17 +57,12 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
   surge::atom::sprite::make_resident(handles);
 }
 
-void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd,
-                                      tgd_t &tgd) noexcept {
-  using std::ceil;
+static void sheet_page_0(GLFWwindow *window, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd, DTU::tgd_t &tgd,
+                         surge::i32 &active_widget, surge::i32 &hot_widget, float ww, float wh,
+                         const glm::vec2 &mouse_pos, DTU::character::sheet &cs) noexcept {
   using namespace surge;
-
-  static character::sheet cs{};
-  static i32 active_widget{-1};
-  static i32 hot_widget{-1};
-
-  const auto [ww, wh] = window::get_dims(window);
-  const auto mouse_pos{window::get_cursor_pos(window)};
+  using namespace DTU;
+  using std::ceil;
 
   constexpr float sls{55.0f}; // Left shift of the Attributes spinboxes
 
@@ -241,4 +236,19 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
                  mouse_pos)) {
     log_info("TODO: Next page");
   }
+}
+
+void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd,
+                                      tgd_t &tgd) noexcept {
+  using std::ceil;
+  using namespace surge;
+
+  static character::sheet cs{};
+  static i32 active_widget{-1};
+  static i32 hot_widget{-1};
+
+  const auto [ww, wh] = window::get_dims(window);
+  const auto mouse_pos{window::get_cursor_pos(window)};
+
+  sheet_page_0(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs);
 }

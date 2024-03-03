@@ -447,11 +447,6 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int sc
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
                                                        int mods) noexcept {
   switch (g_state_a) {
-
-  case DTU::state_machine::states::new_game:
-    DTU::state::new_game::mouse_click(g_command_queue, window, button, action, mods);
-    break;
-
   default:
     break;
   }
@@ -464,11 +459,6 @@ extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int b
 extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
                                                        double yoffset) noexcept {
   switch (g_state_a) {
-
-  case DTU::state_machine::states::new_game:
-    DTU::state::new_game::mouse_scroll(g_command_queue, window, xoffset, yoffset);
-    break;
-
   default:
     break;
   }

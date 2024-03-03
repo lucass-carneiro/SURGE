@@ -15,9 +15,6 @@ void unload(vec_glui &ids, vec_glui64 &handles, sdl_t &ui_sdl, DTU::tdd_t &tdd) 
 void update(GLFWwindow *window, cmdq_t &cmdq, const sbd_t &ui_sbd, sdl_t &ui_sdl,
             const DTU::tbd_t &tbd, DTU::tdd_t &tdd, DTU::tgd_t &tgd, double dt) noexcept;
 
-void mouse_click(cmdq_t &cmdq, GLFWwindow *window, int button, int action, int mods) noexcept;
-void mouse_scroll(cmdq_t &cmdq, GLFWwindow *window, double xoffset, double yoffset) noexcept;
-
 } // namespace DTU::state::new_game
 
 #endif // SURGE_DTU_STATE_NEW_GAME
