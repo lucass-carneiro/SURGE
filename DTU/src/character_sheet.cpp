@@ -15,6 +15,8 @@ struct element_handles {
   GLuint64 spinner_box_neutral{0};
   GLuint64 spinner_box_up{0};
   GLuint64 spinner_box_down{0};
+  GLuint64 bttn_up{0};
+  GLuint64 bttn_down{0};
 };
 
 static element_handles g_elm_handles{}; // NOLINT
@@ -32,6 +34,14 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
                           surge::renderer::texture_filtering::anisotropic);
   g_elm_handles.spinner_box_down
       = DTU::load_texture(ids, handles, "resources/ui/character_sheet/spinner_box_down.png",
+                          surge::renderer::texture_filtering::anisotropic);
+
+  g_elm_handles.bttn_up
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/bttn_release.png",
+                          surge::renderer::texture_filtering::anisotropic);
+
+  g_elm_handles.bttn_down
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/bttn_press.png",
                           surge::renderer::texture_filtering::anisotropic);
 
   surge::atom::sprite::make_resident(handles);
@@ -203,4 +213,13 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
                   "fine or well coordinated movements of the body.",
                   glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f},
                   glm::vec4{1.0f}, (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
+
+  // Reset Bttn
+  if (ui::button(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+                 glm::vec3{(99.298f / 1920.0f) * ww, (551.294f / 1080.0f) * wh, 0.1f},
+                 glm::vec3{(175.575f / 1920.0f) * ww, (52.680 / 1080.0f) * wh, 1.0f},
+                 g_elm_handles.bttn_up, g_elm_handles.bttn_down, 1.0f, tdd, tgd, glm::vec4{1.0f},
+                 mouse_pos, "Reset")) {
+    cs = character::sheet{};
+  }
 }

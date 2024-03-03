@@ -59,6 +59,31 @@ auto text_on_hot(surge::i32 id, const surge::i32 &target, const surge::i32 &hot,
                  const DTU::tgd_t &tgd, std::string_view text, const glm::vec3 &baseline,
                  const glm::vec4 &t_color, const glm::vec2 &scale) noexcept -> bool;
 
+// clang-format off
+auto button(GLFWwindow *window,
+  surge::i32 id,
+  surge::i32 &active,
+  surge::i32 &hot,
+
+  sdl_t &ui_sdl,
+  const glm::vec3 &draw_pos,
+  const glm::vec3 &draw_scale,
+  
+  GLuint64 up_handle,
+  GLuint64 down_handle,
+  
+  float alpha,
+
+  tdd_t &tdd,
+  const DTU::tgd_t &tgd,
+  const glm::vec4 &t_color,
+
+  const glm::vec2 &mouse_pos,
+  
+  std::string_view text
+) noexcept -> bool;
+// clang-format on
+
 } // namespace DTU::ui
 
 #endif // DTU_UI_HPP
