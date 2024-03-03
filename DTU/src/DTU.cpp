@@ -330,7 +330,6 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   draw_buffers::text.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
 
   // First state
-  // DTU::state_machine::push_state(DTU::state_machine::states::new_game);
   DTU::state_machine::push_state(DTU::state_machine::states::main_menu);
   DTU::state_machine::transition(ww, wh);
 
