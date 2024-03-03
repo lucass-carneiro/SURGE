@@ -90,6 +90,18 @@ void DTU::debug_window::main_window(const DTU::vec_glui &ids, const vec_glui64 &
 
       ImGui::EndTable();
     }
+
+    // State transitions
+    static surge::i32 target_state{0};
+
+    if (ImGui::Button("Transition")) {
+      if (target_state > 0 && target_state < surge::i32{DTU::state_machine::states::count}) {
+        DTU::state_machine::push_state(static_cast<surge::u32>(target_state));
+        target_state = 0;
+      }
+    }
+    ImGui::SameLine();
+    ImGui::InputInt("Target State", &target_state);
   }
 
   if (ImGui::CollapsingHeader("Command queue")) {

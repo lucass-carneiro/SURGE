@@ -140,7 +140,9 @@ static void unload_a() noexcept {
     break;
 
   case DTU::state_machine::states::new_game:
-    DTU::state::new_game::unload(g_command_queue, draw_buffers::ui_sprite);
+    DTU::state::new_game::unload(loaded_data::loaded_texture_IDs,
+                                 loaded_data::loaded_texture_handles, draw_buffers::ui_sprite,
+                                 draw_buffers::text);
     break;
 
   default:

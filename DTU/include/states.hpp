@@ -6,7 +6,7 @@
 namespace DTU::state_machine {
 
 using state_t = surge::u32;
-enum states : surge::u32 { no_state, exit_game, main_menu, new_game };
+enum states : surge::u32 { no_state, exit_game, main_menu, new_game, count };
 
 void push_state(state_t state) noexcept;
 void transition(float ww, float wh) noexcept;

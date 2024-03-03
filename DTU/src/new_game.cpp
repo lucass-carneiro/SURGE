@@ -13,8 +13,12 @@ auto DTU::state::new_game::load(vec_glui &ids, vec_glui64 &handles) noexcept -> 
   return 0;
 }
 
-void DTU::state::new_game::unload(cmdq_t &, sdl_t &) noexcept {
+void DTU::state::new_game::unload(vec_glui &ids, vec_glui64 &handles, sdl_t &ui_sdl,
+                                  DTU::tdd_t &tdd) noexcept {
   log_info("Unloading main_menu state");
+  DTU::unload_textures(ids, handles);
+  DTU::clear_sprites(ui_sdl);
+  DTU::clear_text(tdd);
   return;
 }
 
