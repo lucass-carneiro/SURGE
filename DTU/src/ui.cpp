@@ -38,6 +38,10 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
   glm::vec3 text_baseline{draw_pos[0], draw_pos[1] + draw_scale[1], draw_pos[2] + 0.1f};
   const glm::vec2 text_scale{draw_scale[0] / skin_width, draw_scale[1] / skin_height};
 
+  const auto mouse_in_widget{point_in_rect(mouse_pos, widget_rect)};
+  const auto mouse_in_up{point_in_rect(mouse_pos, bttn_up_rect)};
+  const auto mouse_in_down{point_in_rect(mouse_pos, bttn_down_rect)};
+
   // This logic is a curtesey of Casey Muratory -  Immediate-Mode Graphical User Interfaces - 2005
   bool bttn_result{false};
 
@@ -49,31 +53,31 @@ auto DTU::ui::spinner_box(GLFWwindow *window, surge::i32 id, surge::i32 &active,
       active = -1;
     }
   } else if (id == hot) {
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && mouse_in_widget) {
       active = id;
     }
   }
 
   // "If there is an active item, it doesn't sets us as hot" - Casey
-  if (point_in_rect(mouse_pos, widget_rect) && id != active) {
+  if (mouse_in_widget && id != active) {
     hot = id;
   }
 
   // Change value up or down when the button is released while subtracting from or adding to the
   // pool. If the pool does not allow a size chenge, nothing happens with the values
-  if (bttn_result && point_in_rect(mouse_pos, bttn_up_rect) && value + 1 <= max && pool != 0) {
+  if (bttn_result && mouse_in_up && value + 1 <= max && pool != 0) {
     value += 1;
     pool -= 1;
-  } else if (bttn_result && point_in_rect(mouse_pos, bttn_down_rect) && value - 1 >= min) {
+  } else if (bttn_result && mouse_in_down && value - 1 >= min) {
     value -= 1;
     pool += 1;
   }
 
   // Display the up or down skin when the button is held
   if (id == active) {
-    if (point_in_rect(mouse_pos, bttn_up_rect)) {
+    if (mouse_in_up) {
       push_sprite(ui_sdl, up_handle, make_model(draw_pos, draw_scale), alpha);
-    } else if (point_in_rect(mouse_pos, bttn_down_rect)) {
+    } else if (mouse_in_down) {
       push_sprite(ui_sdl, down_handle, make_model(draw_pos, draw_scale), alpha);
     } else {
       push_sprite(ui_sdl, neutral_handle, make_model(draw_pos, draw_scale), alpha);
@@ -123,6 +127,8 @@ auto DTU::ui::button(GLFWwindow *window, surge::i32 id, surge::i32 &active, surg
   const glm::vec2 text_scale{res_ratio * draw_scale[0] / skin_w,
                              res_ratio * draw_scale[1] / skin_h};
 
+  const auto mouse_in_widget{point_in_rect(mouse_pos, widget_rect)};
+
   bool bttn_result{false};
 
   if (id == active) {
@@ -133,13 +139,13 @@ auto DTU::ui::button(GLFWwindow *window, surge::i32 id, surge::i32 &active, surg
       active = -1;
     }
   } else if (id == hot) {
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && mouse_in_widget) {
       active = id;
     }
   }
 
   // "If there is an active item, it doesn't sets us as hot" - Casey
-  if (point_in_rect(mouse_pos, widget_rect) && id != active) {
+  if (mouse_in_widget && id != active) {
     hot = id;
   }
 
@@ -150,6 +156,46 @@ auto DTU::ui::button(GLFWwindow *window, surge::i32 id, surge::i32 &active, surg
   } else {
     push_sprite(ui_sdl, up_handle, make_model(draw_pos, draw_scale), alpha);
     surge::atom::text::append_text_draw_data(tdd, tgd, text, text_baseline, t_color, text_scale);
+  }
+
+  return bttn_result;
+}
+
+auto DTU::ui::button(GLFWwindow *window, surge::i32 id, surge::i32 &active, surge::i32 &hot,
+                     sdl_t &ui_sdl, const glm::vec3 &draw_pos, const glm::vec3 &draw_scale,
+                     GLuint64 up_handle, GLuint64 down_handle, float alpha,
+                     const glm::vec2 &mouse_pos) noexcept -> bool {
+
+  // Fundamental skin metrics
+  const glm::vec4 widget_rect{draw_pos[0], draw_pos[1], draw_scale[0], draw_scale[1]};
+
+  const auto mouse_in_widget{point_in_rect(mouse_pos, widget_rect)};
+
+  bool bttn_result{false};
+
+  if (id == active) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+      if (id == hot) {
+        bttn_result = true;
+      }
+      active = -1;
+    }
+  } else if (id == hot) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && mouse_in_widget) {
+      active = id;
+    }
+  }
+
+  // "If there is an active item, it doesn't sets us as hot" - Casey
+  if (mouse_in_widget && id != active) {
+    hot = id;
+  }
+
+  // Display the up or down skin when the button is held
+  if (id == active) {
+    push_sprite(ui_sdl, down_handle, make_model(draw_pos, draw_scale), alpha);
+  } else {
+    push_sprite(ui_sdl, up_handle, make_model(draw_pos, draw_scale), alpha);
   }
 
   return bttn_result;

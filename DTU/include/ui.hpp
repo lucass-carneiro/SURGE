@@ -84,6 +84,25 @@ auto button(GLFWwindow *window,
 ) noexcept -> bool;
 // clang-format on
 
+// clang-format off
+auto button(GLFWwindow *window,
+  surge::i32 id,
+  surge::i32 &active,
+  surge::i32 &hot,
+
+  sdl_t &ui_sdl,
+  const glm::vec3 &draw_pos,
+  const glm::vec3 &draw_scale,
+  
+  GLuint64 up_handle,
+  GLuint64 down_handle,
+  
+  float alpha,
+
+  const glm::vec2 &mouse_pos
+) noexcept -> bool;
+// clang-format on
+
 } // namespace DTU::ui
 
 #endif // DTU_UI_HPP
