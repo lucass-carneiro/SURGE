@@ -12,14 +12,6 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-// Avoid using integrated graphics
-#ifdef SURGE_SYSTEM_Windows
-extern "C" {
-   __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-   __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-}
-#endif
-
 static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW erro code %i: %s", code, description);
 }
