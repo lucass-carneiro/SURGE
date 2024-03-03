@@ -18,7 +18,6 @@ set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/character_sheet.hpp"
   "${PROJECT_SOURCE_DIR}/include/character.hpp"
-  "${PROJECT_SOURCE_DIR}/include/commands.hpp"
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
   "${PROJECT_SOURCE_DIR}/include/main_menu.hpp"
   "${PROJECT_SOURCE_DIR}/include/new_game.hpp"

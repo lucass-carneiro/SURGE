@@ -2,7 +2,6 @@
 #define SURGE_DTU_STATE_MAIN_MENU
 
 #include "DTU.hpp"
-#include "commands.hpp"
 #include "states.hpp"
 
 #include <glm/glm.hpp>

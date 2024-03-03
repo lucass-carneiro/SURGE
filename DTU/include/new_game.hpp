@@ -3,7 +3,6 @@
 
 // clang-format off
 #include "DTU.hpp"
-#include "commands.hpp"
 
 #include <glm/glm.hpp>
 // clang-format on

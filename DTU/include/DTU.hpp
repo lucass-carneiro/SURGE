@@ -29,6 +29,9 @@ using tgd_t = surge::atom::text::glyph_data;
 using sbd_t = surge::atom::sprite::buffer_data;
 using tbd_t = surge::atom::text::buffer_data;
 
+using cmd_code_t = surge::u32;
+using cmdq_t = surge::deque<cmd_code_t>;
+
 // Callbacks
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;
 auto unbind_callbacks(GLFWwindow *window) noexcept -> int;

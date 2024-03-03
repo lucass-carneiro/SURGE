@@ -32,6 +32,16 @@ static constexpr const std::array<float, background_layer_count> background_drif
 };
 // clang-format on
 
+enum commands : DTU::cmd_code_t {
+  idle,
+
+  show_title,
+  show_menu,
+  shift_opt_left,
+  shift_opt_right,
+  enter_option,
+};
+
 static void update_background_quads(DTU::sdl_t &sdl, double dt) noexcept {
   using namespace surge;
 
