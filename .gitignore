@@ -15,3 +15,5 @@ player/include/options.hpp
 DTU/include/player/*
 
 compile_commands.json
+
+vk-bootstrap/*
