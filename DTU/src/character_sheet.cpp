@@ -12,6 +12,7 @@
 
 struct element_handles {
   GLuint64 page_0{0};
+  GLuint64 page_1{0};
   GLuint64 spinner_box_neutral{0};
   GLuint64 spinner_box_up{0};
   GLuint64 spinner_box_down{0};
@@ -26,6 +27,10 @@ static element_handles g_elm_handles{}; // NOLINT
 void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept {
   g_elm_handles.page_0
       = DTU::load_texture(ids, handles, "resources/ui/character_sheet/character_sheet_pg_0.png",
+                          surge::renderer::texture_filtering::anisotropic);
+
+  g_elm_handles.page_1
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/character_sheet_pg_1.png",
                           surge::renderer::texture_filtering::anisotropic);
 
   g_elm_handles.spinner_box_neutral
@@ -59,7 +64,8 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
 
 static void sheet_page_0(GLFWwindow *window, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd, DTU::tgd_t &tgd,
                          surge::i32 &active_widget, surge::i32 &hot_widget, float ww, float wh,
-                         const glm::vec2 &mouse_pos, DTU::character::sheet &cs) noexcept {
+                         const glm::vec2 &mouse_pos, DTU::character::sheet &cs,
+                         surge::u8 &page) noexcept {
   using namespace surge;
   using namespace DTU;
   using std::ceil;
@@ -234,8 +240,19 @@ static void sheet_page_0(GLFWwindow *window, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd
                  glm::vec3{(120.0f / 1920.0f) * ww, (102.740f / 1080.0f) * wh, 1.0f},
                  g_elm_handles.next_page_bttn_up, g_elm_handles.next_page_bttn_down, 1.0f,
                  mouse_pos)) {
-    log_info("TODO: Next page");
+    page = 1;
   }
+}
+
+static void sheet_page_1(GLFWwindow *, DTU::sdl_t &ui_sdl, DTU::tdd_t &, DTU::tgd_t &, surge::i32 &,
+                         surge::i32 &, float ww, float wh, const glm::vec2 &,
+                         DTU::character::sheet &) noexcept {
+  using namespace surge;
+  using namespace DTU;
+
+  // Background
+  push_sprite(ui_sdl, g_elm_handles.page_1, make_model(glm::vec3{0.0f}, glm::vec3{ww, wh, 1.0f}),
+              1.0f);
 }
 
 void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd,
@@ -246,9 +263,21 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
   static character::sheet cs{};
   static i32 active_widget{-1};
   static i32 hot_widget{-1};
+  static u8 page{0};
 
   const auto [ww, wh] = window::get_dims(window);
   const auto mouse_pos{window::get_cursor_pos(window)};
 
-  sheet_page_0(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs);
+  switch (page) {
+  case 0:
+    sheet_page_0(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs, page);
+    break;
+
+  case 1:
+    sheet_page_1(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs);
+    break;
+
+  default:
+    break;
+  }
 }
