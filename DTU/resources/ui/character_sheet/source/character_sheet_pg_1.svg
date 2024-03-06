@@ -27,9 +27,9 @@
      inkscape:pagecheckerboard="1"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
-     inkscape:zoom="0.38019644"
-     inkscape:cx="787.75066"
-     inkscape:cy="590.48422"
+     inkscape:zoom="0.75781202"
+     inkscape:cx="166.92794"
+     inkscape:cy="787.13452"
      inkscape:window-width="1920"
      inkscape:window-height="1003"
      inkscape:window-x="0"
@@ -103,7 +103,15 @@
   <g
      id="g1"
      inkscape:label="markers"
-     style="display:none">
+     style="display:inline">
+    <rect
+       style="font-variation-settings:normal;display:inline;vector-effect:none;fill:#ff0000;fill-opacity:1;stroke-width:0.143658;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
+       id="rect4-3"
+       width="31.750002"
+       height="27.183218"
+       x="37.041668"
+       y="211.66667"
+       inkscape:label="right_bttn" />
     <g
        id="g4-5"
        inkscape:label="help_text"

@@ -254,7 +254,7 @@ auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
   // Limits
   constexpr const surge::usize max_sprites{32};
-  constexpr const surge::usize max_chars_in_text{200};
+  constexpr const surge::usize max_chars_in_text{300};
 
   // Bind callbacks
   const auto bind_callback_stat{DTU::bind_callbacks(window)};

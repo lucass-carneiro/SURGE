@@ -13,13 +13,19 @@
 struct element_handles {
   GLuint64 page_0{0};
   GLuint64 page_1{0};
+
   GLuint64 spinner_box_neutral{0};
   GLuint64 spinner_box_up{0};
   GLuint64 spinner_box_down{0};
+
   GLuint64 reset_bttn_up{0};
   GLuint64 reset_bttn_down{0};
+
   GLuint64 next_page_bttn_up{0};
   GLuint64 next_page_bttn_down{0};
+
+  GLuint64 prev_page_bttn_up{0};
+  GLuint64 prev_page_bttn_down{0};
 };
 
 static element_handles g_elm_handles{}; // NOLINT
@@ -52,11 +58,19 @@ void DTU::ui::character_sheet::load(vec_glui &ids, vec_glui64 &handles) noexcept
                           surge::renderer::texture_filtering::anisotropic);
 
   g_elm_handles.next_page_bttn_up
-      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_release.png",
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_right_release.png",
                           surge::renderer::texture_filtering::anisotropic);
 
   g_elm_handles.next_page_bttn_down
-      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_press.png",
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_right_press.png",
+                          surge::renderer::texture_filtering::anisotropic);
+
+  g_elm_handles.prev_page_bttn_up
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_left_release.png",
+                          surge::renderer::texture_filtering::anisotropic);
+
+  g_elm_handles.prev_page_bttn_down
+      = DTU::load_texture(ids, handles, "resources/ui/character_sheet/arrow_bttn_left_press.png",
                           surge::renderer::texture_filtering::anisotropic);
 
   surge::atom::sprite::make_resident(handles);
@@ -236,23 +250,43 @@ static void sheet_page_0(GLFWwindow *window, DTU::sdl_t &ui_sdl, DTU::tdd_t &tdd
 
   // Page change bttn
   if (ui::button(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
-                 glm::vec3{(1660.000f / 1920.0f) * ww, (500.0f / 1080.0f) * wh, 0.1f},
+                 glm::vec3{(1660.000f / 1920.0f) * ww, (800.0f / 1080.0f) * wh, 0.1f},
                  glm::vec3{(120.0f / 1920.0f) * ww, (102.740f / 1080.0f) * wh, 1.0f},
                  g_elm_handles.next_page_bttn_up, g_elm_handles.next_page_bttn_down, 1.0f,
                  mouse_pos)) {
-    page = 1;
+    if (cs.attr_pts == 0) {
+      page = 1;
+    }
+  }
+
+  // Text if page change is not allowed
+  if (hot_widget == 13 && cs.attr_pts != 0) {
+    atom::text::append_text_draw_data(
+        tdd, tgd, "Spend all skill points to proceed.",
+        glm::vec3{(350.404f / 1920.0f) * ww, (780.786f / 1080.0f) * wh, 0.1f}, glm::vec4{1.0f},
+        (96.0f / 300.0f) * glm::vec2{ww / 1920.0f, wh / 1080.0f});
   }
 }
 
-static void sheet_page_1(GLFWwindow *, DTU::sdl_t &ui_sdl, DTU::tdd_t &, DTU::tgd_t &, surge::i32 &,
-                         surge::i32 &, float ww, float wh, const glm::vec2 &,
-                         DTU::character::sheet &) noexcept {
+static void sheet_page_1(GLFWwindow *window, DTU::sdl_t &ui_sdl, DTU::tdd_t /*&tdd*/,
+                         DTU::tgd_t /*&tgd*/, surge::i32 &active_widget, surge::i32 &hot_widget,
+                         float ww, float wh, const glm::vec2 &mouse_pos,
+                         DTU::character::sheet /*&cs*/, surge::u8 &page) noexcept {
   using namespace surge;
   using namespace DTU;
 
   // Background
   push_sprite(ui_sdl, g_elm_handles.page_1, make_model(glm::vec3{0.0f}, glm::vec3{ww, wh, 1.0f}),
               1.0f);
+
+  // Page change bttn
+  if (ui::button(window, __COUNTER__, active_widget, hot_widget, ui_sdl,
+                 glm::vec3{(140.000f / 1920.0f) * ww, (800.0f / 1080.0f) * wh, 0.1f},
+                 glm::vec3{(120.0f / 1920.0f) * ww, (102.740f / 1080.0f) * wh, 1.0f},
+                 g_elm_handles.prev_page_bttn_up, g_elm_handles.prev_page_bttn_down, 1.0f,
+                 mouse_pos)) {
+    page = 0;
+  }
 }
 
 void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &tdd,
@@ -274,7 +308,7 @@ void DTU::ui::character_sheet::update(GLFWwindow *window, sdl_t &ui_sdl, tdd_t &
     break;
 
   case 1:
-    sheet_page_1(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs);
+    sheet_page_1(window, ui_sdl, tdd, tgd, active_widget, hot_widget, ww, wh, mouse_pos, cs, page);
     break;
 
   default:
