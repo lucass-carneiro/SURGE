@@ -9,15 +9,16 @@ credits:
 
 # Physical Attributes
 
-- Name: Indie.
+- Name: Indie
 - Born Gender: F
+- Possibly a [diminutive](https://www.behindthename.com/glossary/view/diminutive) of [India](https://www.behindthename.com/name/india) or [Indiana](https://www.behindthename.com/name/indiana), but also likely inspired by the term _indie_, short for _independent_, which is typically used to refer to media produced outside of the mainstream.
 
 # Subconscious
 
 ## The Negative Experience
 
-Single event or pattern of bad things happening.
-This is specific, but so bad that the character created a coping mechanism to deal with absolutely *everything else*.
+- Physically and mentally abusive father.
+- Indifferent and condoning mother.
 
 ## The Core Motivation
 
@@ -53,4 +54,8 @@ Filling the areas below with "doesn't care" **IS** valid
 ### Dialogue
 ### Weaknesses
 
-## The Perspective
+## [The Dilemma](setting_and_themes.md#^476916)
+
+- Keep on existing by isolating yourself with others like you.
+- Do not make your presence known to your victims.
+- Protect yourself from attacks by not being known and by using the strength of your peers if the need arises.

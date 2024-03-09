@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "karan.md",
+                "file": "indie.md",
                 "mode": "source",
                 "source": true
               }
@@ -98,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "karan.md",
+                "file": "indie.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "karan.md",
+                "file": "indie.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "karan.md"
+                "file": "indie.md"
               }
             }
           }
@@ -161,11 +161,11 @@
   },
   "active": "846835009378f5d9",
   "lastOpenFiles": [
-    "indie.md",
     "characters.md",
+    "indie.md",
+    "templates/character_sheet.md",
     "karan.md",
     "Untitled 1.md",
-    "templates/character_sheet.md",
     "templates/dated_entry.md",
     "templates/wiki_entry.md",
     "setting_and_themes.md",

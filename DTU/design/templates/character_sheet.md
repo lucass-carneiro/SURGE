@@ -52,4 +52,4 @@ Filling the areas below with "doesn't care" **IS** valid
 ### Dialogue
 ### Weaknesses
 
-## The Perspective
+## [The Dilemma](setting_and_themes.md#^476916)
