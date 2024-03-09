@@ -5,6 +5,15 @@
   "newFileLocation": "current",
   "useMarkdownLinks": true,
   "spellcheckDictionary": [
-    "DCMU"
-  ]
+    "DCMU",
+    "Puer",
+    "Sanguinis",
+    "Pactum",
+    "Absconditum",
+    "Sanguinem",
+    "vampiric",
+    "Tabula",
+    "Seniorum"
+  ],
+  "alwaysUpdateLinks": true
 }

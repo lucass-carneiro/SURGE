@@ -19,4 +19,20 @@ Yes. But also, "Drizzle: The Unveiling" (DTU) is an Action/Adventure digital Rol
 
 More specifically, DTU takes place in [Drizzle City](wiki/drizzle_city.md). Even more specifically, in [Drizzle City Municipal University (DCMU)](wiki/dcmu.md), in the year of 2023, in the world described in the previous section. 
 
-Our characters are also edgy millennials attending various courses in DCMU. The twist is that these millennials are *vampires*. Clinically, they are dead: they don't breathe, blink, eat or drink. Their hearts don't beat and they don't feel love. During the day, they lay comatose in their hideouts, hiding from the sun. During the night, ancient mysterious powers reanimate their corpses, and they gain sentience once more. Animated by these powers, they carry out their wills and ambitions in the shadowy society of the night, controlled by older and even worse vampires than themselves. They are used and manipulated, often without their knowledge, by these elders for their own selfish purposes. These vampires are called the *[Puer Sanguinis](wiki/puer_sanguinis.md)*.
+Our characters are also edgy millennials attending various courses in DCMU. The twist is that these millennials are *vampires*. Clinically, they are dead: they don't breathe, blink, eat or drink. Their hearts don't beat and they don't feel love. During the day, they lay comatose in their hideouts, hiding from the sun. During the night, ancient mysterious powers reanimate their corpses, and they gain sentience once more. Animated by these powers, they carry out their wills and ambitions in the shadowy society of the night, controlled by older and even worse vampires than themselves. They are used and manipulated, often without their knowledge, by these elders for their own selfish purposes. These vampires are called the *[Puer Sanguinis](wiki/puer_sanguinis.md)*, due to their young age.
+
+Each member of the cast represents a different viewpoint in the following dilemma:
+
+```
+You are a monster. To continue existing, you must suck on the blood of the living. The ecstasy of blood is so high that it slowly strips away at your morality and turns you into a horrible being. 
+
+Your existence is threatened by other monsters like that want to take your place, but also by monster hunters that seek to find and destroy your kind.
+
+What is the best way to survive in this society?
+```
+
+^476916
+
+Each character's answer represents their core beliefs (this will be explored further in the [Characters](characters.md) section). Given their early age in the night scene and their upbringing, they are strongly opinionated and are mouthpieces for different [Factions](wiki/factions.md) of the night scene. Prior to the start of DTU, they are competing for control of the university campus, but have reached a stalemate. Each vampire claims an approximately equal sized territory for a faction, and this has been true for some time now. They have also strictly controlled the vampire population on campus, believing that any new vampire could shift the balance of power. And they were right.
+
+The plot of DTU starts when a new "illegal" vampire is created, by an unknown [Lord](wiki/lord.md) and unknown reasons. This unexpected *Puer Sanguinis* is the **Player Character** #PC. They have absolutely no idea on the existence of the society of the night (see [Pactum Absconditum Sanguinem](the_pact.md)) and must learn everything from the unreliable sources that are the other *Puer Sanguinis* already on campus. The #PC wakes up confused, hungry and in a quest to find the one who murdered them and turned them into a vampire. Along the way, the #PC may befriend the various factions operating on campus. They shall be lied, used and manipulated but in the end the truth about their maker will be revealed to them, and they will be forced to choose a side or be destroyed.

@@ -4,22 +4,35 @@
     "type": "split",
     "children": [
       {
-        "id": "c01497ebc8353a95",
+        "id": "54a939a5befbab4d",
         "type": "tabs",
         "children": [
           {
-            "id": "133956aabffc6daf",
+            "id": "5a0762b2281acfbd",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "setting_and_themes.md",
+                "file": "characters.md",
                 "mode": "preview",
                 "source": true
               }
             }
+          },
+          {
+            "id": "846835009378f5d9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "indie.md",
+                "mode": "source",
+                "source": true
+              }
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -69,7 +82,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "c5fdb68d86ce4a77",
@@ -85,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "setting_and_themes.md",
+                "file": "indie.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "setting_and_themes.md",
+                "file": "indie.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "setting_and_themes.md"
+                "file": "indie.md"
               }
             }
           }
@@ -146,16 +159,30 @@
       "omnisearch:Omnisearch": false
     }
   },
-  "active": "133956aabffc6daf",
+  "active": "846835009378f5d9",
   "lastOpenFiles": [
-    "wiki/puer_sanguinis.md",
-    "setting_and_themes.md",
-    "wiki/dcmu.md",
-    "wiki/drizzle_city.md",
-    "index.md",
-    "wiki",
-    "templates/wiki_entry.md",
+    "characters.md",
+    "indie.md",
+    "karan.md",
+    "Untitled 1.md",
+    "templates/character_sheet.md",
     "templates/dated_entry.md",
+    "templates/wiki_entry.md",
+    "setting_and_themes.md",
+    "plot.md",
+    "index.md",
+    "wiki/vassal.md",
+    "wiki/the_unbound.md",
+    "wiki/the_table.md",
+    "wiki/the_revenants.md",
+    "wiki/the_pact.md",
+    "wiki/the_kiss.md",
+    "wiki/puer_sanguinis.md",
+    "wiki/lord.md",
+    "wiki/factions.md",
+    "wiki/drizzle_city.md",
+    "wiki/dcmu.md",
+    "wiki",
     "themes_and_chars.md",
     "templates"
   ]
