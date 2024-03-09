@@ -34,7 +34,7 @@ I must:
 - Acquire money and political power. With that, I will tell others what to do. I will use them. I will have real choices.
 - I will never again be told what to do.
 - No opportunity will ever be out of my reach again.
-- I will no one else's tools.
+- I will be no one else's tools.
 
 # Conscious
 
@@ -45,9 +45,6 @@ The world consists of two groups: Winners and losers. Tools and those that use t
 All who don't see this are simply in denial of the surrounding reality. It is better to learn how to *win* in a bad society than to hopelessly try to change it and be a tool.
 
 ## Areas of Their Life
-
-The core belief affects *all areas of a character's life*.
-Filling the areas below with "doesn't care" **IS** valid
 
 ### Goals
 
