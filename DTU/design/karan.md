@@ -11,6 +11,7 @@ credits:
 
 - Name: Karan.
 - Born Gender: Male.
+- "Karan" means "clever, skillful" in Sanskrit.
 
 # Subconscious
 
