@@ -70,7 +70,7 @@ All who don't see this are simply in denial of the surrounding reality. It is be
 
 ### Presentation
 
-- Always impeccably dressed.
+- Always impeccably dressed. Wears a suit and gold watch to buy groceries (if he did his groceries himself)
 - Groomed.
 - Shaved.
 - Perfumed.
