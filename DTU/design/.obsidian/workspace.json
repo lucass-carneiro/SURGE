@@ -48,7 +48,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "six",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -65,8 +65,7 @@
               "state": {}
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -147,17 +146,17 @@
       "omnisearch:Omnisearch": false
     }
   },
-  "active": "f283c861665ba6c9",
+  "active": "f0d449d69aa7a601",
   "lastOpenFiles": [
-    "index.md",
-    "plot.md",
-    "characters.md",
     "setting_and_themes.md",
-    "hera.md",
-    "maverick.md",
-    "karan.md",
+    "plot.md",
     "lalita.md",
+    "karan.md",
     "indie.md",
+    "index.md",
+    "hera.md",
+    "characters.md",
+    "maverick.md",
     "templates/character_sheet.md",
     "Untitled 1.md",
     "templates/dated_entry.md",
