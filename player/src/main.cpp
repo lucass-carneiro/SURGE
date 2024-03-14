@@ -1,7 +1,6 @@
 #include "allocators.hpp"
 #include "cli.hpp"
 #include "config.hpp"
-#include "files.hpp"
 #include "logging.hpp"
 #include "module.hpp"
 #include "options.hpp"
@@ -10,6 +9,7 @@
 #include "window.hpp"
 
 #include <cstdlib>
+#include <taskflow/taskflow.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <common/TracyColor.hpp>
@@ -53,6 +53,18 @@ auto main(int, char **) noexcept -> int {
   }
 
   const auto [w_res, w_ccl, w_attrs, first_mod] = *config_data;
+
+  /********************
+   * Init Task System *
+   ********************/
+  const auto num_workers{std::thread::hardware_concurrency() - 1};
+  log_info("Initializing %u worker threads", num_workers);
+  try {
+    tf::Executor task_exec(num_workers);
+  } catch (std::exception &e) {
+    log_error("Unable to initialize worker threads %s", e.what());
+    return EXIT_FAILURE;
+  }
 
   /****************************
    * Init window and renderer *
