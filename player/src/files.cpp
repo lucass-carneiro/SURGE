@@ -154,7 +154,7 @@ auto surge::files::load_image(const char *p) noexcept -> tl::expected<image, sur
     return tl::unexpected(surge::error::static_image_stbi_error);
   }
 
-  return image{iw, ih, channels_in_file, image_data};
+  return image{iw, ih, channels_in_file, image_data, p};
 }
 
 void surge::files::free_image(image &image) noexcept { stbi_image_free(image.texels); }

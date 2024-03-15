@@ -6,6 +6,7 @@
 #include "renderer.hpp"
 
 #include <glm/glm.hpp>
+#include <tl/expected.hpp>
 
 namespace surge::window {
 

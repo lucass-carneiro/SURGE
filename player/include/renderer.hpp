@@ -3,14 +3,8 @@
 
 #include "config.hpp"
 #include "error_types.hpp"
+#include "gl_includes.hpp"
 #include "integer_types.hpp"
-
-// clang-format off
-#include "glad/gl.h"
-
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-// clang-format on
 
 #include <glm/glm.hpp>
 

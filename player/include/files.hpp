@@ -21,6 +21,7 @@ struct image {
   int height;
   int channels;
   unsigned char *texels;
+  const char *file_name;
 };
 
 auto load_image(const char *path) noexcept -> tl::expected<image, error>;

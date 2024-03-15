@@ -16,6 +16,7 @@
 #include "player/text.hpp"
 #include "player/options.hpp"
 #include "player/files.hpp"
+#include "player/texture.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -261,6 +262,11 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   if (bind_callback_stat != 0) {
     return bind_callback_stat;
   }
+
+  // Initialize the texture record
+  surge::atom::texture::load_options opts{};
+  surge::atom::texture::record tr(3);
+  tr.load(opts, "resources/main_menu/1.png");
 
   // Initialize global 2D projection matrix and view matrix
   const auto [ww, wh] = surge::window::get_dims(window);
