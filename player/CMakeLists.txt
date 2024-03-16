@@ -26,6 +26,7 @@ configure_file(
 set(
   SURGE_PLAYER_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
+  "${PROJECT_SOURCE_DIR}/include/buffers.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/config.hpp"
   "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
@@ -51,6 +52,7 @@ set(
 set(
   SURGE_PLAYER_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/allocators.cpp"
+  "${PROJECT_SOURCE_DIR}/src/buffers.cpp"
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
