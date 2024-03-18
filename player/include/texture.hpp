@@ -29,7 +29,7 @@ class record {
 public:
   record(usize initial_size);
 
-  template <typename... T> void load(const load_options &opts, T... paths) {
+  void load(const load_options &opts, std::convertible_to<std::string_view> auto &&...paths) {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::atom::texture::record::load");
 #endif
@@ -40,7 +40,7 @@ public:
     constexpr auto num_paths{sizeof...(paths)};
     std::array<future_t, num_paths> futures{};
 
-    for (usize i = 0; const auto &p : {paths...}) {
+    for (usize i = 0; const auto &p : std::initializer_list<const char *>{paths...}) {
       futures[i] = tasks::executor().async([=] { return files::load_image(p); });
       i++;
     }

@@ -5,7 +5,9 @@
 #include "integer_types.hpp"
 #include "logging.hpp"
 
-#include <span>
+#include <concepts>
+#include <cstring>
+#include <initializer_list>
 
 namespace surge::atom::buffers {
 
@@ -23,19 +25,78 @@ struct locked_range {
 };
 
 // Persistant triple buffered array
-template <typename T, usize num_buffers = 3> class ptba {
+template <typename T> class ptba {
 public:
-  ptba(usize capacity) {
-    const auto total_size{capacity * sizeof(T) * num_buffers};
+  ptba(usize c, const char *n = "ptba", usize r = 3) noexcept
+      : capacity{c},
+        name{n},
+        redundancy{r},
+        element_size{sizeof(T)},
+        single_buffer_size{capacity * element_size},
+        total_size{single_buffer_size * redundancy},
+        bound_buffer{redundancy + 1} {
+
+    log_info("Creating PTBA %s"
+             "  Buffer size: %u"
+             "  Element size: %u"
+             "  Buffering redundancy: %u"
+             "  Total size: %u",
+             name, capacity, element_size, redundancy, total_size);
 
     const GLbitfield map_flags{GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT};
     const GLbitfield alloc_flags{map_flags | GL_DYNAMIC_STORAGE_BIT};
 
     glCreateBuffers(1, &handle);
     glNamedBufferStorage(handle, total_size, nullptr, alloc_flags);
-    data = std::span{
-        static_cast<std::byte *>(glMapNamedBufferRange(handle, 0, total_size, map_flags)),
-        total_size};
+    data = glMapNamedBufferRange(handle, 0, total_size, map_flags);
+    write_head = reinterpret_cast<uintptr_t>(data); // NOLINT
+  }
+
+  void destroy() noexcept {
+    log_info("Destroying PTBA %s", name);
+    glUnmapNamedBuffer(handle);
+    glDeleteBuffers(1, &handle);
+    handle = 0;
+  };
+
+  ~ptba() noexcept {
+    if (glIsBuffer(handle)) {
+      destroy();
+    }
+  }
+
+  void push(std::same_as<T> auto &&...elements) noexcept {
+    using std::memcpy;
+
+    for (usize i = 0; const auto &e : std::initializer_list<T>{elements...}) {
+      // get write size
+      const usize write_size{write_head + element_size};
+
+      // Check if write size is ilegal and early quit
+      const auto write_size_legal{write_size < single_buffer_size};
+
+      if (!write_size_legal) {
+        log_warn("PTBA %s: Element %lu in push operation is too big to be written to the buffer. "
+                 "Ignoring request",
+                 name, i);
+        return;
+      }
+
+      // Write is legal. Wait until the GPU usage lock is released.
+      wait_for_locked_range(write_size);
+
+      // Write and advance head
+      memcpy(data, static_cast<void *>(&e), write_size);
+      write_head += write_size;
+      write_head %= total_size;
+
+      i++;
+    }
+  }
+
+  void bind_to_slot(GLuint shader_slot) {
+    // Find wich buffer owns
+    // glBindBufferRange(GL_SHADER_STORAGE_BUFFER, shader_slot, handle, write_head, )
   }
 
   ptba(const ptba &) = delete;
@@ -58,7 +119,7 @@ private:
     range_lock.write_size = size;
   }
 
-  void wait_for_locked_range() noexcept {
+  void wait_for_locked_range(usize) noexcept {
     if (range_lock.lock) {
       while (true) {
         const auto wait_return = glClientWaitSync(range_lock.lock, GL_SYNC_FLUSH_COMMANDS_BIT, 1);
@@ -68,11 +129,21 @@ private:
     }
   }
 
+  void get_head_owner() noexcept {}
+
+  const usize capacity{0};           // Number of elements in the buffer
+  const char *name{nullptr};         // Name of the buffer
+  const usize redundancy{0};         // Number of repetitions (double, triple, etc buffering)
+  const usize element_size{0};       // Size of a single element in B
+  const usize single_buffer_size{0}; // Size of a single buffer in B
+  const usize total_size{0};         // Total buffer size, including repetitions in B
+
+  usize bound_buffer{0};
+  uintptr_t write_head{0};
   locked_range range_lock{};
-  usize write_head{0};
 
   GLuint handle{0};
-  std::span<std::byte> data;
+  void *data{nullptr};
 };
 
 } // namespace surge::atom::buffers
