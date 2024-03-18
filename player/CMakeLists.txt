@@ -60,6 +60,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/mpsb.cpp"
   "${PROJECT_SOURCE_DIR}/src/nonuniform_tiles.cpp"
+  "${PROJECT_SOURCE_DIR}/src/ptba.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
   "${PROJECT_SOURCE_DIR}/src/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/sprite.cpp"
