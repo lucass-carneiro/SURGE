@@ -22,6 +22,20 @@
  */
 namespace surge::atom::text {
 
+class record {
+public:
+  record();
+
+private:
+  GLuint VBO;
+  GLuint EBO;
+  GLuint VAO;
+
+  // SSBOs
+  GLuint MMB; // model matrices buffer
+  GLuint THB; // texture handles buffer
+};
+
 struct buffer_data {
   GLuint VBO;
   GLuint EBO;

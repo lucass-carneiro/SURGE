@@ -16,28 +16,28 @@ project(
 
 set(
   SURGE_MODULE_DEFAULT_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/character_sheet.hpp"
-  "${PROJECT_SOURCE_DIR}/include/character.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/character_sheet.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/character.hpp"
   "${PROJECT_SOURCE_DIR}/include/DTU.hpp"
-  "${PROJECT_SOURCE_DIR}/include/main_menu.hpp"
-  "${PROJECT_SOURCE_DIR}/include/new_game.hpp"
-  "${PROJECT_SOURCE_DIR}/include/states.hpp"
-  "${PROJECT_SOURCE_DIR}/include/ui.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/main_menu.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/new_game.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/states.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/ui.hpp"
 )
 
 set(
   SURGE_MODULE_DEFAULT_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/character_sheet.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/character_sheet.cpp"
   "${PROJECT_SOURCE_DIR}/src/DTU.cpp"
-  "${PROJECT_SOURCE_DIR}/src/main_menu.cpp"
-  "${PROJECT_SOURCE_DIR}/src/new_game.cpp"
-  "${PROJECT_SOURCE_DIR}/src/ui.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/main_menu.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/new_game.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/ui.cpp"
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  list(APPEND SURGE_MODULE_DEFAULT_HEADER_LIST "${PROJECT_SOURCE_DIR}/include/debug_window.hpp")
-  list(APPEND SURGE_MODULE_DEFAULT_SOURCE_LIST "${PROJECT_SOURCE_DIR}/src/debug_window.cpp")
-endif()
+#if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#  list(APPEND SURGE_MODULE_DEFAULT_HEADER_LIST "${PROJECT_SOURCE_DIR}/include/debug_window.hpp")
+#  list(APPEND SURGE_MODULE_DEFAULT_SOURCE_LIST "${PROJECT_SOURCE_DIR}/src/debug_window.cpp")
+#endif()
 
 # -----------------------------------------
 # Link Target

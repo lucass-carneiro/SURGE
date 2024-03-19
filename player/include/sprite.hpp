@@ -14,16 +14,20 @@ namespace surge::atom::sprite {
 
 class record {
 public:
-  record(usize max_sprites);
+  record(usize max_sprts = 32);
 
   void sync_buffers() noexcept;
+
+  void add(glm::mat4 &&model_matrix, GLuint64 &&texture_handle, float &&alpha) noexcept;
 
   void draw(const GLuint &sp, const GLuint &MPSB) noexcept;
 
   void reset() noexcept;
+  void create_buffers() noexcept;
   void destroy_buffers() noexcept;
 
 private:
+  const usize max_sprites{0};
   GLuint VBO{0};
   GLuint EBO{0};
   GLuint VAO{0};
@@ -53,29 +57,6 @@ struct data_list {
   surge::vector<glm::mat4> models;
   surge::vector<float> alphas;
 };
-
-auto create_buffers(usize max_sprites = 32) noexcept -> buffer_data;
-void destroy_buffers(const buffer_data &) noexcept;
-
-auto create_texture(const files::image &image,
-                    renderer::texture_filtering filtering = renderer::texture_filtering::linear,
-                    renderer::texture_wrap wrap = renderer::texture_wrap::clamp_to_edge) noexcept
-    -> tl::expected<std::tuple<GLuint, GLuint64>, error>;
-
-void destroy_texture(GLuint texture) noexcept;
-void destroy_texture(const vector<GLuint> &texture) noexcept;
-
-void make_resident(GLuint64 handle) noexcept;
-void make_non_resident(GLuint64 handle) noexcept;
-
-void make_resident(const vector<GLuint64> &texture_handles) noexcept;
-void make_non_resident(const vector<GLuint64> &texture_handles) noexcept;
-auto is_resident(GLuint64 handle) noexcept -> bool;
-
-void send_buffers(const buffer_data &bd, const data_list &dl) noexcept;
-
-void draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
-          const data_list &dl) noexcept;
 
 } // namespace surge::atom::sprite
 
