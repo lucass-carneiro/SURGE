@@ -5,7 +5,7 @@
 #include "player/error_types.hpp"
 #include "player/texture.hpp"
 #include "player/window.hpp"
-#include "mpsb.hpp"
+#include "pv_ubo.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -26,7 +26,7 @@ static GLuint text_shader{0};   // NOLINT
 namespace globals {
 
 static surge::atom::texture::database tdb; // NOLINT
-static GLuint MPSB{0};                     // NOLINT;
+static surge::atom::pv_ubo::buffer pv_ubo;
 
 } // namespace globals
 
@@ -98,9 +98,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(0.0f, 1.0f, 0.0f))};
 
-  // MPSB
-  globals::MPSB = surge::atom::mpsb::create_buffer();
-  surge::atom::mpsb::send_buffer(globals::MPSB, &projection, &view);
+  // PV UBO
+  globals::pv_ubo = pv_ubo::buffer::create();
+  globals::pv_ubo.update_all(&projection, &view);
 
   // Sprite Shader
   const auto sprite_shader{
@@ -133,7 +133,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   destroy_shader_program(shader_programs::text_shader);
   destroy_shader_program(shader_programs::sprite_shader);
 
-  mpsb::destroy_buffer(globals::MPSB);
+  globals::pv_ubo.destroy();
   globals::tdb.destroy();
 
   const auto unbind_callback_stat{DTU::unbind_callbacks(window)};
@@ -144,7 +144,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int { return 0; }
+extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
+  globals::pv_ubo.bind_to_location(2);
+  return 0;
+}
 
 extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *, double) noexcept -> int { return 0; }
 

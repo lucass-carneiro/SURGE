@@ -102,6 +102,8 @@ void surge::atom::texture::make_non_resident(GLuint64 handle) noexcept {
 }
 
 auto surge::atom::texture::database::create(usize initial_size) noexcept -> database {
+  log_info("Creating texture database");
+
   database db;
   db.ids.reserve(initial_size);
   db.handles.reserve(initial_size);
@@ -111,6 +113,8 @@ auto surge::atom::texture::database::create(usize initial_size) noexcept -> data
 }
 
 void surge::atom::texture::database::destroy() noexcept {
+  log_info("Destroying texture database");
+
   for (usize i = 0; i < handles.size(); i++) {
     texture::destroy(ids[i], handles[i]);
   }
