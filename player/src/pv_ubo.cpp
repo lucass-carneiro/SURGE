@@ -2,6 +2,11 @@
 
 #include "logging.hpp"
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 auto surge::atom::pv_ubo::buffer::create() noexcept -> buffer {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::pv_ubo::buffer::create");

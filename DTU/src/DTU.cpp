@@ -5,10 +5,13 @@
 #include "player/error_types.hpp"
 #include "player/texture.hpp"
 #include "player/window.hpp"
-#include "pv_ubo.hpp"
+#include "player/sprite.hpp"
+#include "player/pv_ubo.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+
+#include <cmath>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
@@ -26,7 +29,8 @@ static GLuint text_shader{0};   // NOLINT
 namespace globals {
 
 static surge::atom::texture::database tdb; // NOLINT
-static surge::atom::pv_ubo::buffer pv_ubo;
+static surge::atom::pv_ubo::buffer pv_ubo; // NOLINT
+static surge::atom::sprite::database sdb;  // NOLINT
 
 } // namespace globals
 
@@ -90,7 +94,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
 
   // Texture database
-  globals::tdb = texture::database::create(32);
+  globals::tdb = texture::database::create(128);
+
+  // Sprite database
+  globals::sdb = sprite::database::create(128);
 
   // Initialize global 2D projection matrix and view matrix
   const auto [ww, wh] = surge::window::get_dims(window);
@@ -134,6 +141,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   destroy_shader_program(shader_programs::sprite_shader);
 
   globals::pv_ubo.destroy();
+  globals::sdb.destroy();
   globals::tdb.destroy();
 
   const auto unbind_callback_stat{DTU::unbind_callbacks(window)};
@@ -146,10 +154,35 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   globals::pv_ubo.bind_to_location(2);
+  globals::sdb.draw(shader_programs::sprite_shader);
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *, double) noexcept -> int { return 0; }
+extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexcept -> int {
+  using std::abs;
+  const auto [ww, wh] = surge::window::get_dims(window);
+  static glm::vec2 pos{0.0f};
+
+  globals::sdb.reset();
+
+  // Push stuff to sdb
+  globals::sdb.add(0, surge::atom::sprite::place(pos, glm::vec2{100.0f}), 1.0);
+
+  globals::sdb.update();
+
+  pos[0] += 100.0f * static_cast<float>(dt);
+  pos[1] += 100.0f * static_cast<float>(dt);
+
+  if (abs(pos[0] - static_cast<float>(ww)) < 1.0f) {
+    pos[0] = 0;
+  }
+
+  if (abs(pos[1] - static_cast<float>(wh)) < 1.0) {
+    pos[1] = 0;
+  }
+
+  return 0;
+}
 
 extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
 

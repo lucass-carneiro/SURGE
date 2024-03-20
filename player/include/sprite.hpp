@@ -2,32 +2,15 @@
 #define SURGE_ATOM_SPRITE_HPP
 
 #include "container_types.hpp"
-#include "files.hpp"
-#include "renderer.hpp"
-#include "tasks.hpp"
+#include "gl_includes.hpp"
 
 #include <glm/glm.hpp>
 #include <tl/expected.hpp>
-#include <tuple>
 
 namespace surge::atom::sprite {
 
-class record {
-public:
-  record(usize max_sprts = 32);
-
-  void sync_buffers() noexcept;
-
-  void add(glm::mat4 &&model_matrix, GLuint64 &&texture_handle, float &&alpha) noexcept;
-
-  void draw(const GLuint &sp, const GLuint &MPSB) noexcept;
-
-  void reset() noexcept;
-  void create_buffers() noexcept;
-  void destroy_buffers() noexcept;
-
+struct database {
 private:
-  const usize max_sprites{0};
   GLuint VBO{0};
   GLuint EBO{0};
   GLuint VAO{0};
@@ -39,24 +22,20 @@ private:
   vector<GLuint64> texture_handles;
   vector<glm::mat4> models;
   vector<float> alphas;
+
+public:
+  static auto create(usize max_sprites) noexcept -> database;
+  void destroy() noexcept;
+
+  void add(GLuint64 handle, glm::mat4 model, float alpha) noexcept;
+  void reset() noexcept;
+  void update() noexcept;
+
+  void draw(const GLuint &sp) noexcept;
 };
 
-struct buffer_data {
-  GLuint VBO;
-  GLuint EBO;
-  GLuint VAO;
-
-  // SSBOs
-  GLuint MMB; // model matrices buffer
-  GLuint AVB; // alpha value buffer
-  GLuint THB; // texture handles buffer
-};
-
-struct data_list {
-  surge::vector<GLuint64> texture_handles;
-  surge::vector<glm::mat4> models;
-  surge::vector<float> alphas;
-};
+auto place(glm::vec2 &&pos, glm::vec2 &&scale, float z = 0.0f) noexcept -> glm::mat4;
+auto place(const glm::vec2 &pos, const glm::vec2 &scale, float z = 0.0f) noexcept -> glm::mat4;
 
 } // namespace surge::atom::sprite
 

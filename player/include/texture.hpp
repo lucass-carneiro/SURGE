@@ -4,6 +4,7 @@
 #include "container_types.hpp"
 #include "files.hpp"
 #include "integer_types.hpp"
+#include "options.hpp"
 #include "renderer.hpp"
 
 #include <optional>
@@ -51,6 +52,11 @@ public:
   void reset() noexcept;
 
   void add(const create_info &ci, std::convertible_to<std::string_view> auto &&...paths) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+    ZoneScopedN("surge::atom::texture::database::add");
+    TracyGpuZone("GPU surge::atom::texture::database::add");
+#endif
+
     // Parallel load image files
     constexpr auto num_paths{sizeof...(paths)};
     std::array<files::img_future, num_paths> img_futures{};

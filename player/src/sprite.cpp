@@ -2,7 +2,8 @@
 
 #include "logging.hpp"
 
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
@@ -10,46 +11,30 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-surge::atom::sprite::record::record(usize max_sprts) : max_sprites{max_sprts} {
+auto surge::atom::sprite::database::create(usize max_sprites) noexcept -> database {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::record");
+  ZoneScopedN("surge::atom::sprite::database::create");
+  TracyGpuZone("GPU surge::atom::sprite::database::create");
 #endif
+  log_info("Creating sprite database");
 
-  texture_handles.reserve(max_sprites);
-  models.reserve(max_sprites);
-  alphas.reserve(max_sprites);
-}
+  database db;
 
-void surge::atom::sprite::record::reset() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::reset()");
-#endif
-
-  texture_handles.clear();
-  models.clear();
-  alphas.clear();
-}
-
-void surge::atom::sprite::record::create_buffers() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::create_buffers");
-  TracyGpuZone("GPU surge::atom::sprite::record::create_buffers");
-#endif
+  db.texture_handles.reserve(max_sprites);
+  db.models.reserve(max_sprites);
+  db.alphas.reserve(max_sprites);
 
   /***************
    * Gen Buffers *
    ***************/
-  log_info("Creating sprite record buffers");
 
-  glCreateBuffers(1, &VBO);
-  glCreateBuffers(1, &EBO);
-  glCreateVertexArrays(1, &VAO);
+  glCreateVertexArrays(1, &db.VAO);
+  glCreateBuffers(1, &db.VBO);
+  glCreateBuffers(1, &db.EBO);
 
   /***************
    * Create quad *
    ***************/
-  log_info("Creating sprite record base quad");
-
   const std::array<float, 20> vertex_attributes{
       0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
       1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
@@ -59,13 +44,13 @@ void surge::atom::sprite::record::create_buffers() noexcept {
 
   const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
 
-  glBindVertexArray(VAO);
+  glBindVertexArray(db.VAO);
 
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, db.VBO);
   glBufferData(GL_ARRAY_BUFFER, vertex_attributes.size() * sizeof(float), vertex_attributes.data(),
                GL_STATIC_DRAW);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, db.EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, draw_indices.size() * sizeof(GLuint), draw_indices.data(),
                GL_STATIC_DRAW);
 
@@ -79,46 +64,58 @@ void surge::atom::sprite::record::create_buffers() noexcept {
   /****************
    * Create SSBOs *
    ****************/
-  log_info("Creating sprite record model matrices buffer");
-  glCreateBuffers(1, &MMB);
-  glNamedBufferStorage(MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_sprites), nullptr,
+  glCreateBuffers(1, &db.MMB);
+  glNamedBufferStorage(db.MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_sprites), nullptr,
                        GL_DYNAMIC_STORAGE_BIT);
 
-  log_info("Creating sprite record texture alphas buffer");
-  glCreateBuffers(1, &AVB);
-  glNamedBufferStorage(AVB, static_cast<GLsizeiptr>(sizeof(float) * max_sprites), nullptr,
+  glCreateBuffers(1, &db.AVB);
+  glNamedBufferStorage(db.AVB, static_cast<GLsizeiptr>(sizeof(float) * max_sprites), nullptr,
                        GL_DYNAMIC_STORAGE_BIT);
 
-  log_info("Creating sprite record texture handles buffer");
-  glCreateBuffers(1, &THB);
-  glNamedBufferStorage(THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_sprites), nullptr,
+  glCreateBuffers(1, &db.THB);
+  glNamedBufferStorage(db.THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_sprites), nullptr,
                        GL_DYNAMIC_STORAGE_BIT);
+
+  return db;
 }
 
-void surge::atom::sprite::record::destroy_buffers() noexcept {
+void surge::atom::sprite::database::destroy() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::destroy_buffers");
-  TracyGpuZone("GPU surge::atom::sprite::record::destroy_buffers");
+  ZoneScopedN("surge::atom::sprite::database::destroy");
+  TracyGpuZone("GPU surge::atom::sprite::database::destroy");
 #endif
+  log_info("Destroying sprite database");
 
-  log_info("Deleting sprite record buffer data\n  VBO: %u\n  EBO: %u\n  VAO: %u\n  MMB: %u\n  AVB: "
-           "%u\n  "
-           "THB: %u",
-           VBO, EBO, VAO, MMB, AVB, THB);
-
-  glDeleteBuffers(1, &(VBO));
-  glDeleteBuffers(1, &(EBO));
-  glDeleteVertexArrays(1, &(VAO));
-
-  glDeleteBuffers(1, &(MMB));
-  glDeleteBuffers(1, &(AVB));
   glDeleteBuffers(1, &(THB));
+  glDeleteBuffers(1, &(AVB));
+  glDeleteBuffers(1, &(MMB));
+  glDeleteBuffers(1, &(EBO));
+  glDeleteBuffers(1, &(VBO));
+  glDeleteVertexArrays(1, &(VAO));
 }
 
-void surge::atom::sprite::record::sync_buffers() noexcept {
+void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float alpha) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::sync_buffers");
-  TracyGpuZone("GPU surge::atom::sprite::record::sync_buffers");
+  ZoneScopedN("surge::atom::sprite::database::add");
+#endif
+  texture_handles.push_back(handle);
+  models.push_back(std::move(model));
+  alphas.push_back(alpha);
+}
+
+void surge::atom::sprite::database::reset() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::reset()");
+#endif
+  texture_handles.clear();
+  models.clear();
+  alphas.clear();
+}
+
+void surge::atom::sprite::database::update() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::update");
+  TracyGpuZone("GPU surge::atom::sprite::database::update");
 #endif
 
   if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
@@ -133,22 +130,14 @@ void surge::atom::sprite::record::sync_buffers() noexcept {
   }
 }
 
-void surge::atom::sprite::record::add(glm::mat4 &&model_matrix, GLuint64 &&texture_handle,
-                                      float &&alpha) noexcept {
-  models.push_back(std::move(model_matrix));
-  texture_handles.push_back(std::move(texture_handle));
-  alphas.push_back(std::move(alpha));
-}
-
-void surge::atom::sprite::record::draw(const GLuint &sp, const GLuint &MPSB) noexcept {
+void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::record::draw");
-  TracyGpuZone("GPU surge::atom::sprite::record::draw");
+  ZoneScopedN("surge::atom::sprite::database::draw");
+  TracyGpuZone("GPU surge::atom::sprite::database::draw");
 #endif
 
   if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, MMB);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, AVB);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, THB);
@@ -159,4 +148,17 @@ void surge::atom::sprite::record::draw(const GLuint &sp, const GLuint &MPSB) noe
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                             gsl::narrow_cast<GLsizei>(models.size()));
   }
+}
+
+auto surge::atom::sprite::place(glm::vec2 &&pos, glm::vec2 &&scale, float z) noexcept -> glm::mat4 {
+  const auto mv{glm::vec3{std::move(pos), z}};
+  const auto sc{glm::vec3{std::move(scale), 1.0f}};
+  return glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc);
+}
+
+auto surge::atom::sprite::place(const glm::vec2 &pos, const glm::vec2 &scale, float z) noexcept
+    -> glm::mat4 {
+  const auto mv{glm::vec3{pos, z}};
+  const auto sc{glm::vec3{scale, 1.0f}};
+  return glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc);
 }
