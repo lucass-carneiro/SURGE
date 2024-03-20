@@ -19,18 +19,16 @@
 #endif
 // clang-format on
 
-namespace shader_programs {
+namespace globals {
 
 static GLuint sprite_shader{0}; // NOLINT
 static GLuint text_shader{0};   // NOLINT
 
-} // namespace shader_programs
-
-namespace globals {
-
 static surge::atom::texture::database tdb; // NOLINT
 static surge::atom::pv_ubo::buffer pv_ubo; // NOLINT
 static surge::atom::sprite::database sdb;  // NOLINT
+
+static DTU::cmdq_t command_queue{}; // NOLINT
 
 } // namespace globals
 
@@ -115,7 +113,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   if (!sprite_shader) {
     return static_cast<int>(sprite_shader.error());
   }
-  shader_programs::sprite_shader = *sprite_shader;
+  globals::sprite_shader = *sprite_shader;
 
   // Text shader
   const auto text_shader{
@@ -123,7 +121,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   if (!text_shader) {
     return static_cast<int>(text_shader.error());
   }
-  shader_programs::text_shader = *text_shader;
+  globals::text_shader = *text_shader;
 
   return 0;
 }
@@ -137,8 +135,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   using namespace surge::atom;
   using namespace surge::renderer;
 
-  destroy_shader_program(shader_programs::text_shader);
-  destroy_shader_program(shader_programs::sprite_shader);
+  destroy_shader_program(globals::text_shader);
+  destroy_shader_program(globals::sprite_shader);
 
   globals::pv_ubo.destroy();
   globals::sdb.destroy();
@@ -154,7 +152,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   globals::pv_ubo.bind_to_location(2);
-  globals::sdb.draw(shader_programs::sprite_shader);
+  globals::sdb.draw(globals::sprite_shader);
   return 0;
 }
 
