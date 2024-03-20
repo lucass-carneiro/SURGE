@@ -4,7 +4,6 @@
 #include "player/logging.hpp"
 #include "player/error_types.hpp"
 #include "player/texture.hpp"
-#include "player/sprite.hpp"
 #include "player/window.hpp"
 #include "mpsb.hpp"
 
@@ -24,16 +23,12 @@ static GLuint text_shader{0};   // NOLINT
 
 } // namespace shader_programs
 
-namespace records {
+namespace globals {
 
-static surge::atom::texture::record g_texture_record(256); // NOLINT
+static surge::atom::texture::database tdb; // NOLINT
+static GLuint MPSB{0};                     // NOLINT;
 
-static surge::atom::sprite::record g_general_sprite_record(64); // NOLINT
-static surge::atom::sprite::record g_ui_sprite_record(64);      // NOLINT
-
-static GLuint MPSB{0}; // NOLINT;
-
-} // namespace records
+} // namespace globals
 
 auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
   log_info("Binding interaction callbacks");
@@ -85,15 +80,17 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   ZoneScopedN("DTU::on_load");
 #endif
 
+  using namespace surge;
+  using namespace surge::atom;
+
   // Bind callbacks
   const auto bind_callback_stat{DTU::bind_callbacks(window)};
   if (bind_callback_stat != 0) {
     return bind_callback_stat;
   }
 
-  // Create records
-  records::g_general_sprite_record.create_buffers();
-  records::g_ui_sprite_record.create_buffers();
+  // Texture database
+  globals::tdb = texture::database::create(32);
 
   // Initialize global 2D projection matrix and view matrix
   const auto [ww, wh] = surge::window::get_dims(window);
@@ -101,9 +98,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(0.0f, 1.0f, 0.0f))};
 
-  // Send view and projection matrices to mpsb
-  records::MPSB = surge::atom::mpsb::create_buffer();
-  surge::atom::mpsb::send_buffer(records::MPSB, &projection, &view);
+  // MPSB
+  globals::MPSB = surge::atom::mpsb::create_buffer();
+  surge::atom::mpsb::send_buffer(globals::MPSB, &projection, &view);
 
   // Sprite Shader
   const auto sprite_shader{
@@ -129,18 +126,20 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   ZoneScopedN("DTU::on_unload");
 #endif
 
+  using namespace surge;
+  using namespace surge::atom;
+  using namespace surge::renderer;
+
+  destroy_shader_program(shader_programs::text_shader);
+  destroy_shader_program(shader_programs::sprite_shader);
+
+  mpsb::destroy_buffer(globals::MPSB);
+  globals::tdb.destroy();
+
   const auto unbind_callback_stat{DTU::unbind_callbacks(window)};
   if (unbind_callback_stat != 0) {
     return unbind_callback_stat;
   }
-
-  records::g_general_sprite_record.destroy_buffers();
-  records::g_ui_sprite_record.destroy_buffers();
-  surge::atom::mpsb::destroy_buffer(records::MPSB);
-  records::g_texture_record.unload_all();
-
-  surge::renderer::destroy_shader_program(shader_programs::sprite_shader);
-  surge::renderer::destroy_shader_program(shader_programs::text_shader);
 
   return 0;
 }

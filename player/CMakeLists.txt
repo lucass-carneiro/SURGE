@@ -234,9 +234,9 @@ target_link_libraries(SurgePlayer PUBLIC
   glfw
   glm::glm
   OpenGL::GL
-  #glad::glad
   imgui::imgui
   Freetype::Freetype
+  xxHash::xxhash
 )
 
 if(SURGE_MULTITHREADING)
