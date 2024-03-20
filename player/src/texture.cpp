@@ -9,7 +9,7 @@ surge::atom::texture::record::record(usize initial_size) {
 }
 
 auto surge::atom::texture::record::img_to_texture(const load_options &opts,
-                                                  const files::image &image) noexcept
+                                                  const files::image_data &image) noexcept
     -> texture_result_t {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::texture::record::img_to_texture");
@@ -56,7 +56,7 @@ auto surge::atom::texture::record::img_to_texture(const load_options &opts,
 
   glTextureStorage2D(texture, opts.mipmap_levels, internal_format, image.width, image.height);
   glTextureSubImage2D(texture, 0, 0, 0, image.width, image.height, format, GL_UNSIGNED_BYTE,
-                      image.texels);
+                      image.pixels);
 
   glGenerateTextureMipmap(texture);
 

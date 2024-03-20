@@ -81,7 +81,7 @@ public:
 
 private:
   using texture_result_t = tl::expected<std::tuple<GLuint, GLuint64>, error>;
-  auto img_to_texture(const load_options &opts, const files::image &image) noexcept
+  auto img_to_texture(const load_options &opts, const files::image_data &image) noexcept
       -> texture_result_t;
 
   void reside_all_unchecked() noexcept;

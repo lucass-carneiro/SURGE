@@ -129,7 +129,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
   }
 }
 
-auto surge::files::load_image(const char *p) noexcept -> tl::expected<image, surge::error> {
+auto surge::files::load_image(const char *p) noexcept -> image {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::load_image");
 #endif
@@ -144,17 +144,25 @@ auto surge::files::load_image(const char *p) noexcept -> tl::expected<image, sur
 
   int iw{0}, ih{0}, channels_in_file{0};
   stbi_set_flip_vertically_on_load(static_cast<int>(true));
-  auto image_data{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
-                                        gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
-                                        &channels_in_file, 0)};
+  auto pixels{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
+                                    gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
+                                    &channels_in_file, 0)};
   stbi_set_flip_vertically_on_load(static_cast<int>(false));
 
-  if (image_data == nullptr) {
+  if (pixels == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
     return tl::unexpected(surge::error::static_image_stbi_error);
   }
 
-  return image{iw, ih, channels_in_file, image_data, p};
+  return image_data{iw, ih, channels_in_file, pixels, p};
 }
 
-void surge::files::free_image(image &image) noexcept { stbi_image_free(image.texels); }
+void surge::files::free_image(image_data &image) noexcept { stbi_image_free(image.pixels); }
+
+auto surge::files::load_image_task(const char *path) noexcept -> img_future {
+  return tasks::executor().async([=]() { return load_image(path); });
+}
+
+void surge::files::free_image_task(image_data &image) noexcept {
+  tasks::executor().silent_async([&]() {  free_image(image); });
+}

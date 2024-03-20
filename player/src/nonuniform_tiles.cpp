@@ -64,7 +64,7 @@ auto surge::atom::nonuniform_tiles::create(const tile_structure &structure) noex
     0,
     format,
     GL_UNSIGNED_BYTE,
-    image_data->texels
+    image_data->pixels
   );
   // clang-format off
 

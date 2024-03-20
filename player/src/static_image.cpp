@@ -55,7 +55,7 @@ auto surge::atom::static_image::create(const char *p, renderer::texture_filterin
   const GLenum format{image_data->channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
 
   glTexImage2D(GL_TEXTURE_2D, 0, internal_format, image_data->width, image_data->height, 0, format,
-               GL_UNSIGNED_BYTE, image_data->texels);
+               GL_UNSIGNED_BYTE, image_data->pixels);
   glGenerateMipmap(GL_TEXTURE_2D);
   surge::files::free_image(*image_data);
 
