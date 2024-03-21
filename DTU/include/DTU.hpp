@@ -4,7 +4,6 @@
 // clang-format off
 #include "player/options.hpp"
 #include "player/gl_includes.hpp"
-#include "player/container_types.hpp"
 // clang-format on
 
 #if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
@@ -18,9 +17,6 @@
 #endif
 
 namespace DTU {
-
-using cmd_code_t = surge::u32;
-using cmdq_t = surge::deque<cmd_code_t>;
 
 // Callbacks
 auto bind_callbacks(GLFWwindow *window) noexcept -> int;

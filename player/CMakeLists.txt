@@ -35,6 +35,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/nonuniform_tiles.hpp"
+  "${PROJECT_SOURCE_DIR}/include/pmb.hpp"
   "${PROJECT_SOURCE_DIR}/include/pv_ubo.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"

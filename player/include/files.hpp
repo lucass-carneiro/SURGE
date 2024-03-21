@@ -28,8 +28,8 @@ struct image_data {
 using image = tl::expected<image_data, error>;
 using img_future = std::future<image>;
 
-auto load_image(const char *path) noexcept -> image;
-auto load_image_task(const char *path) noexcept -> img_future;
+auto load_image(const char *path, bool flip = true) noexcept -> image;
+auto load_image_task(const char *path, bool flip = true) noexcept -> img_future;
 void free_image(image_data &) noexcept;
 void free_image_task(image_data &) noexcept;
 

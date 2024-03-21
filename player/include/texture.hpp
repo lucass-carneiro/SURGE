@@ -4,6 +4,7 @@
 #include "container_types.hpp"
 #include "files.hpp"
 #include "integer_types.hpp"
+#include "logging.hpp"
 #include "options.hpp"
 #include "renderer.hpp"
 

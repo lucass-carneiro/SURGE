@@ -1,22 +1,26 @@
 #ifndef SURGE_DTU_STATE_MAIN_MENU
 #define SURGE_DTU_STATE_MAIN_MENU
 
-#include "DTU.hpp"
-#include "states.hpp"
+// clang-format off
+#include "type_aliases.hpp"
 
-#include <glm/glm.hpp>
+#include "player/error_types.hpp"
 
-namespace DTU::state::main_menu {
+#include <optional>
+// clang-format on
 
-auto load(cmdq_t &cmdq, vec_glui &ids, vec_glui64 &handles, sdl_t &sdl, float ww, float wh) noexcept
-    -> int;
+namespace DTU::state_impl::main_menu {
 
-void unload(cmdq_t &cmdq, vec_glui &ids, vec_glui64 &handles, sdl_t &sdl) noexcept;
+auto load(tdb_t &tdb) noexcept -> std::optional<surge::error>;
+auto unload(tdb_t &tdb) noexcept -> std::optional<surge::error>;
 
-void update(cmdq_t &cmdq, sdl_t &sdl, double dt) noexcept;
+auto update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb) noexcept
+    -> std::optional<surge::error>;
 
-void keyboard_event(cmdq_t &cmdq, int key, int scancode, int action, int mods) noexcept;
+/*void update(cmdq_t &cmdq, sdl_t &sdl, double dt) noexcept;
 
-} // namespace DTU::state::main_menu
+void keyboard_event(cmdq_t &cmdq, int key, int scancode, int action, int mods) noexcept;*/
+
+} // namespace DTU::state_impl::main_menu
 
 #endif // SURGE_DTU_STATE_MAIN_MENU

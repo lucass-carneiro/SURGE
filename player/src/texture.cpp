@@ -1,7 +1,5 @@
 #include "texture.hpp"
 
-#include "logging.hpp"
-
 #include <cstring>
 #include <gsl/gsl-lite.hpp>
 
@@ -114,10 +112,6 @@ auto surge::atom::texture::database::create(usize initial_size) noexcept -> data
 
 void surge::atom::texture::database::destroy() noexcept {
   log_info("Destroying texture database");
-
-  for (usize i = 0; i < handles.size(); i++) {
-    texture::destroy(ids[i], handles[i]);
-  }
   reset();
 }
 
@@ -140,6 +134,10 @@ auto surge::atom::texture::database::find(const char *file_name) const noexcept
 }
 
 void surge::atom::texture::database::reset() noexcept {
+  for (usize i = 0; i < handles.size(); i++) {
+    texture::destroy(ids[i], handles[i]);
+  }
+
   ids.clear();
   handles.clear();
   name_hashes.clear();

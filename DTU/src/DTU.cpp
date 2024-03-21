@@ -1,5 +1,6 @@
 // clang-format off
 #include "DTU.hpp"
+#include "state_machine.hpp"
 
 #include "player/logging.hpp"
 #include "player/error_types.hpp"
@@ -28,54 +29,11 @@ static surge::atom::texture::database tdb; // NOLINT
 static surge::atom::pv_ubo::buffer pv_ubo; // NOLINT
 static surge::atom::sprite::database sdb;  // NOLINT
 
-static DTU::cmdq_t command_queue{}; // NOLINT
+static DTU::cmdq_t cmdq{}; // NOLINT
+
+static DTU::state_machine stm{};
 
 } // namespace globals
-
-auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
-  log_info("Binding interaction callbacks");
-
-  glfwSetKeyCallback(window, keyboard_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind keyboard event callback");
-    return static_cast<int>(surge::error::keyboard_event_unbinding);
-  }
-
-  glfwSetMouseButtonCallback(window, mouse_button_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse button event callback");
-    return static_cast<int>(surge::error::mouse_button_event_unbinding);
-  }
-
-  glfwSetScrollCallback(window, mouse_scroll_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse scroll event callback");
-    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
-  }
-
-  return 0;
-}
-
-auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
-  log_info("Unbinding interaction callbacks");
-
-  glfwSetKeyCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind keyboard event callback");
-  }
-
-  glfwSetMouseButtonCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse button event callback");
-  }
-
-  glfwSetScrollCallback(window, nullptr);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to unbind mouse scroll event callback");
-  }
-
-  return 0;
-}
 
 extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
@@ -123,6 +81,15 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
   globals::text_shader = *text_shader;
 
+  // First state
+  globals::stm.push(DTU::state::main_menu);
+  const auto transition_result{globals::stm.transition(globals::tdb)};
+
+  if (transition_result) {
+    log_error("Error loading first state");
+    return static_cast<int>(transition_result.value());
+  }
+
   return 0;
 }
 
@@ -134,6 +101,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   using namespace surge;
   using namespace surge::atom;
   using namespace surge::renderer;
+
+  globals::stm.destroy(globals::tdb);
 
   destroy_shader_program(globals::text_shader);
   destroy_shader_program(globals::sprite_shader);
@@ -158,26 +127,26 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
 
 extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexcept -> int {
   using std::abs;
-  const auto [ww, wh] = surge::window::get_dims(window);
-  static glm::vec2 pos{0.0f};
 
+  // Clear buffers
   globals::sdb.reset();
 
-  // Push stuff to sdb
-  globals::sdb.add(0, surge::atom::sprite::place(pos, glm::vec2{100.0f}), 1.0);
+  // Update states
+  const auto transition_result{globals::stm.transition(globals::tdb)};
+  const auto update_result{globals::stm.update(window, dt, globals::tdb, globals::sdb)};
 
+  if (transition_result) {
+    log_error("Unable to transition states");
+    return static_cast<int>(transition_result.value());
+  }
+
+  if (update_result) {
+    log_error("Unable to update current state");
+    return static_cast<int>(update_result.value());
+  }
+
+  // Send buffers to GPU
   globals::sdb.update();
-
-  pos[0] += 100.0f * static_cast<float>(dt);
-  pos[1] += 100.0f * static_cast<float>(dt);
-
-  if (abs(pos[0] - static_cast<float>(ww)) < 1.0f) {
-    pos[0] = 0;
-  }
-
-  if (abs(pos[1] - static_cast<float>(wh)) < 1.0) {
-    pos[1] = 0;
-  }
 
   return 0;
 }
@@ -187,3 +156,48 @@ extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int, int, int, 
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *, int, int, int) noexcept {}
 
 extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *, double, double) noexcept {}
+
+auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
+  log_info("Binding interaction callbacks");
+
+  glfwSetKeyCallback(window, keyboard_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind keyboard event callback");
+    return static_cast<int>(surge::error::keyboard_event_unbinding);
+  }
+
+  glfwSetMouseButtonCallback(window, mouse_button_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse button event callback");
+    return static_cast<int>(surge::error::mouse_button_event_unbinding);
+  }
+
+  glfwSetScrollCallback(window, mouse_scroll_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse scroll event callback");
+    return static_cast<int>(surge::error::mouse_scroll_event_unbinding);
+  }
+
+  return 0;
+}
+
+auto DTU::unbind_callbacks(GLFWwindow *window) noexcept -> int {
+  log_info("Unbinding interaction callbacks");
+
+  glfwSetKeyCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind keyboard event callback");
+  }
+
+  glfwSetMouseButtonCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind mouse button event callback");
+  }
+
+  glfwSetScrollCallback(window, nullptr);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to unbind mouse scroll event callback");
+  }
+
+  return 0;
+}

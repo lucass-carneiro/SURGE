@@ -129,7 +129,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
   }
 }
 
-auto surge::files::load_image(const char *p) noexcept -> image {
+auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::static_image::load_image");
 #endif
@@ -143,11 +143,18 @@ auto surge::files::load_image(const char *p) noexcept -> image {
   }
 
   int iw{0}, ih{0}, channels_in_file{0};
-  stbi_set_flip_vertically_on_load(static_cast<int>(true));
+
+  if (flip) {
+    stbi_set_flip_vertically_on_load(static_cast<int>(true));
+  }
+
   auto pixels{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
                                     gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
                                     &channels_in_file, 0)};
-  stbi_set_flip_vertically_on_load(static_cast<int>(false));
+
+  if (flip) {
+    stbi_set_flip_vertically_on_load(static_cast<int>(false));
+  }
 
   if (pixels == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
@@ -159,10 +166,13 @@ auto surge::files::load_image(const char *p) noexcept -> image {
 
 void surge::files::free_image(image_data &image) noexcept { stbi_image_free(image.pixels); }
 
-auto surge::files::load_image_task(const char *path) noexcept -> img_future {
-  return tasks::executor().async([=]() { return load_image(path); });
+auto surge::files::load_image_task(const char *path, bool flip) noexcept -> img_future {
+  // This option has to be set before the parallel tasks because STBI implements it as a global
+  // variable
+  stbi_set_flip_vertically_on_load(static_cast<int>(flip));
+  return tasks::executor().async([=]() { return load_image(path, false); });
 }
 
 void surge::files::free_image_task(image_data &image) noexcept {
-  tasks::executor().silent_async([&]() {  free_image(image); });
+  tasks::executor().silent_async([=]() { stbi_image_free(image.pixels); });
 }
