@@ -1,6 +1,7 @@
 #include "main_menu.hpp"
 
 #include "player/logging.hpp"
+#include "player/tasks.hpp"
 #include "player/window.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -77,11 +78,13 @@ static inline void update_background_parallax(GLFWwindow *window, double dt, DTU
   static float drift_3{0.0};
   static float drift_4{0.0};
 
-  prallax_drift(drift_0, drift_speed_0, dtf, model_0);
-  prallax_drift(drift_1, drift_speed_1, dtf, model_1);
-  prallax_drift(drift_2, drift_speed_2, dtf, model_2);
-  prallax_drift(drift_3, drift_speed_3, dtf, model_3);
-  prallax_drift(drift_4, drift_speed_4, dtf, model_4);
+  tasks::executor().silent_async([&]() { prallax_drift(drift_0, drift_speed_0, dtf, model_0); });
+  tasks::executor().silent_async([&]() { prallax_drift(drift_1, drift_speed_1, dtf, model_1); });
+  tasks::executor().silent_async([&]() { prallax_drift(drift_2, drift_speed_2, dtf, model_2); });
+  tasks::executor().silent_async([&]() { prallax_drift(drift_3, drift_speed_3, dtf, model_3); });
+  tasks::executor().silent_async([&]() { prallax_drift(drift_4, drift_speed_4, dtf, model_4); });
+
+  tasks::executor().wait_for_all();
 
   sdb.add(handle_0, model_0, 1.0f);
   sdb.add(handle_1, model_1, 1.0f);
