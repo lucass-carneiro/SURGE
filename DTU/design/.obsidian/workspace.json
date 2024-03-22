@@ -4,11 +4,23 @@
     "type": "split",
     "children": [
       {
-        "id": "54a939a5befbab4d",
+        "id": "5c41fee80f0a2894",
         "type": "tabs",
         "children": [
           {
-            "id": "f0d449d69aa7a601",
+            "id": "128e0351bddbd037",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "index.md",
+                "mode": "source",
+                "source": true
+              }
+            }
+          },
+          {
+            "id": "2c9051910897cb76",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -19,7 +31,8 @@
               }
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -146,14 +159,15 @@
       "omnisearch:Omnisearch": false
     }
   },
-  "active": "f0d449d69aa7a601",
+  "active": "2c9051910897cb76",
   "lastOpenFiles": [
-    "setting_and_themes.md",
+    "wiki/the_kiss.md",
     "plot.md",
+    "index.md",
+    "setting_and_themes.md",
+    "indie.md",
     "lalita.md",
     "karan.md",
-    "indie.md",
-    "index.md",
     "hera.md",
     "characters.md",
     "maverick.md",
@@ -166,7 +180,6 @@
     "wiki/the_table.md",
     "wiki/the_revenants.md",
     "wiki/the_pact.md",
-    "wiki/the_kiss.md",
     "wiki/puer_sanguinis.md",
     "wiki/lord.md",
     "wiki/factions.md",
