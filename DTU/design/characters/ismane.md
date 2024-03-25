@@ -1,16 +1,22 @@
 ---
-tag: character/{{title}}
-added: {{date}}
+tags:
+  - character/ismane
+added: 2024-03-25
 ---
 
 # Character Tags
 
+#Scribe 
+
 # Physical Attributes
 
-- Name:
-- Born Gender:
+- Name: Ismene
+- Born Gender: F
+- Age: 50
 
 # Behind the Name
+
+Possibly from Greek _[ἰσμή](https://www.behindthename.com/support/transcribe?type=GR&target=i%29smh%27) (isme)_ meaning "knowledge". This was the name of the daughter of Oedipus and Jocasta in Greek legend.
 
 # Subconscious
 

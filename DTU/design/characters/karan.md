@@ -2,16 +2,26 @@
 tags:
   - character/karan
 added: 2024-03-09
-credits:
-  who: Lucas, the Local Script Man
-  where: https://www.youtube.com/@localscriptman
 ---
+
+# Character Tags
+
+#TableLeader 
 
 # Physical Attributes
 
 - Name: Karan.
 - Born Gender: Male.
-- "Karan" means "clever, skillful" in Sanskrit.
+- Age: 28
+- Always impeccably dressed. Wears a suit and gold watch to buy groceries (if he did his groceries himself)
+- Groomed.
+- Shaved.
+- Perfumed.
+- Clean, serious and business-like
+
+# Behind the Name
+
+Means "clever, skillful" in Sanskrit.
 
 # Subconscious
 
@@ -53,12 +63,15 @@ All who don't see this are simply in denial of the surrounding reality. It is be
 - Bow to none.
 - Control everything.
 - Make others fight your fight for you.
+- Never finish second.
+- Always get more than you give.
 
 ### Relationships
 
 - Dominate and overshadow others.
 - No such thing as friends. Only useful and unless people.
 - Tries to get the maximum out of everyone and then discards them.
+- Never gives anything to people without making sure they give him something more valuable.
 
 ### Lifestyle
 
@@ -67,14 +80,6 @@ All who don't see this are simply in denial of the surrounding reality. It is be
 - Market shark.
 - Lavish. Sports cars. Fine suits. Expensive perfumes.
 - Does not like to mingle with the rabble.
-
-### Presentation
-
-- Always impeccably dressed. Wears a suit and gold watch to buy groceries (if he did his groceries himself)
-- Groomed.
-- Shaved.
-- Perfumed.
-- Clean, serious and business-like
 
 ### Dialogue
 
@@ -86,12 +91,7 @@ All who don't see this are simply in denial of the surrounding reality. It is be
 
 ### Weaknesses
 
-- **Extremely** insecure about origins.
-- **Mortally terrified** of loosing his money and status.
+- Extremely insecure about origins.
+- Terrified of loosing his money and status.
 - Quick to become impatient when things don't go exactly as he wants.
-
-## [The Dilemma](setting_and_themes.md#^476916)
-
-- Keep on existing by pretending you are not a monster.
-- Mingle with your victim's society and play by their rules.
-- Protect yourself from attacks by gathering political and economic power.
+- Sore looser.

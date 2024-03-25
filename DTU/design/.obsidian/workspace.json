@@ -4,28 +4,28 @@
     "type": "split",
     "children": [
       {
-        "id": "5c41fee80f0a2894",
+        "id": "74834ca3bdde0206",
         "type": "tabs",
         "children": [
           {
-            "id": "128e0351bddbd037",
+            "id": "7ce7a031d0493188",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "story/main_plot.md",
+                "file": "characters/emil_barrett.md",
                 "mode": "preview",
                 "source": true
               }
             }
           },
           {
-            "id": "0a9e02c5c1df6a20",
+            "id": "ee867fcc2b6bae79",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "story/main_plot.md",
+                "file": "characters/indie.md",
                 "mode": "preview",
                 "source": true
               }
@@ -97,7 +97,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "story/main_plot.md",
+                "file": "characters/emil_barrett.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,7 +114,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "story/main_plot.md",
+                "file": "characters/emil_barrett.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -137,7 +137,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "story/main_plot.md"
+                "file": "characters/emil_barrett.md"
               }
             }
           }
@@ -158,17 +158,23 @@
       "omnisearch:Omnisearch": false
     }
   },
-  "active": "128e0351bddbd037",
+  "active": "7ce7a031d0493188",
   "lastOpenFiles": [
+    "characters/indie.md",
+    "characters/emil_barrett.md",
+    "characters/karan.md",
+    "templates/character_sheet.md",
+    "characters/hera.md",
+    "characters/ismane.md",
+    "characters/lalita.md",
     "index.md",
+    "story/main_plot.md",
+    "characters",
     "story/setting_and_themes.md",
-    "indie.md",
     "templates/dw7pt.md",
     "plot.md",
-    "story/main_plot.md",
     "wiki/the_kiss.md",
     "story",
-    "templates/character_sheet.md",
     "wiki/the_revenants.md",
     "wiki/factions.md",
     "wiki/drizzle_city.md",
@@ -179,14 +185,9 @@
     "wiki/the_pact.md",
     "wiki/puer_sanguinis.md",
     "wiki/lord.md",
-    "lalita.md",
-    "karan.md",
-    "hera.md",
     "characters.md",
     "maverick.md",
     "Untitled 1.md",
-    "templates/dated_entry.md",
-    "templates/wiki_entry.md",
     "wiki",
     "templates"
   ]

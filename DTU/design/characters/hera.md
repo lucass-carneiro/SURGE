@@ -2,16 +2,27 @@
 tags:
   - character/hera
 added: 2024-03-09
-credits:
-  who: Lucas, the Local Script Man
-  where: https://www.youtube.com/@localscriptman
 ---
+
+# Character Tags
+
+#RevenantLeader 
 
 # Physical Attributes
 
 - Name: Hera
 - Born Gender: F
-- Uncertain meaning, possibly from Greek _[ἥρως](https://www.behindthename.com/support/transcribe?type=GR&target=h%28%27rws) (heros)_ meaning "hero, warrior"; _[ὥρα](https://www.behindthename.com/support/transcribe?type=GR&target=w%28%27ra) (hora)_ meaning "period of time"; or _[αἱρέω](https://www.behindthename.com/support/transcribe?type=GR&target=ai%28re%27w) (haireo)_ meaning "to be chosen". In Greek [mythology](https://www.behindthename.com/glossary/view/mythology) Hera was the queen of the gods, the sister and wife of [Zeus](https://www.behindthename.com/name/zeus). She presided over marriage and childbirth.
+- Age: 25
+- Very short trimmed hair.
+- Wears a cap almost always.
+- Wears an ear stretcher.
+- Prefers loose hoodies, loose track pants and comfortable sneakers.
+- When not hitting the gym or kicking ass in a fight, she is always clean and smells like flower deodorant.
+- Middle class. Doesn't live neither frugally nor lavishly.
+
+# Behind the Name
+
+Uncertain meaning, possibly from Greek _[ἥρως](https://www.behindthename.com/support/transcribe?type=GR&target=h%28%27rws) (heros)_ meaning "hero, warrior"; _[ὥρα](https://www.behindthename.com/support/transcribe?type=GR&target=w%28%27ra) (hora)_ meaning "period of time"; or _[αἱρέω](https://www.behindthename.com/support/transcribe?type=GR&target=ai%28re%27w) (haireo)_ meaning "to be chosen". In Greek [mythology](https://www.behindthename.com/glossary/view/mythology) Hera was the queen of the gods, the sister and wife of [Zeus](https://www.behindthename.com/name/zeus). She presided over marriage and childbirth.
 
 # Subconscious
 
@@ -67,15 +78,6 @@ Some people don't like this truth, but the truth is that Humans are violent anim
 - Not rich, but also not poor.
 - Prefers to take the buss around and never misses the opportunity to pick a fight.
 
-### Presentation
-
-- Very short trimmed hair.
-- Wears a cap almost always.
-- Wears an ear stretcher.
-- Prefers loose hoodies, loose track pants and comfortable sneakers.
-- When not hitting the gym or kicking ass in a fight, she is always clean and smells like flower deodorant.
-- Middle class. Doesn't live neither frugally nor lavishly.
-
 ### Dialogue
 
 - Usually the loudest voice in the room.
@@ -88,11 +90,5 @@ Some people don't like this truth, but the truth is that Humans are violent anim
 
 - Picks fights that she cannot win.
 - Easily provoked into a fight.
-- Yearns to love and protect someone, but will never admit.
+- Yearns to love and protect someone, but will never admit it.
 - Can be overprotective and controlling.
-
-## [The Dilemma](setting_and_themes.md#^476916)
-
-- Keep on existing by letting none stand in the way of your goals. Fight when necessary.
-- Don't try to hide from your true nature. Make your victims respect your might.
-- Protect yourself from attacks by overcoming your opponents with physical/supernatural strength.
