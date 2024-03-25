@@ -1,7 +1,8 @@
 ---
-tag: story/{{title}}
-added: {{date}}
-story_name: {{title}}
+tags:
+  - story/faction_dispute
+added: 2024-03-25
+story_name: faction_dispute
 notes: Dan Wells 7 point story structure
 ---
 

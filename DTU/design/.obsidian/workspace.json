@@ -13,19 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "characters/emil_barrett.md",
-                "mode": "preview",
-                "source": true
-              }
-            }
-          },
-          {
-            "id": "ee867fcc2b6bae79",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "characters/indie.md",
+                "file": "story/faction_dispute.md",
                 "mode": "preview",
                 "source": true
               }
@@ -97,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "characters/emil_barrett.md",
+                "file": "story/faction_dispute.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "characters/emil_barrett.md",
+                "file": "story/faction_dispute.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -137,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "characters/emil_barrett.md"
+                "file": "story/faction_dispute.md"
               }
             }
           }
@@ -160,18 +148,25 @@
   },
   "active": "7ce7a031d0493188",
   "lastOpenFiles": [
-    "characters/indie.md",
+    "story/setting_and_themes.md",
+    "story/master_and_apprentice.md",
+    "story/main_plot.md",
+    "index.md",
+    "story/faction_dispute.md",
+    "wiki/grimorie_das_all.md",
+    "templates/dw7pt.md",
+    "wiki/shadow_key.md",
+    "wiki/the_mirror_maze.md",
+    "characters/npcs.md",
+    "characters/hera.md",
+    "wiki/dark_lantern.md",
     "characters/emil_barrett.md",
+    "characters/indie.md",
     "characters/karan.md",
     "templates/character_sheet.md",
-    "characters/hera.md",
     "characters/ismane.md",
     "characters/lalita.md",
-    "index.md",
-    "story/main_plot.md",
     "characters",
-    "story/setting_and_themes.md",
-    "templates/dw7pt.md",
     "plot.md",
     "wiki/the_kiss.md",
     "story",
@@ -179,15 +174,8 @@
     "wiki/factions.md",
     "wiki/drizzle_city.md",
     "wiki/dcmu.md",
-    "wiki/dark_lantern.md",
     "wiki/the_table.md",
     "wiki/the_unbound.md",
-    "wiki/the_pact.md",
-    "wiki/puer_sanguinis.md",
-    "wiki/lord.md",
-    "characters.md",
-    "maverick.md",
-    "Untitled 1.md",
     "wiki",
     "templates"
   ]

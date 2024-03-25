@@ -1,11 +1,10 @@
 ---
-tag: story/{{title}}
-added: {{date}}
-story_name: {{title}}
+tags:
+  - story/master_and_apprentice
+added: 2024-03-25
+story_name: master_and_apprentice
 notes: Dan Wells 7 point story structure
 ---
-
-# Ice Monster Prologue
 
 # Hook
 
@@ -13,11 +12,7 @@ notes: Dan Wells 7 point story structure
 
 # Pinch 1
 
-# Try and Fail 1
-
 # Midpoint
-
-# Try and Fail 2
 
 # Pinch 2
 
