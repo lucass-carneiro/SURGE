@@ -14,7 +14,9 @@
     "vampiric",
     "Tabula",
     "Seniorum",
-    "Lalita"
+    "Lalita",
+    "existance"
   ],
-  "alwaysUpdateLinks": true
+  "alwaysUpdateLinks": true,
+  "promptDelete": false
 }
