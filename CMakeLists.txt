@@ -74,16 +74,6 @@ option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
 
 # -----------------------------------------
-# Threads
-# -----------------------------------------
-
-option(SURGE_MULTITHREADING "Enables parallelization" ON)
-
-if(SURGE_MULTITHREADING)
-  find_package(OpenMP REQUIRED)
-endif()
-
-# -----------------------------------------
 # Compilation flag options
 # -----------------------------------------
 

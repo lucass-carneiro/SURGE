@@ -239,7 +239,3 @@ target_link_libraries(SurgePlayer PUBLIC
   Freetype::Freetype
   xxHash::xxhash
 )
-
-if(SURGE_MULTITHREADING)
-  target_link_libraries(SurgePlayer PUBLIC OpenMP::OpenMP_CXX)
-endif()
