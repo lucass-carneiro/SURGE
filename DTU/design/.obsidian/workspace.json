@@ -4,16 +4,37 @@
     "type": "split",
     "children": [
       {
-        "id": "74834ca3bdde0206",
+        "id": "5f8eb6785fc111e3",
         "type": "tabs",
         "children": [
           {
-            "id": "7ce7a031d0493188",
+            "id": "3d8361b39a4511b2",
+            "type": "leaf",
+            "state": {
+              "type": "canvas",
+              "state": {
+                "file": "plot_canvas/canvas.canvas",
+                "viewState": {
+                  "x": -323.7738762829026,
+                  "y": -178.00618886883404,
+                  "zoom": 0.3333333333333332
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "9acb9e0cb7e30568",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "853744cc5bd07221",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "story/faction_dispute.md",
+                "file": "story/main_plot.md",
                 "mode": "preview",
                 "source": true
               }
@@ -85,7 +106,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "story/faction_dispute.md",
+                "file": "plot_canvas/canvas.canvas",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +123,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "story/faction_dispute.md",
+                "file": "plot_canvas/canvas.canvas",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +146,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "story/faction_dispute.md"
+                "file": "plot_canvas/canvas.canvas"
               }
             }
           }
@@ -146,13 +167,16 @@
       "omnisearch:Omnisearch": false
     }
   },
-  "active": "7ce7a031d0493188",
+  "active": "3d8361b39a4511b2",
   "lastOpenFiles": [
-    "story/setting_and_themes.md",
-    "story/master_and_apprentice.md",
     "story/main_plot.md",
+    "plot_canvas/canvas.canvas",
+    "plot_canvas/Untitled.md",
+    "plot_canvas",
     "index.md",
+    "story/master_and_apprentice.md",
     "story/faction_dispute.md",
+    "story/setting_and_themes.md",
     "wiki/grimorie_das_all.md",
     "templates/dw7pt.md",
     "wiki/shadow_key.md",
@@ -174,8 +198,6 @@
     "wiki/factions.md",
     "wiki/drizzle_city.md",
     "wiki/dcmu.md",
-    "wiki/the_table.md",
-    "wiki/the_unbound.md",
     "wiki",
     "templates"
   ]
