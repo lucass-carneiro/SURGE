@@ -49,17 +49,20 @@ enum error : int {
   glfw_monitor_bounds,
   glfw_monitor_area,
   glfw_monitor_name,
-  glfw_window_hint_major,
-  glfw_window_hint_minor,
-  glfw_window_hint_profile,
-  glfw_window_hint_resize,
+  glfw_hint_resize,
+  glfw_hint_noapi,
+  glfw_ext_querry,
   glfw_window_creation,
   glfw_window_input_mode,
   glfw_make_ctx,
   glfw_vsync,
-  glfw_resize_callback,
   glad_loading,
-  opengl_feature_missing,
+
+  // Vulkan errors
+  vk_instance_create,
+  vk_validation_layers_not_available,
+  vk_debug_msg,
+  vk_ext_not_found,
 
   // Module callback binding
   keyboard_event_binding,

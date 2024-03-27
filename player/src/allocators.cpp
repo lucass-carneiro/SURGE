@@ -54,6 +54,15 @@ void surge::allocators::mimalloc::free(void *p) noexcept {
   mi_free(p);
 }
 
+auto surge::allocators::mimalloc::malloc(usize size, usize alignment) noexcept -> void * {
+  return mi_aligned_alloc(alignment, size);
+}
+
+auto surge::allocators::mimalloc::realloc(void *p, usize newsize, usize alignment) noexcept
+    -> void * {
+  return mi_realloc_aligned(p, newsize, alignment);
+}
+
 void surge::allocators::mimalloc::init() noexcept {
 // see https://microsoft.github.io/mimalloc/group__options.html
 #ifdef SURGE_DEBUG_MEMORY

@@ -16,23 +16,6 @@ static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW erro code %i: %s", code, description);
 }
 
-static void glfw_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
-  glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
-}
-
-// See https://www.khronos.org/opengl/wiki/OpenGL_Error#Catching_errors_.28the_easy_way.29
-void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsizei,
-                                  const GLchar *message, const void *) {
-
-  if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
-    log_info("OpenGL info: %s", message);
-  } else if (severity == GL_DEBUG_SEVERITY_LOW || GL_DEBUG_SEVERITY_MEDIUM) {
-    log_warn("OpenGL warning: %s", message);
-  } else {
-    log_error("OpenGL error: %s", message);
-  }
-}
-
 auto surge::window::init(const config::window_resolution &wres,
                          const config::window_attrs &w_attrs) noexcept
     -> tl::expected<GLFWwindow *, error> {
@@ -117,36 +100,16 @@ auto surge::window::init(const config::window_resolution &wres,
    ***************/
   log_info("Initializing engine window");
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return tl::unexpected(error::glfw_window_hint_major);
+    return tl::unexpected(error::glfw_hint_noapi);
   }
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return tl::unexpected(error::glfw_window_hint_minor);
-  }
-
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return tl::unexpected(error::glfw_window_hint_profile);
-  }
-
-#ifdef SURGE_SYSTEM_MacOSX
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return std::make_tuple(nullptr, 0, 0, BGFX_RESET_NONE);
-  }
-#endif
 
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return tl::unexpected(error::glfw_window_hint_resize);
+    return tl::unexpected(error::glfw_hint_resize);
   }
 
   GLFWwindow *window = nullptr;
@@ -178,85 +141,8 @@ auto surge::window::init(const config::window_resolution &wres,
     return tl::unexpected(error::glfw_window_input_mode);
   }
 
-  /***********************
-   * OpenGL context init *
-   ***********************/
-  log_info("Initializing OpenGL");
-
-  glfwMakeContextCurrent(window);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return tl::unexpected(error::glfw_make_ctx);
-  }
-
-  if (w_attrs.vsync) {
-    log_info("VSync enabled");
-    glfwSwapInterval(1);
-  } else {
-    glfwSwapInterval(0);
-    log_info("VSync disabled");
-  }
-
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return tl::unexpected(error::glfw_vsync);
-  }
-
-  /********
-   * GLAD *
-   ********/
-  log_info("Initializing GLAD");
-
-  // NOLINTNEXTLINE
-  if (gladLoadGL(glfwGetProcAddress) == 0) {
-    log_error("Failed to initialize GLAD");
-    glfwTerminate();
-    return tl::unexpected(error::glad_loading);
-  }
-
-  // Check extension support
-  if (!GLAD_GL_ARB_bindless_texture) {
-    log_error("SURGE needs an OpenGL implementation that supports bindless textures and the "
-              "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
-              "until your graphics card vendor adds this support or it becomes a standardized "
-              "OpenGL feature and your vendor produces drivers that support it.");
-    glfwTerminate();
-    return tl::unexpected(error::opengl_feature_missing);
-  }
-
-  if (!GLAD_GL_ARB_gpu_shader_int64) {
-    log_error("SURGE needs an OpenGL implementation that supports int64 in GPU shaders and the "
-              "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
-              "until your graphics card vendor adds this support or it becomes a standardized "
-              "OpenGL feature and your vendor produces drivers that support it.");
-    glfwTerminate();
-    return tl::unexpected(error::opengl_feature_missing);
-  }
-
-  // Resize callback
-  glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return tl::unexpected(error::glfw_resize_callback);
-  }
-
-  /******************
-   * OpenGL options *
-   ******************/
-  log_info("Using OpenGL Version %s", glGetString(GL_VERSION));
-
-#ifdef SURGE_BUILD_TYPE_Debug
-  glEnable(GL_DEBUG_OUTPUT);
-  glDebugMessageCallback(gl_error_callback, nullptr);
-#endif
-
-  renderer::enable(renderer::capability::depth_test);
-  renderer::enable(renderer::capability::blend);
-  renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);
-
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  glfwGetCurrentContext();
-  TracyGpuContext;
+#  error "How to make Tracy detect the GPU context from Vulkan?
 #endif
 
   return window;

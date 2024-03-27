@@ -22,7 +22,8 @@
     "glfw3",
     "glm",
     "tinyobjloader",
-    "opengl",
+    "vulkan",
+    "vulkan-memory-allocator",
     {
       "name": "imgui",
       "features": [

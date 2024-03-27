@@ -43,7 +43,8 @@ find_package(mimalloc CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(imgui REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
@@ -72,16 +73,6 @@ endif()
 
 option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
-
-# -----------------------------------------
-# Threads
-# -----------------------------------------
-
-option(SURGE_MULTITHREADING "Enables parallelization" ON)
-
-if(SURGE_MULTITHREADING)
-  find_package(OpenMP REQUIRED)
-endif()
 
 # -----------------------------------------
 # Compilation flag options
@@ -135,11 +126,11 @@ endif()
 # Buffer sizes
 # -----------------------------------------
 
-if(NOT DEFINED SURGE_OPENGL_ERROR_BUFFER_SIZE)
-  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
-elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
-  message(WARNING "The variable SURGE_OPENGL_ERROR_BUFFER_SIZE should be set to at least 1024. It will be automatically set to this value.")
-  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
+if(NOT DEFINED SURGE_VULKAN_ERROR_BUFFER_SIZE)
+  set(SURGE_VULKAN_ERROR_BUFFER_SIZE 1024)
+elseif(SURGE_VULKAN_ERROR_BUFFER_SIZE LESS 1024)
+  message(WARNING "The variable SURGE_VULKAN_ERROR_BUFFER_SIZE should be set to at least 1024. It will be automatically set to this value.")
+  set(SURGE_VULKAN_ERROR_BUFFER_SIZE 1024)
 endif()
 
 # -----------------------------------------
@@ -158,4 +149,4 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
 #  Drizzle: The Unveiling
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/DTU)
+# add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/DTU)

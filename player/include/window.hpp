@@ -3,7 +3,7 @@
 
 #include "config.hpp"
 #include "error_types.hpp"
-#include "renderer.hpp"
+#include "vulkan_headers.hpp"
 
 #include <glm/glm.hpp>
 #include <tl/expected.hpp>

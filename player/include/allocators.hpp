@@ -13,6 +13,9 @@ auto malloc(usize size) noexcept -> void *;
 auto realloc(void *p, usize newsize) noexcept -> void *;
 void free(void *p) noexcept;
 
+auto malloc(usize size, usize alignment) noexcept -> void *;
+auto realloc(void *p, usize newsize, usize alignment) noexcept -> void *;
+
 struct fnm_allocator {
   using is_stateful = std::false_type;
 

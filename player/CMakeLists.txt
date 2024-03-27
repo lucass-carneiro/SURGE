@@ -34,18 +34,19 @@ set(
   "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
-  "${PROJECT_SOURCE_DIR}/include/nonuniform_tiles.hpp"
-  "${PROJECT_SOURCE_DIR}/include/pmb.hpp"
-  "${PROJECT_SOURCE_DIR}/include/pv_ubo.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/nonuniform_tiles.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/pmb.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/pv_ubo.hpp"
   "${PROJECT_SOURCE_DIR}/include/options.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sprite.hpp"
-  "${PROJECT_SOURCE_DIR}/include/static_image.hpp"
-  "${PROJECT_SOURCE_DIR}/include/static_mesh.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sprite.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/static_image.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/static_mesh.hpp"
   "${PROJECT_SOURCE_DIR}/include/tasks.hpp"
-  "${PROJECT_SOURCE_DIR}/include/text.hpp"
-  "${PROJECT_SOURCE_DIR}/include/texture.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/text.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/texture.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
+  "${PROJECT_SOURCE_DIR}/include/vulkan_headers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -55,21 +56,20 @@ set(
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
-  "${PROJECT_SOURCE_DIR}/src/glad_gl_impl.cpp"
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
-  "${PROJECT_SOURCE_DIR}/src/nonuniform_tiles.cpp"
-  "${PROJECT_SOURCE_DIR}/src/pv_ubo.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/nonuniform_tiles.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/pv_ubo.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
-  "${PROJECT_SOURCE_DIR}/src/shaders.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sprite.cpp"
-  "${PROJECT_SOURCE_DIR}/src/static_image.cpp"
-  "${PROJECT_SOURCE_DIR}/src/static_mesh.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/shaders.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sprite.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/static_image.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/static_mesh.cpp"
   "${PROJECT_SOURCE_DIR}/src/tasks.cpp"
-  "${PROJECT_SOURCE_DIR}/src/text.cpp"
-  "${PROJECT_SOURCE_DIR}/src/texture.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/text.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/texture.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
-  "${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 
@@ -234,12 +234,9 @@ target_link_libraries(SurgePlayer PUBLIC
   foonathan_memory
   glfw
   glm::glm
-  OpenGL::GL
+  Vulkan::Vulkan
+  GPUOpen::VulkanMemoryAllocator
   imgui::imgui
   Freetype::Freetype
   xxHash::xxhash
 )
-
-if(SURGE_MULTITHREADING)
-  target_link_libraries(SurgePlayer PUBLIC OpenMP::OpenMP_CXX)
-endif()
