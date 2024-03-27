@@ -63,6 +63,7 @@ enum error : int {
   vk_validation_layers_not_available,
   vk_debug_msg,
   vk_ext_not_found,
+  vk_no_device,
 
   // Module callback binding
   keyboard_event_binding,

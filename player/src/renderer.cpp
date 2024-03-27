@@ -147,7 +147,7 @@ static VKAPI_ATTR auto VKAPI_CALL debug_callback(
   return VK_FALSE;
 }
 
-auto get_extensions() noexcept -> tl::expected<surge::vector<const char *>, surge::error> {
+static auto get_extensions() noexcept -> tl::expected<surge::vector<const char *>, surge::error> {
   using namespace surge;
   u32 glfw_ext_count{0};
 
@@ -166,8 +166,8 @@ auto get_extensions() noexcept -> tl::expected<surge::vector<const char *>, surg
   return extensions;
 }
 
-auto create_debug_msg(surge::renderer::context &vk_ctx,
-                      VkDebugUtilsMessengerCreateInfoEXT &dmci) noexcept
+static auto create_debug_msg(surge::renderer::context &vk_ctx,
+                             VkDebugUtilsMessengerCreateInfoEXT &dmci) noexcept
     -> std::optional<surge::error> {
   using namespace surge;
 
@@ -187,11 +187,54 @@ auto create_debug_msg(surge::renderer::context &vk_ctx,
   return {};
 }
 
-void destroy_debug_msg(surge::renderer::context &vk_ctx) noexcept {
+static void destroy_debug_msg(surge::renderer::context &vk_ctx) noexcept {
   auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
       vkGetInstanceProcAddr(vk_ctx.instance, "vkDestroyDebugUtilsMessengerEXT"));
   if (func != nullptr) {
     func(vk_ctx.instance, vk_ctx.debug_messager, &vk_ctx.alloc_callbacks);
+  }
+}
+
+static auto device_suitable(const VkPhysicalDevice &device) noexcept -> bool {
+  VkPhysicalDeviceProperties properties;
+  VkPhysicalDeviceFeatures features;
+  vkGetPhysicalDeviceProperties(device, &properties);
+  vkGetPhysicalDeviceFeatures(device, &features);
+
+  return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+}
+
+static auto select_phisical_device(surge::renderer::context &vk_ctx) noexcept
+    -> tl::expected<VkPhysicalDevice, surge::error> {
+  using namespace surge;
+  VkPhysicalDevice physical_device{VK_NULL_HANDLE};
+
+  u32 device_count{0};
+  vkEnumeratePhysicalDevices(vk_ctx.instance, &device_count, nullptr);
+
+  if (device_count == 0) {
+    log_error("Unable to find Vulkan compatible GPU.");
+    return tl::unexpected{error::vk_no_device};
+  }
+
+  vector<VkPhysicalDevice> devices(device_count);
+  vkEnumeratePhysicalDevices(vk_ctx.instance, &device_count, devices.data());
+
+  log_info("Detected %u Vulkan compatible GPUs:", device_count);
+
+  for (const auto &device : devices) {
+    if (device_suitable(device)) {
+      physical_device = device;
+      log_info("Found suitable GPU");
+      break;
+    }
+  }
+
+  if (physical_device == VK_NULL_HANDLE) {
+    log_error("Unable to detect suitable GPU");
+    return tl::unexpected{error::vk_no_device};
+  } else {
+    return physical_device;
   }
 }
 
@@ -282,7 +325,12 @@ auto surge::renderer::init(const string &window_name) noexcept -> tl::expected<c
     return tl::unexpected{create_debug_msg_result.value()};
   }
 
-  log_info("Vulkan initialized");
+  log_info("Vulkan instance initialized. Selecting GPU");
+
+  /*******************
+   * Physical device *
+   *******************/
+  auto physical_device{select_phisical_device()};
 
   return vk_ctx;
 }
