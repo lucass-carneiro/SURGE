@@ -59,15 +59,13 @@ enum error : int {
   glad_loading,
 
   // Vulkan errors
-  vk_instance_create,
-  vk_validation_layers_not_available,
-  vk_debug_msg,
-  vk_ext_not_found,
-  vk_no_device,
-  vk_no_graphics_queue,
-  vk_no_present_queue,
-  vk_logical_device,
+  vk_instance_creation,
   vk_surface,
+  vk_physical_device,
+  vk_logical_device,
+  vk_swapchain_error,
+  vk_swapchain_images,
+  vk_swapchain_image_views,
 
   // Module callback binding
   keyboard_event_binding,

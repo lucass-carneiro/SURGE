@@ -46,6 +46,8 @@ set(
   #"${PROJECT_SOURCE_DIR}/include/text.hpp"
   #"${PROJECT_SOURCE_DIR}/include/texture.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
+  "${PROJECT_SOURCE_DIR}/include/VkBootstrap.hpp"
+  "${PROJECT_SOURCE_DIR}/include/VkBootstrapDispatch.hpp"
   "${PROJECT_SOURCE_DIR}/include/vulkan_headers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
@@ -70,6 +72,7 @@ set(
   #"${PROJECT_SOURCE_DIR}/src/texture.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
   #"${PROJECT_SOURCE_DIR}/src/uniforms.cpp"
+  "${PROJECT_SOURCE_DIR}/src/VkBootstrap.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 
@@ -180,6 +183,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
           -Wswitch-enum
           -Wshift-sign-overflow
           -Wloop-analysis
+          -Wno-switch-enum
       )
       target_link_options(SurgePlayer PUBLIC -Og -g3 -ggdb3 -rdynamic)
   else()
