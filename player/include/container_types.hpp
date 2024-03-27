@@ -18,6 +18,7 @@ template <typename T, std::size_t N> using array = std::array<T, N>;
 template <typename T> using deque = foonathan::memory::deque<T, mfa>;
 template <typename T> using queue = foonathan::memory::queue<T, mfa>;
 template <typename T> using vector = foonathan::memory::vector<T, mfa>;
+template <typename T> using set = foonathan::memory::set<T, mfa>;
 using string = std::basic_string<char, std::char_traits<char>, std_mfa<char>>;
 
 template <typename Key, typename Value> using hash_map

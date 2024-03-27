@@ -41,7 +41,7 @@ auto main(int, char **) noexcept -> int {
   /*****************
    * Init Renderer *
    *****************/
-  auto vk_ctx{renderer::init(w_attrs.name)};
+  auto vk_ctx{renderer::init(w_attrs.name, *window)};
   if (!vk_ctx) {
     window::terminate(*window);
     return EXIT_FAILURE;

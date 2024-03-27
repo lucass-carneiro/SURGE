@@ -13,9 +13,19 @@ struct context {
   VkInstance instance{};
   VkAllocationCallbacks alloc_callbacks{};
   VkDebugUtilsMessengerEXT debug_messager{};
+
+  VkDevice device{};
+
+  VkSurfaceKHR surface{};
+
+  u32 graphics_queue_family_idx{0};
+  u32 present_queue_family_idx{0};
+
+  VkQueue graphics_queue{};
+  VkQueue present_queue{};
 };
 
-auto init(const string &window_name) noexcept -> tl::expected<context, error>;
+auto init(const string &window_name, GLFWwindow *window) noexcept -> tl::expected<context, error>;
 void terminate(context &ctx) noexcept;
 
 } // namespace surge::renderer

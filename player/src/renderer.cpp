@@ -195,18 +195,104 @@ static void destroy_debug_msg(surge::renderer::context &vk_ctx) noexcept {
   }
 }
 
-static auto device_suitable(const VkPhysicalDevice &device) noexcept -> bool {
-  VkPhysicalDeviceProperties properties;
-  VkPhysicalDeviceFeatures features;
-  vkGetPhysicalDeviceProperties(device, &properties);
-  vkGetPhysicalDeviceFeatures(device, &features);
+static auto find_graphics_queue_family(VkPhysicalDevice &physical_device) noexcept
+    -> tl::expected<surge::u32, surge::error> {
+  using namespace surge;
 
-  return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+  std::optional<u32> graphics_family_idx{};
+
+  u32 queue_family_count{0};
+  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
+
+  vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count,
+                                           queue_families.data());
+
+  for (u32 i = 0; const auto &queue_family : queue_families) {
+    if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      graphics_family_idx = i;
+    }
+    i++;
+  }
+
+  if (!graphics_family_idx.has_value()) {
+    log_error("Unable to find graphics queue family");
+    return tl::unexpected{error::vk_no_graphics_queue};
+  } else {
+    return graphics_family_idx.value();
+  }
 }
 
-static auto select_phisical_device(surge::renderer::context &vk_ctx) noexcept
+static auto find_present_queue_family(VkPhysicalDevice &physical_device,
+                                      VkSurfaceKHR &surface) noexcept
+    -> tl::expected<surge::u32, surge::error> {
+  using namespace surge;
+
+  std::optional<u32> present_family_idx{};
+
+  u32 queue_family_count{0};
+  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
+
+  vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count,
+                                           queue_families.data());
+
+  for (u32 i = 0; i < queue_families.size(); i++) {
+    VkBool32 presentSupport{false};
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &presentSupport);
+    if (presentSupport) {
+      present_family_idx = i;
+    }
+  }
+
+  if (!present_family_idx.has_value()) {
+    log_error("Unable to find presentation queue family");
+    return tl::unexpected{error::vk_no_present_queue};
+  } else {
+    return present_family_idx.value();
+  }
+}
+
+static auto
+device_extension_supported(VkPhysicalDevice &physical_device,
+                           const surge::vector<const char *> &device_extensions) noexcept -> bool {
+  using namespace surge;
+
+  u32 extension_count{0};
+  vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
+
+  vector<VkExtensionProperties> available_extensions(extension_count);
+  vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count,
+                                       available_extensions.data());
+
+  set<string> required_extensions(device_extensions.begin(), device_extensions.end());
+
+  for (const auto &extension : available_extensions) {
+    required_extensions.erase(extension.extensionName);
+  }
+
+  return required_extensions.empty();
+}
+
+static auto device_suitable(VkPhysicalDevice &physical_device, VkSurfaceKHR &surface,
+                            const surge::vector<const char *> &device_extensions) noexcept -> bool {
+  VkPhysicalDeviceProperties properties;
+  vkGetPhysicalDeviceProperties(physical_device, &properties);
+
+  const std::array<bool, 4> requirements{
+      properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+      find_graphics_queue_family(physical_device).has_value(),
+      find_present_queue_family(physical_device, surface).has_value(),
+      device_extension_supported(physical_device, device_extensions)};
+
+  return std::all_of(requirements.begin(), requirements.end(), [](bool x) { return x; });
+}
+
+static auto select_physical_device(surge::renderer::context &vk_ctx,
+                                   const surge::vector<const char *> &device_extensions) noexcept
     -> tl::expected<VkPhysicalDevice, surge::error> {
   using namespace surge;
+
   VkPhysicalDevice physical_device{VK_NULL_HANDLE};
 
   u32 device_count{0};
@@ -220,15 +306,32 @@ static auto select_phisical_device(surge::renderer::context &vk_ctx) noexcept
   vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(vk_ctx.instance, &device_count, devices.data());
 
-  log_info("Detected %u Vulkan compatible GPUs:", device_count);
+  log_info("Detected %u Vulkan compatible GPU(s)", device_count);
 
-  for (const auto &device : devices) {
-    if (device_suitable(device)) {
+  for (auto &device : devices) {
+    if (device_suitable(device, vk_ctx.surface, device_extensions)) {
       physical_device = device;
       log_info("Found suitable GPU");
+
+      VkPhysicalDeviceProperties properties;
+      vkGetPhysicalDeviceProperties(physical_device, &properties);
+
+      log_info("Selected GPU:\n"
+               "  ID: %u\n"
+               "  Name: %s\n"
+               "  API Version: %u\n"
+               "  Driver Version: %u\n"
+               "  Vendor ID: %u",
+               properties.deviceID, properties.deviceName, properties.apiVersion,
+               properties.driverVersion, properties.vendorID);
+
       break;
     }
   }
+
+  vk_ctx.graphics_queue_family_idx = find_graphics_queue_family(physical_device).value_or(0);
+  vk_ctx.present_queue_family_idx
+      = find_present_queue_family(physical_device, vk_ctx.surface).value_or(0);
 
   if (physical_device == VK_NULL_HANDLE) {
     log_error("Unable to detect suitable GPU");
@@ -238,7 +341,56 @@ static auto select_phisical_device(surge::renderer::context &vk_ctx) noexcept
   }
 }
 
-auto surge::renderer::init(const string &window_name) noexcept -> tl::expected<context, error> {
+static auto create_logical_device(VkPhysicalDevice &physical_device,
+                                  const surge::vector<const char *> &requested_layers,
+                                  surge::renderer::context &vk_ctx,
+                                  const surge::vector<const char *> &device_extensions) noexcept
+    -> std::optional<surge::error> {
+  using namespace surge;
+
+  const float queue_priority{1.0f};
+
+  vector<VkDeviceQueueCreateInfo> queue_create_infos{};
+  set<u32> unique_queue_families
+      = {vk_ctx.graphics_queue_family_idx, vk_ctx.present_queue_family_idx};
+
+  for (auto &queue_family : unique_queue_families) {
+    VkDeviceQueueCreateInfo queue_create_info{};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = queue_family;
+    queue_create_info.queueCount = 1;
+    queue_create_info.pQueuePriorities = &queue_priority;
+    queue_create_infos.push_back(queue_create_info);
+  }
+
+  VkPhysicalDeviceFeatures df{};
+
+  VkDeviceCreateInfo dci{};
+  dci.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+  dci.queueCreateInfoCount = static_cast<u32>(queue_create_infos.size());
+  dci.pQueueCreateInfos = queue_create_infos.data();
+  dci.pEnabledFeatures = &df;
+  dci.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
+  dci.ppEnabledExtensionNames = device_extensions.data();
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  dci.enabledLayerCount = static_cast<uint32_t>(requested_layers.size());
+  dci.ppEnabledLayerNames = requested_layers.data();
+#else
+  dci.enabledLayerCount = 0;
+#endif
+
+  if (vkCreateDevice(physical_device, &dci, &vk_ctx.alloc_callbacks, &vk_ctx.device)
+      != VK_SUCCESS) {
+    log_error("Unable to initialize Vulkan logical device from physical device");
+    return error::vk_logical_device;
+  }
+
+  return {};
+}
+
+auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexcept
+    -> tl::expected<context, error> {
   log_info("Initializing Vulkan");
 
   context vk_ctx{};
@@ -325,12 +477,39 @@ auto surge::renderer::init(const string &window_name) noexcept -> tl::expected<c
     return tl::unexpected{create_debug_msg_result.value()};
   }
 
-  log_info("Vulkan instance initialized. Selecting GPU");
+  /**********
+   * Surface *
+   **********/
+  if (glfwCreateWindowSurface(vk_ctx.instance, window, &vk_ctx.alloc_callbacks, &vk_ctx.surface)
+      != VK_SUCCESS) {
+    log_error("Unable to create Vulkan window surface");
+    return tl::unexpected{error::vk_surface};
+  }
 
-  /*******************
-   * Physical device *
-   *******************/
-  auto physical_device{select_phisical_device()};
+  /**********
+   * Device *
+   **********/
+  const vector<const char *> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+  auto physical_device{select_physical_device(vk_ctx, device_extensions)};
+  if (!physical_device) {
+    return tl::unexpected{physical_device.error()};
+  }
+
+  auto logical_device_result{
+      create_logical_device(*physical_device, requested_layers, vk_ctx, device_extensions)};
+
+  if (logical_device_result.has_value()) {
+    return tl::unexpected{logical_device_result.value()};
+  }
+
+  /*****************
+   * Queue handles *
+   *****************/
+  vkGetDeviceQueue(vk_ctx.device, vk_ctx.graphics_queue_family_idx, 0, &vk_ctx.graphics_queue);
+  vkGetDeviceQueue(vk_ctx.device, vk_ctx.present_queue_family_idx, 0, &vk_ctx.present_queue);
+
+  log_info("Vulkan instance initialized.");
 
   return vk_ctx;
 }
@@ -338,13 +517,8 @@ auto surge::renderer::init(const string &window_name) noexcept -> tl::expected<c
 void surge::renderer::terminate(context &vk_ctx) noexcept {
   log_info("Terminating Vulkan");
 
-  /******************
-   * Debug Messager *
-   ******************/
+  vkDestroyDevice(vk_ctx.device, &vk_ctx.alloc_callbacks);
+  vkDestroySurfaceKHR(vk_ctx.instance, vk_ctx.surface, &vk_ctx.alloc_callbacks);
   destroy_debug_msg(vk_ctx);
-
-  /************
-   * Instance *
-   ************/
   vkDestroyInstance(vk_ctx.instance, &vk_ctx.alloc_callbacks);
 }

@@ -64,6 +64,10 @@ enum error : int {
   vk_debug_msg,
   vk_ext_not_found,
   vk_no_device,
+  vk_no_graphics_queue,
+  vk_no_present_queue,
+  vk_logical_device,
+  vk_surface,
 
   // Module callback binding
   keyboard_event_binding,

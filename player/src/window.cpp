@@ -149,7 +149,7 @@ auto surge::window::init(const config::window_resolution &wres,
 }
 
 void surge::window::terminate(GLFWwindow *window) noexcept {
-  log_info("Terminating window and renderer");
+  log_info("Terminating window");
   glfwDestroyWindow(window);
   glfwTerminate();
 }
