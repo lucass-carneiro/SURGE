@@ -72,6 +72,7 @@ enum error : int {
   vk_cmd_buffer,
   vk_render_fence,
   vk_sc_sem,
+  vk_mem_alloc,
 
   // Module callback binding
   keyboard_event_binding,

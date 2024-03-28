@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "container_types.hpp"
 #include "error_types.hpp"
+#include "vk_mem_alloc.h"
 
 #include <tl/expected.hpp>
 
@@ -33,6 +34,8 @@ struct context {
   VkQueue graphics_queue{};
 
   std::array<frame_data, 3> ofd{};
+
+  VmaAllocator allocator{};
 
   auto get_current_frame() noexcept -> frame_data &;
 };

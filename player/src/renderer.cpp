@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "renderer.hpp"
 
 #include "allocators.hpp"
@@ -316,6 +318,21 @@ auto surge::renderer::init(const config::window_attrs &wattrs, GLFWwindow *windo
     }
   }
 
+  /********************
+   * Memory allocator *
+   ********************/
+  VmaAllocator allocator{};
+  VmaAllocatorCreateInfo vma_info = {};
+  vma_info.physicalDevice = pds_result.value();
+  vma_info.device = db_result.value();
+  vma_info.instance = ib_result.value();
+  vma_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+  if (vmaCreateAllocator(&vma_info, &allocator) != VK_SUCCESS) {
+    log_error("Unable to initialize Vulkan memory allocator");
+    return tl::unexpected{vk_mem_alloc};
+  }
+
   log_info("Vulkan initialized");
 
   ctx.instance = ib_result.value();
@@ -326,6 +343,7 @@ auto surge::renderer::init(const config::window_attrs &wattrs, GLFWwindow *windo
   ctx.image_views = std::move(sc_img_views_result.value());
   ctx.graphics_queue_family = get_gqueue_index_result.value();
   ctx.graphics_queue = get_gqueue_result.value();
+  ctx.allocator = allocator;
 
   return ctx;
 }
@@ -334,6 +352,8 @@ void surge::renderer::terminate(context &ctx) noexcept {
   log_info("Terminating Vulkan");
 
   vkDeviceWaitIdle(ctx.device.device);
+
+  vmaDestroyAllocator(ctx.allocator);
 
   for (usize i = 0; i < ctx.ofd.size(); i++) {
     vkDestroySemaphore(ctx.device.device, ctx.ofd[i].render_sem, &vk_alloc_callbacks);
