@@ -111,9 +111,27 @@ static VKAPI_ATTR auto VKAPI_CALL debug_callback(
 static VkAllocationCallbacks vk_alloc_callbacks{nullptr, vk_alloc,          vk_realloc,
                                                 vk_free, vk_internal_alloc, vk_internal_free};
 
-auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexcept
+static auto fence_create_info(VkFenceCreateFlags flags) noexcept -> VkFenceCreateInfo {
+  VkFenceCreateInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  info.pNext = nullptr;
+  info.flags = flags;
+  return info;
+}
+
+static auto semaphore_create_info(VkSemaphoreCreateFlags flags) noexcept -> VkSemaphoreCreateInfo {
+  VkSemaphoreCreateInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  info.pNext = nullptr;
+  info.flags = flags;
+  return info;
+}
+
+auto surge::renderer::init(const config::window_attrs &wattrs, GLFWwindow *window) noexcept
     -> tl::expected<context, error> {
   log_info("Initializing Vulkan");
+
+  context ctx{};
 
   /************
    * Instance *
@@ -128,7 +146,7 @@ auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexce
 
   ib.set_debug_callback(debug_callback);
   ib.set_allocation_callbacks(&vk_alloc_callbacks);
-  ib.set_app_name(window_name.c_str());
+  ib.set_app_name(wattrs.name.c_str());
   ib.set_engine_name("SURGE - The Super Underrated Game Engine");
   ib.require_api_version(1, 3, 0);
 
@@ -138,9 +156,9 @@ auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexce
     return tl::unexpected{error::vk_instance_creation};
   }
 
-  /************
-   * Device *
-   ************/
+  /***********
+   * Surface *
+   ***********/
   VkSurfaceKHR surface{};
   if (glfwCreateWindowSurface(ib_result->instance, window, &vk_alloc_callbacks, &surface)
       != VK_SUCCESS) {
@@ -187,8 +205,6 @@ auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexce
   /*************
    * Swapchain *
    *************/
-  log_info("Creating swapchain");
-
   const auto sc_img_format{VK_FORMAT_B8G8R8A8_UNORM};
   int ww{0}, wh{0};
   glfwGetWindowSize(window, &ww, &wh);
@@ -196,7 +212,13 @@ auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexce
   vkb::SwapchainBuilder scb{pds_result.value().physical_device, db_result.value().device, surface};
   scb.set_desired_format(
       VkSurfaceFormatKHR{.format = sc_img_format, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-  scb.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+
+  if (wattrs.vsync) {
+    scb.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+  } else {
+    scb.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
+  }
+
   scb.set_desired_extent(static_cast<u32>(ww), static_cast<u32>(wh));
   scb.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
   scb.set_allocation_callbacks(&vk_alloc_callbacks);
@@ -213,23 +235,225 @@ auto surge::renderer::init(const string &window_name, GLFWwindow *window) noexce
     return tl::unexpected{error::vk_swapchain_images};
   }
 
-  auto sc_img_views_result{scb_result.value().get_images()};
+  auto sc_img_views_result{scb_result.value().get_image_views()};
   if (!sc_img_views_result) {
     log_error("Unable to retrieve swapchain image views: %s",
               sc_img_views_result.error().message().c_str());
     return tl::unexpected{error::vk_swapchain_image_views};
   }
 
+  /**********
+   * Queues *
+   **********/
+
+  auto get_gqueue_result{db_result.value().get_queue(vkb::QueueType::graphics)};
+  if (!get_gqueue_result) {
+    log_error("Unable to obtain graphics queue from the device: %s",
+              get_gqueue_result.error().message().c_str());
+    return tl::unexpected{error::vk_graphics_queue};
+  }
+
+  auto get_gqueue_index_result{db_result.value().get_queue_index(vkb::QueueType::graphics)};
+  if (!get_gqueue_index_result) {
+    log_error("Unable to obtain graphics queue from the device: %s",
+              get_gqueue_index_result.error().message().c_str());
+    return tl::unexpected{error::vk_graphics_queue_index};
+  }
+
+  /**********************
+   * Command structures *
+   **********************/
+  VkCommandPoolCreateInfo cpci = {};
+  cpci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  cpci.pNext = nullptr;
+  cpci.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  cpci.queueFamilyIndex = get_gqueue_index_result.value();
+
+  for (usize i = 0; i < ctx.ofd.size(); i++) {
+    if (vkCreateCommandPool(db_result->device, &cpci, &vk_alloc_callbacks, &ctx.ofd[i].pool)
+        != VK_SUCCESS) {
+      log_error("Unable to create Vulkan command pool");
+      return tl::unexpected{error::vk_cmd_pool};
+    }
+
+    VkCommandBufferAllocateInfo cmd_alloc_info = {};
+    cmd_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmd_alloc_info.pNext = nullptr;
+    cmd_alloc_info.commandPool = ctx.ofd[i].pool;
+    cmd_alloc_info.commandBufferCount = 1;
+    cmd_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    if (vkAllocateCommandBuffers(db_result->device, &cmd_alloc_info, &ctx.ofd[i].buffer)
+        != VK_SUCCESS) {
+      log_error("Unable to create Vulkan command buffer");
+      return tl::unexpected{error::vk_cmd_buffer};
+    }
+  }
+
+  /*******************
+   * Sync structures *
+   *******************/
+  auto fci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
+  auto sci{semaphore_create_info(0)};
+
+  for (usize i = 0; i < ctx.ofd.size(); i++) {
+    if (vkCreateFence(db_result->device, &fci, &vk_alloc_callbacks, &ctx.ofd[i].render_fence)
+        != VK_SUCCESS) {
+      log_error("Unable to initialize render fence");
+      return tl::unexpected{error::vk_render_fence};
+    }
+
+    if (vkCreateSemaphore(db_result->device, &sci, &vk_alloc_callbacks, &ctx.ofd[i].sc_sem)
+        != VK_SUCCESS) {
+      log_error("Unable to create swap chain semaphore");
+      return tl::unexpected{error::vk_sc_sem};
+    }
+
+    if (vkCreateSemaphore(db_result->device, &sci, &vk_alloc_callbacks, &ctx.ofd[i].render_sem)
+        != VK_SUCCESS) {
+      log_error("Unable to create render semaphore");
+      return tl::unexpected{error::vk_sc_sem};
+    }
+  }
+
   log_info("Vulkan initialized");
 
-  return context{ib_result.value(), db_result.value(), surface, scb_result.value()};
+  ctx.instance = ib_result.value();
+  ctx.device = db_result.value();
+  ctx.surface = surface;
+  ctx.swapchain = scb_result.value();
+  ctx.images = std::move(sc_imgs_result.value());
+  ctx.image_views = std::move(sc_img_views_result.value());
+  ctx.graphics_queue_family = get_gqueue_index_result.value();
+  ctx.graphics_queue = get_gqueue_result.value();
+
+  return ctx;
 }
 
 void surge::renderer::terminate(context &ctx) noexcept {
   log_info("Terminating Vulkan");
 
+  vkDeviceWaitIdle(ctx.device.device);
+
+  for (usize i = 0; i < ctx.ofd.size(); i++) {
+    vkDestroySemaphore(ctx.device.device, ctx.ofd[i].render_sem, &vk_alloc_callbacks);
+    vkDestroySemaphore(ctx.device.device, ctx.ofd[i].sc_sem, &vk_alloc_callbacks);
+    vkDestroyFence(ctx.device.device, ctx.ofd[i].render_fence, &vk_alloc_callbacks);
+    vkDestroyCommandPool(ctx.device.device, ctx.ofd[i].pool, &vk_alloc_callbacks);
+  }
+
+  for (auto &img : ctx.image_views) {
+    vkDestroyImageView(ctx.device.device, img, &vk_alloc_callbacks);
+  }
+
   vkb::destroy_swapchain(ctx.swapchain);
   vkDestroySurfaceKHR(ctx.instance.instance, ctx.surface, &vk_alloc_callbacks);
   vkb::destroy_device(ctx.device);
   vkb::destroy_instance(ctx.instance);
+}
+
+auto surge::renderer::context::get_current_frame() noexcept -> frame_data & {
+  static usize idx{0};
+  idx = idx % ofd.size();
+  return ofd[idx];
+}
+
+auto surge::renderer::cmd_buff_beg_info(VkCommandBufferUsageFlags flags) noexcept
+    -> VkCommandBufferBeginInfo {
+  VkCommandBufferBeginInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  info.pNext = nullptr;
+  info.pInheritanceInfo = nullptr;
+  info.flags = flags;
+  return info;
+}
+
+auto surge::renderer::image_subresource_range(VkImageAspectFlags aspectMask)
+    -> VkImageSubresourceRange {
+  VkImageSubresourceRange subImage{};
+  subImage.aspectMask = aspectMask;
+  subImage.baseMipLevel = 0;
+  subImage.levelCount = VK_REMAINING_MIP_LEVELS;
+  subImage.baseArrayLayer = 0;
+  subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+  return subImage;
+}
+
+void surge::renderer::transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout src,
+                                       VkImageLayout dest) noexcept {
+
+  VkImageMemoryBarrier2 img_barrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
+  img_barrier.pNext = nullptr;
+  img_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+  img_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+  img_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+  img_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+  img_barrier.oldLayout = src;
+  img_barrier.newLayout = dest;
+
+  VkImageAspectFlags aspect_mask{(dest == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+                                     ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                     : VK_IMAGE_ASPECT_COLOR_BIT};
+
+  img_barrier.subresourceRange = image_subresource_range(aspect_mask);
+  img_barrier.image = image;
+
+  VkDependencyInfo depInfo{};
+  depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+  depInfo.pNext = nullptr;
+
+  depInfo.imageMemoryBarrierCount = 1;
+  depInfo.pImageMemoryBarriers = &img_barrier;
+
+  vkCmdPipelineBarrier2(cmd, &depInfo);
+}
+
+auto surge::renderer::semaphore_submit_info(VkPipelineStageFlags2 stageMask,
+                                            VkSemaphore semaphore) noexcept
+    -> VkSemaphoreSubmitInfo {
+
+  VkSemaphoreSubmitInfo submitInfo{};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+  submitInfo.pNext = nullptr;
+  submitInfo.semaphore = semaphore;
+  submitInfo.stageMask = stageMask;
+  submitInfo.deviceIndex = 0;
+  submitInfo.value = 1;
+
+  return submitInfo;
+}
+
+auto surge::renderer::command_buffer_submit_info(VkCommandBuffer cmd) noexcept
+    -> VkCommandBufferSubmitInfo {
+
+  VkCommandBufferSubmitInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+  info.pNext = nullptr;
+  info.commandBuffer = cmd;
+  info.deviceMask = 0;
+
+  return info;
+}
+
+auto surge::renderer::submit_info(VkCommandBufferSubmitInfo *cmd,
+                                  VkSemaphoreSubmitInfo *signalSemaphoreInfo,
+                                  VkSemaphoreSubmitInfo *waitSemaphoreInfo) noexcept
+    -> VkSubmitInfo2 {
+
+  VkSubmitInfo2 info{};
+
+  info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+  info.pNext = nullptr;
+
+  info.waitSemaphoreInfoCount = waitSemaphoreInfo == nullptr ? 0 : 1;
+  info.pWaitSemaphoreInfos = waitSemaphoreInfo;
+
+  info.signalSemaphoreInfoCount = signalSemaphoreInfo == nullptr ? 0 : 1;
+  info.pSignalSemaphoreInfos = signalSemaphoreInfo;
+
+  info.commandBufferInfoCount = 1;
+  info.pCommandBufferInfos = cmd;
+
+  return info;
 }

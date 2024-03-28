@@ -66,6 +66,12 @@ enum error : int {
   vk_swapchain_error,
   vk_swapchain_images,
   vk_swapchain_image_views,
+  vk_graphics_queue,
+  vk_graphics_queue_index,
+  vk_cmd_pool,
+  vk_cmd_buffer,
+  vk_render_fence,
+  vk_sc_sem,
 
   // Module callback binding
   keyboard_event_binding,
