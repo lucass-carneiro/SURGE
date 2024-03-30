@@ -25,9 +25,9 @@ namespace globals {
 static GLuint sprite_shader{0}; // NOLINT
 static GLuint text_shader{0};   // NOLINT
 
-static surge::atom::texture::database tdb; // NOLINT
-static surge::atom::pv_ubo::buffer pv_ubo; // NOLINT
-static surge::atom::sprite::database sdb;  // NOLINT
+static surge::atom::texture::database tdb{}; // NOLINT
+static surge::atom::pv_ubo::buffer pv_ubo{}; // NOLINT
+static surge::atom::sprite::database sdb{};  // NOLINT
 
 static DTU::cmdq_t cmdq{}; // NOLINT
 
