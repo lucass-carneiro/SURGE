@@ -1,0 +1,26 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+    },
+    "last.imagePath": "/home/lucas/SURGE/DTU/design/resources/tiled",
+    "map.fixedSize": false,
+    "map.tileHeight": 23,
+    "map.tileWidth": 40,
+    "openFiles": [
+    ],
+    "project": "DTU.tiled-project",
+    "recentFiles": [
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.spacing": 5,
+    "tileset.tileSize": {
+        "height": 92,
+        "width": 80
+    }
+}
