@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="isometric" renderorder="right-down" width="30" height="20" tilewidth="256" tileheight="128" infinite="1" nextlayerid="5" nextobjectid="1">
+ <tileset firstgid="1" source="../tile_sets/floors.tsx"/>
+ <tileset firstgid="13" source="../tile_sets/slabs.tsx"/>
+ <tileset firstgid="29" source="../tile_sets/stairs.tsx"/>
+ <tileset firstgid="60" source="../tile_sets/walls.tsx"/>
+ <layer id="1" name="street" width="30" height="20">
+  <data encoding="base64" compression="zlib">
+   <chunk x="-16" y="-16" width="16" height="16">
+   eJxjYBgFo2AUjEQgCcQABGQAGg==
+  </chunk>
+   <chunk x="0" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDGYgSUP9AA+4ADM=
+  </chunk>
+   <chunk x="-16" y="0" width="16" height="16">
+   eJxjYCAfSFKgdzDo5xzh+kfBKAAAassAcA==
+  </chunk>
+   <chunk x="0" y="0" width="16" height="16">
+   eJyTZGBgkCQC4wLE6KWlfk4i8XDVPwpGASUAAL5GBFc=
+  </chunk>
+  </data>
+ </layer>
+ <layer id="2" name="sidewalk" width="30" height="20" offsetx="0" offsety="-20">
+  <data encoding="base64" compression="zlib">
+   <chunk x="-16" y="-16" width="16" height="16">
+   eJxjYBgFo2AUjESQA8QABbAAbQ==
+  </chunk>
+   <chunk x="0" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDGZQjkeuFAnjEs/Fox8AvlADow==
+  </chunk>
+   <chunk x="0" y="0" width="16" height="16">
+   eJxjYIAAdSA2Q8JqDKNgFIyC4Q4AsUUA8A==
+  </chunk>
+  </data>
+ </layer>
+ <layer id="3" name="entry_floor" width="30" height="20" offsetx="0" offsety="-99">
+  <data encoding="base64" compression="zlib">
+   <chunk x="-16" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDEXASaF+DiAGAAaEABI=
+  </chunk>
+   <chunk x="0" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDBTgJBJTop8dj34AOqAAsw==
+  </chunk>
+  </data>
+ </layer>
+ <layer id="4" name="entry_floor_walls" width="30" height="20" offsetx="0" offsety="-99">
+  <data encoding="base64" compression="zlib">
+   <chunk x="-16" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDEVQQaH+AiAGACWgAOk=
+  </chunk>
+   <chunk x="0" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDGZQjUeuEgnjEi/Eox8AxLADww==
+  </chunk>
+  </data>
+ </layer>
+</map>

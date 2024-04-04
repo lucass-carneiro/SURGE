@@ -1,0 +1,89 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "/home/lucas/Downloads/kenney_isometric-miniature-prototype/Samples/Tiled Sample/Sample.tmx": {
+            "scale": 0.4831,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 6232.66404471124,
+                "y": 2896.9157524322086
+            }
+        },
+        "/home/lucas/Downloads/kenney_isometric-miniature-prototype/Samples/Tiled Sample/Sample.tsx": {
+            "scaleInDock": 1
+        },
+        "basic.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 0.603
+        },
+        "stairs.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "the_club/the_club.tmx": {
+            "scale": 0.2264,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 2606.0070671378094,
+                "y": 2038.4275618374559
+            }
+        },
+        "tile_sets/basic.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 0.275,
+            "scaleInEditor": 0.4019
+        },
+        "tile_sets/floors.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1,
+            "scaleInEditor": 0.6545
+        },
+        "tile_sets/slabs.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 0.4652
+        },
+        "tile_sets/stairs.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 0.5266,
+            "scaleInEditor": 0.4281
+        },
+        "tile_sets/walls.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 0.5522,
+            "scaleInEditor": 0.3944
+        }
+    },
+    "last.imagePath": "/home/lucas/SURGE/DTU/resources/maps/tile_sets/stairs",
+    "map.fixedSize": false,
+    "map.lastUsedFormat": "tmx",
+    "map.layerDataFormat": "3",
+    "map.orientation": "2",
+    "map.tileHeight": 128,
+    "map.tileWidth": 256,
+    "openFiles": [
+    ],
+    "project": "DTU.tiled-project",
+    "recentFiles": [
+        "tile_sets/stairs.tsx",
+        "tile_sets/slabs.tsx",
+        "tile_sets/floors.tsx",
+        "tile_sets/walls.tsx",
+        "the_club/the_club.tmx",
+        "tile_sets/basic.tsx",
+        "/home/lucas/Downloads/kenney_isometric-miniature-prototype/Samples/Tiled Sample/Sample.tmx",
+        "basic.tsx",
+        "stairs.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 1
+}
