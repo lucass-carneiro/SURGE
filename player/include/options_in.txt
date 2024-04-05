@@ -9,7 +9,7 @@
 #define SURGE_VERSION_MINOR_STRING "@Surge_VERSION_MINOR@" // NOLINT(cppcoreguidelines-macro-usage)
 #define SURGE_VERSION_PATCH_STRING "@Surge_VERSION_PATCH@" // NOLINT(cppcoreguidelines-macro-usage)
 
-#define SURGE_VULKAN_ERROR_BUFFER_SIZE @SURGE_VULKAN_ERROR_BUFFER_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
+#define SURGE_OPENGL_ERROR_BUFFER_SIZE @SURGE_OPENGL_ERROR_BUFFER_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
 
 #define SURGE_SYSTEM_@CMAKE_SYSTEM_NAME@
 #define SURGE_SYSTEM_@SURGE_SYSTEM_IS_POSIX@

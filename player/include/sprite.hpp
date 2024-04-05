@@ -3,7 +3,8 @@
 
 #include "container_types.hpp"
 #include "gl_includes.hpp"
-#include "gl_ring_buffer.hpp"
+// #include "gl_ring_buffer.hpp"
+#include "gpu_bump_array.hpp"
 
 #include <glm/glm.hpp>
 #include <tl/expected.hpp>
@@ -16,14 +17,9 @@ private:
   GLuint EBO{0};
   GLuint VAO{0};
 
-  GLuint THB{0}; // Texture handles buffer
-  GLuint MMB{0}; // Model matrices buffer
-  GLuint AVB{0}; // Alpha value buffer
-
-  vector<GLuint64> texture_handles;
-  vector<glm::mat4> models;
-  vector<float> alphas;
-  gl_ring_buffer<float> alphas2;
+  gba<GLuint64> texture_handles{};
+  gba<glm::mat4> models{};
+  gba<float> alphas{};
 
 public:
   static auto create(usize max_sprites) noexcept -> database;
@@ -31,7 +27,6 @@ public:
 
   void add(GLuint64 handle, glm::mat4 model, float alpha) noexcept;
   void reset() noexcept;
-  void update() noexcept;
 
   void draw(const GLuint &sp) noexcept;
 };

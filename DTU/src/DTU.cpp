@@ -145,9 +145,6 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     return static_cast<int>(update_result.value());
   }
 
-  // Send buffers to GPU
-  globals::sdb.update();
-
   return 0;
 }
 

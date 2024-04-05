@@ -20,10 +20,6 @@ auto surge::atom::sprite::database::create(usize max_sprites) noexcept -> databa
 
   database db;
 
-  db.texture_handles.reserve(max_sprites);
-  db.models.reserve(max_sprites);
-  db.alphas.reserve(max_sprites);
-
   /***************
    * Gen Buffers *
    ***************/
@@ -61,20 +57,12 @@ auto surge::atom::sprite::database::create(usize max_sprites) noexcept -> databa
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<const void *>(3 * sizeof(float))); // NOLINT
 
-  /****************
-   * Create SSBOs *
-   ****************/
-  glCreateBuffers(1, &db.MMB);
-  glNamedBufferStorage(db.MMB, static_cast<GLsizeiptr>(sizeof(glm::mat4) * max_sprites), nullptr,
-                       GL_DYNAMIC_STORAGE_BIT);
-
-  glCreateBuffers(1, &db.AVB);
-  glNamedBufferStorage(db.AVB, static_cast<GLsizeiptr>(sizeof(float) * max_sprites), nullptr,
-                       GL_DYNAMIC_STORAGE_BIT);
-
-  glCreateBuffers(1, &db.THB);
-  glNamedBufferStorage(db.THB, static_cast<GLsizeiptr>(sizeof(GLuint64) * max_sprites), nullptr,
-                       GL_DYNAMIC_STORAGE_BIT);
+  /***************
+   * Create GBAs *
+   ***************/
+  db.texture_handles = gba<GLuint64>::create(max_sprites, "Sprite Texture Handles GBA");
+  db.models = gba<glm::mat4>::create(max_sprites, "Sprite Modesl GBA");
+  db.alphas = gba<float>::create(max_sprites, "Sprite Alphas GBA");
 
   return db;
 }
@@ -86,9 +74,9 @@ void surge::atom::sprite::database::destroy() noexcept {
 #endif
   log_info("Destroying sprite database");
 
-  glDeleteBuffers(1, &(THB));
-  glDeleteBuffers(1, &(AVB));
-  glDeleteBuffers(1, &(MMB));
+  alphas.destroy();
+  models.destroy();
+  texture_handles.destroy();
   glDeleteBuffers(1, &(EBO));
   glDeleteBuffers(1, &(VBO));
   glDeleteVertexArrays(1, &(VAO));
@@ -98,36 +86,18 @@ void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::add");
 #endif
-  texture_handles.push_back(handle);
-  models.push_back(std::move(model));
-  alphas.push_back(alpha);
+  texture_handles.push(handle);
+  models.push(model);
+  alphas.push(alpha);
 }
 
 void surge::atom::sprite::database::reset() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::reset()");
 #endif
-  texture_handles.clear();
-  models.clear();
-  alphas.clear();
-}
-
-void surge::atom::sprite::database::update() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::sprite::database::update");
-  TracyGpuZone("GPU surge::atom::sprite::database::update");
-#endif
-
-  if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
-    glNamedBufferSubData(MMB, 0, static_cast<GLsizeiptr>(sizeof(glm::mat4) * models.size()),
-                         models.data());
-
-    glNamedBufferSubData(AVB, 0, static_cast<GLsizeiptr>(sizeof(float) * alphas.size()),
-                         alphas.data());
-
-    glNamedBufferSubData(THB, 0, static_cast<GLsizeiptr>(sizeof(GLuint64) * texture_handles.size()),
-                         texture_handles.data());
-  }
+  texture_handles.reset();
+  models.reset();
+  alphas.reset();
 }
 
 void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
@@ -138,15 +108,19 @@ void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
 
   if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, MMB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, AVB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, THB);
+    models.bind(GL_SHADER_STORAGE_BUFFER, 3);
+    alphas.bind(GL_SHADER_STORAGE_BUFFER, 4);
+    texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 5);
 
     glUseProgram(sp);
 
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                             gsl::narrow_cast<GLsizei>(models.size()));
+
+    texture_handles.lock();
+    alphas.lock();
+    models.lock();
   }
 }
 
