@@ -2,8 +2,8 @@
 #define SURGE_ATOM_TEXT
 
 #include "container_types.hpp"
-#include "renderer.hpp"
-#include "sprite.hpp"
+#include "error_types.hpp"
+#include "gpu_bump_array.hpp"
 
 // clang-format off
 #include <ft2build.h>
@@ -21,6 +21,63 @@
  * Drawable text
  */
 namespace surge::atom::text {
+
+struct text_engine {
+private:
+  FT_Library ft_library{nullptr};
+  hash_map<const char *, FT_Face> faces{};
+
+public:
+  static auto create() noexcept -> tl::expected<text_engine, error>;
+  void destroy() noexcept;
+
+  auto load_face(const char *path, const char *name, FT_F26Dot6 size_in_pts = 40,
+                 FT_UInt resolution_dpi = 300) noexcept -> std::optional<error>;
+
+  [[nodiscard]] auto get_faces() noexcept -> hash_map<const char *, FT_Face> &;
+};
+
+enum language { english, portuguese };
+
+struct glyph_cache {
+private:
+  hash_map<FT_ULong, GLuint> texture_ids{};
+  hash_map<FT_ULong, GLuint64> texture_handles{};
+
+  hash_map<FT_ULong, glm::vec<2, unsigned int>> bitmap_dims{};
+
+  hash_map<FT_ULong, glm::vec<2, FT_Int>> bearings{};
+  hash_map<FT_ULong, glm::vec<2, FT_Pos>> advances{};
+
+public:
+  static auto create(FT_Face face, language lang = english) noexcept
+      -> tl::expected<glyph_cache, error>;
+  void destroy() noexcept;
+
+  auto load_character(FT_Face face, FT_ULong c) noexcept -> std::optional<error>;
+
+  void make_resident() noexcept;
+  void make_non_resident() noexcept;
+};
+
+struct text_buffer {
+private:
+  GLuint VBO{0};
+  GLuint EBO{0};
+  GLuint VAO{0};
+
+  gba<GLuint64> texture_handles{};
+  gba<glm::mat4> models{};
+
+public:
+  static auto create(usize max_chars = 540) noexcept -> text_buffer;
+  void destroy() noexcept;
+
+  void add(glyph_cache &cache, std::string_view text) noexcept;
+  void reset() noexcept;
+
+  void draw() noexcept;
+};
 
 class record {
 public:

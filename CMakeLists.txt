@@ -47,6 +47,7 @@ find_package(OpenGL REQUIRED)
 find_package(imgui REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
+find_package(harfbuzz CONFIG REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection

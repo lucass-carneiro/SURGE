@@ -89,6 +89,11 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgePlayer PUBLIC /Zc:preprocessor)
 endif()
 
+# Use UTF-8 on MSVC
+if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+    target_compile_options(SurgePlayer PUBLIC /utf-8)
+endif()
+
 target_include_directories(
   SurgePlayer PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
@@ -239,4 +244,5 @@ target_link_libraries(SurgePlayer PUBLIC
   imgui::imgui
   Freetype::Freetype
   xxHash::xxhash
+  harfbuzz::harfbuzz
 )

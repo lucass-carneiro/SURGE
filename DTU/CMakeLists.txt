@@ -72,6 +72,11 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeDTU PUBLIC /Zc:preprocessor)
 endif()
 
+# Use UTF-8 on MSVC
+if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+    target_compile_options(SurgeDTU PUBLIC /utf-8)
+endif()
+
 target_include_directories(
   SurgeDTU PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
