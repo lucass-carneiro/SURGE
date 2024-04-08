@@ -2,6 +2,7 @@
 
 #include "allocators.hpp"
 #include "logging.hpp"
+#include "renderer.hpp"
 
 // clang-format off
 #include <freetype/freetype.h>
@@ -10,7 +11,6 @@
 // clang-format on
 
 #include <array>
-#include <cstdio>
 #include <glm/gtc/matrix_transform.hpp>
 #include <gsl/gsl-lite.hpp>
 #include <tl/expected.hpp>
@@ -80,7 +80,7 @@ auto surge::atom::text::text_engine::load_face(const char *path, const char *nam
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::text_engine::load_face()");
 #endif
-  log_info("Loading font %s", path);
+  log_info("Loading face %s with name %s", path, name);
 
   FT_Face face{};
   auto status{FT_New_Face(ft_library, path, 0, &face)};
@@ -104,6 +104,64 @@ auto surge::atom::text::text_engine::load_face(const char *path, const char *nam
 
 auto surge::atom::text::text_engine::get_faces() noexcept -> hash_map<const char *, FT_Face> & {
   return faces;
+}
+
+auto surge::atom::text::glyph_cache::create(FT_Face face, language lang) noexcept
+    -> tl::expected<glyph_cache, error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::text::glyph_cache::create()");
+#endif
+  log_info("Creating glyph cache for %s", face->family_name);
+
+  glyph_cache cache{};
+
+  switch (lang) {
+
+  case english: {
+    // Printable ASCII
+    for (FT_ULong c = 0x00000021; c <= 0x0000007e; c++) {
+      const auto load_err{cache.load_character(face, c)};
+      if (load_err) {
+        return tl::unexpected{load_err.value()};
+      }
+    }
+
+    // White space
+    auto load_err{cache.load_nonprintable_character(face, 0x00000020)};
+    if (load_err) {
+      return tl::unexpected{load_err.value()};
+    }
+
+    // New line
+    load_err = cache.load_nonprintable_character(face, 0x0000000a);
+    if (load_err) {
+      return tl::unexpected{load_err.value()};
+    }
+
+    // Tab
+    load_err = cache.load_nonprintable_character(face, 0x0000000b);
+    if (load_err) {
+      return tl::unexpected{load_err.value()};
+    }
+    break;
+  }
+
+  default:
+    break;
+  }
+
+  return cache;
+}
+
+void surge::atom::text::glyph_cache::destroy() noexcept {
+  log_info("Destroying glyph cache");
+
+  make_non_resident();
+  for (const auto &id : texture_ids) {
+    if (id.second != 0) {
+      glDeleteTextures(1, &(id.second));
+    }
+  }
 }
 
 auto surge::atom::text::glyph_cache::load_character(FT_Face face, FT_ULong c) noexcept
@@ -152,7 +210,7 @@ auto surge::atom::text::glyph_cache::load_character(FT_Face face, FT_ULong c) no
 
     const auto handle{glGetTextureHandleARB(texture)};
     if (handle == 0) {
-      log_error("Unable to create texture handle for character %c", static_cast<char>(c));
+      log_error("Unable to create texture handle for character %lu", c);
       return error::texture_handle_creation;
     } else {
       texture_ids[c] = texture;
@@ -163,85 +221,31 @@ auto surge::atom::text::glyph_cache::load_character(FT_Face face, FT_ULong c) no
   return {};
 }
 
-auto surge::atom::text::glyph_cache::create(FT_Face face, language lang) noexcept
-    -> tl::expected<glyph_cache, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::glyph_cache::create()");
-#endif
-  glyph_cache cache{};
+auto surge::atom::text::glyph_cache::load_nonprintable_character(FT_Face face, FT_ULong c) noexcept
+    -> std::optional<error> {
 
-  if (lang == english) {
-    // Printable ASCII
-    for (FT_ULong c = 33; c <= 126; c++) {
-      const auto load_err{cache.load_character(face, c)};
-      if (load_err) {
-        return tl::unexpected{load_err.value()};
-      }
-    }
+  const auto status{FT_Load_Char(face, c, FT_LOAD_RENDER)};
+  if (status != 0) {
+    log_error("Unable to load ASCII character %lu for face %s: %s", c, face->family_name,
+              FT_Error_String(status));
+    return error::freetype_character_load;
+  } else {
 
-    // White space
-    auto load_err{cache.load_character(face, 0x00000020)};
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
+    const auto bw{face->glyph->bitmap.width};
+    const auto bh{face->glyph->bitmap.rows};
 
-    load_err = cache.load_character(face, 0x0000000b);
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-    load_err = cache.load_character(face, 0x0000000a);
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-  } else if (lang == portuguese) {
-    // Printable ASCII
-    for (FT_ULong c = 33; c <= 126; c++) {
-      const auto load_err{cache.load_character(face, c)};
-      if (load_err) {
-        return tl::unexpected{load_err.value()};
-      }
-    }
-
-    // White space
-    auto load_err{cache.load_character(face, 0x00000020)};
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-    load_err = cache.load_character(face, 0x0000000b);
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-    load_err = cache.load_character(face, 0x0000000a);
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-    // Diacritics
-    load_err = cache.load_character(face, 0x000000E1); // á
-    if (load_err) {
-      return tl::unexpected{load_err.value()};
-    }
-
-    // TODO: Load other diacritics
-  }
-
-  return cache;
-}
-
-void surge::atom::text::glyph_cache::destroy() noexcept {
-  make_non_resident();
-  for (const auto &id : texture_ids) {
-    glDeleteTextures(1, &(id.second));
+    bitmap_dims[c] = glm::vec<2, unsigned int>{bw, bh};
+    bearings[c] = glm::vec<2, FT_Int>{face->glyph->bitmap_left, face->glyph->bitmap_top};
+    advances[c] = glm::vec<2, FT_Pos>{face->glyph->advance.x, face->glyph->advance.y};
+    texture_ids[c] = 0;
+    texture_handles[c] = 0;
+    return {};
   }
 }
 
 void surge::atom::text::glyph_cache::make_resident() noexcept {
   for (const auto &handle : texture_handles) {
-    if (!glIsTextureHandleResidentARB(handle.second)) {
+    if (handle.second != 0 && !glIsTextureHandleResidentARB(handle.second)) {
       glMakeTextureHandleResidentARB(handle.second);
     }
   }
@@ -249,10 +253,30 @@ void surge::atom::text::glyph_cache::make_resident() noexcept {
 
 void surge::atom::text::glyph_cache::make_non_resident() noexcept {
   for (const auto &handle : texture_handles) {
-    if (glIsTextureHandleResidentARB(handle.second)) {
+    if (handle.second != 0 && glIsTextureHandleResidentARB(handle.second)) {
       glMakeTextureHandleNonResidentARB(handle.second);
     }
   }
+}
+
+auto surge::atom::text::glyph_cache::get_texture_handles() const noexcept
+    -> const hash_map<FT_ULong, GLuint64> & {
+  return texture_handles;
+}
+
+auto surge::atom::text::glyph_cache::get_bitmap_dims() const noexcept
+    -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> & {
+  return bitmap_dims;
+}
+
+auto surge::atom::text::glyph_cache::get_bearings() const noexcept
+    -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> & {
+  return bearings;
+}
+
+auto surge::atom::text::glyph_cache::get_advances() const noexcept
+    -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> & {
+  return advances;
 }
 
 auto surge::atom::text::text_buffer::create(usize max_chars) noexcept -> text_buffer {
@@ -306,8 +330,8 @@ auto surge::atom::text::text_buffer::create(usize max_chars) noexcept -> text_bu
   /***************
    * Create GBAs *
    ***************/
-  tb.texture_handles = gba<GLuint64>::create(max_chars, "Text Texture Handles GBA");
   tb.models = gba<glm::mat4>::create(max_chars, "Text Modesl GBA");
+  tb.texture_handles = gba<GLuint64>::create(max_chars, "Text Texture Handles GBA");
 
   return tb;
 }
@@ -317,370 +341,79 @@ void surge::atom::text::text_buffer::destroy() noexcept {
   ZoneScopedN("surge::atom::text::text_buffer::destroy()");
   TracyGpuZone("GPU surge::atom::text::text_buffer::destroy()");
 #endif
-  log_info("Destroying sprite database");
+  log_info("Destroying Text Buffer");
 
-  models.destroy();
   texture_handles.destroy();
+  models.destroy();
   glDeleteBuffers(1, &(EBO));
   glDeleteBuffers(1, &(VBO));
   glDeleteVertexArrays(1, &(VAO));
 }
 
-void surge::atom::text::text_buffer::add(glyph_cache &cache, std::string_view text) noexcept {
-  // TODO: Text passed in the string view is in UTF8. It needs to be converted to UTF32 to be used,
-  // but if one is restricted to the ascii set, the codes are the same. This works in that case but
-  // it should be made general. We should also load new characters if the one in the text does not
-  // exist.
-  for (const auto &c : text) {
-    const FT_ULong c_codepoint{c};
-  }
-}
-
-void surge::atom::text::destroy_buffers(const buffer_data &bd) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::destroy_buffers");
-  TracyGpuZone("GPU surge::atom::text::destroy_buffers");
-#endif
-
-  log_info("Deleting text buffer data\n  VBO: %u\n  EBO: %u\n  VAO: %u\n  MMB: %u\n  THB: %u",
-           bd.VBO, bd.EBO, bd.VAO, bd.MMB, bd.THB);
-
-  glDeleteBuffers(1, &(bd.VBO));
-  glDeleteBuffers(1, &(bd.EBO));
-  glDeleteVertexArrays(1, &(bd.VAO));
-
-  glDeleteBuffers(1, &(bd.MMB));
-  glDeleteBuffers(1, &(bd.THB));
-}
-
-auto surge::atom::text::init_freetype() noexcept -> tl::expected<FT_Library, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::init_freetype()");
-#endif
-
-  log_info("Creating FreeType library");
-
-  FT_Library lib{};
-  auto status{FT_New_Library(&ft_mimalloc, &lib)};
-
-  if (status != 0) {
-    log_error("Error creating FreeType library: %s", FT_Error_String(status));
-    return tl::unexpected{error::freetype_init};
-  }
-
-  log_info("Adding FreeType modules");
-  FT_Add_Default_Modules(lib);
-
-  return lib;
-}
-
-auto surge::atom::text::destroy_freetype(FT_Library lib) noexcept -> std::optional<error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::destroy_freetype()");
-#endif
-
-  log_info("Destroying FreeType library");
-
-  const auto status{FT_Done_Library(lib)};
-
-  if (status != 0) {
-    log_error("Error destroying FreeType library: %s", FT_Error_String(status));
-    return error::freetype_deinit;
-  } else {
-    return {};
-  }
-}
-
-auto surge::atom::text::load_face(FT_Library lib, const char *name) noexcept
-    -> tl::expected<FT_Face, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::load_face()");
-#endif
-
-  log_info("Loading face %s", name);
-
-  FT_Face face{};
-  const auto status{FT_New_Face(lib, name, 0, &face)};
-
-  if (status != 0) {
-    log_error("Error loading face %s: %s", name, FT_Error_String(status));
-    return tl::unexpected{error::freetype_face_load};
-  } else {
-    return face;
-  }
-}
-
-auto surge::atom::text::unload_face(FT_Face face) noexcept -> std::optional<error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::unload_face()");
-#endif
-
-  log_info("Unloading face %s", face->family_name);
-
-  const auto status = FT_Done_Face(face);
-  if (status != 0) {
-    log_error("Error unloading face %s: %s", face->family_name, FT_Error_String(status));
-    return error::freetype_face_unload;
-  } else {
-    return {};
-  }
-}
-
-auto surge::atom::text::load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in_pts,
-                                    FT_UInt resolution_dpi) noexcept
-    -> tl::expected<glyph_data, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::load_glyphs()");
-  TracyGpuZone("GPU surge::atom::text::load_glyphs()");
-#endif
-
-  log_info("Loading glyphs metrics in %s", face->family_name);
-
-  auto status{FT_Set_Char_Size(face, 0, size_in_pts * 64, resolution_dpi, resolution_dpi)};
-  if (status != 0) {
-    log_error("Unable to set face %s glyphs to size: %s", face->family_name,
-              FT_Error_String(status));
-    return tl::unexpected{error::freetype_set_face_size};
-  }
-
-  glyph_data gd;
-  gd.texture_id.reserve(94);
-  gd.texture_handle.reserve(94);
-  gd.bitmap_width.reserve(94);
-  gd.bitmap_height.reserve(94);
-  gd.bearing_x.reserve(94);
-  gd.bearing_y.reserve(94);
-  gd.advance.reserve(94);
-
-  // White space
-  status = FT_Load_Char(face, ' ', FT_LOAD_RENDER);
-  if (status != 0) {
-    log_error("Unable to load white space ASCII character for face %s: %s", face->family_name,
-              FT_Error_String(status));
-    return tl::unexpected{error::freetype_character_load};
-  } else {
-    gd.whitespace_advance = face->glyph->advance.x;
-    gd.line_spacing = face->size->metrics.height;
-  }
-
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-  // Printable ASCII characters
-  for (FT_ULong c = 33; c <= 126; c++) {
-    status = FT_Load_Char(face, c, FT_LOAD_RENDER);
-    if (status != 0) {
-      log_error("Unable to load ASCII character %c for face %s: %s", static_cast<char>(c),
-                face->family_name, FT_Error_String(status));
-      return tl::unexpected{error::freetype_character_load};
-    } else {
-
-      const auto bw{face->glyph->bitmap.width};
-      const auto bh{face->glyph->bitmap.rows};
-
-      gd.bitmap_width.push_back(bw);
-      gd.bitmap_height.push_back(bh);
-      gd.bearing_x.push_back(face->glyph->bitmap_left);
-      gd.bearing_y.push_back(face->glyph->bitmap_top);
-      gd.advance.push_back(face->glyph->advance.x);
-
-      GLuint texture{0};
-      glCreateTextures(GL_TEXTURE_2D, 1, &texture);
-
-      // Wrapping
-      glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-      glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-      // Filtering
-      glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-      GLfloat max_aniso{0};
-      glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
-      glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
-
-      constexpr const auto internal_format{GL_R8};
-      constexpr const auto format{GL_RED};
-
-      glTextureStorage2D(texture, 4, internal_format, static_cast<GLsizei>(bw),
-                         static_cast<GLsizei>(bh));
-      glTextureSubImage2D(texture, 0, 0, 0, static_cast<GLsizei>(bw), static_cast<GLsizei>(bh),
-                          format, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-
-      glGenerateTextureMipmap(texture);
-
-      const auto handle{glGetTextureHandleARB(texture)};
-      if (handle == 0) {
-        log_error("Unable to create texture handle for character %c", static_cast<char>(c));
-        return tl::unexpected{error::texture_handle_creation};
-      } else {
-        gd.texture_id.push_back(texture);
-        gd.texture_handle.push_back(handle);
-      }
-    }
-  }
-
-  return gd;
-}
-
-void surge::atom::text::unload_glyphs(glyph_data &gd) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::unload_glyphs");
-  TracyGpuZone("GPU surge::atom::text::unload_glyphs");
-#endif
-
-  glDeleteTextures(static_cast<GLsizei>(gd.texture_id.size()), gd.texture_id.data());
-
-  gd.texture_id.clear();
-  gd.texture_handle.clear();
-  gd.bitmap_width.clear();
-  gd.bitmap_height.clear();
-  gd.bearing_x.clear();
-  gd.bearing_y.clear();
-  gd.advance.clear();
-}
-
-void surge::atom::text::make_glyphs_resident(glyph_data &gd) {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::make_glyphs_resident(vector)");
-  TracyGpuZone("GPU surge::atom::text::make_glyphs_resident(vector)");
-#endif
-
-  for (auto handle : gd.texture_handle) {
-    glMakeTextureHandleResidentARB(handle);
-  }
-}
-
-void surge::atom::text::make_glyphs_non_resident(glyph_data &gd) {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::make_glyphs_non_resident(vector)");
-  TracyGpuZone("GPU surge::atom::text::make_glyphs_non_resident(vector)");
-#endif
-
-  for (auto handle : gd.texture_handle) {
-    glMakeTextureHandleNonResidentARB(handle);
-  }
-}
-
-void surge::atom::text::send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::send_buffers");
-  TracyGpuZone("GPU surge::atom::text::send_buffers");
-#endif
-
-  if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
-    glNamedBufferSubData(bd.MMB, 0,
-                         static_cast<GLsizeiptr>(sizeof(glm::mat4) * tdd.glyph_models.size()),
-                         tdd.glyph_models.data());
-
-    glNamedBufferSubData(bd.THB, 0,
-                         static_cast<GLsizeiptr>(sizeof(GLuint64) * tdd.texture_handles.size()),
-                         tdd.texture_handles.data());
-  }
-}
-
-void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd,
-                                              std::string_view text,
-                                              const glm::vec3 &baseline_origin,
-                                              const glm::vec4 &color,
-                                              const glm::vec2 &scale) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::append_text_draw_data");
-#endif
-
-  glm::vec4 bbox{
-      baseline_origin[0],
-      baseline_origin[1],
-      0.0f,
-      0.0f,
-  };
-
+void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
+                                          glyph_cache &cache, std::string_view text) noexcept {
   auto pen_origin{baseline_origin};
 
+  // TODO: Iterate over UTF-8 codepoints
   for (const auto &c : text) {
-    // White space
-    if (c == ' ') {
-      pen_origin[0] += static_cast<float>(gd.whitespace_advance >> 6) * scale[0];
-      bbox[2] += static_cast<float>(gd.whitespace_advance >> 6) * scale[0];
-      continue;
-    }
+    const auto cdpnt{static_cast<FT_ULong>(c)};
 
-    // New line + carrige return
-    if (c == '\n') {
+    const auto &texture_handle{cache.get_texture_handles().at(cdpnt)};
+    const auto &bitmap_dim{cache.get_bitmap_dims().at(cdpnt)};
+    const auto &bearing{cache.get_bearings().at(cdpnt)};
+    const auto &advance{cache.get_advances().at(cdpnt)};
+
+    // \n
+    if (cdpnt == 0x0000000a) {
       pen_origin[0] = baseline_origin[0];
-      pen_origin[1] += static_cast<float>(gd.line_spacing >> 6) * scale[1];
-      bbox[3] += static_cast<float>(gd.line_spacing >> 6) * scale[1];
+      pen_origin[1] += static_cast<float>(advance[1] >> 6) * scale[1];
       continue;
     }
 
-    // Unsupported characters
-    if (c < 33 || c > 126) {
-      log_warn("Character %c is unsupported", c);
-      continue;
-    }
+    // TODO: Handle unknown character
 
     // Printable characters
-    const auto char_idx{static_cast<usize>(c) - 33};
+    const glm::vec3 scaled_bearing{static_cast<float>(bearing[0]) * scale[0],
+                                   static_cast<float>(bearing[1]) * scale[1], 0.0f};
+    const auto glyph_origin{pen_origin + scaled_bearing};
 
-    const glm::vec3 bearing{static_cast<float>(gd.bearing_x[char_idx]) * scale[0],
-                            static_cast<float>(-gd.bearing_y[char_idx]) * scale[1], 0.0f};
-
-    const auto glyph_origin{pen_origin + bearing};
-
-    const glm::vec3 glyph_scale{static_cast<float>(gd.bitmap_width[char_idx]) * scale[0],
-                                static_cast<float>(gd.bitmap_height[char_idx]) * scale[1], 1.0f};
+    const glm::vec3 glyph_scale{static_cast<float>(bitmap_dim[0]) * scale[0],
+                                static_cast<float>(bitmap_dim[1]) * scale[1], 1.0f};
 
     const auto glyph_model{glm::scale(glm::translate(glm::mat4{1.0f}, glyph_origin), glyph_scale)};
 
-    tdd.glyph_models.push_back(glyph_model);
-    tdd.texture_handles.push_back(gd.texture_handle[char_idx]);
+    models.push(glyph_model);
+    texture_handles.push(texture_handle);
 
-    pen_origin[0] += static_cast<float>(gd.advance[char_idx] >> 6) * scale[0];
-
-    // Compute bbox
-    if (glyph_origin[1] < bbox[1]) {
-      bbox[1] = glyph_origin[1];
-    }
-
-    bbox[2] += glyph_scale[0];
-
-    if (glyph_scale[1] > bbox[3]) {
-      bbox[3] = glyph_scale[1];
-    }
+    pen_origin[0] += static_cast<float>(advance[0] >> 6) * scale[0];
   }
-
-  tdd.color = color;
-  tdd.bounding_box = bbox;
 }
 
-void surge::atom::text::append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, u8 value,
-                                              const glm::vec3 &baseline_origin,
-                                              const glm::vec4 &color,
-                                              const glm::vec2 &scale) noexcept {
-  using std::snprintf;
-  std::array<char, 4> buffer{0, 0, 0, 0};
-  snprintf(buffer.data(), 4, "%u", value);
-  append_text_draw_data(tdd, gd, buffer.data(), baseline_origin, color, scale);
+void surge::atom::text::text_buffer::reset() noexcept {
+  models.reset();
+  texture_handles.reset();
 }
 
-void surge::atom::text::draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
-                             const text_draw_data &tdd) noexcept {
+void surge::atom::text::text_buffer::draw(const GLuint &sp, glm::vec4 &&color) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::text::draw");
-  TracyGpuZone("GPU surge::atom::text::draw");
+  ZoneScopedN("surge::atom::text::text_buffer::draw");
+  TracyGpuZone("GPU surge::atom::text::text_buffer::draw");
 #endif
 
-  if (tdd.texture_handles.size() != 0 && tdd.glyph_models.size() != 0) {
+  if (texture_handles.size() != 0 && texture_handles.size() != 0) {
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, MPSB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, bd.MMB);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, bd.THB);
+    models.bind(GL_SHADER_STORAGE_BUFFER, 3);
+    texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 4);
 
     glUseProgram(sp);
 
-    renderer::uniforms::set(sp, "color", tdd.color);
+    renderer::uniforms::set(sp, "color", color);
 
-    glBindVertexArray(bd.VAO);
+    glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                            gsl::narrow_cast<GLsizei>(tdd.glyph_models.size()));
+                            gsl::narrow_cast<GLsizei>(texture_handles.size()));
+
+    models.lock();
+    texture_handles.lock();
   }
 }

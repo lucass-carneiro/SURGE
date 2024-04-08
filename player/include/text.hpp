@@ -18,7 +18,9 @@
 #include <tl/expected.hpp>
 
 /**
- * Drawable text
+ * @brief Draw Text on the screen. For now, we handle only the printable ASCII set, but the
+ * infrastructure would allow for more characters to be handled. Maybe.
+ *
  */
 namespace surge::atom::text {
 
@@ -37,7 +39,7 @@ public:
   [[nodiscard]] auto get_faces() noexcept -> hash_map<const char *, FT_Face> &;
 };
 
-enum language { english, portuguese };
+enum language { english };
 
 struct glyph_cache {
 private:
@@ -50,14 +52,25 @@ private:
   hash_map<FT_ULong, glm::vec<2, FT_Pos>> advances{};
 
 public:
-  static auto create(FT_Face face, language lang = english) noexcept
-      -> tl::expected<glyph_cache, error>;
+  static auto create(FT_Face face, language = english) noexcept -> tl::expected<glyph_cache, error>;
   void destroy() noexcept;
 
   auto load_character(FT_Face face, FT_ULong c) noexcept -> std::optional<error>;
+  auto load_nonprintable_character(FT_Face face, FT_ULong c) noexcept -> std::optional<error>;
 
   void make_resident() noexcept;
   void make_non_resident() noexcept;
+
+  [[nodiscard]] auto get_texture_handles() const noexcept -> const hash_map<FT_ULong, GLuint64> &;
+
+  [[nodiscard]] auto get_bitmap_dims() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> &;
+
+  [[nodiscard]] auto get_bearings() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> &;
+
+  [[nodiscard]] auto get_advances() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> &;
 };
 
 struct text_buffer {
@@ -66,91 +79,19 @@ private:
   GLuint EBO{0};
   GLuint VAO{0};
 
-  gba<GLuint64> texture_handles{};
   gba<glm::mat4> models{};
+  gba<GLuint64> texture_handles{};
 
 public:
-  static auto create(usize max_chars = 540) noexcept -> text_buffer;
+  static auto create(usize max_chars) noexcept -> text_buffer;
   void destroy() noexcept;
 
-  void add(glyph_cache &cache, std::string_view text) noexcept;
+  void push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
+            std::string_view text) noexcept;
   void reset() noexcept;
 
-  void draw() noexcept;
+  void draw(const GLuint &sp, glm::vec4 &&color) noexcept;
 };
-
-class record {
-public:
-  record();
-
-private:
-  GLuint VBO;
-  GLuint EBO;
-  GLuint VAO;
-
-  // SSBOs
-  GLuint MMB; // model matrices buffer
-  GLuint THB; // texture handles buffer
-};
-
-struct buffer_data {
-  GLuint VBO;
-  GLuint EBO;
-  GLuint VAO;
-
-  // SSBOs
-  GLuint MMB; // model matrices buffer
-  GLuint THB; // texture handles buffer
-};
-
-struct glyph_data {
-  vector<GLuint> texture_id;
-  vector<GLuint64> texture_handle;
-  vector<u32> bitmap_width;
-  vector<u32> bitmap_height;
-  vector<i32> bearing_x;
-  vector<i32> bearing_y;
-  vector<i64> advance;
-  i64 whitespace_advance;
-  i64 line_spacing;
-};
-
-struct text_draw_data {
-  vector<GLuint64> texture_handles;
-  vector<glm::mat4> glyph_models;
-  glm::vec4 bounding_box;
-  glm::vec4 color;
-};
-
-// The original Twitter limit
-auto create_buffers(usize max_chars = 140) noexcept -> buffer_data;
-void destroy_buffers(const buffer_data &) noexcept;
-
-auto init_freetype() noexcept -> tl::expected<FT_Library, error>;
-auto destroy_freetype(FT_Library lib) noexcept -> std::optional<error>;
-
-auto load_face(FT_Library lib, const char *name) noexcept -> tl::expected<FT_Face, error>;
-auto unload_face(FT_Face face) noexcept -> std::optional<error>;
-
-auto load_glyphs(FT_Library, FT_Face face, FT_F26Dot6 size_in_pts = 40,
-                 FT_UInt resolution_dpi = 300) noexcept -> tl::expected<glyph_data, error>;
-void unload_glyphs(glyph_data &gd) noexcept;
-
-void make_glyphs_resident(glyph_data &gd);
-void make_glyphs_non_resident(glyph_data &gd);
-
-void send_buffers(const buffer_data &bd, const text_draw_data &tdd) noexcept;
-
-void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, std::string_view text,
-                           const glm::vec3 &baseline_origin, const glm::vec4 &color,
-                           const glm::vec2 &scale = glm::vec2{1.0f}) noexcept;
-
-void append_text_draw_data(text_draw_data &tdd, const glyph_data &gd, u8 value,
-                           const glm::vec3 &baseline_origin, const glm::vec4 &color,
-                           const glm::vec2 &scale = glm::vec2{1.0f}) noexcept;
-
-void draw(const GLuint &sp, const buffer_data &bd, const GLuint &MPSB,
-          const text_draw_data &tdd) noexcept;
 
 } // namespace surge::atom::text
 

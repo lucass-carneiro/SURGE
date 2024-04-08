@@ -5,7 +5,7 @@
 layout(location = 0) in vec3 vtx_pos;
 layout(location = 1) in vec2 uv_coords;
 
-layout(std430, binding = 2) readonly buffer ssbo0 {
+layout(std140, binding = 2) uniform pv_ubo {
   mat4 projection;
   mat4 view;
 };
