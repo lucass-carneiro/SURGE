@@ -71,31 +71,30 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   }
 
   auto load_face_result{
-      globals::ten.load_face("resources/fonts/ITC_Benguiat_Bold.ttf", "benguiat_bold")};
-  if (load_face_result) {
-    log_error("Unable to load resources/fonts/ITC_Benguiat_Bold.ttf");
+      globals::ten.load_face("resources/fonts/DaveauRegular.otf", "daveau_regular")};
+  if (load_face_result.has_value()) {
+    log_error("Unable to load resources/fonts/DaveauRegular.otf");
     return static_cast<int>(*load_face_result);
   }
 
-  load_face_result
-      = globals::ten.load_face("resources/fonts/ITC_Benguiat_Book.ttf", "benguiat_book");
+  load_face_result = globals::ten.load_face("resources/fonts/DaveauLight.otf", "daveau_light");
   if (load_face_result.has_value()) {
-    log_error("Unable to load resources/fonts/ITC_Benguiat_Book.ttf");
+    log_error("Unable to load resources/fonts/DaveauLight.otf");
     return static_cast<int>(load_face_result.value());
   }
 
   // Glyph Caches
-  auto gc_result{text::glyph_cache::create(globals::ten.get_faces()["benguiat_bold"])};
+  auto gc_result{text::glyph_cache::create(globals::ten.get_faces()["daveau_regular"])};
   if (!gc_result) {
-    log_error("Unable to create glyph cache for benguiat_bold");
+    log_error("Unable to create glyph cache for daveau_regular");
     return static_cast<int>(gc_result.error());
   }
 
   globals::gc0 = *gc_result;
 
-  gc_result = text::glyph_cache::create(globals::ten.get_faces()["benguiat_book"]);
+  gc_result = text::glyph_cache::create(globals::ten.get_faces()["daveau_light"]);
   if (!gc_result) {
-    log_error("Unable to create glyph cache for benguiat_book");
+    log_error("Unable to create glyph cache for daveau_light");
     return static_cast<int>(gc_result.error());
   }
 
@@ -193,7 +192,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
 
   // TODO: Temporary text test
   globals::txb.push(glm::vec3{0.0f, 768.0f / 2.0f, 0.5f}, glm::vec2{1.0f}, globals::gc0,
-                    "The Quick Brown Fox Jumps Over The Lazy Dog");
+                    "Drizzle: The Unveiling");
 
   // Update states
   const auto transition_result{globals::stm.transition(globals::tdb)};

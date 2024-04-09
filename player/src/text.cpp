@@ -113,10 +113,15 @@ auto surge::atom::text::glyph_cache::create(FT_Face face, language lang) noexcep
 #endif
   log_info("Creating glyph cache for %s", face->family_name);
 
+  const auto status{FT_Select_Charmap(face, FT_ENCODING_UNICODE)};
+  if (status != 0) {
+    log_error("Unable to set charmap for face %s: %s", face->family_name, FT_Error_String(status));
+    return tl::unexpected{error::freetype_charmap};
+  }
+
   glyph_cache cache{};
 
   switch (lang) {
-
   case english: {
     // Printable ASCII
     for (FT_ULong c = 0x00000021; c <= 0x0000007e; c++) {
@@ -356,7 +361,12 @@ void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
 
   // TODO: Iterate over UTF-8 codepoints
   for (const auto &c : text) {
-    const auto cdpnt{static_cast<FT_ULong>(c)};
+    auto cdpnt{static_cast<FT_ULong>(c)};
+
+    // Unrecognized character
+    if (!cache.get_texture_handles().contains(cdpnt)) {
+      cdpnt = 0x0000003f;
+    }
 
     const auto &texture_handle{cache.get_texture_handles().at(cdpnt)};
     const auto &bitmap_dim{cache.get_bitmap_dims().at(cdpnt)};
@@ -364,11 +374,11 @@ void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
     const auto &advance{cache.get_advances().at(cdpnt)};
 
     // \n
-    /*if (cdpnt == 0x0000000a) {
+    if (cdpnt == 0x0000000a) {
       pen_origin[0] = baseline_origin[0];
       pen_origin[1] += static_cast<float>(advance[1] >> 6) * scale[1];
       continue;
-    }*/
+    }
 
     // TODO: Handle unknown character
 
