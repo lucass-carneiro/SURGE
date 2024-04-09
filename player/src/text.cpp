@@ -364,18 +364,18 @@ void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
     const auto &advance{cache.get_advances().at(cdpnt)};
 
     // \n
-    if (cdpnt == 0x0000000a) {
+    /*if (cdpnt == 0x0000000a) {
       pen_origin[0] = baseline_origin[0];
       pen_origin[1] += static_cast<float>(advance[1] >> 6) * scale[1];
       continue;
-    }
+    }*/
 
     // TODO: Handle unknown character
 
     // Printable characters
-    const glm::vec3 scaled_bearing{static_cast<float>(bearing[0]) * scale[0],
-                                   static_cast<float>(bearing[1]) * scale[1], 0.0f};
-    const auto glyph_origin{pen_origin + scaled_bearing};
+    const auto glyph_origin{pen_origin
+                            + glm::vec3{static_cast<float>(bearing[0]) * scale[0],
+                                        -static_cast<float>(bearing[1]) * scale[1], 0.0f}};
 
     const glm::vec3 glyph_scale{static_cast<float>(bitmap_dim[0]) * scale[0],
                                 static_cast<float>(bitmap_dim[1]) * scale[1], 1.0f};

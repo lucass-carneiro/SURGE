@@ -192,8 +192,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
   globals::txb.reset();
 
   // TODO: Temporary text test
-  globals::txb.push(glm::vec3{0.0f, 768.0 / 2.0, 0.5f}, glm::vec2{0.75f}, globals::gc0,
-                    "Hello World!");
+  globals::txb.push(glm::vec3{0.0f, 768.0f / 2.0f, 0.5f}, glm::vec2{1.0f}, globals::gc0,
+                    "The Quick Brown Fox Jumps Over The Lazy Dog");
 
   // Update states
   const auto transition_result{globals::stm.transition(globals::tdb)};
