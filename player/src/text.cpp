@@ -404,7 +404,7 @@ void surge::atom::text::text_buffer::reset() noexcept {
   texture_handles.reset();
 }
 
-void surge::atom::text::text_buffer::draw(const GLuint &sp, glm::vec4 &&color) noexcept {
+void surge::atom::text::text_buffer::draw(const GLuint &sp, const glm::vec4 &color) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::text_buffer::draw");
   TracyGpuZone("GPU surge::atom::text::text_buffer::draw");

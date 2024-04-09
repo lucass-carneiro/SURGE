@@ -90,7 +90,7 @@ public:
             std::string_view text) noexcept;
   void reset() noexcept;
 
-  void draw(const GLuint &sp, glm::vec4 &&color) noexcept;
+  void draw(const GLuint &sp, const glm::vec4 &color) noexcept;
 };
 
 } // namespace surge::atom::text

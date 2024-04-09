@@ -19,6 +19,9 @@ auto DTU::state_impl::main_menu::load(tdb_t &tdb) noexcept -> std::optional<surg
   tdb.add(ci, "resources/main_menu/1.png", "resources/main_menu/2.png", "resources/main_menu/3.png",
           "resources/main_menu/4.png", "resources/main_menu/5.png");
 
+  // Title
+  tdb.add(ci, "resources/main_menu/title.png");
+
   return {};
 }
 
@@ -93,8 +96,35 @@ static inline void update_background_parallax(GLFWwindow *window, double dt, DTU
   sdb.add(handle_4, model_4, 1.0f);
 }
 
-auto DTU::state_impl::main_menu::update(GLFWwindow *window, double dt, tdb_t &tdb,
-                                        sdb_t &sdb) noexcept -> std::optional<surge::error> {
+static void update_title(GLFWwindow *window, DTU::tdb_t &tdb, DTU::sdb_t &sdb,
+                         DTU::txd_t &txd) noexcept {
+  using namespace surge;
+  using namespace surge::atom;
+
+  const auto [ww, wh] = window::get_dims(window);
+
+  static const auto handle{tdb.find("resources/main_menu/title.png").value_or(0)};
+
+  const glm::vec2 window_dims{ww, wh};
+  const glm::vec2 title_size{896.0f, 250.0f};
+  const glm::vec2 title_origin{0.5f * (window_dims - title_size)};
+  const float title_z{0.5f};
+
+  const glm::vec3 menu_origin{title_origin[0], title_origin[1] + title_size[1] + 150.0f, title_z};
+  const glm::vec2 menu_scale{0.5f};
+
+  const auto model{sprite::place(title_origin, title_size, title_z)};
+
+  sdb.add(handle, model, 1.0f);
+
+  txd.draw_color = glm::vec4{114.0f / 255.0f, 8.0f / 255.0f, 13.0f / 255.0f, 1.0f};
+  txd.txb.push(menu_origin, menu_scale, txd.gc1, "Press any key to start");
+}
+
+auto DTU::state_impl::main_menu::update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb,
+                                        txd_t &txd) noexcept -> std::optional<surge::error> {
   update_background_parallax(window, dt, tdb, sdb);
+  update_title(window, tdb, sdb, txd);
+
   return {};
 }

@@ -7,7 +7,6 @@
 #include "player/texture.hpp"
 #include "player/window.hpp"
 #include "player/sprite.hpp"
-#include "player/text.hpp"
 #include "player/pv_ubo.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
@@ -30,10 +29,7 @@ static surge::atom::texture::database tdb{}; // NOLINT
 static surge::atom::pv_ubo::buffer pv_ubo{}; // NOLINT
 static surge::atom::sprite::database sdb{};  // NOLINT
 
-static surge::atom::text::text_engine ten{}; // NOLINT
-static surge::atom::text::glyph_cache gc0{}; // NOLINT
-static surge::atom::text::glyph_cache gc1{}; // NOLINT
-static surge::atom::text::text_buffer txb{}; // NOLINT
+static DTU::txd_t txd{};
 
 static DTU::cmdq_t cmdq{}; // NOLINT
 
@@ -64,47 +60,47 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
   // Text Engine
   const auto ten_result{text::text_engine::create()};
   if (ten_result) {
-    globals::ten = *ten_result;
+    globals::txd.ten = *ten_result;
   } else {
     log_error("Unable to create text engine");
     return static_cast<int>(ten_result.error());
   }
 
   auto load_face_result{
-      globals::ten.load_face("resources/fonts/DaveauRegular.otf", "daveau_regular")};
+      globals::txd.ten.load_face("resources/fonts/DaveauRegular.otf", "daveau_regular")};
   if (load_face_result.has_value()) {
     log_error("Unable to load resources/fonts/DaveauRegular.otf");
     return static_cast<int>(*load_face_result);
   }
 
-  load_face_result = globals::ten.load_face("resources/fonts/DaveauLight.otf", "daveau_light");
+  load_face_result = globals::txd.ten.load_face("resources/fonts/DaveauLight.otf", "daveau_light");
   if (load_face_result.has_value()) {
     log_error("Unable to load resources/fonts/DaveauLight.otf");
     return static_cast<int>(load_face_result.value());
   }
 
   // Glyph Caches
-  auto gc_result{text::glyph_cache::create(globals::ten.get_faces()["daveau_regular"])};
+  auto gc_result{text::glyph_cache::create(globals::txd.ten.get_faces()["daveau_regular"])};
   if (!gc_result) {
     log_error("Unable to create glyph cache for daveau_regular");
     return static_cast<int>(gc_result.error());
   }
 
-  globals::gc0 = *gc_result;
+  globals::txd.gc0 = *gc_result;
 
-  gc_result = text::glyph_cache::create(globals::ten.get_faces()["daveau_light"]);
+  gc_result = text::glyph_cache::create(globals::txd.ten.get_faces()["daveau_light"]);
   if (!gc_result) {
     log_error("Unable to create glyph cache for daveau_light");
     return static_cast<int>(gc_result.error());
   }
 
-  globals::gc1 = *gc_result;
+  globals::txd.gc1 = *gc_result;
 
-  globals::gc0.make_resident();
-  globals::gc1.make_resident();
+  globals::txd.gc0.make_resident();
+  globals::txd.gc1.make_resident();
 
   // Text Buffer
-  globals::txb = surge::atom::text::text_buffer::create(540);
+  globals::txd.txb = surge::atom::text::text_buffer::create(540);
 
   // Initialize global 2D projection matrix and view matrix
   const auto [ww, wh] = surge::window::get_dims(window);
@@ -158,10 +154,10 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   destroy_shader_program(globals::text_shader);
   destroy_shader_program(globals::sprite_shader);
 
-  globals::txb.destroy();
-  globals::gc1.destroy();
-  globals::gc0.destroy();
-  globals::ten.destroy();
+  globals::txd.txb.destroy();
+  globals::txd.gc1.destroy();
+  globals::txd.gc0.destroy();
+  globals::txd.ten.destroy();
 
   globals::pv_ubo.destroy();
   globals::sdb.destroy();
@@ -179,7 +175,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
 extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   globals::pv_ubo.bind_to_location(2);
   globals::sdb.draw(globals::sprite_shader);
-  globals::txb.draw(globals::text_shader, glm::vec4{1.0f});
+  globals::txd.txb.draw(globals::text_shader, globals::txd.draw_color);
   return 0;
 }
 
@@ -188,15 +184,12 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
 
   // Clear buffers
   globals::sdb.reset();
-  globals::txb.reset();
-
-  // TODO: Temporary text test
-  globals::txb.push(glm::vec3{0.0f, 768.0f / 2.0f, 0.5f}, glm::vec2{1.0f}, globals::gc0,
-                    "Drizzle: The Unveiling");
+  globals::txd.txb.reset();
 
   // Update states
   const auto transition_result{globals::stm.transition(globals::tdb)};
-  const auto update_result{globals::stm.update(window, dt, globals::tdb, globals::sdb)};
+  const auto update_result{
+      globals::stm.update(window, dt, globals::tdb, globals::sdb, globals::txd)};
 
   if (transition_result) {
     log_error("Unable to transition states");

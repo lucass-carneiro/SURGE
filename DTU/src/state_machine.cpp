@@ -121,14 +121,14 @@ auto DTU::state_machine::destroy(tdb_t &tdb) noexcept -> std::optional<surge::er
   return unload_a(tdb);
 }
 
-auto DTU::state_machine::update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb) noexcept
-    -> std::optional<surge::error> {
+auto DTU::state_machine::update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb,
+                                txd_t &txd) noexcept -> std::optional<surge::error> {
   using namespace DTU::state_impl;
 
   switch (state_a) {
 
   case state::main_menu:
-    return main_menu::update(window, dt, tdb, sdb);
+    return main_menu::update(window, dt, tdb, sdb, txd);
 
   case state::new_game:
     // TODO;

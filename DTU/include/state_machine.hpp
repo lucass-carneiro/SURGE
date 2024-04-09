@@ -28,7 +28,7 @@ public:
   auto transition(tdb_t &tdb) noexcept -> std::optional<surge::error>;
   auto destroy(tdb_t &tdb) noexcept -> std::optional<surge::error>;
 
-  auto update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb) noexcept
+  auto update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t &sdb, txd_t &txd) noexcept
       -> std::optional<surge::error>;
 };
 
