@@ -1,7 +1,9 @@
 #ifndef DTU_UI_HPP
 #define DTU_UI_HPP
 
-#include "DTU.hpp"
+#include "player/integer_types.hpp"
+#include "player/window.hpp"
+#include "type_aliases.hpp"
 
 namespace DTU::ui {
 
@@ -24,84 +26,28 @@ static inline auto point_in_rect(const glm::vec2 &point, const glm::vec4 &rect) 
   return in_x_range && in_y_range;
 }
 
-// clang-format off
-auto spinner_box(
-  GLFWwindow *window,
-  surge::i32 id,
-  surge::i32 &active,
-  surge::i32 &hot,
+struct ui_state {
+  GLFWwindow *window;
+  surge::i32 active;
+  surge::i32 hot;
+};
 
-  sdl_t &ui_sdl,
-  const glm::vec3 &draw_pos,
-  const glm::vec3 &draw_scale,
-  
-  GLuint64 neutral_handle,
-  GLuint64 up_handle,
-  GLuint64 down_handle,
-  
-  float alpha,
+struct draw_data {
+  glm::vec2 pos;
+  glm::vec2 scale;
+  float z;
+  float alpha;
+};
 
-  tdd_t &tdd,
-  const DTU::tgd_t &tgd,
-  const glm::vec4 &t_color,
+struct button_skin {
+  glm::vec2 skin_dims;
+  GLuint64 handle_release;
+  GLuint64 handle_select;
+  GLuint64 handle_press;
+};
 
-  const glm::vec2 &mouse_pos,
-
-  surge::u8 &pool,
-  surge::u8 &value,
-  surge::u8 min,
-  surge::u8 max
-) noexcept -> bool;
-// clang-format on
-
-// Show text if an area in the screen if another widget becomes hot
-auto text_on_hot(surge::i32 id, const surge::i32 &target, const surge::i32 &hot, tdd_t &tdd,
-                 const DTU::tgd_t &tgd, std::string_view text, const glm::vec3 &baseline,
-                 const glm::vec4 &t_color, const glm::vec2 &scale) noexcept -> bool;
-
-// clang-format off
-auto button(GLFWwindow *window,
-  surge::i32 id,
-  surge::i32 &active,
-  surge::i32 &hot,
-
-  sdl_t &ui_sdl,
-  const glm::vec3 &draw_pos,
-  const glm::vec3 &draw_scale,
-  
-  GLuint64 up_handle,
-  GLuint64 down_handle,
-  
-  float alpha,
-
-  tdd_t &tdd,
-  const DTU::tgd_t &tgd,
-  const glm::vec4 &t_color,
-
-  const glm::vec2 &mouse_pos,
-  
-  std::string_view text
-) noexcept -> bool;
-// clang-format on
-
-// clang-format off
-auto button(GLFWwindow *window,
-  surge::i32 id,
-  surge::i32 &active,
-  surge::i32 &hot,
-
-  sdl_t &ui_sdl,
-  const glm::vec3 &draw_pos,
-  const glm::vec3 &draw_scale,
-  
-  GLuint64 up_handle,
-  GLuint64 down_handle,
-  
-  float alpha,
-
-  const glm::vec2 &mouse_pos
-) noexcept -> bool;
-// clang-format on
+auto button(surge::i32 id, ui_state &state, draw_data &dd, sdb_t &sdb,
+            const button_skin &bs) noexcept -> bool;
 
 } // namespace DTU::ui
 
