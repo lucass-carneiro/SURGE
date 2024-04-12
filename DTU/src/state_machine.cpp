@@ -12,9 +12,6 @@ static inline auto state_to_str(DTU::state s) noexcept -> const char * {
   case state::no_state:
     return "no state";
 
-  case state::exit_game:
-    return "exit game";
-
   case state::main_menu:
     return "main menu";
 
@@ -51,9 +48,6 @@ auto DTU::state_machine::load_a(tdb_t &tdb) noexcept -> std::optional<surge::err
   case no_state:
     return {};
 
-  case exit_game:
-    return {};
-
   case count:
     return {};
 
@@ -76,9 +70,6 @@ auto DTU::state_machine::unload_a(tdb_t &tdb) noexcept -> std::optional<surge::e
     return {};
 
   case no_state:
-    return {};
-
-  case exit_game:
     return {};
 
   case count:
@@ -133,9 +124,6 @@ auto DTU::state_machine::update(GLFWwindow *window, double dt, tdb_t &tdb, sdb_t
   case state::new_game:
     // TODO;
     return {};
-
-  case state::exit_game:
-    return surge::error::normal_exit;
 
   case state::no_state:
     return {};

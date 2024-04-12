@@ -40,7 +40,6 @@ struct draw_data {
 };
 
 struct button_skin {
-  glm::vec2 skin_dims;
   GLuint64 handle_release;
   GLuint64 handle_select;
   GLuint64 handle_press;

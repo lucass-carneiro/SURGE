@@ -25,27 +25,30 @@ auto surge::atom::texture::from_image(const create_info &ci, const files::image_
   glTextureParameteri(texture, GL_TEXTURE_WRAP_S, gsl::narrow_cast<GLint>(ci.wrap));
   glTextureParameteri(texture, GL_TEXTURE_WRAP_T, gsl::narrow_cast<GLint>(ci.wrap));
 
-  // Filtering GL_LINEAR_MIPMAP_LINEAR
-
+  // Filtering
   switch (ci.filtering) {
   case renderer::texture_filtering::nearest:
     glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     break;
 
   case renderer::texture_filtering::linear:
     glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     break;
 
-  default:
-    break;
-  }
+  case renderer::texture_filtering::anisotropic: {
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, gsl::narrow_cast<GLint>(ci.filtering));
-
-  if (ci.filtering == renderer::texture_filtering::anisotropic) {
     GLfloat max_aniso{0};
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
     glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
+    break;
+  }
+
+  default:
+    break;
   }
 
   // Loading and mip mapping

@@ -4,11 +4,8 @@
 namespace surge {
 
 enum error : int {
-  // Normal exit signal
-  normal_exit = 1,
-
   // Cli errors
-  config_file_load,
+  config_file_load = 1,
   config_file_parse,
 
   // File errors

@@ -21,6 +21,8 @@ auto DTU::state_impl::main_menu::load(tdb_t &tdb) noexcept -> std::optional<surg
           "resources/main_menu/4.png", "resources/main_menu/5.png");
 
   // Title
+  ci.filtering = texture_filtering::anisotropic;
+  ci.mipmap_levels = 4;
   tdb.add(ci, "resources/main_menu/title.png");
 
   // Options
@@ -110,13 +112,12 @@ static inline void update_background_parallax(GLFWwindow *window, float dtf, DTU
   sdb.add(handle_4, model_4, 1.0f);
 }
 
-enum title_states { show_title, shift_title, show_menu };
-
 static void update_title(GLFWwindow *window, float dt, DTU::tdb_t &tdb, DTU::sdb_t &sdb,
-                         DTU::txd_t &txd) noexcept {
+                         DTU::txd_t &) noexcept {
   using namespace surge;
   using namespace surge::atom;
 
+  // Texture handles
   static const auto title_handle{tdb.find("resources/main_menu/title.png").value_or(0)};
 
   static const auto new_game_selected_handle{
@@ -155,96 +156,84 @@ static void update_title(GLFWwindow *window, float dt, DTU::tdb_t &tdb, DTU::sdb
   static const auto exit_pressed_handle{
       tdb.find("resources/main_menu/main_menu_exit_pressed.png").value_or(0)};
 
-  const float alpha_speed{0.5f};
-  static float fade_alpha{0.0f};
-
-  static title_states title_state{show_title};
-
+  // Position metrics
   const auto [ww, wh] = window::get_dims(window);
   const glm::vec2 window_dims{ww, wh};
+
   const glm::vec2 title_size{896.0f, 250.0f};
+  const glm::vec2 opts_size{490.0f, 139.0f};
 
-  const float shift_speed{500.0f};
-  static auto title_origin{0.5f * (window_dims - title_size)};
-  const float title_z{0.5f};
+  const float title_proportion{0.25f * wh};
+  const float opts_proportion{0.5f * wh};
+  const float spacers_proportion{0.25f * wh};
 
-  const glm::vec2 opt_skin_size{490.0f, 139.0f};
+  const float title_scale{title_proportion / title_size[1]};
+  const float opts_scale{(opts_proportion / 4.0f) / opts_size[1]};
+  const float spacers_size{spacers_proportion / 6.0f};
 
+  const float z_pos{0.5f};
+
+  const glm::vec2 title_pos{(ww - title_size[0] * title_scale) / 2.0f, spacers_size};
+
+  const glm::vec2 new_game_pos{(ww - opts_size[0] * opts_scale) / 2.0f,
+                               title_pos[1] + title_size[1] * title_scale + spacers_size};
+
+  const glm::vec2 load_game_pos{(ww - opts_size[0] * opts_scale) / 2.0f,
+                                new_game_pos[1] + opts_size[1] * opts_scale + spacers_size};
+
+  const glm::vec2 options_pos{(ww - opts_size[0] * opts_scale) / 2.0f,
+                              load_game_pos[1] + opts_size[1] * opts_scale + spacers_size};
+
+  const glm::vec2 exit_pos{(ww - opts_size[0] * opts_scale) / 2.0f,
+                           options_pos[1] + opts_size[1] * opts_scale + spacers_size};
+
+  // Dynamic alpha for fade-in effect
+  static float alpha{0.0f};
+
+  // UI code
   static DTU::ui::ui_state uist{window, -1, -1};
 
-  if (title_state == show_title) {
-    fade_alpha += alpha_speed * dt;
-    if (1.0 - fade_alpha < 1.0e-2) {
-      fade_alpha = 1.0;
-    }
+  const auto model{sprite::place(title_pos, title_size * title_scale, z_pos)};
+  sdb.add(title_handle, model, alpha);
 
-    if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
-      fade_alpha = 1.0;
-      title_state = shift_title;
-    }
+  // New game bttn
+  DTU::ui::draw_data dd{new_game_pos, opts_size * opts_scale, z_pos, alpha};
+  DTU::ui::button_skin skins{new_game_released_handle, new_game_selected_handle,
+                             new_game_pressed_handle};
 
-    const glm::vec3 menu_origin{title_origin[0], title_origin[1] + title_size[1] + 150.0f, title_z};
-    const glm::vec2 menu_scale{0.5f};
+  DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
 
-    const auto model{sprite::place(title_origin, title_size, title_z)};
+  // Load Game bttn
+  dd.pos = load_game_pos;
+  skins.handle_press = load_game_pressed_handle;
+  skins.handle_release = load_game_released_handle;
+  skins.handle_select = load_game_selected_handle;
 
-    sdb.add(title_handle, model, fade_alpha);
+  DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
 
-    txd.draw_color = glm::vec4{114.0f / 255.0f, 8.0f / 255.0f, 13.0f / 255.0f, fade_alpha};
-    txd.txb.push(menu_origin, menu_scale, txd.gc1, "Press enter to start");
+  // Options bttn
+  dd.pos = options_pos;
+  skins.handle_press = options_pressed_handle;
+  skins.handle_release = options_released_handle;
+  skins.handle_select = options_selected_handle;
 
-  } else if (title_state == shift_title) {
-    title_origin[1] -= shift_speed * dt;
-    if (title_origin[1] - 10.0f < 1.0e-2) {
-      title_origin[1] = 2.0f;
-      title_state = show_menu;
-    }
+  DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
 
-    const auto model{sprite::place(title_origin, title_size, title_z)};
-    sdb.add(title_handle, model, fade_alpha);
+  // Exit bttn
+  dd.pos = exit_pos;
+  skins.handle_press = exit_pressed_handle;
+  skins.handle_release = exit_released_handle;
+  skins.handle_select = exit_selected_handle;
 
-  } else if (title_state == show_menu) {
-    const auto model{sprite::place(title_origin, title_size, title_z)};
-    sdb.add(title_handle, model, fade_alpha);
+  if (DTU::ui::button(__COUNTER__, uist, dd, sdb, skins)) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
 
-    glm::vec2 base_opt_pos{0.5f * (window_dims - opt_skin_size)};
-
-    // Make the base pos be below the title
-    base_opt_pos[1] = 2.0f + title_size[1] + 2.0f;
-
-    // New game bttn
-    DTU::ui::draw_data dd{base_opt_pos, opt_skin_size, 0.5f, 1.0};
-    DTU::ui::button_skin skins{opt_skin_size, new_game_released_handle, new_game_selected_handle,
-                               new_game_pressed_handle};
-
-    DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
-
-    // Load Game bttn
-    base_opt_pos[1] += opt_skin_size[1] + 2.0f;
-    dd.pos = base_opt_pos;
-    skins.handle_press = load_game_pressed_handle;
-    skins.handle_release = load_game_released_handle;
-    skins.handle_select = load_game_selected_handle;
-
-    DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
-
-    // Options bttn
-    base_opt_pos[1] += opt_skin_size[1] + 2.0f;
-    dd.pos = base_opt_pos;
-    skins.handle_press = options_pressed_handle;
-    skins.handle_release = options_released_handle;
-    skins.handle_select = options_selected_handle;
-
-    DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
-
-    // Exit bttn
-    base_opt_pos[1] += opt_skin_size[1] + 2.0f;
-    dd.pos = base_opt_pos;
-    skins.handle_press = exit_pressed_handle;
-    skins.handle_release = exit_released_handle;
-    skins.handle_select = exit_selected_handle;
-
-    DTU::ui::button(__COUNTER__, uist, dd, sdb, skins);
+  // Update alpha
+  if (1.0f - alpha < 1.0e-2) {
+    alpha = 1.0f;
+  } else {
+    alpha += 0.8f * dt;
   }
 }
 
