@@ -26,6 +26,7 @@ struct window_attrs {
   bool windowed;
   bool cursor;
   bool vsync;
+  bool MSAA;
 };
 
 struct config_data {

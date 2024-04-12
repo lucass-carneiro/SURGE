@@ -254,6 +254,12 @@ auto surge::window::init(const config::window_resolution &wres,
   renderer::enable(renderer::capability::blend);
   renderer::blend_function(renderer::blend_src::alpha, renderer::blend_dest::one_minus_src_alpha);
 
+  // MSAA
+  if (w_attrs.MSAA) {
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    glEnable(GL_MULTISAMPLE);
+  }
+
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   glfwGetCurrentContext();
   TracyGpuContext;

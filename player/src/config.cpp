@@ -34,6 +34,8 @@ static auto config_handler(void *user, const char *section, const char *name,
     config->wr.height = std::atoi(value);
   } else if (match("renderer", "VSync")) {
     config->wattrs.vsync = static_cast<bool>(std::atoi(value));
+  } else if (match("renderer", "MSAA")) {
+    config->wattrs.MSAA = static_cast<bool>(std::atoi(value));
   } else if (match("clear_color", "r")) {
     config->ccl.r = std::strtof(value, nullptr);
   } else if (match("clear_color", "g")) {
