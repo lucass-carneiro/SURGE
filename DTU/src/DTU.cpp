@@ -2,6 +2,10 @@
 #include "DTU.hpp"
 #include "state_machine.hpp"
 
+#ifdef SURGE_BUILD_TYPE_Debug
+#include "debug_window.hpp"
+#endif
+
 #include "player/logging.hpp"
 #include "player/error_types.hpp"
 #include "player/texture.hpp"
@@ -34,6 +38,11 @@ static DTU::txd_t txd{};
 static DTU::cmdq_t cmdq{}; // NOLINT
 
 static DTU::state_machine stm{};
+
+#ifdef SURGE_BUILD_TYPE_Debug
+static std::tuple<float, float> wdims{}; // NOLINT
+static bool show_debug_window{true};     // NOLINT
+#endif
 
 } // namespace globals
 
@@ -137,6 +146,11 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(GLFWwindow *window) noexcept -> int 
     return static_cast<int>(transition_result.value());
   }
 
+  // Debug window
+#ifdef SURGE_BUILD_TYPE_Debug
+  DTU::debug_window::create(window);
+#endif
+
   return 0;
 }
 
@@ -148,6 +162,11 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(GLFWwindow *window) noexcept -> in
   using namespace surge;
   using namespace surge::atom;
   using namespace surge::renderer;
+
+  // Debug window
+#ifdef SURGE_BUILD_TYPE_Debug
+  DTU::debug_window::destroy();
+#endif
 
   globals::stm.destroy(globals::tdb);
 
@@ -176,6 +195,12 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   globals::pv_ubo.bind_to_location(2);
   globals::sdb.draw(globals::sprite_shader);
   globals::txd.txb.draw(globals::text_shader, globals::txd.draw_color);
+
+  // Debug UI pass
+#ifdef SURGE_BUILD_TYPE_Debug
+  DTU::debug_window::draw(globals::wdims, globals::show_debug_window);
+#endif
+
   return 0;
 }
 
@@ -201,14 +226,34 @@ extern "C" SURGE_MODULE_EXPORT auto update(GLFWwindow *window, double dt) noexce
     return static_cast<int>(update_result.value());
   }
 
+#ifdef SURGE_BUILD_TYPE_Debug
+  globals::wdims = surge::window::get_dims(window);
+#endif
+
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int, int, int, int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *, int key, int, int action,
+                                                   int) noexcept {
+  if (key == GLFW_KEY_F6 && action == GLFW_RELEASE) {
+    globals::show_debug_window = !globals::show_debug_window;
+    log_info("%s debug window", globals::show_debug_window ? "Showing" : "Hiding");
+  }
+}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *, int, int, int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
+                                                       int mods) noexcept {
+#ifdef SURGE_BUILD_TYPE_Debug
+  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+#endif
+}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *, double, double) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
+                                                       double yoffset) noexcept {
+#ifdef SURGE_BUILD_TYPE_Debug
+  ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
+#endif
+}
 
 auto DTU::bind_callbacks(GLFWwindow *window) noexcept -> int {
   log_info("Binding interaction callbacks");
