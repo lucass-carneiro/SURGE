@@ -12,7 +12,9 @@
 #include <cstdlib>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <common/TracyColor.hpp>
 #  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 // Avoid using integrated graphics on NV hardware
