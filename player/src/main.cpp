@@ -12,9 +12,7 @@
 #include <cstdlib>
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-#  include <common/TracyColor.hpp>
 #  include <tracy/Tracy.hpp>
-#  include <tracy/TracyOpenGL.hpp>
 #endif
 
 // Avoid using integrated graphics on NV hardware
@@ -26,6 +24,10 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 #endif
 
 auto main(int, char **) noexcept -> int {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("suge::main()");
+#endif
+
   using namespace surge;
 
   // Avoid using integrated graphics on NV hardware
