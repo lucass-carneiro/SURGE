@@ -7,7 +7,16 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 auto DTU::state_impl::main_menu::load(tdb_t &tdb) noexcept -> std::optional<surge::error> {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("DTU::main_menu::load()");
+#endif
+
   using surge::atom::texture::create_info;
   using surge::renderer::texture_filtering;
   using surge::renderer::texture_wrap;
@@ -63,6 +72,10 @@ static inline void prallax_drift(float &drift, float drift_speed, float dtf,
 
 static inline void update_background_parallax(GLFWwindow *window, float dtf, DTU::tdb_t &tdb,
                                               DTU::sdb_t &sdb) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("DTU::main_menu::update_background_parallax()");
+#endif
+
   using namespace surge;
   using namespace surge::atom;
 
@@ -112,8 +125,12 @@ static inline void update_background_parallax(GLFWwindow *window, float dtf, DTU
   sdb.add(handle_4, model_4, 1.0f);
 }
 
-static void update_title(GLFWwindow *window, float dt, DTU::tdb_t &tdb, DTU::sdb_t &sdb,
-                         DTU::txd_t &) noexcept {
+static void update_menu(GLFWwindow *window, float dt, DTU::tdb_t &tdb, DTU::sdb_t &sdb,
+                        DTU::txd_t &) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("DTU::main_menu::update_menu()");
+#endif
+
   using namespace surge;
   using namespace surge::atom;
 
@@ -241,7 +258,7 @@ auto DTU::state_impl::main_menu::update(GLFWwindow *window, double dt, tdb_t &td
                                         txd_t &txd) noexcept -> std::optional<surge::error> {
   const auto dtf{static_cast<float>(dt)};
   update_background_parallax(window, dtf, tdb, sdb);
-  update_title(window, dtf, tdb, sdb, txd);
+  update_menu(window, dtf, tdb, sdb, txd);
 
   return {};
 }
