@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="isometric" renderorder="right-down" width="30" height="20" tilewidth="256" tileheight="128" infinite="1" nextlayerid="6" nextobjectid="1">
+<map version="1.10" tiledversion="1.10.2" orientation="isometric" renderorder="right-down" width="30" height="20" tilewidth="256" tileheight="128" infinite="1" nextlayerid="8" nextobjectid="1">
  <tileset firstgid="1" source="../tile_sets/floors.tsx"/>
  <tileset firstgid="13" source="../tile_sets/slabs.tsx"/>
  <tileset firstgid="29" source="../tile_sets/stairs.tsx"/>
  <tileset firstgid="60" source="../tile_sets/walls.tsx"/>
+ <tileset firstgid="124" source="../tile_sets/doors.tsx"/>
  <layer id="1" name="street" width="30" height="20">
   <data encoding="base64" compression="zlib">
    <chunk x="-16" y="-16" width="16" height="16">
@@ -45,7 +46,7 @@
    eJxjYCAfcFKgd1T/qP5R/QOrnwOIARRLAJA=
   </chunk>
    <chunk x="0" y="-16" width="16" height="16">
-   eJzjZGBg4CQC4wLE6B3VP6p/VP/A6WfHox8Aky0Fnw==
+   eJzjZGBg4CQC4wLE6B3VPzT1c0Mxpfq5KXT/SNdPafyz49EPAKxVBbE=
   </chunk>
   </data>
  </layer>
@@ -58,17 +59,17 @@
    eJxjYBgFo2AUDFVQRQQuxqMfAN50BL4=
   </chunk>
    <chunk x="-16" y="-16" width="16" height="16">
-   eJxjYCAfVFCgd1T/qP5R/QOrvwCIATKyB3k=
+   eJxjYCAfVFCgd1Q/5fqbBtj+Uf1DW38BEAMASVoHgw==
   </chunk>
    <chunk x="0" y="-16" width="16" height="16">
-   eJxLY2BgKMOB0xkgoJoBNyjBI1dOhP4UIC7FgVOJ0I8LqAOxGgX6kcGofvwgiwF7+skmUn8FAXuJsb8KC6aX/QVAXIkFFxKpnxDApx/ZPlziheiakAAA9zEeSw==
+   eJxjYGBgSAPiMjSczoAA1Qz4QQkWsXIS9KcAcSkaTiVBPyEwqp+2+rMYMNMPCGcTqb+CgL3E2F8FxS1IbErtbyVSfwEQV2LBhUTqJwTw6Ue2D5d4IbomJAAAT+gcPA==
   </chunk>
   </data>
  </layer>
- <layer id="5" name="stage" width="30" height="20" offsetx="0" offsety="-178">
+ <layer id="7" name="stage" width="30" height="20" offsetx="0" offsety="-178">
   <data encoding="base64" compression="zlib">
    <chunk x="0" y="-16" width="16" height="16">
-   eJzjZGBg4MSDCQF8eumhfxSMglFAPgAAIl0A2Q==
+   eJxjYGBg4MaBiQUDrX8UjIJRQB4AAN/KAMc=
   </chunk>
   </data>
  </layer>

@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "",
+    "activeFile": "the_club/the_club.tmx",
     "expandedProjectPaths": [
     ],
     "exportAsImage.includeBackgroundColor": true,
@@ -34,14 +34,17 @@
             "scale": 0.2264,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 2606.0070671378094,
-                "y": 2038.4275618374559
+                "x": 3582.1554770318025,
+                "y": -602.9151943462898
             }
         },
         "tile_sets/basic.tsx": {
             "dynamicWrapping": true,
             "scaleInDock": 0.275,
             "scaleInEditor": 0.4019
+        },
+        "tile_sets/doors.tsx": {
+            "dynamicWrapping": true
         },
         "tile_sets/floors.tsx": {
             "dynamicWrapping": false,
@@ -64,7 +67,7 @@
             "scaleInEditor": 0.3944
         }
     },
-    "last.imagePath": "/home/lucas/SURGE/DTU/resources/maps/tile_sets/stairs",
+    "last.imagePath": "/home/lucas/SURGE/DTU/resources/maps/tile_sets/doors",
     "map.fixedSize": false,
     "map.lastUsedFormat": "tmx",
     "map.layerDataFormat": "3",
@@ -72,14 +75,15 @@
     "map.tileHeight": 128,
     "map.tileWidth": 256,
     "openFiles": [
+        "the_club/the_club.tmx"
     ],
     "project": "DTU.tiled-project",
     "recentFiles": [
+        "the_club/the_club.tmx",
         "tile_sets/stairs.tsx",
         "tile_sets/slabs.tsx",
         "tile_sets/floors.tsx",
         "tile_sets/walls.tsx",
-        "the_club/the_club.tmx",
         "tile_sets/basic.tsx",
         "/home/lucas/Downloads/kenney_isometric-miniature-prototype/Samples/Tiled Sample/Sample.tmx",
         "basic.tsx",
