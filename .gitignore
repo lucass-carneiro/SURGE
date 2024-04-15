@@ -12,8 +12,8 @@ companion/src/__pycache__
 
 player/include/options.hpp
 
-modules/DTU
-modules/CMakeLists.txt
+modules/*
+!modules/demos/*
 
 compile_commands.json
 
