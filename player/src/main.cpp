@@ -17,7 +17,7 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-// Avoid using integrated graphics on NV hardware
+// Avoid using integrated graphics
 #ifdef SURGE_SYSTEM_Windows
 extern "C" {
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
@@ -26,17 +26,17 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 #endif
 
 auto main(int, char **) noexcept -> int {
+  // Avoid using integrated graphics on NV hardware. TODO: Set this for AMD hardware
+#ifdef SURGE_SYSTEM_Linux
+  setenv("__NV_PRIME_RENDER_OFFLOAD", "1", 0);
+  setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", 0);
+#endif
+
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("suge::main()");
 #endif
 
   using namespace surge;
-
-  // Avoid using integrated graphics on NV hardware
-#ifdef SURGE_SYSTEM_Linux
-  setenv("__NV_PRIME_RENDER_OFFLOAD", "1", 0);
-  setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", 0);
-#endif
 
   /*******************
    * Init allocators *
@@ -159,7 +159,7 @@ auto main(int, char **) noexcept -> int {
     renderer::clear(w_ccl);
 
     // Call module draw
-    mod_api->draw();
+    mod_api->draw(*window);
 
     // Present rendering
     glfwSwapBuffers(*window);

@@ -85,6 +85,20 @@ public:
       }
     }
   }
+
+  [[nodiscard]] inline auto size() const noexcept -> usize { return ids.size(); }
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  [[nodiscard]] inline auto get_ids() const noexcept -> const vector<GLuint> & { return ids; }
+
+  [[nodiscard]] inline auto get_handles() const noexcept -> const vector<GLuint64> & {
+    return handles;
+  }
+
+  [[nodiscard]] inline auto get_hashes() const noexcept -> const vector<XXH64_hash_t> & {
+    return name_hashes;
+  }
+#endif
 };
 
 } // namespace surge::atom::texture
