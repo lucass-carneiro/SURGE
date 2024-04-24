@@ -47,6 +47,10 @@ find_package(OpenGL REQUIRED)
 find_package(imgui REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
+find_package(tinyexr CONFIG REQUIRED)
+find_package(docopt CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection
@@ -138,6 +142,12 @@ endif()
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
+
+# -----------------------------------------
+#  Engine Tools
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tools)
 
 # -----------------------------------------
 #  Modules

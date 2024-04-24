@@ -11,6 +11,7 @@ void init() noexcept;
 
 auto malloc(usize size) noexcept -> void *;
 auto realloc(void *p, usize newsize) noexcept -> void *;
+auto calloc(usize count, usize size) noexcept -> void *;
 void free(void *p) noexcept;
 
 struct fnm_allocator {

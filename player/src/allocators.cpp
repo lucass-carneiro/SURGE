@@ -42,6 +42,22 @@ auto surge::allocators::mimalloc::realloc(void *p, usize newsize) noexcept -> vo
   return q;
 }
 
+auto surge::allocators::mimalloc::calloc(usize count, usize size) noexcept -> void * {
+  auto p{mi_calloc(count, size)};
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: alloc\n"
+            "allocator: \"mimalloc::calloc\"\n"
+            "size: %zu\n"
+            "count: %zu\n"
+            "address: %p\n"
+            "failed: %s",
+            size, count, p, p ? "false" : "true");
+#endif
+  return p;
+}
+
 void surge::allocators::mimalloc::free(void *p) noexcept {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
