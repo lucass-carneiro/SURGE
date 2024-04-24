@@ -72,6 +72,7 @@ endif()
 
 option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
+option(SURGE_LOG_GL_NOTIFICATIONS "Produce log outputs on GL_DEBUG_SEVERITY_NOTIFICATION events" ON)
 
 # -----------------------------------------
 # Compilation flag options

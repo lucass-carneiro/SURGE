@@ -25,9 +25,13 @@ void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsiz
                                   const GLchar *message, const void *) {
 
   if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+#ifdef SURGE_LOG_GL_NOTIFICATIONS
     log_info("OpenGL info: %s", message);
-  } else if (severity == GL_DEBUG_SEVERITY_LOW || GL_DEBUG_SEVERITY_MEDIUM) {
-    log_warn("OpenGL warning: %s", message);
+#endif
+  } else if (severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_LOW_ARB) {
+    log_warn("OpenGL low severity warning: %s", message);
+  } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_MEDIUM_ARB) {
+    log_warn("OpenGL medium severity warning: %s", message);
   } else {
     log_error("OpenGL error: %s", message);
   }
