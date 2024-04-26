@@ -1,10 +1,16 @@
-#include "tinyexr.hpp"
+// clang-format off
+#include "depth_data_file.hpp"
+
+#include <OpenEXR/ImfArray.h>
+#include <OpenEXR/ImfRgbaFile.h>
 
 #include <docopt/docopt.h>
-#include <exception>
 #include <fmt/core.h>
 
-// clang-format off
+#include <exception>
+#include <vector>
+#include <cstdio>
+
 static const auto usage_string{
     R"(SURGE Map Maker.
 
@@ -20,28 +26,56 @@ static const auto usage_string{
 // clang-format on
 
 // NOLINTNEXTLINE
-static void extract_depth(const std::string &input, const std::string &) {
+static void extract_depth(const std::string &input, const std::string &output) {
   fmt::println("Extracting depth data from {}", input);
 
-  float *out{nullptr}; // width * height * RGBA
-  int width{0};
-  int height{0};
-  const char *err{nullptr};
+  Imf::RgbaInputFile file(input.c_str());
 
-  const auto result{LoadEXR(&out, &width, &height, input.c_str(), &err)};
+  const auto dw{file.dataWindow()};
+  const auto width{dw.max.x - dw.min.x + 1};
+  const auto height{dw.max.y - dw.min.y + 1};
 
-  if (result != TINYEXR_SUCCESS) {
-    if (err) {
-      fmt::println("TinyEXR error: {}", err);
-      FreeEXRErrorMessage(err); // release memory of error message.
+  Imf::Array2D<Imf::Rgba> pixels;
+  pixels.resizeErase(height, width);
+
+  file.setFrameBuffer(&pixels[0][0] - dw.min.x - dw.min.y * width, 1,
+                      static_cast<std::size_t>(width));
+  file.readPixels(dw.min.y, dw.max.y);
+
+  fmt::println("Repacking depth data");
+  const auto u_width{static_cast<std::uint32_t>(width)};
+  const auto u_height{static_cast<std::uint32_t>(height)};
+
+  const auto s_width{static_cast<std::size_t>(width)};
+  const auto s_height{static_cast<std::size_t>(height)};
+  const std::size_t total_size{s_width * s_height};
+
+  std::vector<float> data;
+  data.reserve(total_size);
+
+  for (std::uint32_t y = 0; y < u_height; y++) {
+    for (std::uint32_t x = 0; x < u_width; x++) {
+      const auto color{float{pixels[static_cast<long>(y)][static_cast<long>(x)].r}};
+      const auto alpha{float{pixels[static_cast<long>(y)][static_cast<long>(x)].a}};
+      const auto final_value{color * alpha};
+      const auto I{s_width * y + x};
+      data[I] = final_value;
     }
   }
 
-  fmt::println("{} read sucesfully. Dimensions: {}x{}", input, width, height);
-  fmt::println("{:.16f}", out[0]);
-  fmt::println("{:.16f}", out[1]);
+  fmt::println("Saving repacked data");
 
-  free(out); // NOLINT
+  using std::fopen, std::fwrite, std::fclose;
+
+  auto out_file{fopen(output.c_str(), "wb")};
+
+  fwrite(surge::files::depth_file::header, surge::files::depth_file::header_size, 1, out_file);
+  fwrite(&u_width, sizeof(u_width), 1, out_file);
+  fwrite(&u_height, sizeof(u_height), 1, out_file);
+  fwrite(&total_size, sizeof(total_size), 1, out_file);
+  fwrite(data.data(), sizeof(float), total_size, out_file);
+
+  fclose(out_file);
 }
 
 auto main(int argc, const char **argv) noexcept -> int {

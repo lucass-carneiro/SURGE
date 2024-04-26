@@ -15,21 +15,20 @@ project(
 # -----------------------------------------
 
 set(
-  SURGE_TOOL_MAP_MAKER_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/src/tinyexr.hpp"
+  SURGE_TOOL_MAP_MAKER_INCLUDE_LIST
+  "${PROJECT_SOURCE_DIR}/src/depth_data_file.hpp"
 )
 
 set(
   SURGE_TOOL_MAP_MAKER_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/main.cpp"
-  "${PROJECT_SOURCE_DIR}/src/tinyexr.cpp"
 )
 
 # -----------------------------------------
 # Module Target
 # -----------------------------------------
 
-add_executable(SurgeMapMaker ${SURGE_TOOL_MAP_MAKER_HEADER_LIST} ${SURGE_TOOL_MAP_MAKER_SOURCE_LIST})
+add_executable(SurgeMapMaker ${SURGE_TOOL_MAP_MAKER_INCLUDE_LIST} ${SURGE_TOOL_MAP_MAKER_SOURCE_LIST})
 target_compile_features(SurgeMapMaker PRIVATE cxx_std_20)
 set_target_properties(SurgeMapMaker PROPERTIES OUTPUT_NAME "map_maker")
 
@@ -177,8 +176,7 @@ endif()
 # Link and build order dependencies
 # -----------------------------------------
 target_link_libraries(SurgeMapMaker PRIVATE
-  unofficial::tinyexr::tinyexr
+  OpenEXR::OpenEXR
   docopt
   fmt::fmt
-  ZLIB::ZLIB
 )
