@@ -19,5 +19,11 @@ void main() {
   const vec4 texture_color = texture(texture_sampler, fs_in.uv_coords);
   const vec4 alpha_mod = vec4(1.0, 1.0, 1.0, alphas[fs_in.instance_ID]);
 
+  const vec4 final_color = texture_color * alpha_mod;
+
+  if (final_color.a < 0.1) {
+    discard;
+  }
+
   fragment_color = texture_color * alpha_mod;
 }
