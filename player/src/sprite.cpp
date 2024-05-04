@@ -100,6 +100,15 @@ void surge::atom::sprite::database::reset() noexcept {
   alphas.reset();
 }
 
+void surge::atom::sprite::database::reinit() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::reinit()");
+#endif
+  texture_handles.reinit();
+  models.reinit();
+  alphas.reinit();
+}
+
 void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::draw");
@@ -118,9 +127,9 @@ void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                             gsl::narrow_cast<GLsizei>(models.size()));
 
-    texture_handles.lock();
-    alphas.lock();
-    models.lock();
+    texture_handles.lock_write_buffer();
+    alphas.lock_write_buffer();
+    models.lock_write_buffer();
   }
 }
 

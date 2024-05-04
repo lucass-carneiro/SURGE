@@ -423,7 +423,7 @@ void surge::atom::text::text_buffer::draw(const GLuint &sp, const glm::vec4 &col
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
                             gsl::narrow_cast<GLsizei>(texture_handles.size()));
 
-    models.lock();
-    texture_handles.lock();
+    models.lock_write_buffer();
+    texture_handles.lock_write_buffer();
   }
 }

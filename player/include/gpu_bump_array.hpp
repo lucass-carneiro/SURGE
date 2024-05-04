@@ -40,20 +40,20 @@ private:
 
   usize write_buffer{0};
 
-  std::array<GLuint, redundancy> IDs{0, 0, 0};
-  std::array<T *, redundancy> buffers{nullptr, nullptr, nullptr};
-  std::array<GLsync, redundancy> syncs{nullptr, nullptr, nullptr};
+  std::array<GLuint, redundancy> IDs{};
+  std::array<T *, redundancy> buffers{};
+  std::array<GLsync, redundancy> syncs{};
 
 #ifdef SURGE_BUILD_TYPE_Debug
   const char *name{"GBA"};
 #endif
 
-  void wait_buffer() noexcept {
+  void wait_buffer(usize buffer_idx) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::wait_buffer");
     TracyGpuZone("GPU surge::gba::wait_buffer");
 #endif
-    auto &buffer_sync{syncs[write_buffer]};
+    auto &buffer_sync{syncs[buffer_idx]};
     if (buffer_sync != nullptr) {
       while (true) {
         const auto wait_res{glClientWaitSync(buffer_sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1)};
@@ -74,6 +74,10 @@ public:
 #endif
 
     gba<T> gba{};
+
+    gba.IDs.fill(0);
+    gba.buffers.fill(nullptr);
+    gba.syncs.fill(nullptr);
 
     gba.capacity = cap;
 
@@ -127,7 +131,7 @@ public:
       return;
     }
 
-    wait_buffer();
+    wait_buffer(write_buffer);
 
     buffers[write_buffer][write_idx] = value;
     write_idx++;
@@ -143,10 +147,10 @@ public:
     glBindBufferRange(target, location, IDs[write_buffer], 0, buffer_size);
   }
 
-  void lock() noexcept {
+  void lock_write_buffer() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-    ZoneScopedN("surge::gba::lock");
-    TracyGpuZone("GPU surge::gba::lock");
+    ZoneScopedN("surge::gba::lock_write_buffer");
+    TracyGpuZone("GPU surge::gba::lock_write_buffer");
 #endif
     auto &buffer_sync{syncs[write_buffer]};
     if (buffer_sync == nullptr) {
@@ -158,7 +162,22 @@ public:
 
   void reset() noexcept { write_idx = 0; }
 
-  [[nodiscard]] auto size() -> usize { return write_idx; }
+  void reinit() noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+    ZoneScopedN("surge::gba::reinit");
+    TracyGpuZone("GPU surge::gba::reinit");
+#endif
+    for (usize i = 0; i < redundancy; i++) {
+      wait_buffer(i);
+    }
+    write_buffer = 0;
+    write_idx = 0;
+  }
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  [[nodiscard]] auto size() const noexcept -> usize { return write_idx; }
+  [[nodiscard]] auto get_write_buffer() const noexcept -> usize { return write_buffer; }
+#endif
 };
 
 } // namespace surge

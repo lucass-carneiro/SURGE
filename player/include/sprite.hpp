@@ -12,7 +12,11 @@
 namespace surge::atom::sprite {
 
 struct database {
+#ifdef SURGE_BUILD_TYPE_Debug
+public:
+#else
 private:
+#endif
   GLuint VBO{0};
   GLuint EBO{0};
   GLuint VAO{0};
@@ -26,7 +30,9 @@ public:
   void destroy() noexcept;
 
   void add(GLuint64 handle, glm::mat4 model, float alpha) noexcept;
+
   void reset() noexcept;
+  void reinit() noexcept;
 
   void draw(const GLuint &sp) noexcept;
 };
