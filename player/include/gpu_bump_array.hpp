@@ -124,17 +124,32 @@ public:
     ZoneScopedN("surge::gba::push");
 #endif
 
-    if (write_idx == capacity) {
 #ifdef SURGE_BUILD_TYPE_Debug
+    if (write_idx == capacity) {
       log_warn("Unable to add element to GBA %s: Capacity reached. Ignoring push request", name);
-#endif
       return;
     }
+#endif
 
     wait_buffer(write_buffer);
 
     buffers[write_buffer][write_idx] = value;
     write_idx++;
+  }
+
+  auto get_elm_ptr(usize idx) -> T * {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+    ZoneScopedN("surge::gba::get_elm_ptr");
+#endif
+
+#ifdef SURGE_BUILD_TYPE_Debug
+    if (idx >= size()) {
+      log_warn("Unable to edit element %lu in GBA %s:", idx, name);
+      return nullptr;
+    }
+#endif
+
+    return &(buffers[write_buffer][idx]);
   }
 
   void bind(GLenum target, GLuint location) noexcept {

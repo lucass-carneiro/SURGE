@@ -34,6 +34,8 @@ public:
   void reset() noexcept;
   void reinit() noexcept;
 
+  void translate(usize idx, const glm::vec3 &dir) noexcept;
+
   void draw(const GLuint &sp) noexcept;
 };
 

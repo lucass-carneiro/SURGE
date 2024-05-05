@@ -109,6 +109,23 @@ void surge::atom::sprite::database::reinit() noexcept {
   alphas.reinit();
 }
 
+void surge::atom::sprite::database::translate(usize idx, const glm::vec3 &dir) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::translate()");
+#endif
+
+  auto elm{models.get_elm_ptr(idx)};
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  if (!elm) {
+    log_warn("Unable to get element pointer for translating index %lu", idx);
+    return;
+  }
+#endif
+
+  *elm = glm::translate(*elm, dir);
+}
+
 void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::draw");
