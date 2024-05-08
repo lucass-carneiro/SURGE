@@ -91,6 +91,13 @@ void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float 
   alphas.push(alpha);
 }
 
+void surge::atom::sprite::database::add_depth(GLuint64 handle) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::add_depth");
+#endif
+  depth_texture_handle = handle;
+}
+
 void surge::atom::sprite::database::reset() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::reset()");
@@ -139,6 +146,9 @@ void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
     texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 5);
 
     glUseProgram(sp);
+
+    // TODO: This is temporary
+    glUniform1ui64ARB(6, depth_texture_handle);
 
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,

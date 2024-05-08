@@ -21,6 +21,9 @@ private:
   GLuint EBO{0};
   GLuint VAO{0};
 
+  // TODO: This is temporary
+  GLuint64 depth_texture_handle{};
+
   gba<GLuint64> texture_handles{};
   gba<glm::mat4> models{};
   gba<float> alphas{};
@@ -30,6 +33,9 @@ public:
   void destroy() noexcept;
 
   void add(GLuint64 handle, glm::mat4 model, float alpha) noexcept;
+
+  // TODO: This is temporary
+  void add_depth(GLuint64 handle) noexcept;
 
   void reset() noexcept;
   void reinit() noexcept;
