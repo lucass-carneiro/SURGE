@@ -244,4 +244,5 @@ target_link_libraries(SurgePlayer PUBLIC
   imgui::imgui
   Freetype::Freetype
   xxHash::xxhash
+  OpenEXR::OpenEXR
 )

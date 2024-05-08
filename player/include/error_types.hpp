@@ -26,9 +26,10 @@ enum error : int {
   texture_handle_creation,
 
   // Static Image errors
-  static_image_load_error,
-  static_image_stbi_error,
-  static_image_shader_creation,
+  image_load_error,
+  image_stbi_error,
+  image_shader_creation,
+  openEXR_exception,
 
   // Text errors
   freetype_init,

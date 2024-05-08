@@ -54,16 +54,86 @@ auto surge::atom::texture::from_image(const create_info &ci, const files::image_
   // Loading and mip mapping
   const GLenum internal_format{img.channels == 4 ? GLenum{GL_RGBA8} : GLenum{GL_RGB8}};
   const GLenum format{img.channels == 4 ? GLenum{GL_RGBA} : GLenum{GL_RGB}};
+  const auto type{GL_UNSIGNED_BYTE};
 
   glTextureStorage2D(texture, ci.mipmap_levels, internal_format, img.width, img.height);
-  glTextureSubImage2D(texture, 0, 0, 0, img.width, img.height, format, GL_UNSIGNED_BYTE,
-                      img.pixels);
+  glTextureSubImage2D(texture, 0, 0, 0, img.width, img.height, format, type, img.pixels);
 
   glGenerateTextureMipmap(texture);
 
   const auto handle{glGetTextureHandleARB(texture)};
   if (handle == 0) {
     log_error("Unable to create texture handle");
+    return tl::unexpected{error::texture_handle_creation};
+  }
+
+  if (ci.make_resident) {
+    make_resident(handle);
+  }
+
+  return create_data{texture, handle, XXH64(img.file_name, strlen(img.file_name), hash_seed)};
+}
+
+auto surge::atom::texture::from_openEXR(const create_info &ci,
+                                        const files::openEXR_image_data &img) noexcept -> create_t {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::texture::from_openEXR");
+  TracyGpuZone("GPU surge::atom::texture::from_openEXR");
+#endif
+
+  using std::strlen;
+
+  log_info("Creating OpenGL texture from OpenEXR image %s", img.file_name);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  GLuint texture{0};
+  glCreateTextures(GL_TEXTURE_2D, 1, &texture);
+
+  // Warpping
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_S, gsl::narrow_cast<GLint>(ci.wrap));
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_T, gsl::narrow_cast<GLint>(ci.wrap));
+
+  // Filtering
+  switch (ci.filtering) {
+  case renderer::texture_filtering::nearest:
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    break;
+
+  case renderer::texture_filtering::linear:
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    break;
+
+  case renderer::texture_filtering::anisotropic: {
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GLfloat max_aniso{0};
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_aniso);
+    glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_aniso);
+    break;
+  }
+
+  default:
+    break;
+  }
+
+  // Loading and mip mapping
+  const auto internal_format{GL_RGBA16F};
+  const auto format{GL_RGBA};
+  const auto type{GL_HALF_FLOAT};
+
+  glTextureStorage2D(texture, ci.mipmap_levels, internal_format, img.width, img.height);
+  glTextureSubImage2D(texture, 0, 0, 0, img.width, img.height, format, type, img.pixels);
+
+  glGenerateTextureMipmap(texture);
+
+  const auto handle{glGetTextureHandleARB(texture)};
+  if (handle == 0) {
+    log_error("Unable to create texture handle");
+    log_error("%i %i %i", img.width, img.height, ci.mipmap_levels);
     return tl::unexpected{error::texture_handle_creation};
   }
 
@@ -144,4 +214,25 @@ void surge::atom::texture::database::reset() noexcept {
   ids.clear();
   handles.clear();
   name_hashes.clear();
+}
+
+void surge::atom::texture::database::add_openEXR(const create_info &ci, const char *path) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::texture::database::add_openEXR");
+  TracyGpuZone("GPU surge::atom::texture::database::add_openEXR");
+#endif
+
+  auto img{files::load_openEXR(path)};
+
+  if (img) {
+    const auto texture_data{from_openEXR(ci, *img)};
+    if (texture_data) {
+      ids.push_back(texture_data->id);
+      handles.push_back(texture_data->handle);
+      name_hashes.push_back(texture_data->name_hash);
+    } else {
+      log_error("Unable to create texture from %s", img->file_name);
+    }
+    files::free_openEXR(*img);
+  }
 }

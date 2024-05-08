@@ -25,13 +25,24 @@ struct image_data {
   const char *file_name;
 };
 
+struct openEXR_image_data {
+  int width;
+  int height;
+  void *pixels;
+  const char *file_name;
+};
+
 using image = tl::expected<image_data, error>;
+using openEXR_image = tl::expected<openEXR_image_data, error>;
 using img_future = std::future<image>;
 
 auto load_image(const char *path, bool flip = true) noexcept -> image;
 auto load_image_task(const char *path, bool flip = true) noexcept -> img_future;
 void free_image(image_data &) noexcept;
 void free_image_task(image_data &) noexcept;
+
+auto load_openEXR(const char *path) noexcept -> openEXR_image;
+void free_openEXR(openEXR_image_data &data) noexcept;
 
 } // namespace surge::files
 

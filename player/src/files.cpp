@@ -18,6 +18,9 @@
 #define STBI_REALLOC(p,newsz)     surge::allocators::mimalloc::realloc(p,newsz)
 #define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
 #include <stb_image.h>
+
+#include <OpenEXR/ImfRgbaFile.h>
+#include <Imath/ImathBox.h>
 // clang-format on
 
 #include <cstring>
@@ -100,6 +103,10 @@ auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexce
 #endif
 
 auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -> file {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::files::load_file");
+#endif
+
   try {
     log_info("Loading raw data for file %s. Appending null byte: %s", path,
              append_null_byte ? "true" : "false");
@@ -131,7 +138,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
 
 auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::atom::static_image::load_image");
+  ZoneScopedN("surge::files::load_image");
 #endif
 
   log_info("Loading image file %s", p);
@@ -139,7 +146,7 @@ auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
   auto file{load_file(p, false)};
   if (!file) {
     log_error("Unable to load image file %s", p);
-    return tl::unexpected(surge::error::static_image_load_error);
+    return tl::unexpected(surge::error::image_load_error);
   }
 
   int iw{0}, ih{0}, channels_in_file{0};
@@ -158,10 +165,47 @@ auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
 
   if (pixels == nullptr) {
     log_error("Unable to load image file %s due to stbi error: %s", p, stbi_failure_reason());
-    return tl::unexpected(surge::error::static_image_stbi_error);
+    return tl::unexpected(surge::error::image_stbi_error);
   }
 
   return image_data{iw, ih, channels_in_file, pixels, p};
+}
+
+auto surge::files::load_openEXR(const char *p) noexcept -> openEXR_image {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::files::load_openEXR");
+#endif
+
+  log_info("Loading OpenEXR image file %s", p);
+
+  // TODO: Try to use a lower level API for reading these files.
+  try {
+    Imf::RgbaInputFile in(p);
+
+    Imath::Box2i win = in.dataWindow();
+    Imath::V2i dim(win.max.x - win.min.x + 1, win.max.y - win.min.y + 1);
+
+    auto pixel_buffer{allocators::mimalloc::malloc(sizeof(Imf::Rgba) * static_cast<usize>(dim.x)
+                                                   * static_cast<usize>(dim.y))};
+
+    int dx = win.min.x;
+    int dy = win.min.y;
+
+    // NOLINTNEXTLINE
+    in.setFrameBuffer(static_cast<Imf::Rgba *>(pixel_buffer) - dx - dy * dim.x, 1,
+                      static_cast<usize>(dim.x));
+    in.readPixels(win.min.y, win.max.y);
+
+    return openEXR_image_data{dim.x, dim.y, pixel_buffer, p};
+
+  } catch (std::exception &e) {
+    log_error("Unable to load %s: %s", p, e.what());
+    return tl::unexpected{error::openEXR_exception};
+  }
+}
+
+void surge::files::free_openEXR(openEXR_image_data &data) noexcept {
+  allocators::mimalloc::free(data.pixels);
 }
 
 void surge::files::free_image(image_data &image) noexcept { stbi_image_free(image.pixels); }

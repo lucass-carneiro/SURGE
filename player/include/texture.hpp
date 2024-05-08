@@ -33,6 +33,7 @@ struct create_data {
 
 using create_t = tl::expected<create_data, error>;
 auto from_image(const create_info &ci, const files::image_data &img) noexcept -> create_t;
+auto from_openEXR(const create_info &ci, const files::openEXR_image_data &img) noexcept -> create_t;
 void destroy(create_data &cd) noexcept;
 void destroy(GLuint id, GLuint64 handle) noexcept;
 
@@ -51,6 +52,8 @@ public:
   [[nodiscard]] auto find(const char *file_name) const noexcept -> std::optional<GLuint64>;
 
   void reset() noexcept;
+
+  void add_openEXR(const create_info &ci, const char *path) noexcept;
 
   void add(const create_info &ci, std::convertible_to<std::string_view> auto &&...paths) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
