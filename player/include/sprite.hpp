@@ -41,6 +41,7 @@ public:
   void reinit() noexcept;
 
   void translate(usize idx, const glm::vec3 &dir) noexcept;
+  auto get_pos(usize idx) noexcept -> glm::vec3;
 
   void draw(const GLuint &sp) noexcept;
 };

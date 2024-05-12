@@ -133,6 +133,23 @@ void surge::atom::sprite::database::translate(usize idx, const glm::vec3 &dir) n
   *elm = glm::translate(*elm, dir);
 }
 
+auto surge::atom::sprite::database::get_pos(usize idx) noexcept -> glm::vec3 {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::get_pos()");
+#endif
+
+  auto elm{models.get_elm_ptr(idx)};
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  if (!elm) {
+    log_warn("Unable to get element pointer for recovering the position index %lu", idx);
+    return glm::vec3{0.0f};
+  }
+#endif
+
+  return glm::vec3{(*elm)[3][0], (*elm)[3][1], (*elm)[3][2]};
+}
+
 void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::draw");
