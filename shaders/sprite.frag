@@ -24,9 +24,11 @@ void main() {
 
   const vec4 final_color = texture_color * alpha_mod;
 
-  // if (final_color.a < 0.1) {
-  //   discard;
-  // }
+  // TODO: Kepp alpha blending disabled? This means semi-transparency is off the table.
+  // The code below handles "full" transparency, i.e., either discard or keep transparency
+  if (final_color.a < 0.1) {
+    discard;
+  }
 
   fragment_color = texture_color * alpha_mod;
 
