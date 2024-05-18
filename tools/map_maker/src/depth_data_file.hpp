@@ -1,6 +1,7 @@
 #ifndef SURGE_DEPTH_DATA_FILE_HPP
 #define SURGE_DEPTH_DATA_FILE_HPP
 
+#include <cstddef>
 #include <cstdint>
 
 namespace surge::files {

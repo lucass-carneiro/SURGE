@@ -20,6 +20,7 @@
 #include <stb_image.h>
 
 #include <OpenEXR/ImfRgbaFile.h>
+#include <Imath/ImathVec.h>
 #include <Imath/ImathBox.h>
 // clang-format on
 

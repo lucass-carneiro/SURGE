@@ -42,6 +42,11 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeMapMaker PUBLIC /utf-8)
 endif()
 
+# Disable min/max macros on msvc
+if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+    target_compile_options(SurgeMapMaker PUBLIC /D NOMINMAX)
+endif()
+
 target_include_directories(SurgeMapMaker PRIVATE ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include)
 
 # -----------------------------------------
