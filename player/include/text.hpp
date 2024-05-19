@@ -36,6 +36,7 @@ public:
   auto load_face(const char *path, const char *name, FT_F26Dot6 size_in_pts = 40,
                  FT_UInt resolution_dpi = 300) noexcept -> std::optional<error>;
 
+  [[nodiscard]] auto get_face(const char *name) noexcept -> std::optional<FT_Face>;
   [[nodiscard]] auto get_faces() noexcept -> hash_map<const char *, FT_Face> &;
 };
 

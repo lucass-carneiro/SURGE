@@ -1,177 +1,115 @@
-import sys
-import shutil
 import os
-import platform
-import subprocess
+import sys
+from enum import Enum
 
 
-def new(args, output_folder):
-    if os.path.exists(output_folder):
-        print("Unable to create staging directory because it already exists.")
+class Config(Enum):
+    DEBUG = 0
+    RELEASE = 1
+    PROFILE = 2
+    UNKNOWN = 3
+
+
+def parse_config(args):
+    config_name = args["<configuration>"]
+
+    if config_name.lower() == "debug":
+        return Config.DEBUG
+    elif config_name.lower() == "release":
+        return Config.RELEASE
+    elif config_name.lower() == "profile":
+        return Config.PROFILE
+    else:
+        print("Unknown configuration", config_name)
+        exit(1)
+
+
+def get_config_folder(config: Config):
+    if config == Config.DEBUG:
+        return "Debug"
+    elif config == Config.RELEASE:
+        return "Release"
+    elif config == Config.PROFILE:
+        return "Profile"
+
+
+def get_staging_folder(config: Config):
+    if config == Config.DEBUG:
+        return "staging-Debug"
+    elif config == Config.RELEASE:
+        return "staging-Release"
+    elif config == Config.PROFILE:
+        return "staging-Profile"
+
+
+def make_staging_folder(staging_folder, config_folder):
+    if os.path.exists(staging_folder):
+        print(f"Unable to create staging directory {staging_folder} because it already exists.")
         sys.exit(1)
 
-    configuration_folder = os.path.join(args["--prefix"], args["<configuration>"])
-    if not os.path.exists(configuration_folder):
-        print("Configuration", configuration_folder, "does not exist")
+    if not os.path.exists(config_folder):
+        print(f"Configuration folder {config_folder} does not exist")
         sys.exit(1)
 
-    os.mkdir(output_folder)
-
-    # Player
-    if platform.system() == "Windows":
-
-        # Because the way the Profile build is created on windows, this ugly hack is necessary
-        if (args["<configuration>"] == "Profile"):
-            src_player_path = os.path.join(configuration_folder, "player", "Release")
-        else:
-            src_player_path = os.path.join(configuration_folder, "player", args["<configuration>"])
-
-        dst_player_path = output_folder
-    else:
-        src_player_path = os.path.join(configuration_folder, "player", "surge")
-        dst_player_path = os.path.join(output_folder, "surge")
-
-    # Shaders
-    src_shaders_path = os.path.join(args["--prefix"], "shaders")
-    dst_shaders_path = os.path.join(output_folder, "shaders")
-    shutil.copytree(src_shaders_path, dst_shaders_path)
-
-    # On windows, copy all DLLs, .exe and other files
-    if platform.system() == "Windows":
-        for file in os.listdir(src_player_path):
-            src_file = os.path.join(src_player_path, file)
-            dst_file = os.path.join(dst_player_path, file)
-            shutil.copy2(src_file, dst_file)
-    else:
-        shutil.copy2(src_player_path, dst_player_path)
-
-    # Mimalloc injection
-    if platform.system() == "Windows":
-        wd = os.path.abspath(os.getcwd())
-
-        minject = os.path.abspath(os.path.join(args["--prefix"], "companion", "minject.exe"))
-
-        os.chdir(output_folder)
-
-        subprocess.run([
-            minject,
-            "--force",
-            "--inplace",
-            "surge.exe"
-        ])
-
-        os.chdir(wd)
-
-    print("Staging created")
+    os.mkdir(staging_folder)
 
 
-def delete(args, output_folder):
-    if os.path.exists(output_folder):
-        shutil.rmtree(output_folder)
-    else:
-        print("Unable to remove output directory",
-              output_folder, "because it does not exist")
-        sys.exit(1)
+def win_make_engine_links(cwd, staging_folder, config_folder):
+    shaders_src_folder = os.path.join(cwd, "shaders")
+    shaders_dst_folder = os.path.join(cwd, staging_folder, "shaders")
+
+    os.symlink(shaders_src_folder, shaders_dst_folder, True)
+
+    player_src_folder = os.path.join(cwd, config_folder, "player", config_folder)
+    player_dest_folder = os.path.join(cwd, staging_folder)
+
+    for file in os.listdir(player_src_folder):
+        _, file_ext = os.path.splitext(file)
+        if file_ext == ".dll" or file_ext == ".exe":
+            file_src = os.path.join(player_src_folder, file)
+            file_dst = os.path.join(player_dest_folder, file)
+            os.symlink(file_src, file_dst)
 
 
-def populate(args, output_folder):
-    if not os.path.exists(output_folder):
-        print("Unable to enter staging directory.")
-        sys.exit(1)
+def win_new_staging(args):
+    cwd = os.getcwd()
+    config = parse_config(args)
 
-    # Copy module. In windows, copy all DLLs
-    if platform.system() == "Windows":
-        if args["<configuration>"] == "Profile":
-            src_module_path = os.path.join(
-                args["--prefix"],
-                args["<configuration>"],
-                "modules", args["<module>"],
-                "Release")
-        else:
-            src_module_path = os.path.join(
-                args["--prefix"],
-                args["<configuration>"],
-                "modules", args["<module>"],
-                args["<configuration>"])
+    config_folder = get_config_folder(config)
+    staging_folder = get_staging_folder(config)
 
-        for file in os.listdir(src_module_path):
-            if file.endswith(".dll"):
-                src_file = os.path.join(src_module_path, file)
-                dst_file = os.path.join(output_folder, file)
-                shutil.copy2(src_file, dst_file)
-    else:
-        module_name = args["<module>"] + ".so"
-        src_module_path = os.path.join(
-            args["--prefix"],
-            args["<configuration>"],
-            "modules", args["<module>"],
-            module_name
-        )
-        shutil.copy2(src_module_path, os.path.join(
-            output_folder, module_name))
-
-    # Copy config
-    src_config_path = os.path.join(args["--prefix"], "modules", args["<module>"], "config.ini")
-    dst_config_path = os.path.join(output_folder, "config.ini")
-    shutil.copy2(src_config_path, dst_config_path)
-
-    # Copy resources folder if it exists
-    src_resources_path = os.path.join(args["--prefix"], "modules", args["<module>"], "resources")
-    dst_resources_path = os.path.join(output_folder, "resources")
-
-    if os.path.exists(src_resources_path):
-        shutil.copytree(src_resources_path, dst_resources_path)
-
-    print("Staging populated")
+    make_staging_folder(staging_folder, config_folder)
+    win_make_engine_links(cwd, staging_folder, config_folder)
 
 
-def update(args, output_folder):
+def win_populate(args):
+    cwd = os.getcwd()
+    config = parse_config(args)
+
     module_name = args["<module>"]
-    if platform.system() == "Windows":
-        module_name = module_name + ".dll"
-    else:
-        module_name = module_name + ".so"
+    module_dll = module_name + ".dll"
 
-    staged_module = os.path.join(output_folder, module_name)
-    origin_module = os.path.join(
-        args["--prefix"],
-        args["<configuration>"],
-        "modules", args["<module>"],
-        module_name)
+    config_folder = get_config_folder(config)
+    staging_folder = get_staging_folder(config)
+    module_folder = os.path.join(cwd, "modules", module_name)
 
-    if os.path.exists(staged_module):
-        staged_mtime = os.stat(staged_module).st_mtime
-        origin_mtime = os.stat(origin_module).st_mtime
-        if staged_mtime != origin_mtime:
-            shutil.copy2(origin_module, staged_module + ".new")
-    else:
-        print("Unable to update module because it was never populated")
-        sys.exit(1)
+    if not os.path.exists(module_folder):
+        print(f"The module folder {module_folder} does not exist")
+        exit(1)
 
+    resources_src_folder = os.path.join(module_folder, "resources")
+    resources_dst_folder = os.path.join(cwd, staging_folder, "resources")
 
-def run(output_folder):
-    if not os.path.exists(output_folder):
-        print("Unable to enter staging directory.")
-        sys.exit(1)
+    os.symlink(resources_src_folder, resources_dst_folder, True)
 
-    exec_name = os.path.join(".", "surge")
-    if platform.system() == "Windows":
-        exec_name = exec_name + ".exe"
+    module_src_folder = os.path.join(
+        cwd,
+        config_folder,
+        "modules",
+        module_name,
+        config_folder,
+        module_dll
+    )
+    module_dst_folder = os.path.join(cwd, staging_folder, module_dll)
 
-    os.chdir(output_folder)
-    subprocess.run([exec_name])
-
-
-def main(args, output_folder):
-    if args["new"]:
-        new(args, output_folder)
-    elif args["delete"]:
-        delete(args, output_folder)
-    elif args["populate"]:
-        populate(args, output_folder)
-    elif args["update"]:
-        update(args, output_folder)
-    elif args["run"]:
-        run(output_folder)
-
-    sys.exit(0)
+    os.symlink(module_src_folder, module_dst_folder)

@@ -102,6 +102,15 @@ auto surge::atom::text::text_engine::load_face(const char *path, const char *nam
   return {};
 }
 
+auto surge::atom::text::text_engine::get_face(const char *name) noexcept -> std::optional<FT_Face> {
+  if (faces.contains(name)) {
+    return faces[name];
+  } else {
+    log_warn("The text engine has no face named %s", name);
+    return {};
+  }
+}
+
 auto surge::atom::text::text_engine::get_faces() noexcept -> hash_map<const char *, FT_Face> & {
   return faces;
 }
@@ -111,6 +120,11 @@ auto surge::atom::text::glyph_cache::create(FT_Face face, language lang) noexcep
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::glyph_cache::create()");
 #endif
+  if (!face) {
+    log_error("Unable to create glyph cache: null font face passed");
+    return tl::unexpected{error::freetype_null_face};
+  }
+
   log_info("Creating glyph cache for %s", face->family_name);
 
   const auto status{FT_Select_Charmap(face, FT_ENCODING_UNICODE)};

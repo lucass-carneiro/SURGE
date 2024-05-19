@@ -39,6 +39,7 @@ enum error : int {
   freetype_set_face_size,
   freetype_character_load,
   freetype_charmap,
+  freetype_null_face,
 
   // Window errors
   glfw_init,
