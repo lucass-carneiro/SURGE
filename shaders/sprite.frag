@@ -21,8 +21,7 @@ void main() {
 
   const vec4 final_color = texture_color * alpha_mod;
 
-  // Alpha blending is disabled
-  if (final_color.a < 1.0) {
+  if (final_color.a < 0.1) {
     discard;
   } else {
     fragment_color = texture_color * alpha_mod;

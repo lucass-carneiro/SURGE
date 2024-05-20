@@ -14,7 +14,7 @@ void main() {
   const vec4 texture_color = texture(texture_sampler, fs_in.uv_coords);
 
   // Alpha blending is disabled.
-  if (texture_color.a < 1.0) {
+  if (texture_color.a < 0.1) {
     discard;
   } else {
     fragment_color = texture_color;
