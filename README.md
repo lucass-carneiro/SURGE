@@ -113,6 +113,11 @@ git submodule update --remote
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug -j20
 ```
+Most used build command
+
+```
+cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DSURGE_DEBUG_MEMORY=OFF -DSURGE_LOG_GL_NOTIFICATIONS=OFF
+```
 
 ## Example Debug Build On Windows
 

@@ -5,9 +5,6 @@
 layout(std430, binding = 4) readonly buffer ssbo2 { float alphas[]; };
 layout(std430, binding = 5) readonly buffer ssbo3 { sampler2D textures[]; };
 
-// TODO: This is temporary
-layout(bindless_sampler, location = 6) uniform sampler2D depth_sampler;
-
 in VS_OUT {
   vec2 uv_coords;
   flat int instance_ID;
@@ -24,18 +21,10 @@ void main() {
 
   const vec4 final_color = texture_color * alpha_mod;
 
-  // TODO: Kepp alpha blending disabled? This means semi-transparency is off the table.
-  // The code below handles "full" transparency, i.e., either discard or keep transparency
-  if (final_color.a < 0.1) {
+  // Alpha blending is disabled
+  if (final_color.a < 1.0) {
     discard;
-  }
-
-  fragment_color = texture_color * alpha_mod;
-
-  // TODO: This is temporary
-  if (fs_in.instance_ID == 0) {
-    gl_FragDepth = texture(depth_sampler, fs_in.uv_coords).r;
   } else {
-    gl_FragDepth = gl_FragCoord.z;
+    fragment_color = texture_color * alpha_mod;
   }
 }

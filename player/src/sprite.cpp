@@ -1,6 +1,7 @@
 #include "sprite.hpp"
 
 #include "logging.hpp"
+#include "renderer.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -11,7 +12,8 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
-auto surge::atom::sprite::database::create(usize max_sprites) noexcept -> database {
+auto surge::atom::sprite::database::create(usize max_sprites) noexcept
+    -> tl::expected<database, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::create");
   TracyGpuZone("GPU surge::atom::sprite::database::create");
@@ -19,6 +21,27 @@ auto surge::atom::sprite::database::create(usize max_sprites) noexcept -> databa
   log_info("Creating sprite database");
 
   database db;
+
+  /*******************
+   * Compile shaders *
+   *******************/
+
+  const auto sprite_shader{
+      renderer::create_shader_program("shaders/sprite.vert", "shaders/sprite.frag")};
+  if (!sprite_shader) {
+    log_error("Unable to create sprite shader");
+    return tl::unexpected{sprite_shader.error()};
+  }
+
+  const auto deep_sprite_shader{
+      renderer::create_shader_program("shaders/deep_sprite.vert", "shaders/deep_sprite.frag")};
+  if (!deep_sprite_shader) {
+    log_error("Unable to create deep sprite shader");
+    return tl::unexpected{deep_sprite_shader.error()};
+  }
+
+  db.sprite_shader = *sprite_shader;
+  db.deep_sprite_shader = *deep_sprite_shader;
 
   /***************
    * Gen Buffers *
@@ -80,6 +103,9 @@ void surge::atom::sprite::database::destroy() noexcept {
   glDeleteBuffers(1, &(EBO));
   glDeleteBuffers(1, &(VBO));
   glDeleteVertexArrays(1, &(VAO));
+
+  renderer::destroy_shader_program(sprite_shader);
+  renderer::destroy_shader_program(deep_sprite_shader);
 }
 
 void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float alpha) noexcept {
@@ -91,17 +117,24 @@ void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float 
   alphas.push(alpha);
 }
 
-void surge::atom::sprite::database::add_depth(GLuint64 handle) noexcept {
+void surge::atom::sprite::database::add_depth(GLuint64 texture, GLuint64 depth_map,
+                                              glm::mat4 model) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::add_depth");
 #endif
-  depth_texture_handle = handle;
+  depth_texture_handle = texture;
+  depth_map_handle = depth_map;
+  depth_model = model;
 }
 
 void surge::atom::sprite::database::reset() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::reset()");
 #endif
+  depth_texture_handle = 0;
+  depth_map_handle = 0;
+  depth_model = glm::mat4{1.0f};
+
   texture_handles.reset();
   models.reset();
   alphas.reset();
@@ -111,6 +144,10 @@ void surge::atom::sprite::database::reinit() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::reinit()");
 #endif
+  depth_texture_handle = 0;
+  depth_map_handle = 0;
+  depth_model = glm::mat4{1.0f};
+
   texture_handles.reinit();
   models.reinit();
   alphas.reinit();
@@ -150,22 +187,20 @@ auto surge::atom::sprite::database::get_pos(usize idx) noexcept -> glm::vec3 {
   return glm::vec3{(*elm)[3][0], (*elm)[3][1], (*elm)[3][2]};
 }
 
-void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
+void surge::atom::sprite::database::draw() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::draw");
   TracyGpuZone("GPU surge::atom::sprite::database::draw");
 #endif
 
+  // Regular sprites
   if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
 
     models.bind(GL_SHADER_STORAGE_BUFFER, 3);
     alphas.bind(GL_SHADER_STORAGE_BUFFER, 4);
     texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 5);
 
-    glUseProgram(sp);
-
-    // TODO: This is temporary
-    glUniform1ui64ARB(6, depth_texture_handle);
+    glUseProgram(sprite_shader);
 
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
@@ -174,6 +209,18 @@ void surge::atom::sprite::database::draw(const GLuint &sp) noexcept {
     texture_handles.lock_write_buffer();
     alphas.lock_write_buffer();
     models.lock_write_buffer();
+  }
+
+  // Depth sprite
+  if (depth_texture_handle != 0 && depth_map_handle != 0) {
+    glUseProgram(deep_sprite_shader);
+
+    renderer::uniforms::set(3, depth_model);
+    renderer::uniforms::set(4, depth_texture_handle);
+    renderer::uniforms::set(5, depth_map_handle);
+
+    glBindVertexArray(VAO);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, 1);
   }
 }
 

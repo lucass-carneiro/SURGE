@@ -71,6 +71,9 @@ void set(GLuint program_handle, const char *uniform_name, const glm::fvec4 *valu
 void set(GLuint program_handle, const char *uniform_name, const glm::mat4 *values,
          usize size) noexcept;
 
+void set(GLint location, const GLuint64 &value) noexcept;
+void set(GLint location, const glm::mat4 &value) noexcept;
+
 } // namespace uniforms
 
 } // namespace surge::renderer
