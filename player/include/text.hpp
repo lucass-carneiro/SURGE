@@ -27,17 +27,17 @@ namespace surge::atom::text {
 struct text_engine {
 private:
   FT_Library ft_library{nullptr};
-  hash_map<const char *, FT_Face> faces{};
+  hash_map<std::string_view, FT_Face> faces{};
 
 public:
   static auto create() noexcept -> tl::expected<text_engine, error>;
   void destroy() noexcept;
 
-  auto load_face(const char *path, const char *name, FT_F26Dot6 size_in_pts = 40,
+  auto load_face(const char *path, std::string_view, FT_F26Dot6 size_in_pts = 40,
                  FT_UInt resolution_dpi = 300) noexcept -> std::optional<error>;
 
-  [[nodiscard]] auto get_face(const char *name) noexcept -> std::optional<FT_Face>;
-  [[nodiscard]] auto get_faces() noexcept -> hash_map<const char *, FT_Face> &;
+  [[nodiscard]] auto get_face(std::string_view name) noexcept -> std::optional<FT_Face>;
+  [[nodiscard]] auto get_faces() noexcept -> hash_map<std::string_view, FT_Face> &;
 };
 
 enum language { english };

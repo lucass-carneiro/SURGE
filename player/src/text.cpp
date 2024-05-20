@@ -73,7 +73,7 @@ void surge::atom::text::text_engine::destroy() noexcept {
   }
 }
 
-auto surge::atom::text::text_engine::load_face(const char *path, const char *name,
+auto surge::atom::text::text_engine::load_face(const char *path, std::string_view name,
                                                FT_F26Dot6 size_in_pts,
                                                FT_UInt resolution_dpi) noexcept
     -> std::optional<error> {
@@ -102,16 +102,17 @@ auto surge::atom::text::text_engine::load_face(const char *path, const char *nam
   return {};
 }
 
-auto surge::atom::text::text_engine::get_face(const char *name) noexcept -> std::optional<FT_Face> {
+auto surge::atom::text::text_engine::get_face(std::string_view name) noexcept
+    -> std::optional<FT_Face> {
   if (faces.contains(name)) {
     return faces[name];
   } else {
-    log_warn("The text engine has no face named %s", name);
+    log_warn("The text engine has no face named %s", name.data());
     return {};
   }
 }
 
-auto surge::atom::text::text_engine::get_faces() noexcept -> hash_map<const char *, FT_Face> & {
+auto surge::atom::text::text_engine::get_faces() noexcept -> hash_map<std::string_view, FT_Face> & {
   return faces;
 }
 
