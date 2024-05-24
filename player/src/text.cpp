@@ -80,7 +80,7 @@ auto surge::atom::text::text_engine::load_face(const char *path, std::string_vie
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::text_engine::load_face()");
 #endif
-  log_info("Loading face %s with name %s", path, name);
+  log_info("Loading face %s with name %s", path, name.data());
 
   FT_Face face{};
   auto status{FT_New_Face(ft_library, path, 0, &face)};
