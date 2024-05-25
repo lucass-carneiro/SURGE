@@ -76,6 +76,8 @@ public:
 
 struct text_buffer {
 private:
+  GLuint text_shader{0};
+
   GLuint VBO{0};
   GLuint EBO{0};
   GLuint VAO{0};
@@ -84,14 +86,14 @@ private:
   gba<GLuint64> texture_handles{};
 
 public:
-  static auto create(usize max_chars) noexcept -> text_buffer;
+  static auto create(usize max_chars) noexcept -> tl::expected<text_buffer, error>;
   void destroy() noexcept;
 
   void push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
             std::string_view text) noexcept;
   void reset() noexcept;
 
-  void draw(const GLuint &sp, const glm::vec4 &color) noexcept;
+  void draw(const glm::vec4 &color) noexcept;
 };
 
 } // namespace surge::atom::text

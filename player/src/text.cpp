@@ -299,7 +299,8 @@ auto surge::atom::text::glyph_cache::get_advances() const noexcept
   return advances;
 }
 
-auto surge::atom::text::text_buffer::create(usize max_chars) noexcept -> text_buffer {
+auto surge::atom::text::text_buffer::create(usize max_chars) noexcept
+    -> tl::expected<text_buffer, error> {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::text_buffer::create()");
   TracyGpuZone("GPU surge::atom::text::text_buffer::create()");
@@ -307,11 +308,20 @@ auto surge::atom::text::text_buffer::create(usize max_chars) noexcept -> text_bu
 
   text_buffer tb{};
 
+  /******************
+   * Compile shader *
+   ******************/
+  const auto text_shader{renderer::create_shader_program("shaders/text.vert", "shaders/text.frag")};
+  if (!text_shader) {
+    log_error("Unable to create text shader");
+    return tl::unexpected{text_shader.error()};
+  }
+
+  tb.text_shader = *text_shader;
+
   /***************
    * Gen Buffers *
    ***************/
-  log_info("Creating text buffers");
-
   glGenBuffers(1, &tb.VBO);
   glGenBuffers(1, &tb.EBO);
   glGenVertexArrays(1, &tb.VAO);
@@ -319,8 +329,6 @@ auto surge::atom::text::text_buffer::create(usize max_chars) noexcept -> text_bu
   /***************
    * Create quad *
    ***************/
-  log_info("Creating text base quad");
-
   const std::array<float, 20> vertex_attributes{
       0.0f, 1.0f, 0.0f, 0.0f, 1.0f, // bottom left
       1.0f, 1.0f, 0.0f, 1.0f, 1.0f, // bottom right
@@ -368,6 +376,8 @@ void surge::atom::text::text_buffer::destroy() noexcept {
   glDeleteBuffers(1, &(EBO));
   glDeleteBuffers(1, &(VBO));
   glDeleteVertexArrays(1, &(VAO));
+
+  renderer::destroy_shader_program(text_shader);
 }
 
 void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
@@ -419,20 +429,19 @@ void surge::atom::text::text_buffer::reset() noexcept {
   texture_handles.reset();
 }
 
-void surge::atom::text::text_buffer::draw(const GLuint &sp, const glm::vec4 &color) noexcept {
+void surge::atom::text::text_buffer::draw(const glm::vec4 &color) noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::text::text_buffer::draw");
   TracyGpuZone("GPU surge::atom::text::text_buffer::draw");
 #endif
 
-  if (texture_handles.size() != 0 && texture_handles.size() != 0) {
-
+  if (texture_handles.size() != 0 && models.size() != 0) {
     models.bind(GL_SHADER_STORAGE_BUFFER, 3);
     texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 4);
 
-    glUseProgram(sp);
+    glUseProgram(text_shader);
 
-    renderer::uniforms::set(sp, "color", color);
+    renderer::uniforms::set(text_shader, "color", color);
 
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
