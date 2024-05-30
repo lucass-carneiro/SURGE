@@ -89,8 +89,8 @@ public:
   static auto create(usize max_chars) noexcept -> tl::expected<text_buffer, error>;
   void destroy() noexcept;
 
-  void push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
-            std::string_view text) noexcept;
+  auto push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
+            std::string_view text) noexcept -> glm::vec2;
   void reset() noexcept;
 
   void draw(const glm::vec4 &color) noexcept;

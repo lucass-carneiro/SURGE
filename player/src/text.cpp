@@ -163,6 +163,13 @@ auto surge::atom::text::glyph_cache::create(FT_Face face, language lang) noexcep
     if (load_err) {
       return tl::unexpected{load_err.value()};
     }
+
+    // Replacement character �
+    load_err = cache.load_nonprintable_character(face, 0x0000FFFD);
+    if (load_err) {
+      return tl::unexpected{load_err.value()};
+    }
+
     break;
   }
 
@@ -380,17 +387,20 @@ void surge::atom::text::text_buffer::destroy() noexcept {
   renderer::destroy_shader_program(text_shader);
 }
 
-void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
-                                          glyph_cache &cache, std::string_view text) noexcept {
-  auto pen_origin{baseline_origin};
+auto surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
+                                          glyph_cache &cache, std::string_view text) noexcept
+    -> glm::vec2 {
 
-  // TODO: Iterate over UTF-8 codepoints
+  auto pen_origin{baseline_origin};
+  glm::vec2 bounding_box_dims{0.0f};
+
+  // TODO: Iterate over UTF-32 codepoints
   for (const auto &c : text) {
     auto cdpnt{static_cast<FT_ULong>(c)};
 
     // Unrecognized character
     if (!cache.get_texture_handles().contains(cdpnt)) {
-      cdpnt = 0x0000003f;
+      cdpnt = 0x0000FFFD;
     }
 
     const auto &texture_handle{cache.get_texture_handles().at(cdpnt)};
@@ -400,12 +410,12 @@ void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
 
     // \n
     if (cdpnt == 0x0000000a) {
+      const auto y_advance{static_cast<float>(advance[1] >> 6) * scale[1]};
       pen_origin[0] = baseline_origin[0];
-      pen_origin[1] += static_cast<float>(advance[1] >> 6) * scale[1];
+      pen_origin[1] += y_advance;
+      bounding_box_dims[1] += y_advance;
       continue;
     }
-
-    // TODO: Handle unknown character
 
     // Printable characters
     const auto glyph_origin{pen_origin
@@ -420,8 +430,12 @@ void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
     models.push(glyph_model);
     texture_handles.push(texture_handle);
 
-    pen_origin[0] += static_cast<float>(advance[0] >> 6) * scale[0];
+    const auto x_advance{static_cast<float>(advance[0] >> 6) * scale[0]};
+    pen_origin[0] += x_advance;
+    bounding_box_dims[0] += x_advance;
   }
+
+  return bounding_box_dims;
 }
 
 void surge::atom::text::text_buffer::reset() noexcept {
