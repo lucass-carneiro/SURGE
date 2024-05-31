@@ -387,12 +387,42 @@ void surge::atom::text::text_buffer::destroy() noexcept {
   renderer::destroy_shader_program(text_shader);
 }
 
-auto surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
-                                          glyph_cache &cache, std::string_view text) noexcept
-    -> glm::vec2 {
+auto surge::atom::text::text_buffer::get_bbox_size(glyph_cache &cache,
+                                                   std::string_view text) noexcept -> glm::vec2 {
+  float bb_w{0.0f};
+  float bb_h{0.0f};
+
+  // TODO: Iterate over UTF-32 codepoints
+  for (const auto &c : text) {
+    auto cdpnt{static_cast<FT_ULong>(c)};
+
+    // Unrecognized character
+    if (!cache.get_texture_handles().contains(cdpnt)) {
+      cdpnt = 0x0000FFFD;
+    }
+
+    const auto bitmap_dim{cache.get_bitmap_dims().at(cdpnt)};
+    const auto &advance{cache.get_advances().at(cdpnt)};
+
+    const auto glyph_w{static_cast<float>(advance[0] >> 6)};
+    const auto glyph_h{static_cast<float>(bitmap_dim[1])};
+
+    if (bb_w + glyph_w > bb_w) {
+      bb_w += glyph_w;
+    }
+
+    if (glyph_h > bb_h) {
+      bb_h = glyph_h;
+    }
+  }
+
+  return glm::vec2{bb_w, bb_h};
+}
+
+void surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
+                                          glyph_cache &cache, std::string_view text) noexcept {
 
   auto pen_origin{baseline_origin};
-  glm::vec2 bounding_box_dims{0.0f};
 
   // TODO: Iterate over UTF-32 codepoints
   for (const auto &c : text) {
@@ -410,10 +440,8 @@ auto surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
 
     // \n
     if (cdpnt == 0x0000000a) {
-      const auto y_advance{static_cast<float>(advance[1] >> 6) * scale[1]};
       pen_origin[0] = baseline_origin[0];
-      pen_origin[1] += y_advance;
-      bounding_box_dims[1] += y_advance;
+      pen_origin[1] += static_cast<float>(advance[1] >> 6) * scale[1];
       continue;
     }
 
@@ -430,12 +458,30 @@ auto surge::atom::text::text_buffer::push(const glm::vec3 &baseline_origin, cons
     models.push(glyph_model);
     texture_handles.push(texture_handle);
 
-    const auto x_advance{static_cast<float>(advance[0] >> 6) * scale[0]};
-    pen_origin[0] += x_advance;
-    bounding_box_dims[0] += x_advance;
+    pen_origin[0] += static_cast<float>(advance[0] >> 6) * scale[0];
+  }
+}
+
+void surge::atom::text::text_buffer::push_centered(const glm::vec3 &baseline_origin,
+                                                   float intended_scale,
+                                                   const glm::vec2 &region_dims, glyph_cache &cache,
+                                                   std::string_view text,
+                                                   float decrement_step) noexcept {
+
+  const auto bbox{get_bbox_size(cache, text)};
+
+  auto scale{intended_scale};
+  auto scaled_bbox{scale * bbox};
+
+  while (scaled_bbox[0] > region_dims[0]) {
+    scale -= decrement_step;
+    scaled_bbox = scale * bbox;
   }
 
-  return bounding_box_dims;
+  const glm::vec3 shift{(region_dims[0] - scaled_bbox[0]) / 2.0f,
+                        -(region_dims[1] - scaled_bbox[1]) / 2.0f, 0.0f};
+
+  push(baseline_origin + shift, glm::vec2{scale}, cache, text);
 }
 
 void surge::atom::text::text_buffer::reset() noexcept {

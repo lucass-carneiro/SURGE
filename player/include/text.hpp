@@ -89,8 +89,15 @@ public:
   static auto create(usize max_chars) noexcept -> tl::expected<text_buffer, error>;
   void destroy() noexcept;
 
-  auto push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
-            std::string_view text) noexcept -> glm::vec2;
+  auto get_bbox_size(glyph_cache &cache, std::string_view text) noexcept -> glm::vec2;
+
+  void push(const glm::vec3 &baseline_origin, const glm::vec2 &scale, glyph_cache &cache,
+            std::string_view text) noexcept;
+
+  void push_centered(const glm::vec3 &baseline_origin, float intended_scale,
+                     const glm::vec2 &region_dims, glyph_cache &cache, std::string_view text,
+                     float decrement_step = 1.0e-2f) noexcept;
+
   void reset() noexcept;
 
   void draw(const glm::vec4 &color) noexcept;
