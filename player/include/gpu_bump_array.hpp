@@ -189,8 +189,9 @@ public:
     write_idx = 0;
   }
 
-#ifdef SURGE_BUILD_TYPE_Debug
   [[nodiscard]] auto size() const noexcept -> usize { return write_idx; }
+
+#ifdef SURGE_BUILD_TYPE_Debug
   [[nodiscard]] auto get_write_buffer() const noexcept -> usize { return write_buffer; }
 #endif
 };
