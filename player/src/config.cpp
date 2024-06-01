@@ -36,6 +36,10 @@ static auto config_handler(void *user, const char *section, const char *name,
     config->wattrs.vsync = static_cast<bool>(std::atoi(value));
   } else if (match("renderer", "MSAA")) {
     config->wattrs.MSAA = static_cast<bool>(std::atoi(value));
+  } else if (match("renderer", "cap_FPS")) {
+    config->wattrs.fps_cap.first = static_cast<bool>(std::atoi(value));
+  } else if (match("renderer", "FPS_cap_value")) {
+    config->wattrs.fps_cap.second = static_cast<surge::u8>(std::atoi(value));
   } else if (match("clear_color", "r")) {
     config->ccl.r = std::strtof(value, nullptr);
   } else if (match("clear_color", "g")) {

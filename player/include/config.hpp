@@ -9,31 +9,32 @@
 namespace surge::config {
 
 struct window_resolution {
-  int width;
-  int height;
+  int width{800};
+  int height{600};
 };
 
 struct clear_color {
-  float r;
-  float g;
-  float b;
-  float a;
+  float r{0.0f};
+  float g{0.0f};
+  float b{0.0f};
+  float a{1.0f};
 };
 
 struct window_attrs {
-  string name;
-  int monitor_index;
-  bool windowed;
-  bool cursor;
-  bool vsync;
-  bool MSAA;
+  string name{"SURGE Window"};
+  int monitor_index{0};
+  bool windowed{true};
+  bool cursor{true};
+  bool vsync{true};
+  bool MSAA{true};
+  std::pair<bool, u8> fps_cap{true, 60};
 };
 
 struct config_data {
-  window_resolution wr;
-  clear_color ccl;
-  window_attrs wattrs;
-  string module;
+  window_resolution wr{};
+  clear_color ccl{};
+  window_attrs wattrs{};
+  string module{};
 };
 
 auto parse_config() noexcept -> tl::expected<config_data, error>;

@@ -172,6 +172,12 @@ auto main(int, char **) noexcept -> int {
 
     frame_timer.stop();
 
+    // FPS Cap
+    if (w_attrs.fps_cap.first && frame_timer.elapsed() < 1.0 / w_attrs.fps_cap.second) {
+      std::this_thread::sleep_for(
+          std::chrono::duration<double>(1.0 / w_attrs.fps_cap.second - frame_timer.elapsed()));
+    }
+
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     FrameMark;
     TracyGpuCollect;
