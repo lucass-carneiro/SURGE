@@ -31,6 +31,7 @@ private:
   // Regular sprites
   gba<GLuint64> texture_handles{};
   gba<glm::mat4> models{};
+  gba<glm::vec4> image_views{};
   gba<float> alphas{};
 
 public:
@@ -39,6 +40,8 @@ public:
 
   void add(GLuint64 handle, glm::mat4 model, float alpha) noexcept;
   void add_depth(GLuint64 texture, GLuint64 depth_map, glm::mat4 model) noexcept;
+  void add_view(GLuint64 handle, glm::mat4 model, glm::vec4 image_view, glm::vec2 img_dims,
+                float alpha) noexcept;
 
   void reset() noexcept;
   void reinit() noexcept;

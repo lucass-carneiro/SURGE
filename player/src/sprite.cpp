@@ -85,6 +85,7 @@ auto surge::atom::sprite::database::create(usize max_sprites) noexcept
    ***************/
   db.texture_handles = gba<GLuint64>::create(max_sprites, "Sprite Texture Handles GBA");
   db.models = gba<glm::mat4>::create(max_sprites, "Sprite Modesl GBA");
+  db.image_views = gba<glm::vec4>::create(max_sprites, "Sprite image views GBA");
   db.alphas = gba<float>::create(max_sprites, "Sprite Alphas GBA");
 
   return db;
@@ -98,6 +99,7 @@ void surge::atom::sprite::database::destroy() noexcept {
   log_info("Destroying sprite database");
 
   alphas.destroy();
+  image_views.destroy();
   models.destroy();
   texture_handles.destroy();
   glDeleteBuffers(1, &(EBO));
@@ -114,6 +116,7 @@ void surge::atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float 
 #endif
   texture_handles.push(handle);
   models.push(model);
+  image_views.push(glm::vec4{1.0f, 1.0f, 0.0f, 0.0f});
   alphas.push(alpha);
 }
 
@@ -127,6 +130,28 @@ void surge::atom::sprite::database::add_depth(GLuint64 texture, GLuint64 depth_m
   depth_model = model;
 }
 
+void surge::atom::sprite::database::add_view(GLuint64 handle, glm::mat4 model, glm::vec4 image_view,
+                                             glm::vec2 img_dims, float alpha) noexcept {
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::atom::sprite::database::add_view");
+#endif
+  const auto u0{image_view[0]};
+  const auto v0{image_view[1]};
+
+  const auto w{image_view[2]};
+  const auto h{image_view[3]};
+
+  const auto W{img_dims[0]};
+  const auto H{img_dims[1]};
+
+  const glm::vec4 view_data{w / W, h / H, u0 / W, 1.0f - (v0 + h) / H};
+
+  texture_handles.push(handle);
+  models.push(model);
+  image_views.push(view_data);
+  alphas.push(alpha);
+}
+
 void surge::atom::sprite::database::reset() noexcept {
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::atom::sprite::database::reset()");
@@ -137,6 +162,7 @@ void surge::atom::sprite::database::reset() noexcept {
 
   texture_handles.reset();
   models.reset();
+  image_views.reset();
   alphas.reset();
 }
 
@@ -150,6 +176,7 @@ void surge::atom::sprite::database::reinit() noexcept {
 
   texture_handles.reinit();
   models.reinit();
+  image_views.reinit();
   alphas.reinit();
 }
 
@@ -194,11 +221,13 @@ void surge::atom::sprite::database::draw() noexcept {
 #endif
 
   // Regular sprites
-  if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0) {
+  if (texture_handles.size() != 0 && models.size() != 0 && alphas.size() != 0
+      && image_views.size() != 0) {
 
     models.bind(GL_SHADER_STORAGE_BUFFER, 3);
     alphas.bind(GL_SHADER_STORAGE_BUFFER, 4);
     texture_handles.bind(GL_SHADER_STORAGE_BUFFER, 5);
+    image_views.bind(GL_SHADER_STORAGE_BUFFER, 6);
 
     glUseProgram(sprite_shader);
 
@@ -207,8 +236,9 @@ void surge::atom::sprite::database::draw() noexcept {
                             gsl::narrow_cast<GLsizei>(models.size()));
 
     texture_handles.lock_write_buffer();
-    alphas.lock_write_buffer();
     models.lock_write_buffer();
+    image_views.lock_write_buffer();
+    alphas.lock_write_buffer();
   }
 
   // Depth sprite
