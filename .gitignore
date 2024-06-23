@@ -3,3 +3,5 @@
 out/*
 
 compile_commands.json
+
+staging-Debug/*
