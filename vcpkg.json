@@ -14,33 +14,17 @@
       "name": "mimalloc",
       "platform": "!windows"
     },
+    "foonathan-memory",
     "gsl-lite",
     "tl-expected",
-    "inih",
-    "openexr",
-    "docopt",
     "fmt",
-    "foonathan-memory",
+    "taskflow",
     "stb",
+    "openexr",
+    "ryml",
     "glfw3",
     "glm",
-    "tinyobjloader",
-    "opengl",
-    {
-      "name": "imgui",
-      "features": [
-        "freetype",
-        "glfw-binding",
-        "opengl3-binding"
-      ]
-    },
-    {
-      "name": "freetype",
-      "features": [
-        "error-strings"
-      ]
-    },
-    "taskflow",
-    "xxhash"
+    "vulkan",
+    "vulkan-validationlayers"
   ]
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+﻿cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 # -----------------------------------------
 # Vcpkg configuration
@@ -13,10 +13,9 @@ set(VCPKG_OVERLAY_TRIPLETS triplets/)
 
 project(
   Surge
-  VERSION 1.0.0
+  VERSION 1.1.0
   LANGUAGES CXX
 )
-
 # Generate compile_commands.json for IDEs
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
@@ -35,21 +34,16 @@ endif()
 # External dependencies
 # -----------------------------------------
 
+find_package(mimalloc CONFIG REQUIRED)
+find_package(foonathan_memory CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
-find_package(unofficial-inih CONFIG REQUIRED)
-find_package(foonathan_memory CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
-find_package(Stb REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(imgui REQUIRED)
-find_package(Freetype REQUIRED)
-find_package(xxHash CONFIG REQUIRED)
-find_package(OpenEXR CONFIG REQUIRED)
-find_package(docopt CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+find_package(Taskflow CONFIG REQUIRED)
+find_package(OpenEXR CONFIG REQUIRED)
+find_package(ryml CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(Vulkan REQUIRED)
 
 # -----------------------------------------
 # Operating system and compiler detection
@@ -67,6 +61,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" 
   set(SURGE_COMPILER_FLAG_STYLE "gcc")
 else()
   set(SURGE_COMPILER_FLAG_STYLE "msvc")
+  if (POLICY CMP0141)
+    cmake_policy(SET CMP0141 NEW)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
+    endif()
 endif()
 
 # -----------------------------------------
@@ -137,19 +135,13 @@ elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
 endif()
 
 # -----------------------------------------
+#  Engine core target
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
+
+# -----------------------------------------
 #  Engine player target
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
-
-# -----------------------------------------
-#  Engine Tools
-# -----------------------------------------
-
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/tools)
-
-# -----------------------------------------
-#  Modules
-# -----------------------------------------
-
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)

@@ -1,0 +1,26 @@
+#ifndef SURGE_OPTIONS_HPP
+#define SURGE_OPTIONS_HPP
+
+#define SURGE_VERSION_MAJOR @Surge_VERSION_MAJOR@ // NOLINT(cppcoreguidelines-macro-usage)
+#define SURGE_VERSION_MINOR @Surge_VERSION_MINOR@ // NOLINT(cppcoreguidelines-macro-usage)
+#define SURGE_VERSION_PATCH @Surge_VERSION_PATCH@ // NOLINT(cppcoreguidelines-macro-usage)
+
+#define SURGE_VERSION_MAJOR_STRING "@Surge_VERSION_MAJOR@" // NOLINT(cppcoreguidelines-macro-usage)
+#define SURGE_VERSION_MINOR_STRING "@Surge_VERSION_MINOR@" // NOLINT(cppcoreguidelines-macro-usage)
+#define SURGE_VERSION_PATCH_STRING "@Surge_VERSION_PATCH@" // NOLINT(cppcoreguidelines-macro-usage)
+
+#define SURGE_OPENGL_ERROR_BUFFER_SIZE @SURGE_OPENGL_ERROR_BUFFER_SIZE@ // NOLINT(cppcoreguidelines-macro-usage)
+
+#define SURGE_SYSTEM_@CMAKE_SYSTEM_NAME@
+#define SURGE_SYSTEM_@SURGE_SYSTEM_IS_POSIX@
+#define SURGE_COMPILER_@CMAKE_CXX_COMPILER_ID@
+#define SURGE_BUILD_TYPE_@CMAKE_BUILD_TYPE@
+
+#cmakedefine SURGE_USE_LOG
+#cmakedefine SURGE_USE_LOG_COLOR
+#cmakedefine SURGE_LOG_GL_NOTIFICATIONS
+#cmakedefine SURGE_DEBUG_MEMORY
+#cmakedefine SURGE_ENABLE_HR
+#cmakedefine SURGE_ENABLE_TRACY
+
+#endif // SURGE_OPTIONS_HPP
