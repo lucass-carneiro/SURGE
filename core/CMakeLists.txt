@@ -218,5 +218,7 @@ target_link_libraries(SurgeCore PUBLIC
   OpenEXR::OpenEXR
   ryml::ryml
   glfw
+  glad::glad
+  OpenGL::GL
   Vulkan::Vulkan
 )

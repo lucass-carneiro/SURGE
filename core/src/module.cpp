@@ -193,7 +193,7 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
 auto surge::module::set_module_path() noexcept -> bool {
   char buff[2048];
   GetCurrentDirectoryA(2048, buff);
-  // log_info("CWD: {}", buff);
+  log_info("CWD: {}", buff);
   return SetDllDirectoryA(buff);
 }
 
@@ -213,7 +213,7 @@ auto surge::module::get_name(handle_t module, usize) noexcept -> tl::expected<st
 }
 
 auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
-  // log_info("Loading module {}", path);
+  log_info("Loading module {}", path);
 
   // Load and get handle
   auto handle{dlopen(path, RTLD_NOW)};
@@ -221,7 +221,7 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, er
     log_error("Unable to load library {}", dlerror());
     return tl::unexpected(error::loading);
   } else {
-    // log_info("Loaded module {}, address {}", path, handle);
+    log_info("Loaded module {}, address {}", path, handle);
     return handle;
   }
 }
@@ -231,13 +231,13 @@ void surge::module::unload(handle_t module) noexcept {
     return;
   }
 
-  // log_info("Unloading module {}", module);
+  log_info("Unloading module {}", module);
 
   const auto result{dlclose(module)};
   if (result != 0) {
     log_error("Unable to close module {}: {}", module, dlerror());
   } else {
-    // log_info("Unloaded module {}", module);
+    log_info("Unloaded module {}", module);
   }
 }
 
@@ -321,21 +321,20 @@ auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, e
     return tl::unexpected(module_file_name.error());
   }
 
-  // log_info("Reloading {}", module_file_name->c_str());
+  log_info("Reloading {}", module_file_name->c_str());
 
   // Unload
   unload(module);
 
   // Check to see if .new exists
   const auto module_file_name_new{*module_file_name + ".new"};
-  // log_info("Checking if {} exists", module_file_name_new.c_str());
+  log_info("Checking if {} exists", module_file_name_new.c_str());
 
   std::error_code error;
   if (!std::filesystem::exists(module_file_name_new, error)) {
-    // log_info("No {} file found. Reloading module without updating",
-    // module_file_name_new.c_str());
+    log_info("No {} file found. Reloading module without updating", module_file_name_new.c_str());
   } else {
-    // log_info("{} exists. Replacing old module", module_file_name_new.c_str());
+    log_info("{} exists. Replacing old module", module_file_name_new.c_str());
     std::filesystem::rename(module_file_name_new, *module_file_name, error);
     if (error.value() != 0) {
       log_error("Unable to rename {} to {}: {}", module_file_name_new.c_str(),

@@ -11,8 +11,29 @@ static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW error code {}: {}", code, description);
 }
 
-auto surge::window::init(const config::window_resolution &wres,
-                         const config::window_attrs &w_attrs) noexcept -> std::optional<error> {
+static void glfw_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
+  glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
+}
+
+// See https://www.khronos.org/opengl/wiki/OpenGL_Error#Catching_errors_.28the_easy_way.29
+void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsizei,
+                                  const GLchar *message, const void *) {
+
+  if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+#ifdef SURGE_LOG_GL_NOTIFICATIONS
+    log_info("OpenGL info: %s", message);
+#endif
+  } else if (severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_LOW_ARB) {
+    log_warn("OpenGL low severity warning: %s", message);
+  } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_MEDIUM_ARB) {
+    log_warn("OpenGL medium severity warning: %s", message);
+  } else {
+    log_error("OpenGL error: %s", message);
+  }
+}
+
+auto surge::window::init(const config::window_resolution &wres, const config::window_attrs &w_attrs,
+                         const config::renderer_attrs &r_attrs) noexcept -> std::optional<error> {
   /*************
    * GLFW init *
    *************/
@@ -37,7 +58,7 @@ auto surge::window::init(const config::window_resolution &wres,
     return error::glfw_monitor;
   }
 
-  log_info("Monitors detected: %i", mc);
+  log_info("Monitors detected: {}", mc);
 
   for (int i = 0; i < mc; i++) {
     int width = 0, height = 0;
@@ -80,12 +101,12 @@ auto surge::window::init(const config::window_resolution &wres,
       return error::glfw_monitor_name;
     }
 
-    log_info("Properties of monitor %i:\n"
-             "  Monitor name: %s.\n"
-             "  Physical size (width, height): %i, %i.\n"
-             "  Content scale (x, y): %f, %f.\n"
-             "  Virtual position: (x, y): %i, %i.\n"
-             "  Work area (x, y, width, height): %i, %i, %i, %i.",
+    log_info("Properties of monitor {}:\n"
+             "  Monitor name: {}.\n"
+             "  Physical size (width, height): {}, {}.\n"
+             "  Content scale (x, y): {}, {}.\n"
+             "  Virtual position: (x, y): {}, {}.\n"
+             "  Work area (x, y, width, height): {}, {}, {}, {}.",
              i, name, width, height, xscale, yscale, xpos, ypos, w_xpos, w_ypos, w_width, w_height);
   }
 
@@ -94,10 +115,30 @@ auto surge::window::init(const config::window_resolution &wres,
    ***************/
   log_info("Initializing engine window");
 
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return error::glfw_window_hint_api;
+  if (r_attrs.backend == config::renderer_backend::opengl) {
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_window_hint_major;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_window_hint_minor;
+    }
+
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_window_hint_profile;
+    }
+  } else {
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_window_hint_api;
+    }
   }
 
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -135,6 +176,93 @@ auto surge::window::init(const config::window_resolution &wres,
     return error::glfw_window_input_mode;
   }
 
+  if (r_attrs.backend == config::renderer_backend::opengl) {
+    /***********************
+     * OpenGL context init *
+     ***********************/
+    log_info("Initializing OpenGL");
+
+    glfwMakeContextCurrent(g_engine_window);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_make_ctx;
+    }
+
+    if (r_attrs.vsync) {
+      log_info("VSync enabled");
+      glfwSwapInterval(1);
+    } else {
+      glfwSwapInterval(0);
+      log_info("VSync disabled");
+    }
+
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_vsync;
+    }
+
+    /********
+     * GLAD *
+     ********/
+    log_info("Initializing GLAD");
+
+    // NOLINTNEXTLINE
+    if (gladLoadGL() == 0) {
+      log_error("Failed to initialize GLAD");
+      glfwTerminate();
+      return error::glad_loading;
+    }
+
+    // Check extension support
+    if (!GLAD_GL_ARB_bindless_texture) {
+      log_error(
+          "SURGE needs an OpenGL implementation that supports bindless textures and the "
+          "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
+          "until your graphics card vendor adds this support or it becomes a standardized "
+          "OpenGL feature and your vendor produces drivers that support it.");
+      glfwTerminate();
+      return error::opengl_feature_missing;
+    }
+
+    if (!GLAD_GL_ARB_gpu_shader_int64) {
+      log_error(
+          "SURGE needs an OpenGL implementation that supports int64 in GPU shaders and the "
+          "current implementation does not. Unfortunatelly, SURGE cannot work in this platform "
+          "until your graphics card vendor adds this support or it becomes a standardized "
+          "OpenGL feature and your vendor produces drivers that support it.");
+      glfwTerminate();
+      return error::opengl_feature_missing;
+    }
+
+    // Resize callback
+    glfwSetFramebufferSizeCallback(g_engine_window, glfw_framebuffer_size_callback);
+    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+      glfwTerminate();
+      return error::glfw_resize_callback;
+    }
+
+    /******************
+     * OpenGL options *
+     ******************/
+    // NOLINTNEXTLINE
+    log_info("Using OpenGL Version {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+
+#ifdef SURGE_BUILD_TYPE_Debug
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(gl_error_callback, nullptr);
+#endif
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // MSAA
+    if (r_attrs.MSAA) {
+      glfwWindowHint(GLFW_SAMPLES, 4);
+      glEnable(GL_MULTISAMPLE);
+    }
+  }
+
   return {};
 }
 
@@ -169,9 +297,7 @@ auto surge::window::get_cursor_pos() noexcept -> glm::vec2 {
   }
 }
 
-auto surge::window::get_key(int key) noexcept -> int {
-  return glfwGetKey(g_engine_window, GLFW_KEY_F5);
-}
+auto surge::window::get_key(int key) noexcept -> int { return glfwGetKey(g_engine_window, key); }
 
 auto surge::window::should_close() noexcept -> bool {
   return static_cast<bool>(glfwWindowShouldClose(g_engine_window));
@@ -180,6 +306,8 @@ auto surge::window::should_close() noexcept -> bool {
 void surge::window::set_should_close(bool value) noexcept {
   glfwSetWindowShouldClose(g_engine_window, value ? GLFW_TRUE : GLFW_FALSE);
 }
+
+void surge::window::swap_buffers() noexcept { glfwSwapBuffers(g_engine_window); }
 
 auto surge::window::set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error> {
   glfwSetKeyCallback(g_engine_window, f);

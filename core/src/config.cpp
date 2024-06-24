@@ -17,13 +17,14 @@ static void ryml_error(const char *msg, size_t, ryml::Location location, void *)
   throw std::runtime_error("config.yaml parse error");
 }
 
-static auto ryml_alloc(size_t len, void *hint, void *user_data) -> void * {
+static auto ryml_alloc(size_t len, void *, void *) -> void * {
   return surge::allocators::mimalloc::malloc(len);
 }
 
 static void ryml_free(void *mem, size_t, void *) { surge::allocators::mimalloc::free(mem); }
 
 auto surge::config::parse_config() noexcept -> tl::expected<config_data, error> {
+  using std::atof;
   using std::atoi;
 
   auto config_file{files::load_file("config.yaml", true)};
@@ -44,10 +45,10 @@ auto surge::config::parse_config() noexcept -> tl::expected<config_data, error> 
     cd.wr.width = atoi(tree["resolution"]["width"].val().data());
     cd.wr.height = atoi(tree["resolution"]["height"].val().data());
 
-    cd.ccl.r = atof(tree["clear_color"]["r"].val().data());
-    cd.ccl.g = atof(tree["clear_color"]["g"].val().data());
-    cd.ccl.b = atof(tree["clear_color"]["b"].val().data());
-    cd.ccl.a = atof(tree["clear_color"]["a"].val().data());
+    cd.ccl.r = strtof(tree["clear_color"]["r"].val().data(), nullptr);
+    cd.ccl.g = strtof(tree["clear_color"]["g"].val().data(), nullptr);
+    cd.ccl.b = strtof(tree["clear_color"]["b"].val().data(), nullptr);
+    cd.ccl.a = strtof(tree["clear_color"]["a"].val().data(), nullptr);
 
     cd.wattrs.name
         = string(tree["window"]["name"].val().data(), tree["window"]["name"].val().size());
@@ -55,8 +56,13 @@ auto surge::config::parse_config() noexcept -> tl::expected<config_data, error> 
     cd.wattrs.windowed = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
     cd.wattrs.cursor = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
 
-    cd.wattrs.vsync = static_cast<bool>(atoi(tree["renderer"]["VSync"].val().data()));
-    cd.wattrs.MSAA = static_cast<bool>(atoi(tree["renderer"]["MSAA"].val().data()));
+    cd.rattrs.backend = atoi(tree["renderer"]["backend"].val().data()) == 0
+                            ? renderer_backend::opengl
+                            : renderer_backend::vulkan;
+    cd.rattrs.vsync = static_cast<bool>(atoi(tree["renderer"]["VSync"].val().data()));
+    cd.rattrs.MSAA = static_cast<bool>(atoi(tree["renderer"]["MSAA"].val().data()));
+    cd.rattrs.fps_cap = static_cast<bool>(atoi(tree["renderer"]["fps_cap"].val().data()));
+    cd.rattrs.fps_cap_value = atoi(tree["renderer"]["fps_cap_value"].val().data());
 
     cd.module = string(tree["modules"]["first_module"].val().data(),
                        tree["modules"]["first_module"].val().size());

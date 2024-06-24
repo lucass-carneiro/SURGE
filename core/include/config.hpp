@@ -25,16 +25,23 @@ struct window_attrs {
   int monitor_index{0};
   bool windowed{true};
   bool cursor{true};
+};
+
+enum class renderer_backend { opengl, vulkan };
+
+struct renderer_attrs {
+  renderer_backend backend{renderer_backend::opengl};
   bool vsync{true};
   bool MSAA{true};
   bool fps_cap{true};
-  int fps_cap_value {60};
+  int fps_cap_value{60};
 };
 
 struct config_data {
   window_resolution wr{};
   clear_color ccl{};
   window_attrs wattrs{};
+  renderer_attrs rattrs{};
   string module{};
 };
 

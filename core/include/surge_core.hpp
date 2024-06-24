@@ -11,6 +11,7 @@
 #include "module.hpp"
 #include "options.hpp"
 #include "renderer.hpp"
+#include "tasks.hpp"
 #include "timers.hpp"
 #include "window.hpp"
 

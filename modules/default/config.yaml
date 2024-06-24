@@ -9,14 +9,19 @@ resolution:
   height: 600
 
 renderer:
+  backend: 0 # 0 to OpenGL, 1 to Vulkan
   VSync: 1
   MSAA: 1
+  fps_cap: 1
+  fps_cap_value: 60
+
 
 clear_color:
-  r: 0.0
-  g: 0.0
-  b: 0.0
+  r: 0.2
+  g: 0.3
+  b: 0.3
   a: 1.0
 
 modules:
-  first_module: "default"
+  first_module: "./default.so"
+

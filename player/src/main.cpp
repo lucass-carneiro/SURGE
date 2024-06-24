@@ -6,8 +6,23 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
+// Avoid using integrated graphics
+#ifdef SURGE_SYSTEM_Windows
+extern "C" {
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
+#endif
+
 auto main(int, char **) noexcept -> int {
   using namespace surge;
+
+  // Avoid using integrated graphics on NV hardware.
+  // TODO: Set this for AMD hardware
+#ifdef SURGE_SYSTEM_Linux
+  setenv("__NV_PRIME_RENDER_OFFLOAD", "1", 0);
+  setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", 0);
+#endif
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("suge::main()");
@@ -31,12 +46,12 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  const auto [w_res, w_ccl, w_attrs, first_mod] = *config_data;
+  const auto [w_res, w_ccl, w_attrs, r_attrs, first_mod] = *config_data;
 
   /***************
    * Init window *
    ***************/
-  const auto window_init_result{window::init(w_res, w_attrs)};
+  const auto window_init_result{window::init(w_res, w_attrs, r_attrs)};
   if (window_init_result.has_value()) {
     return EXIT_FAILURE;
   }
@@ -115,7 +130,8 @@ auto main(int, char **) noexcept -> int {
 
       const auto on_load_result{mod_api->on_load()};
       if (on_load_result != 0) {
-        log_error("Mudule {} returned error {} while calling on_load", static_cast<void*>(*mod), on_load_result);
+        log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
+                  on_load_result);
         break;
       }
 
@@ -131,13 +147,19 @@ auto main(int, char **) noexcept -> int {
     update_timer.start();
 
     // Clear buffers
-    // TODO
+    if (r_attrs.backend == config::renderer_backend::opengl) {
+      glClearColor(w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a);
+      glClear(GL_COLOR_BUFFER_BIT);
+      glClear(GL_DEPTH_BUFFER_BIT);
+    }
 
     // Call module draw
     mod_api->draw();
 
     // Present rendering
-    // TODO
+    if (r_attrs.backend == config::renderer_backend::opengl) {
+      window::swap_buffers();
+    }
 
     // Cache refresh key state
 #ifdef SURGE_ENABLE_HR
@@ -147,9 +169,9 @@ auto main(int, char **) noexcept -> int {
     frame_timer.stop();
 
     // FPS Cap
-    if (w_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / w_attrs.fps_cap_value))) {
+    if (r_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / r_attrs.fps_cap_value))) {
       std::this_thread::sleep_for(
-          std::chrono::duration<double>((1.0 / w_attrs.fps_cap_value) - frame_timer.elapsed()));
+          std::chrono::duration<double>((1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
     }
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)

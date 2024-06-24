@@ -40,9 +40,12 @@ find_package(gsl-lite CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 find_package(OpenEXR CONFIG REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(Vulkan REQUIRED)
 
 # -----------------------------------------
