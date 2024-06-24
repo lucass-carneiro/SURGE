@@ -41,11 +41,11 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, er
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to load module {}: {}", path, error_txt);
+    log_error("Unable to load module {}: {}", path, error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::loading);
   } else {
-    // log_info("Loaded module {}, address {}", path, handle);
+    log_info("Loaded module {}, address {}", path, static_cast<void *>(handle));
     return handle;
   }
 }
@@ -55,7 +55,7 @@ void surge::module::unload(handle_t module) noexcept {
     return;
   }
 
-  // log_info("Unloading module {}", module);
+  log_info("Unloading module {}", static_cast<void *>(module));
 
   if (FreeLibrary(module) == 0) {
     const auto error_code{GetLastError()};
@@ -64,10 +64,10 @@ void surge::module::unload(handle_t module) noexcept {
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX  log_error("Unable to close module {}: {}", module, error_txt);
+    log_error("Unable to close module {}: {}", static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
   } else {
-    // log_info("Unloaded module {}", module);
+    log_info("Unloaded module {}", static_cast<void *>(module));
   }
 }
 
@@ -81,8 +81,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to on_load in module {}: {}", module,
-    // error_txt);
+    log_error("Unable to obtain handle to on_load in module {}: {}", static_cast<void *>(module),
+              error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -96,8 +96,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to on_unload in module {}: {}", module,
-    // error_txt);
+    log_error("Unable to obtain handle to on_unload in module {}: {}", static_cast<void *>(module),
+              error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -111,7 +111,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to draw in module {}: {}", module, error_txt);
+    log_error("Unable to obtain handle to draw in module {}: {}", static_cast<void *>(module),
+              error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -125,7 +126,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to update in module {}: {}", module, error_txt);
+    log_error("Unable to obtain handle to update in module {}: {}", static_cast<void *>(module),
+              error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -139,8 +141,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to keyboard_event in module {}: {}", module,
-    // error_txt);
+    log_error("Unable to obtain handle to keyboard_event in module {}: {}",
+              static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -154,8 +156,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to mouse_button_event in module {}: {}", module,
-    // error_txt);
+    log_error("Unable to obtain handle to mouse_button_event in module {}: {}",
+              static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }
@@ -169,8 +171,8 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    // TODO: FIX log_error("Unable to obtain handle to mouse_scroll_event in module {}: {}", module,
-    // error_txt);
+    log_error("Unable to obtain handle to mouse_scroll_event in module {}: {}",
+              static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
     return tl::unexpected(error::symbol_retrival);
   }

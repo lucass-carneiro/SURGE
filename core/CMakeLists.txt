@@ -36,6 +36,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/tasks.hpp"
+  "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
 
@@ -48,6 +49,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/tasks.cpp"
+  "${PROJECT_SOURCE_DIR}/src/timers.cpp"
   "${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
 
@@ -63,6 +65,11 @@ set_target_properties(SurgeCore PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/
 set_target_properties(SurgeCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS True)
 set_target_properties(SurgeCore PROPERTIES ENABLE_EXPORTS True)
 
+target_include_directories(
+  SurgeCore PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
+
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /Zc:preprocessor)
@@ -77,11 +84,6 @@ endif()
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /D NOMINMAX)
 endif()
-
-target_include_directories(
-  SurgeCore PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
-)
 
 # -----------------------------------------
 # Compilers flags and options

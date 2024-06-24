@@ -145,3 +145,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
+
+# -----------------------------------------
+#  Module targets
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)

@@ -140,7 +140,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(SurgePlayer PUBLIC debuginfod)
   endif()
-
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
