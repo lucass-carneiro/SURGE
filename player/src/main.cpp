@@ -166,11 +166,14 @@ auto main(int, char **) noexcept -> int {
 
     frame_timer.stop();
 
-    // FPS Cap
+// FPS Cap. On Linux, even with VSync this is necessary, otherwise the FPS may go above 60
+#ifdef SURGE_SYSTEM_Linux
     if (r_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / r_attrs.fps_cap_value))) {
-      std::this_thread::sleep_for(
-          std::chrono::duration<double>((1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
+      log_info("frame time = {}", frame_timer.elapsed());
+      std::this_thread::sleep_for(std::chrono::duration<double, std::ratio<1>>(
+          (1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
     }
+#endif
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
     FrameMark;
