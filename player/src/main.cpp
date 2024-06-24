@@ -148,9 +148,7 @@ auto main(int, char **) noexcept -> int {
 
     // Clear buffers
     if (r_attrs.backend == config::renderer_backend::opengl) {
-      glClearColor(w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a);
-      glClear(GL_COLOR_BUFFER_BIT);
-      glClear(GL_DEPTH_BUFFER_BIT);
+      window::clear_buffers(w_ccl);
     }
 
     // Call module draw

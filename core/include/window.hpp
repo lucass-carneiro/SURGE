@@ -18,6 +18,8 @@ auto get_cursor_pos() noexcept -> glm::vec2;
 auto get_key(int key) noexcept -> int;
 auto should_close() noexcept -> bool;
 void set_should_close(bool value) noexcept;
+
+void clear_buffers(const config::clear_color &ccl) noexcept;
 void swap_buffers() noexcept;
 
 auto set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error>;
