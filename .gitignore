@@ -1,20 +1,10 @@
+.vs/*
 .cache/*
+out/*
 
-Debug/*
-Release/*
-Profile/*
-
-staging-Debug/*
-staging-Release/*
-staging-Profile/*
-
-companion/src/__pycache__
-
-player/include/options.hpp
-
-modules/*
-!modules/demos/*
+core/include/options.hpp
 
 compile_commands.json
 
-vk-bootstrap/*
+Debug/*
+staging-Debug/*

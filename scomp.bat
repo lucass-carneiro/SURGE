@@ -1,1 +1,0 @@
-python companion\src\main.py %*
