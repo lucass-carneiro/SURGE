@@ -4,7 +4,6 @@
 #include "config.hpp"
 #include "renderer.hpp"
 
-#include <glm/glm.hpp>
 #include <optional>
 
 namespace surge::window {

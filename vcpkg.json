@@ -19,9 +19,16 @@
     "tl-expected",
     "fmt",
     "taskflow",
+    "xxhash",
     "stb",
     "openexr",
     "ryml",
+    {
+      "name": "freetype",
+      "features": [
+        "error-strings"
+      ]
+    },
     "glfw3",
     "glm",
     {
