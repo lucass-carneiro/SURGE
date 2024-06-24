@@ -40,6 +40,14 @@
     },
     "opengl",
     "vulkan",
-    "vulkan-validationlayers"
+    "vulkan-validationlayers",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding",
+        "vulkan-binding"
+      ]
+    }
   ]
 }
