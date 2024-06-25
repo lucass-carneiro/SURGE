@@ -16,6 +16,7 @@ void poll_events() noexcept;
 auto get_dims() noexcept -> glm::vec2;
 auto get_cursor_pos() noexcept -> glm::vec2;
 auto get_key(int key) noexcept -> int;
+auto get_mouse_button(int button) noexcept -> int;
 auto should_close() noexcept -> bool;
 void set_should_close(bool value) noexcept;
 

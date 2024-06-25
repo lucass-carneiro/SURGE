@@ -21,14 +21,14 @@ void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsiz
 
   if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
 #ifdef SURGE_LOG_GL_NOTIFICATIONS
-    log_info("OpenGL info: %s", message);
+    log_info("OpenGL info: {}", message);
 #endif
   } else if (severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_LOW_ARB) {
-    log_warn("OpenGL low severity warning: %s", message);
+    log_warn("OpenGL low severity warning: {}", message);
   } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_MEDIUM_ARB) {
-    log_warn("OpenGL medium severity warning: %s", message);
+    log_warn("OpenGL medium severity warning: {}", message);
   } else {
-    log_error("OpenGL error: %s", message);
+    log_error("OpenGL error: {}", message);
   }
 }
 
@@ -298,6 +298,10 @@ auto surge::window::get_cursor_pos() noexcept -> glm::vec2 {
 }
 
 auto surge::window::get_key(int key) noexcept -> int { return glfwGetKey(g_engine_window, key); }
+
+auto surge::window::get_mouse_button(int button) noexcept -> int {
+  return glfwGetMouseButton(g_engine_window, button);
+}
 
 auto surge::window::should_close() noexcept -> bool {
   return static_cast<bool>(glfwWindowShouldClose(g_engine_window));

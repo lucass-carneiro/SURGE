@@ -25,14 +25,14 @@ auto surge::gl_atom::sprite::database::create(usize max_sprites) noexcept
    *******************/
 
   const auto sprite_shader{
-      shader::create_shader_program("shaders/sprite.vert", "shaders/sprite.frag")};
+      shader::create_shader_program("shaders/gl/sprite.vert", "shaders/gl/sprite.frag")};
   if (!sprite_shader) {
     log_error("Unable to create sprite shader");
     return tl::unexpected{sprite_shader.error()};
   }
 
   const auto deep_sprite_shader{
-      shader::create_shader_program("shaders/deep_sprite.vert", "shaders/deep_sprite.frag")};
+      shader::create_shader_program("shaders/gl/deep_sprite.vert", "shaders/gl/deep_sprite.frag")};
   if (!deep_sprite_shader) {
     log_error("Unable to create deep sprite shader");
     return tl::unexpected{deep_sprite_shader.error()};

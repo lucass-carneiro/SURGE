@@ -317,7 +317,7 @@ auto surge::gl_atom::text_buffer::create(usize max_chars) noexcept
   /******************
    * Compile shader *
    ******************/
-  const auto text_shader{shader::create_shader_program("shaders/text.vert", "shaders/text.frag")};
+  const auto text_shader{shader::create_shader_program("shaders/gl/text.vert", "shaders/gl/text.frag")};
   if (!text_shader) {
     log_error("Unable to create text shader");
     return tl::unexpected{text_shader.error()};

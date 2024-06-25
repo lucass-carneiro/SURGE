@@ -8,3 +8,7 @@ compile_commands.json
 
 Debug/*
 staging-Debug/*
+
+modules/*
+!modules/CMakeLists.txt
+!modules/default

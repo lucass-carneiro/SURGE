@@ -16,7 +16,6 @@ project(
 
 set(
   SURGE_PLAYER_HEADER_LIST
-  "${SurgeCore_SOURCE_DIR}/include/options.hpp"
   "${SurgeCore_SOURCE_DIR}/include/surge_core.hpp"
 )
 
