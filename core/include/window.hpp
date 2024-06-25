@@ -23,6 +23,8 @@ void set_should_close(bool value) noexcept;
 void clear_buffers(const config::clear_color &ccl) noexcept;
 void swap_buffers() noexcept;
 
+auto get_window_ptr() noexcept -> GLFWwindow *;
+
 auto set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error>;
 auto set_mouse_button_callback(GLFWmousebuttonfun f) noexcept -> std::optional<error>;
 auto set_mouse_scroll_callback(GLFWscrollfun f) noexcept -> std::optional<error>;

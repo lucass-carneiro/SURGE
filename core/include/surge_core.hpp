@@ -7,6 +7,7 @@
 #include "container_types.hpp"
 #include "error_types.hpp"
 #include "gl_atoms/gba.hpp"
+#include "gl_atoms/imgui.hpp"
 #include "gl_atoms/pv_ubo.hpp"
 #include "gl_atoms/shaders.hpp"
 #include "gl_atoms/sprite.hpp"

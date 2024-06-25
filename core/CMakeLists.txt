@@ -26,6 +26,7 @@ configure_file(
 set(
   SURGE_PLAYER_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/gba.hpp"
+  "${PROJECT_SOURCE_DIR}/include/gl_atoms/imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/pv_ubo.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/shaders.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/sprite.hpp"
@@ -49,6 +50,7 @@ set(
 
 set(
   SURGE_CORE_SOURCE_LIST
+  "${PROJECT_SOURCE_DIR}/src/gl_atoms/imgui.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/pv_ubo.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite.cpp"

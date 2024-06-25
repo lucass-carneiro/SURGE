@@ -319,6 +319,10 @@ void surge::window::clear_buffers(const config::clear_color &w_ccl) noexcept {
 
 void surge::window::swap_buffers() noexcept { glfwSwapBuffers(g_engine_window); }
 
+auto surge::window::get_window_ptr() noexcept -> GLFWwindow* {
+    return g_engine_window;
+}
+
 auto surge::window::set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error> {
   glfwSetKeyCallback(g_engine_window, f);
   auto status{glfwGetError(nullptr)};
