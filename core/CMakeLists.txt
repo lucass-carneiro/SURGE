@@ -26,7 +26,6 @@ configure_file(
 set(
   SURGE_PLAYER_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/gba.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/pv_ubo.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/shaders.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/sprite.hpp"
@@ -39,6 +38,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/error_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/imgui_wrapper.hpp"
   "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
@@ -50,7 +50,6 @@ set(
 
 set(
   SURGE_CORE_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/imgui.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/pv_ubo.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite.cpp"
@@ -61,7 +60,9 @@ set(
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/config.cpp"
   "${PROJECT_SOURCE_DIR}/src/files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/imgui_wrapper.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer.cpp"
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"

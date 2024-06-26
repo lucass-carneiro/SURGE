@@ -1,10 +1,11 @@
-#ifndef SURGE_CORE_GL_ATOM_IMGUI_HPP
-#define SURGE_CORE_GL_ATOM_IMGUI_HPP
+#ifndef SURGE_CORE_IMGUI_HPP
+#define SURGE_CORE_IMGUI_HPP
 
-#include "texture.hpp"
-#include "sprite.hpp"
+#include "gl_atoms/sprite.hpp"
+#include "gl_atoms/texture.hpp"
+#include "imgui.h"
 
-namespace surge::gl_atom::imgui {
+namespace surge::imgui {
 
 enum class themes { light, dark };
 
@@ -14,11 +15,18 @@ struct create_config {
   themes theme{themes::dark};
 };
 
+namespace gl {
+
 void create(create_config &&cfg) noexcept;
 void destroy() noexcept;
 
 void frame_begin() noexcept;
 void frame_end() noexcept;
+
+void texture_database_window(bool *open, const gl_atom::texture::database &tdb) noexcept;
+void sprite_database_window(bool *open, const gl_atom::sprite::database &sdb) noexcept;
+
+} // namespace gl
 
 auto begin(const char *name, bool *open) noexcept -> bool;
 void end() noexcept;
@@ -33,12 +41,18 @@ void end_menu() noexcept;
 auto begin_table(const char *name, int cols) noexcept -> bool;
 void end_table() noexcept;
 
+void table_setup_column(const char *name) noexcept;
+void table_headers_row() noexcept;
+void table_next_row() noexcept;
+auto table_next_column() noexcept -> bool;
+
+void text(const char *fmt, ...) noexcept;
+
+auto colapsing_header(const char *name) noexcept -> bool;
+
 void register_mouse_callback(int button, int action, int mods) noexcept;
 void register_mouse_scroll_callback(double xoffset, double yoffset) noexcept;
 
-void texture_database_window(bool *open, const texture::database &tdb) noexcept;
-void sprite_database_window(bool *open, const sprite::database &sdb) noexcept;
+} // namespace surge::imgui
 
-} // namespace surge::gl_atom::imgui
-
-#endif // SURGE_CORE_GL_ATOM_IMGUI_HPP
+#endif // SURGE_CORE_IMGUI_HPP

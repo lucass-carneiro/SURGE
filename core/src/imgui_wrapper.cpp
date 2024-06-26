@@ -1,6 +1,5 @@
-#include "gl_atoms/imgui.hpp"
+#include "imgui_wrapper.hpp"
 
-#include "logging.hpp"
 #include "window.hpp"
 
 // clang-format off
@@ -9,7 +8,7 @@
 #include <imgui_impl_opengl3.h>
 // clang-format on
 
-void surge::gl_atom::imgui::create(create_config &&cfg) noexcept {
+void surge::imgui::gl::create(create_config &&cfg) noexcept {
   log_info("Initializing DearImGui window");
 
   IMGUI_CHECKVERSION();
@@ -38,73 +37,32 @@ void surge::gl_atom::imgui::create(create_config &&cfg) noexcept {
   ImGui_ImplOpenGL3_Init("#version 460");
 }
 
-void surge::gl_atom::imgui::destroy() noexcept {
+void surge::imgui::gl::destroy() noexcept {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
 }
 
-void surge::gl_atom::imgui::frame_begin() noexcept {
+void surge::imgui::gl::frame_begin() noexcept {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 }
 
-void surge::gl_atom::imgui::frame_end() noexcept {
+void surge::imgui::gl::frame_end() noexcept {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-auto surge::gl_atom::imgui::begin(const char *name, bool *open) noexcept -> bool {
-  return ImGui::Begin(name, open);
-}
-
-void surge::gl_atom::imgui::end() noexcept { ImGui::End(); }
-
-auto surge::gl_atom::imgui::begin_main_menu_bar() noexcept -> bool {
-  return ImGui::BeginMainMenuBar();
-}
-
-void surge::gl_atom::imgui::end_main_menu_bar() noexcept { ImGui::EndMainMenuBar(); }
-
-auto surge::gl_atom::imgui::begin_menu(const char *name) noexcept -> bool {
-  return ImGui::BeginMenu(name);
-}
-
-auto surge::gl_atom::imgui::menu_item(const char *name) noexcept -> bool {
-  return ImGui::MenuItem(name);
-}
-
-void surge::gl_atom::imgui::end_menu() noexcept { ImGui::EndMenu(); }
-
-auto surge::gl_atom::imgui::begin_table(const char *name, int cols) noexcept -> bool {
-  constexpr ImGuiTableFlags flags{ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersV
-                                  | ImGuiTableFlags_BordersH
-                                  | ImGuiTableFlags_HighlightHoveredColumn};
-
-  return ImGui::BeginTable(name, cols, flags);
-}
-
-void surge::gl_atom::imgui::end_table() noexcept { ImGui::EndTable(); }
-
-void surge::gl_atom::imgui::register_mouse_callback(int button, int action, int mods) noexcept {
-  ImGui_ImplGlfw_MouseButtonCallback(window::get_window_ptr(), button, action, mods);
-}
-
-void surge::gl_atom::imgui::register_mouse_scroll_callback(double xoffset,
-                                                           double yoffset) noexcept {
-  ImGui_ImplGlfw_ScrollCallback(window::get_window_ptr(), xoffset, yoffset);
-}
-
-void surge::gl_atom::imgui::texture_database_window(bool *open,
-                                                    const texture::database &tdb) noexcept {
+void surge::imgui::gl::texture_database_window(bool *open,
+                                               const gl_atom::texture::database &tdb) noexcept {
   // Early out if the window is collapsed, as an optimization.
   if (!ImGui::Begin("Texture Database", open)) {
     ImGui::End();
     return;
   }
 
-  if (imgui::begin_table("tdb_table", 4)) {
+  if (begin_table("tdb_table", 4)) {
     const auto &ids{tdb.get_ids()};
     const auto &handles{tdb.get_handles()};
     const auto &hashes{tdb.get_hashes()};
@@ -137,8 +95,8 @@ void surge::gl_atom::imgui::texture_database_window(bool *open,
   ImGui::End();
 }
 
-void surge::gl_atom::imgui::sprite_database_window(bool *open,
-                                                   const sprite::database &sdb) noexcept {
+void surge::imgui::gl::sprite_database_window(bool *open,
+                                              const gl_atom::sprite::database &sdb) noexcept {
   // Early out if the window is collapsed, as an optimization.
   if (!ImGui::Begin("Sprite Database", open, 0)) {
     ImGui::End();
@@ -204,4 +162,57 @@ void surge::gl_atom::imgui::sprite_database_window(bool *open,
   }
 
   ImGui::End();
+}
+
+auto surge::imgui::begin(const char *name, bool *open) noexcept -> bool {
+  return ImGui::Begin(name, open);
+}
+
+void surge::imgui::end() noexcept { ImGui::End(); }
+
+auto surge::imgui::begin_main_menu_bar() noexcept -> bool { return ImGui::BeginMainMenuBar(); }
+
+void surge::imgui::end_main_menu_bar() noexcept { ImGui::EndMainMenuBar(); }
+
+auto surge::imgui::begin_menu(const char *name) noexcept -> bool { return ImGui::BeginMenu(name); }
+
+auto surge::imgui::menu_item(const char *name) noexcept -> bool { return ImGui::MenuItem(name); }
+
+void surge::imgui::end_menu() noexcept { ImGui::EndMenu(); }
+
+auto surge::imgui::begin_table(const char *name, int cols) noexcept -> bool {
+  constexpr ImGuiTableFlags flags{ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersV
+                                  | ImGuiTableFlags_BordersH
+                                  | ImGuiTableFlags_HighlightHoveredColumn};
+
+  return ImGui::BeginTable(name, cols, flags);
+}
+
+void surge::imgui::end_table() noexcept { ImGui::EndTable(); }
+
+void surge::imgui::table_setup_column(const char *name) noexcept { ImGui::TableSetupColumn(name); }
+
+void surge::imgui::table_headers_row() noexcept { ImGui::TableHeadersRow(); }
+
+void surge::imgui::table_next_row() noexcept { ImGui::TableNextRow(); }
+
+auto surge::imgui::table_next_column() noexcept -> bool { return ImGui::TableNextColumn(); }
+
+void surge::imgui::text(const char *fmt, ...) noexcept {
+  va_list args;
+  va_start(args, fmt);
+  ImGui::TextV(fmt, args);
+  va_end(args);
+}
+
+auto surge::imgui::colapsing_header(const char *name) noexcept -> bool {
+  return ImGui::CollapsingHeader(name);
+}
+
+void surge::imgui::register_mouse_callback(int button, int action, int mods) noexcept {
+  ImGui_ImplGlfw_MouseButtonCallback(window::get_window_ptr(), button, action, mods);
+}
+
+void surge::imgui::register_mouse_scroll_callback(double xoffset, double yoffset) noexcept {
+  ImGui_ImplGlfw_ScrollCallback(window::get_window_ptr(), xoffset, yoffset);
 }
