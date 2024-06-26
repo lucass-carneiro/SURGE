@@ -1,7 +1,10 @@
 #include "renderer.hpp"
 
-#include "window.hpp"
+#include "allocators.hpp"
 #include "logging.hpp"
+#include "window.hpp"
+
+#include <vulkan/vk_enum_string_helper.h>
 
 static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
@@ -9,7 +12,7 @@ static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int heigh
 
 // See https://www.khronos.org/opengl/wiki/OpenGL_Error#Catching_errors_.28the_easy_way.29
 static void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsizei,
-                                  const GLchar *message, const void *) {
+                                         const GLchar *message, const void *) {
 
   if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
 #ifdef SURGE_LOG_GL_NOTIFICATIONS
@@ -110,4 +113,112 @@ auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcep
   }
 
   return {};
+}
+
+static auto vk_malloc(void *, size_t size, size_t alignment, VkSystemAllocationScope scope) noexcept
+    -> void * {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Vk memory event with scope {}", static_cast<int>(scope));
+#endif
+  return surge::allocators::mimalloc::aligned_alloc(size, alignment);
+}
+
+static auto vk_realloc(void *, void *pOriginal, size_t size, size_t alignment,
+                       VkSystemAllocationScope scope) noexcept -> void * {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Vk memory event with scope {}", static_cast<int>(scope));
+#endif
+  return surge::allocators::mimalloc::aligned_realloc(pOriginal, size, alignment);
+}
+
+static void vk_free(void *, void *pMemory) noexcept {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Vk memory free event");
+#endif
+  surge::allocators::mimalloc::free(pMemory);
+}
+
+static void vk_internal_malloc(void *, size_t size, VkInternalAllocationType type,
+                               VkSystemAllocationScope scope) {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Vk internal malloc event:\n"
+            "size: {}\n"
+            "type: {}\n"
+            "scope: {}",
+            size, static_cast<int>(type), static_cast<int>(scope));
+#endif
+}
+
+static void vk_internal_free(void *, size_t size, VkInternalAllocationType type,
+                             VkSystemAllocationScope scope) {
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Vk internal malloc free:\n"
+            "size: {}\n"
+            "type: {}\n"
+            "scope: {}",
+            size, static_cast<int>(type), static_cast<int>(scope));
+#endif
+}
+
+static const VkAllocationCallbacks vk_alloc_callbacks{.pUserData = nullptr,
+                                                      .pfnAllocation = vk_malloc,
+                                                      .pfnReallocation = vk_realloc,
+                                                      .pfnFree = vk_free,
+                                                      .pfnInternalAllocation = vk_internal_malloc,
+                                                      .pfnInternalFree = vk_internal_free};
+
+auto surge::renderer::vk::init(const config::window_attrs &w_attrs) noexcept
+    -> tl::expected<context, error> {
+  context ctx{};
+  log_info("Initializing Vulkan");
+
+  /*****************************
+   * Query required extensions *
+   *****************************/
+  u32 glfw_extension_count{0};
+  const auto glfw_extensions{glfwGetRequiredInstanceExtensions(&glfw_extension_count)};
+
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    return tl::unexpected{error::glfw_vk_ext_retrive};
+  }
+
+  /************
+   * Instance *
+   ************/
+  log_info("Creating Vulkan instance");
+
+  // app info
+  VkApplicationInfo app_info{};
+  app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+  app_info.pApplicationName = w_attrs.name.c_str();
+  app_info.pEngineName = "SURGE - The Super Underrated Game Engine";
+  app_info.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
+  app_info.engineVersion
+      = VK_MAKE_API_VERSION(0, SURGE_VERSION_MAJOR, SURGE_VERSION_MINOR, SURGE_VERSION_PATCH);
+  app_info.apiVersion = VK_API_VERSION_1_3;
+
+  // create info
+  VkInstanceCreateInfo create_info{};
+  create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  create_info.pApplicationInfo = &app_info;
+  create_info.enabledExtensionCount = glfw_extension_count;
+  create_info.ppEnabledExtensionNames = glfw_extensions;
+  create_info.enabledLayerCount = 0;
+  create_info.ppEnabledLayerNames = nullptr;
+
+  auto result{vkCreateInstance(&create_info, &vk_alloc_callbacks, &ctx.instance)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Error while initializing Vulkan instance {}", string_VkResult(result));
+    return tl::unexpected{error::vk_instance_init};
+  }
+
+  return ctx;
+}
+
+void surge::renderer::vk::terminate(context &ctx) {
+  log_info("Terminating Vulkan");
+
+  log_info("Destroying instance");
+  vkDestroyInstance(ctx.instance, &vk_alloc_callbacks);
 }

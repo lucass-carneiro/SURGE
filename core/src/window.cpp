@@ -155,10 +155,6 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
     return error::glfw_window_input_mode;
   }
 
-  if (r_attrs.backend == config::renderer_backend::opengl) {
-    return renderer::init_opengl(r_attrs);
-  }
-
   return {};
 }
 

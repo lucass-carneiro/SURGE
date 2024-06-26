@@ -59,8 +59,14 @@ enum error : int {
   glfw_make_ctx,
   glfw_vsync,
   glfw_resize_callback,
+  glfw_vk_ext_retrive,
+
+  // OpenGL errors
   glad_loading,
   opengl_feature_missing,
+
+  // Vulkan errors
+  vk_instance_init,
 
   // Module callback binding
   keyboard_event_binding,

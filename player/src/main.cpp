@@ -56,6 +56,26 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
+  /***********************
+   * Init render backend *
+   ***********************/
+  renderer::vk::context vk_ctx{};
+
+  if (r_attrs.backend == config::renderer_backend::opengl) {
+    if (!renderer::init_opengl(r_attrs)) {
+      window::terminate();
+      return EXIT_FAILURE;
+    }
+  } else {
+    const auto vk_init_result{renderer::vk::init(w_attrs)};
+    if (!vk_init_result) {
+      window::terminate();
+      EXIT_FAILURE;
+    } else {
+      vk_ctx = vk_init_result.value();
+    }
+  }
+
   /*********************
    * Load First module *
    *********************/
@@ -186,6 +206,9 @@ auto main(int, char **) noexcept -> int {
   module::unload(*mod);
 
   // Finalize window and renderer
+  if (r_attrs.backend == config::renderer_backend::vulkan) {
+    renderer::vk::terminate(vk_ctx);
+  }
   window::terminate();
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)

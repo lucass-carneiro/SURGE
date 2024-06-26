@@ -9,7 +9,7 @@ resolution:
   height: 600
 
 renderer:
-  backend: 0 # 0 to OpenGL, 1 to Vulkan
+  backend: 1 # 0 to OpenGL, 1 to Vulkan
   VSync: 1
   MSAA: 1
   fps_cap: 1 # Ignored on Windows
