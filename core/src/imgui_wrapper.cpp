@@ -54,6 +54,8 @@ void surge::imgui::gl::frame_end() noexcept {
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
+#ifdef SURGE_BUILD_TYPE_Debug
+
 void surge::imgui::gl::texture_database_window(bool *open,
                                                const gl_atom::texture::database &tdb) noexcept {
   // Early out if the window is collapsed, as an optimization.
@@ -163,6 +165,8 @@ void surge::imgui::gl::sprite_database_window(bool *open,
 
   ImGui::End();
 }
+
+#endif SURGE_BUILD_TYPE_Debug
 
 auto surge::imgui::begin(const char *name, bool *open) noexcept -> bool {
   return ImGui::Begin(name, open);

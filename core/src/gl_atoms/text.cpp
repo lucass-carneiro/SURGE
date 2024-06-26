@@ -45,7 +45,7 @@ auto surge::gl_atom::text_engine::create() noexcept -> tl::expected<text_engine,
   auto status{FT_New_Library(&ft_mimalloc, &engine.ft_library)};
 
   if (status != 0) {
-    log_error("Error creating FreeType library: %s", FT_Error_String(status));
+    log_error("Error creating FreeType library: {}", FT_Error_String(status));
     return tl::unexpected{error::freetype_init};
   }
 
@@ -61,7 +61,7 @@ void surge::gl_atom::text_engine::destroy() noexcept {
 #endif
 
   for (auto &face : faces) {
-    log_info("Unloading face %s", face.second->family_name);
+    log_info("Unloading face {}", face.second->family_name);
     FT_Done_Face(face.second);
   }
 
@@ -69,7 +69,7 @@ void surge::gl_atom::text_engine::destroy() noexcept {
   const auto status{FT_Done_Library(ft_library)};
 
   if (status != 0) {
-    log_error("Error destroying FreeType library: %s", FT_Error_String(status));
+    log_error("Error destroying FreeType library: {}", FT_Error_String(status));
   }
 }
 
@@ -79,19 +79,19 @@ auto surge::gl_atom::text_engine::load_face(const char *path, std::string_view n
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_engine::load_face()");
 #endif
-  log_info("Loading face %s with name %s", path, name.data());
+  log_info("Loading face {} with name {}", path, name.data());
 
   FT_Face face{};
   auto status{FT_New_Face(ft_library, path, 0, &face)};
 
   if (status != 0) {
-    log_error("Error loading face %s: %s", path, FT_Error_String(status));
+    log_error("Error loading face {}: {}", path, FT_Error_String(status));
     return error::freetype_face_load;
   }
 
   status = FT_Set_Char_Size(face, 0, size_in_pts * 64, resolution_dpi, resolution_dpi);
   if (status != 0) {
-    log_error("Unable to set face %s glyphs to size: %s", face->family_name,
+    log_error("Unable to set face {} glyphs to size: {}", face->family_name,
               FT_Error_String(status));
     return error::freetype_set_face_size;
   }
@@ -106,7 +106,7 @@ auto surge::gl_atom::text_engine::get_face(std::string_view name) noexcept
   if (faces.contains(name)) {
     return faces[name];
   } else {
-    log_warn("The text engine has no face named %s", name.data());
+    log_warn("The text engine has no face named {}", name.data());
     return {};
   }
 }
@@ -125,11 +125,11 @@ auto surge::gl_atom::glyph_cache::create(FT_Face face, language lang) noexcept
     return tl::unexpected{error::freetype_null_face};
   }
 
-  log_info("Creating glyph cache for %s", face->family_name);
+  log_info("Creating glyph cache for {}", face->family_name);
 
   const auto status{FT_Select_Charmap(face, FT_ENCODING_UNICODE)};
   if (status != 0) {
-    log_error("Unable to set charmap for face %s: %s", face->family_name, FT_Error_String(status));
+    log_error("Unable to set charmap for face {}: {}", face->family_name, FT_Error_String(status));
     return tl::unexpected{error::freetype_charmap};
   }
 
@@ -197,7 +197,7 @@ auto surge::gl_atom::glyph_cache::load_character(FT_Face face, FT_ULong c) noexc
 
   const auto status{FT_Load_Char(face, c, FT_LOAD_RENDER)};
   if (status != 0) {
-    log_error("Unable to load ASCII character %lu for face %s: %s", c, face->family_name,
+    log_error("Unable to load ASCII character {} for face {}: {}", c, face->family_name,
               FT_Error_String(status));
     return error::freetype_character_load;
   } else {
@@ -236,7 +236,7 @@ auto surge::gl_atom::glyph_cache::load_character(FT_Face face, FT_ULong c) noexc
 
     const auto handle{glGetTextureHandleARB(texture)};
     if (handle == 0) {
-      log_error("Unable to create texture handle for character %lu", c);
+      log_error("Unable to create texture handle for character {}", c);
       return error::texture_handle_creation;
     } else {
       texture_ids[c] = texture;
@@ -252,7 +252,7 @@ auto surge::gl_atom::glyph_cache::load_nonprintable_character(FT_Face face, FT_U
 
   const auto status{FT_Load_Char(face, c, FT_LOAD_RENDER)};
   if (status != 0) {
-    log_error("Unable to load ASCII character %lu for face %s: %s", c, face->family_name,
+    log_error("Unable to load ASCII character {} for face {}: {}", c, face->family_name,
               FT_Error_String(status));
     return error::freetype_character_load;
   } else {

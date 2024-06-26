@@ -4,6 +4,7 @@
 #include "gl_atoms/sprite.hpp"
 #include "gl_atoms/texture.hpp"
 #include "imgui.h"
+#include "options.hpp"
 
 namespace surge::imgui {
 
@@ -23,8 +24,10 @@ void destroy() noexcept;
 void frame_begin() noexcept;
 void frame_end() noexcept;
 
+#ifdef SURGE_BUILD_TYPE_Debug
 void texture_database_window(bool *open, const gl_atom::texture::database &tdb) noexcept;
 void sprite_database_window(bool *open, const gl_atom::sprite::database &sdb) noexcept;
+#endif
 
 } // namespace gl
 
