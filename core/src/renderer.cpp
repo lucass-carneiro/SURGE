@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <vulkan/vk_enum_string_helper.h>
 
 static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
@@ -163,12 +162,12 @@ static void vk_internal_free(void *, size_t size, VkInternalAllocationType type,
 #endif
 }
 
-static const VkAllocationCallbacks vk_alloc_callbacks{.pUserData = nullptr,
-                                                      .pfnAllocation = vk_malloc,
-                                                      .pfnReallocation = vk_realloc,
-                                                      .pfnFree = vk_free,
-                                                      .pfnInternalAllocation = vk_internal_malloc,
-                                                      .pfnInternalFree = vk_internal_free};
+static VkAllocationCallbacks vk_alloc_callbacks{.pUserData = nullptr,
+                                                .pfnAllocation = vk_malloc,
+                                                .pfnReallocation = vk_realloc,
+                                                .pfnFree = vk_free,
+                                                .pfnInternalAllocation = vk_internal_malloc,
+                                                .pfnInternalFree = vk_internal_free};
 #ifdef SURGE_BUILD_TYPE_Debug
 static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
@@ -225,7 +224,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 }
 #endif
 
-auto surge::renderer::vk::init(const config::window_attrs &w_attrs) noexcept
+auto surge::renderer::vk::init(const config::window_resolution &w_res,
+                               const config::window_attrs &w_attrs) noexcept
     -> tl::expected<context, error> {
   context ctx{};
   log_info("Initializing Vulkan");
@@ -255,134 +255,174 @@ auto surge::renderer::vk::init(const config::window_attrs &w_attrs) noexcept
     log_info("Vulkan extension requested: {}", ext);
   }
 
-  /*********************
-   * Validation Layers *
-   *********************/
-#ifdef SURGE_BUILD_TYPE_Debug
-  log_info("Enabling Vulkan validation layers");
-
-  const std::array<const char *, 1> required_validation_layers{"VK_LAYER_KHRONOS_validation"};
-
-  for (const auto &l : required_validation_layers) {
-    log_info("Vulkan validation layer requested: {}", l);
-  }
-
-  u32 layer_count{0};
-  vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-
-  vector<VkLayerProperties> available_validation_layers(layer_count);
-  vkEnumerateInstanceLayerProperties(&layer_count, available_validation_layers.data());
-
-  if (available_validation_layers.size() < required_validation_layers.size()) {
-    log_error("{} validation layers were requested but only {} are available",
-              required_validation_layers.size(), available_validation_layers.size());
-    return tl::unexpected{vk_validation_layer_count_incompatible};
-  } else {
-    for (const auto &l : available_validation_layers) {
-      log_info("Vulkan validation layer available: {}", l.layerName);
-    }
-  }
-
-  for (const auto &layer : required_validation_layers) {
-    if (std::none_of(available_validation_layers.begin(), available_validation_layers.end(),
-                     [&](auto &p) { return strcmp(layer, p.layerName) == 0; })) {
-      log_error("Required validation layer {} not found", layer);
-      return tl::unexpected{vk_validation_layer_not_available};
-    }
-  }
-#endif // SURGE_BUILD_TYPE_Debug
-
   /************
    * Instance *
    ************/
   log_info("Creating Vulkan instance");
 
-  // app info
-  VkApplicationInfo app_info{};
-  app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  app_info.pApplicationName = w_attrs.name.c_str();
-  app_info.pEngineName = "SURGE - The Super Underrated Game Engine";
-  app_info.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
-  app_info.engineVersion
-      = VK_MAKE_API_VERSION(0, SURGE_VERSION_MAJOR, SURGE_VERSION_MINOR, SURGE_VERSION_PATCH);
-  app_info.apiVersion = VK_API_VERSION_1_3;
+  vkb::InstanceBuilder builder{};
+  builder.set_engine_name("SURGE - The Super Underrated Game Engine");
+  builder.set_app_name(w_attrs.name.c_str());
 
-  // Message handler
+  builder.set_app_version(VK_MAKE_API_VERSION(0, 1, 0, 0));
+  builder.set_engine_version(
+      VK_MAKE_API_VERSION(0, SURGE_VERSION_MAJOR, SURGE_VERSION_MINOR, SURGE_VERSION_PATCH));
+
+  builder.require_api_version(1, 3, 0);
+  builder.enable_extensions(required_extensions);
+
+  builder.set_allocation_callbacks(&vk_alloc_callbacks);
+
+  // Message handler and validation layers
 #ifdef SURGE_BUILD_TYPE_Debug
-  VkDebugUtilsMessengerCreateInfoEXT debug_handler_create_info{};
-  debug_handler_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  debug_handler_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                                              | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
-                                              | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                                              | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  debug_handler_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                                          | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                                          | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  debug_handler_create_info.pfnUserCallback = vk_debug_callback;
-  debug_handler_create_info.pUserData = nullptr;
+  log_info("Enabling Vulkan validation layers");
+  builder.enable_layer("VK_LAYER_KHRONOS_validation");
+  builder.request_validation_layers(true);
+  builder.set_debug_callback(vk_debug_callback);
 #endif
 
-  // create info
-  VkInstanceCreateInfo create_info{};
-  create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  create_info.pApplicationInfo = &app_info;
-  create_info.enabledExtensionCount = static_cast<u32>(required_extensions.size());
-  create_info.ppEnabledExtensionNames = required_extensions.data();
+  const auto instance_result{builder.build()};
 
-#ifdef SURGE_BUILD_TYPE_Debug
-  create_info.enabledLayerCount = static_cast<u32>(required_validation_layers.size());
-  create_info.ppEnabledLayerNames = required_validation_layers.data();
-  create_info.pNext = &debug_handler_create_info;
-#else
-  create_info.enabledLayerCount = 0;
-  create_info.ppEnabledLayerNames = nullptr;
-  create_info.pNext = nullptr;
-#endif
-
-  auto result{vkCreateInstance(&create_info, &vk_alloc_callbacks, &ctx.instance)};
-
-  if (result != VK_SUCCESS) {
-    log_error("Error while initializing Vulkan instance {}", string_VkResult(result));
+  if (!instance_result) {
+    log_error("Error while initializing Vulkan instance {}",
+              string_VkResult(instance_result.vk_result()));
     return tl::unexpected{error::vk_instance_init};
-  }
-
-  /*****************
-   * Debug handler *
-   *****************/
-#ifdef SURGE_BUILD_TYPE_Debug
-  log_info("Creating debug messenger");
-
-  const auto func{reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(ctx.instance, "vkCreateDebugUtilsMessengerEXT"))};
-
-  if (func != nullptr) {
-    const auto result{
-        func(ctx.instance, &debug_handler_create_info, &vk_alloc_callbacks, &ctx.debug_messenger)};
-    if (result != VK_SUCCESS) {
-      log_error("Error while creating debug handler: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_debug_handler_creation};
-    }
   } else {
-    log_error("Extension \"vkCreateDebugUtilsMessengerEXT\" is not present.");
-    return tl::unexpected{error::vk_debug_handler_creation};
+    ctx.instance = instance_result.value();
   }
-#endif
+
+  /**********
+   * Device *
+   **********/
+
+  // vulkan 1.3 features
+  VkPhysicalDeviceVulkan13Features features{
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+  features.dynamicRendering = true;
+  features.synchronization2 = true;
+
+  // vulkan 1.2 features
+  VkPhysicalDeviceVulkan12Features features12{
+      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+  features12.bufferDeviceAddress = true;
+  features12.descriptorIndexing = true;
+
+  // Surface
+  const auto surface_result{glfwCreateWindowSurface(ctx.instance.instance, window::get_window_ptr(),
+                                                    &vk_alloc_callbacks, &ctx.surface)};
+  if (surface_result != VK_SUCCESS) {
+    log_error("Window Vulkan surface creation failed: {}", string_VkResult(surface_result));
+    return tl::unexpected{error::vk_surface_init};
+  }
+
+  // Physical device
+  vkb::PhysicalDeviceSelector phys_dev_select{ctx.instance};
+  phys_dev_select.set_minimum_version(1, 3);
+  phys_dev_select.set_required_features_13(features);
+  phys_dev_select.set_required_features_12(features12);
+  phys_dev_select.set_surface(ctx.surface);
+
+  const auto phys_dev_select_result{phys_dev_select.select()};
+
+  if (!phys_dev_select_result) {
+    log_error("Error while selecting Vulkan physical device {}",
+              string_VkResult(phys_dev_select_result.vk_result()));
+    return tl::unexpected{error::vk_phys_dev_select};
+  } else {
+    log_info("Selected Vulkan device {}", phys_dev_select_result.value().name);
+    ctx.phys_device = phys_dev_select_result.value();
+  }
+
+  // Logical device
+  vkb::DeviceBuilder logi_dev_build{phys_dev_select_result.value()};
+  const auto device_build_result{logi_dev_build.build()};
+
+  if (!device_build_result) {
+    log_error("Error while creating Vulkan logical device {}",
+              string_VkResult(device_build_result.vk_result()));
+    return tl::unexpected{error::vk_logi_dev_select};
+  } else {
+    ctx.device = device_build_result.value();
+  }
+
+  /*************
+   * Swapchain *
+   *************/
+  const auto swpc_create_result{create_swapchain(ctx, w_res.width, w_res.height)};
+  if (!swpc_create_result) {
+    return tl::unexpected{swpc_create_result.error()};
+  } else {
+    ctx.swpc_data = swpc_create_result.value();
+  }
 
   return ctx;
+}
+
+auto surge::renderer::vk::create_swapchain(context &ctx, u32 width, u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
+  swapchain_data swpc_data{};
+
+  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
+
+  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
+      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
+  swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR); // TODO: Control VSync here
+  swpc_builder.set_desired_extent(width, height);
+  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+  const auto swpc_build_result{swpc_builder.build()};
+  if (!swpc_build_result) {
+    log_error("Error while creating Vulkan swapchain {}",
+              string_VkResult(swpc_build_result.vk_result()));
+    return tl::unexpected{error::vk_init_swapchain};
+  } else {
+    swpc_data.swapchain = swpc_build_result.value();
+  }
+
+  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
+  if (!get_swpc_img_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_result.vk_result()));
+    return tl::unexpected{error::vk_swachain_imgs};
+  } else {
+    swpc_data.imgs = get_swpc_img_result.value();
+  }
+
+  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
+  if (!get_swpc_img_views_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_views_result.vk_result()));
+    return tl::unexpected{error::vk_swachain_imgs_views};
+  } else {
+    swpc_data.imgs_views = get_swpc_img_views_result.value();
+  }
+
+  return swpc_data;
+}
+
+void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
+  vkb::destroy_swapchain(swpc.swapchain);
+
+  for (auto &img : swpc.imgs_views) {
+    vkDestroyImageView(ctx.device.device, img, &vk_alloc_callbacks);
+  }
+
+  swpc.imgs.clear();
+  swpc.imgs_views.clear();
 }
 
 void surge::renderer::vk::terminate(context &ctx) {
   log_info("Terminating Vulkan");
 
-#ifdef SURGE_BUILD_TYPE_Debug
-  log_info("Destroying debug messenger");
-  const auto func{reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(ctx.instance, "vkDestroyDebugUtilsMessengerEXT"))};
-  if (func != nullptr) {
-    func(ctx.instance, ctx.debug_messenger, &vk_alloc_callbacks);
-  }
-#endif
+  log_info("Destroying swapchain");
+  destroy_swapchain(ctx, ctx.swpc_data);
+
+  log_info("Destroying window surface");
+  vkb::destroy_surface(ctx.instance, ctx.surface);
+
+  log_info("Destroying logical device");
+  vkb::destroy_device(ctx.device);
 
   log_info("Destroying instance");
-  vkDestroyInstance(ctx.instance, &vk_alloc_callbacks);
+  vkb::destroy_instance(ctx.instance);
 }

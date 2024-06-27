@@ -2,11 +2,11 @@
 #define SURGE_CORE_RENDERER_HPP
 
 #include "config.hpp"
-#include "options.hpp"
 #include "error_types.hpp"
+#include "options.hpp"
+#include "vk_bootstrap/VkBootstrap.hpp"
 
 // clang-format off
-#define GLFW_INCLUDE_VULKAN
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -25,16 +25,26 @@ auto init_opengl(const config::renderer_attrs &r_attrs) noexcept -> std::optiona
 
 namespace vk {
 
-struct context {
-  VkInstance instance{nullptr};
-
-#ifdef SURGE_BUILD_TYPE_Debug
-  VkDebugUtilsMessengerEXT debug_messenger{};
-#endif // SURGE_BUILD_TYPE_Debug
+struct swapchain_data {
+  vkb::Swapchain swapchain{};
+  vector<VkImage> imgs{};
+  vector<VkImageView> imgs_views{};
 };
 
-auto init(const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
+struct context {
+  vkb::Instance instance{};
+  VkSurfaceKHR surface{};
+  vkb::PhysicalDevice phys_device{};
+  vkb::Device device{};
+  swapchain_data swpc_data{};
+};
+
+auto init(const config::window_resolution &w_res,const config::window_attrs &w_attrs) noexcept
+    -> tl::expected<context, error>;
 void terminate(context &ctx);
+
+auto create_swapchain(context &ctx, u32 width, u32 height) noexcept -> tl::expected < swapchain_data, error>;
+void destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept;
 
 } // namespace vk
 

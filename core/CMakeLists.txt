@@ -32,6 +32,9 @@ set(
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/texture.hpp"
   
+  "${PROJECT_SOURCE_DIR}/include/vk_bootstrap/VkBootstrap.hpp"
+  "${PROJECT_SOURCE_DIR}/include/vk_bootstrap/VkBootstrapDispatch.hpp"
+  
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/config.hpp"
@@ -55,6 +58,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/texture.cpp"
+
+  "${PROJECT_SOURCE_DIR}/src/vk_bootstrap/VkBootstrap.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
