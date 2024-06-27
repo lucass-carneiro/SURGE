@@ -49,7 +49,11 @@ void table_headers_row() noexcept;
 void table_next_row() noexcept;
 auto table_next_column() noexcept -> bool;
 
+#if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC)
+void text(const char *fmt, ...) noexcept __attribute__((format(printf, 1, 2)));
+#else
 void text(const char *fmt, ...) noexcept;
+#endif
 
 auto colapsing_header(const char *name) noexcept -> bool;
 

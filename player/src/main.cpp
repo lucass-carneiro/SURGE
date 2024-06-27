@@ -62,7 +62,7 @@ auto main(int, char **) noexcept -> int {
   renderer::vk::context vk_ctx{};
 
   if (r_attrs.backend == config::renderer_backend::opengl) {
-    if (!renderer::init_opengl(r_attrs)) {
+    if (renderer::init_opengl(r_attrs).has_value()) {
       window::terminate();
       return EXIT_FAILURE;
     }
@@ -189,7 +189,6 @@ auto main(int, char **) noexcept -> int {
 // FPS Cap. On Linux, even with VSync this is necessary, otherwise the FPS may go above 60
 #ifdef SURGE_SYSTEM_Linux
     if (r_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / r_attrs.fps_cap_value))) {
-      log_info("frame time = {}", frame_timer.elapsed());
       std::this_thread::sleep_for(std::chrono::duration<double, std::ratio<1>>(
           (1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
     }

@@ -166,7 +166,7 @@ void surge::imgui::gl::sprite_database_window(bool *open,
   ImGui::End();
 }
 
-#endif SURGE_BUILD_TYPE_Debug
+#endif // SURGE_BUILD_TYPE_Debug
 
 auto surge::imgui::begin(const char *name, bool *open) noexcept -> bool {
   return ImGui::Begin(name, open);
