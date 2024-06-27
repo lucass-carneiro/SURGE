@@ -81,7 +81,7 @@ SURGE_ENABLE_OPTIMIZATIONS     | Compiles code with optimizations               
 SURGE_ENABLE_LTO               | Compiles code with link time optimizations            | OFF (`Debug`) / ON (`Release`, `Profile`) |
 SURGE_ENABLE_FAST_MATH         | Compiles code with fast math mode                     | OFF (`Debug`) / ON (`Release`, `Profile`) |
 SURGE_ENABLE_TUNING            | Compiles code with architecture tuning                | OFF (`Debug`) / ON (`Release`, `Profile`) |
-SURGE_DEBUG_MEMORY             | Enable custom allocators debug facilities             | ON (`Debug`) / OFF (`Release`, `Profile`) |
+SURGE_DEBUG_MEMORY             | Enable custom allocators debug facilities             | OFF                                       |
 SURGE_ENABLE_HR                | Enable module hot reloading when pressing LCTRL + F5  | ON (`Debug`, `Release`, Profile)          |
 SURGE_OPENGL_ERROR_BUFFER_SIZE | Buffer size (Bytes) for storing OpenGL error messages | 1024. Must be >= 1024                     |
 

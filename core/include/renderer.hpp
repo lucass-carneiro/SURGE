@@ -2,6 +2,7 @@
 #define SURGE_CORE_RENDERER_HPP
 
 #include "config.hpp"
+#include "options.hpp"
 #include "error_types.hpp"
 
 // clang-format off
@@ -26,6 +27,10 @@ namespace vk {
 
 struct context {
   VkInstance instance{nullptr};
+
+#ifdef SURGE_BUILD_TYPE_Debug
+  VkDebugUtilsMessengerEXT debug_messenger{};
+#endif // SURGE_BUILD_TYPE_Debug
 };
 
 auto init(const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;

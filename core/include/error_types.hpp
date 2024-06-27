@@ -67,6 +67,9 @@ enum error : int {
 
   // Vulkan errors
   vk_instance_init,
+  vk_validation_layer_count_incompatible,
+  vk_validation_layer_not_available,
+  vk_debug_handler_creation,
 
   // Module callback binding
   keyboard_event_binding,

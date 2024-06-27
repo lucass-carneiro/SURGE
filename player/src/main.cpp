@@ -70,7 +70,7 @@ auto main(int, char **) noexcept -> int {
     const auto vk_init_result{renderer::vk::init(w_attrs)};
     if (!vk_init_result) {
       window::terminate();
-      EXIT_FAILURE;
+      return EXIT_FAILURE;
     } else {
       vk_ctx = vk_init_result.value();
     }
