@@ -79,7 +79,9 @@ endif()
 
 option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
+option(SURGE_GL_LOG "Log OpenGL events" ON)
 option(SURGE_LOG_GL_NOTIFICATIONS "Produce log outputs on GL_DEBUG_SEVERITY_NOTIFICATION events" ON)
+option(SURGE_USE_VK_VALIDATION_LAYERS "Use Vulkan Validation layers" ON)
 
 # -----------------------------------------
 # Compilation flag options

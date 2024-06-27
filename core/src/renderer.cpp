@@ -13,13 +13,14 @@ static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int heigh
 }
 
 // See https://www.khronos.org/opengl/wiki/OpenGL_Error#Catching_errors_.28the_easy_way.29
+#ifdef SURGE_GL_LOG
 static void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity, GLsizei,
                                          const GLchar *message, const void *) {
 
   if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
-#ifdef SURGE_LOG_GL_NOTIFICATIONS
+#  ifdef SURGE_LOG_GL_NOTIFICATIONS
     log_info("OpenGL info: {}", message);
-#endif
+#  endif
   } else if (severity == GL_DEBUG_SEVERITY_LOW || severity == GL_DEBUG_SEVERITY_LOW_ARB) {
     log_warn("OpenGL low severity warning: {}", message);
   } else if (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_MEDIUM_ARB) {
@@ -28,6 +29,7 @@ static void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity
     log_error("OpenGL error: {}", message);
   }
 }
+#endif
 
 auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcept
     -> std::optional<error> {
@@ -99,7 +101,7 @@ auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcep
   // NOLINTNEXTLINE
   log_info("Using OpenGL Version {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 
-#ifdef SURGE_BUILD_TYPE_Debug
+#ifdef SURGE_GL_LOG
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(gl_error_callback, nullptr);
 #endif
@@ -117,8 +119,8 @@ auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcep
   return {};
 }
 
-static auto vk_malloc(void *, size_t size, size_t alignment, VkSystemAllocationScope scope) noexcept
-    -> void * {
+static auto vk_malloc(void *, size_t size, size_t alignment,
+                      [[maybe_unused]] VkSystemAllocationScope scope) noexcept -> void * {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk memory event with scope {}", static_cast<int>(scope));
 #endif
@@ -126,7 +128,7 @@ static auto vk_malloc(void *, size_t size, size_t alignment, VkSystemAllocationS
 }
 
 static auto vk_realloc(void *, void *pOriginal, size_t size, size_t alignment,
-                       VkSystemAllocationScope scope) noexcept -> void * {
+                       [[maybe_unused]] VkSystemAllocationScope scope) noexcept -> void * {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk memory event with scope {}", static_cast<int>(scope));
 #endif
@@ -140,8 +142,9 @@ static void vk_free(void *, void *pMemory) noexcept {
   surge::allocators::mimalloc::free(pMemory);
 }
 
-static void vk_internal_malloc(void *, size_t size, VkInternalAllocationType type,
-                               VkSystemAllocationScope scope) {
+static void vk_internal_malloc([[maybe_unused]] void *, [[maybe_unused]] size_t size,
+                               [[maybe_unused]] VkInternalAllocationType type,
+                               [[maybe_unused]] VkSystemAllocationScope scope) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk internal malloc event:\n"
             "size: {}\n"
@@ -151,8 +154,9 @@ static void vk_internal_malloc(void *, size_t size, VkInternalAllocationType typ
 #endif
 }
 
-static void vk_internal_free(void *, size_t size, VkInternalAllocationType type,
-                             VkSystemAllocationScope scope) {
+static void vk_internal_free([[maybe_unused]] void *, [[maybe_unused]] size_t size,
+                             [[maybe_unused]] VkInternalAllocationType type,
+                             [[maybe_unused]] VkSystemAllocationScope scope) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk internal malloc free:\n"
             "size: {}\n"
@@ -168,7 +172,7 @@ static VkAllocationCallbacks vk_alloc_callbacks{.pUserData = nullptr,
                                                 .pfnFree = vk_free,
                                                 .pfnInternalAllocation = vk_internal_malloc,
                                                 .pfnInternalFree = vk_internal_free};
-#ifdef SURGE_BUILD_TYPE_Debug
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
 static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT *callback, void *) {
@@ -186,6 +190,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
     case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
       log_info("Vulkan Info (Performance): {}", callback->pMessage);
       break;
+    default:
+      break;
     }
     return VK_FALSE;
 
@@ -200,6 +206,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
       break;
     case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
       log_warn("Vulkan Warning (Performance): {}", callback->pMessage);
+      break;
+    default:
       break;
     }
 
@@ -216,6 +224,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
       break;
     case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
       log_error("Vulkan Error (Performance): {}", callback->pMessage);
+      break;
+    default:
       break;
     }
 
@@ -246,7 +256,7 @@ auto surge::renderer::vk::init(const config::window_resolution &w_res,
   vector<const char *> required_extensions{glfw_extensions, glfw_extensions + glfw_extension_count};
 
   // Debug handler (if validation layers are available)
-#ifdef SURGE_BUILD_TYPE_Debug
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
   required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
@@ -274,7 +284,7 @@ auto surge::renderer::vk::init(const config::window_resolution &w_res,
   builder.set_allocation_callbacks(&vk_alloc_callbacks);
 
   // Message handler and validation layers
-#ifdef SURGE_BUILD_TYPE_Debug
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
   log_info("Enabling Vulkan validation layers");
   builder.enable_layer("VK_LAYER_KHRONOS_validation");
   builder.request_validation_layers(true);
@@ -348,7 +358,8 @@ auto surge::renderer::vk::init(const config::window_resolution &w_res,
   /*************
    * Swapchain *
    *************/
-  const auto swpc_create_result{create_swapchain(ctx, w_res.width, w_res.height)};
+  const auto swpc_create_result{
+      create_swapchain(ctx, static_cast<u32>(w_res.width), static_cast<u32>(w_res.height))};
   if (!swpc_create_result) {
     return tl::unexpected{swpc_create_result.error()};
   } else {
@@ -369,6 +380,7 @@ auto surge::renderer::vk::create_swapchain(context &ctx, u32 width, u32 height) 
   swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR); // TODO: Control VSync here
   swpc_builder.set_desired_extent(width, height);
   swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
 
   const auto swpc_build_result{swpc_builder.build()};
   if (!swpc_build_result) {

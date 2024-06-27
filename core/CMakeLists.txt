@@ -188,6 +188,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
           -Wswitch-enum
           -Wshift-sign-overflow
           -Wloop-analysis
+          -Wno-switch-enum
       )
       target_link_options(SurgeCore PUBLIC -Og -g3 -ggdb3 -rdynamic)
   else()

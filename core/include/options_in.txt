@@ -18,7 +18,9 @@
 
 #cmakedefine SURGE_USE_LOG
 #cmakedefine SURGE_USE_LOG_COLOR
+#cmakedefine SURGE_GL_LOG
 #cmakedefine SURGE_LOG_GL_NOTIFICATIONS
+#cmakedefine SURGE_USE_VK_VALIDATION_LAYERS
 #cmakedefine SURGE_DEBUG_MEMORY
 #cmakedefine SURGE_ENABLE_HR
 #cmakedefine SURGE_ENABLE_TRACY
