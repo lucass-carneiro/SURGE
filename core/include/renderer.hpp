@@ -31,12 +31,34 @@ struct swapchain_data {
   vector<VkImageView> imgs_views{};
 };
 
+struct frame_cmd_data {
+  VkCommandPool pool{};
+  VkCommandBuffer buffer{};
+};
+
+struct command_data {
+  static constexpr usize frame_overlap{2};
+
+  usize frame_number{0};
+
+  std::array<VkCommandPool, frame_overlap> command_pools{};
+  std::array<VkCommandBuffer, frame_overlap> command_buffers{};
+
+  u32 graphics_queue_family{0};
+  VkQueue graphics_queue{nullptr};
+
+  [[nodiscard]] auto get_frame_cmd_data() noexcept -> frame_cmd_data;
+};
+
 struct context {
   vkb::Instance instance{};
   VkSurfaceKHR surface{};
+
   vkb::PhysicalDevice phys_device{};
   vkb::Device device{};
+
   swapchain_data swpc_data{};
+  command_data cmd_data{};
 };
 
 auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,

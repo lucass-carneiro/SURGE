@@ -234,6 +234,74 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 }
 #endif
 
+[[nodiscard]] auto surge::renderer::vk::command_data::get_frame_cmd_data() noexcept
+    -> frame_cmd_data {
+  return frame_cmd_data{command_pools[frame_number % frame_overlap],
+                        command_buffers[frame_number % frame_overlap]};
+}
+
+auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
+                                           u32 width, u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
+  swapchain_data swpc_data{};
+
+  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
+
+  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
+      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
+
+  // VSync
+  if (r_attrs.vsync) {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+  } else {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
+  }
+
+  swpc_builder.set_desired_extent(width, height);
+  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
+
+  const auto swpc_build_result{swpc_builder.build()};
+  if (!swpc_build_result) {
+    log_error("Error while creating Vulkan swapchain {}",
+              string_VkResult(swpc_build_result.vk_result()));
+    return tl::unexpected{error::vk_init_swapchain};
+  } else {
+    swpc_data.swapchain = swpc_build_result.value();
+  }
+
+  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
+  if (!get_swpc_img_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_result.vk_result()));
+    return tl::unexpected{error::vk_swapchain_imgs};
+  } else {
+    swpc_data.imgs = get_swpc_img_result.value();
+  }
+
+  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
+  if (!get_swpc_img_views_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_views_result.vk_result()));
+    return tl::unexpected{error::vk_swapchain_imgs_views};
+  } else {
+    swpc_data.imgs_views = get_swpc_img_views_result.value();
+  }
+
+  return swpc_data;
+}
+
+void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
+  vkb::destroy_swapchain(swpc.swapchain);
+
+  for (auto &img : swpc.imgs_views) {
+    vkDestroyImageView(ctx.device.device, img, &vk_alloc_callbacks);
+  }
+
+  swpc.imgs.clear();
+  swpc.imgs_views.clear();
+}
+
 auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
                                const config::window_resolution &w_res,
                                const config::window_attrs &w_attrs) noexcept
@@ -367,73 +435,76 @@ auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
     ctx.swpc_data = swpc_create_result.value();
   }
 
+  /**********
+   * Queues *
+   **********/
+  const auto get_graph_queue_result{ctx.device.get_queue(vkb::QueueType::graphics)};
+  if (!get_graph_queue_result) {
+    log_error("Error while acquiring Vulkan Graphics Queue Vulkan from device {}",
+              string_VkResult(get_graph_queue_result.vk_result()));
+    return tl::unexpected{error::vk_graphics_queue_retrieve};
+  } else {
+    ctx.cmd_data.graphics_queue = get_graph_queue_result.value();
+  }
+
+  const auto get_graph_queue_family_result{ctx.device.get_queue_index(vkb::QueueType::graphics)};
+  if (!get_graph_queue_family_result) {
+    log_error("Error while acquiring Vulkan Graphics Queue Vulkan from device {}",
+              string_VkResult(get_graph_queue_family_result.vk_result()));
+    return tl::unexpected{error::vk_graphics_queue_retrieve};
+  } else {
+    ctx.cmd_data.graphics_queue_family = get_graph_queue_family_result.value();
+  }
+
+  /*****************
+   * Command Pools *
+   *****************/
+
+  // Resetable command pool
+  VkCommandPoolCreateInfo cmd_pool_create_info = {};
+  cmd_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  cmd_pool_create_info.pNext = nullptr;
+  cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  cmd_pool_create_info.queueFamilyIndex = ctx.cmd_data.graphics_queue_family;
+
+  for (usize i = 0; i < ctx.cmd_data.frame_overlap; i++) {
+    auto result{vkCreateCommandPool(ctx.device.device, &cmd_pool_create_info, &vk_alloc_callbacks,
+                                    &ctx.cmd_data.command_pools[i])};
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create command pool: {}", string_VkResult(result));
+      return tl::unexpected{vk_cmd_pool_creation};
+    }
+
+    // Command buffer
+    VkCommandBufferAllocateInfo cmd_budder_alloc_info = {};
+    cmd_budder_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmd_budder_alloc_info.pNext = nullptr;
+    cmd_budder_alloc_info.commandPool = ctx.cmd_data.command_pools[i];
+    cmd_budder_alloc_info.commandBufferCount = 1;
+    cmd_budder_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    result = vkAllocateCommandBuffers(ctx.device.device, &cmd_budder_alloc_info,
+                                      &ctx.cmd_data.command_buffers[i]);
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create buffer: {}", string_VkResult(result));
+      return tl::unexpected{vk_cmd_buffer_creation};
+    }
+  }
+
   return ctx;
-}
-
-auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
-                                           u32 width, u32 height) noexcept
-    -> tl::expected<swapchain_data, error> {
-  swapchain_data swpc_data{};
-
-  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
-
-  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
-      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-
-  // VSync
-  if (r_attrs.vsync) {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
-  } else {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
-  }
-
-  swpc_builder.set_desired_extent(width, height);
-  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
-
-  const auto swpc_build_result{swpc_builder.build()};
-  if (!swpc_build_result) {
-    log_error("Error while creating Vulkan swapchain {}",
-              string_VkResult(swpc_build_result.vk_result()));
-    return tl::unexpected{error::vk_init_swapchain};
-  } else {
-    swpc_data.swapchain = swpc_build_result.value();
-  }
-
-  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
-  if (!get_swpc_img_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_result.vk_result()));
-    return tl::unexpected{error::vk_swachain_imgs};
-  } else {
-    swpc_data.imgs = get_swpc_img_result.value();
-  }
-
-  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
-  if (!get_swpc_img_views_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_views_result.vk_result()));
-    return tl::unexpected{error::vk_swachain_imgs_views};
-  } else {
-    swpc_data.imgs_views = get_swpc_img_views_result.value();
-  }
-
-  return swpc_data;
-}
-
-void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
-  vkb::destroy_swapchain(swpc.swapchain);
-
-  for (auto &img : swpc.imgs_views) {
-    vkDestroyImageView(ctx.device.device, img, &vk_alloc_callbacks);
-  }
-
-  swpc.imgs.clear();
-  swpc.imgs_views.clear();
 }
 
 void surge::renderer::vk::terminate(context &ctx) {
   log_info("Terminating Vulkan");
+
+  log_info("Destroying command buffers and pools");
+  for (usize i = 0; i < ctx.cmd_data.frame_overlap; i++) {
+    vkFreeCommandBuffers(ctx.device, ctx.cmd_data.command_pools[i], 1,
+                         &ctx.cmd_data.command_buffers[i]);
+    vkDestroyCommandPool(ctx.device, ctx.cmd_data.command_pools[i], &vk_alloc_callbacks);
+  }
 
   log_info("Destroying swapchain");
   destroy_swapchain(ctx, ctx.swpc_data);
