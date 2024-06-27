@@ -67,7 +67,7 @@ auto main(int, char **) noexcept -> int {
       return EXIT_FAILURE;
     }
   } else {
-    const auto vk_init_result{renderer::vk::init(w_res, w_attrs)};
+    const auto vk_init_result{renderer::vk::init(r_attrs, w_res, w_attrs)};
     if (!vk_init_result) {
       window::terminate();
       return EXIT_FAILURE;

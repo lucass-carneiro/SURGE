@@ -39,11 +39,12 @@ struct context {
   swapchain_data swpc_data{};
 };
 
-auto init(const config::window_resolution &w_res,const config::window_attrs &w_attrs) noexcept
-    -> tl::expected<context, error>;
+auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+          const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
 void terminate(context &ctx);
 
-auto create_swapchain(context &ctx, u32 width, u32 height) noexcept -> tl::expected < swapchain_data, error>;
+auto create_swapchain(const config::renderer_attrs &r_attrs, context &ctx, u32 width,
+                      u32 height) noexcept -> tl::expected<swapchain_data, error>;
 void destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept;
 
 } // namespace vk

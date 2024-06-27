@@ -234,7 +234,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 }
 #endif
 
-auto surge::renderer::vk::init(const config::window_resolution &w_res,
+auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
+                               const config::window_resolution &w_res,
                                const config::window_attrs &w_attrs) noexcept
     -> tl::expected<context, error> {
   context ctx{};
@@ -358,8 +359,8 @@ auto surge::renderer::vk::init(const config::window_resolution &w_res,
   /*************
    * Swapchain *
    *************/
-  const auto swpc_create_result{
-      create_swapchain(ctx, static_cast<u32>(w_res.width), static_cast<u32>(w_res.height))};
+  const auto swpc_create_result{create_swapchain(r_attrs, ctx, static_cast<u32>(w_res.width),
+                                                 static_cast<u32>(w_res.height))};
   if (!swpc_create_result) {
     return tl::unexpected{swpc_create_result.error()};
   } else {
@@ -369,7 +370,8 @@ auto surge::renderer::vk::init(const config::window_resolution &w_res,
   return ctx;
 }
 
-auto surge::renderer::vk::create_swapchain(context &ctx, u32 width, u32 height) noexcept
+auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
+                                           u32 width, u32 height) noexcept
     -> tl::expected<swapchain_data, error> {
   swapchain_data swpc_data{};
 
@@ -377,7 +379,14 @@ auto surge::renderer::vk::create_swapchain(context &ctx, u32 width, u32 height) 
 
   swpc_builder.set_desired_format(VkSurfaceFormatKHR{
       .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-  swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR); // TODO: Control VSync here
+
+  // VSync
+  if (r_attrs.vsync) {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+  } else {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
+  }
+
   swpc_builder.set_desired_extent(width, height);
   swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
   swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
