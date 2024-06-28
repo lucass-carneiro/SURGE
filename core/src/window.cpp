@@ -215,7 +215,7 @@ auto surge::window::get_window_ptr() noexcept -> GLFWwindow * { return g_engine_
 
 static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int action,
                                 int mods) noexcept {
-  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
+  auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
   if (status != GLFW_NO_ERROR) {
@@ -227,7 +227,7 @@ static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int a
 }
 
 static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
-  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
+  auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
   if (status != GLFW_NO_ERROR) {
@@ -239,7 +239,7 @@ static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, 
 }
 
 static void glfw_mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noexcept {
-  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
+  auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
   if (status != GLFW_NO_ERROR) {
