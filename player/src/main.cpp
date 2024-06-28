@@ -102,10 +102,18 @@ auto main(int, char **) noexcept -> int {
     return EXIT_FAILURE;
   }
 
-  const auto on_load_result{mod_api->on_load()};
+  auto on_load_result{mod_api->on_load()};
   if (on_load_result != 0) {
     log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
               on_load_result);
+    window::terminate();
+    module::unload(*mod);
+    return EXIT_FAILURE;
+  }
+
+  auto input_bind_result{window::bind_module_input_callbacks(&(mod_api.value()))};
+  if (input_bind_result.has_value()) {
+    window::terminate();
     module::unload(*mod);
     return EXIT_FAILURE;
   }
@@ -137,6 +145,7 @@ auto main(int, char **) noexcept -> int {
       t.start();
 
       mod_api->on_unload();
+      window::unbind_input_callbacks();
 
       mod = module::reload(*mod);
       if (!mod) {
@@ -148,10 +157,15 @@ auto main(int, char **) noexcept -> int {
         break;
       }
 
-      const auto on_load_result{mod_api->on_load()};
+      on_load_result = mod_api->on_load();
       if (on_load_result != 0) {
         log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                   on_load_result);
+        break;
+      }
+
+      input_bind_result = window::bind_module_input_callbacks(&(mod_api.value()));
+      if (input_bind_result.has_value()) {
         break;
       }
 
@@ -202,6 +216,7 @@ auto main(int, char **) noexcept -> int {
 
   // Finalize modules
   mod_api->on_unload();
+  window::unbind_input_callbacks();
   module::unload(*mod);
 
   // Finalize window and renderer

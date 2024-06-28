@@ -56,6 +56,7 @@ enum error : int {
   glfw_window_hint_resize,
   glfw_window_creation,
   glfw_window_input_mode,
+  glfw_set_usr_ptr,
   glfw_make_ctx,
   glfw_vsync,
   glfw_resize_callback,

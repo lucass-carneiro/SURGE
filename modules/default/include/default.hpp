@@ -13,28 +13,17 @@
 #  define SURGE_MODULE_EXPORT
 #endif
 
-namespace mod_default {
-
-auto bind_callbacks() noexcept -> int;
-auto unbind_callbacks() noexcept -> int;
-
-} // namespace mod_default
-
 extern "C" {
 
 SURGE_MODULE_EXPORT auto on_load() noexcept -> int;
 SURGE_MODULE_EXPORT auto on_unload() noexcept -> int;
+
 SURGE_MODULE_EXPORT auto draw() noexcept -> int;
 SURGE_MODULE_EXPORT auto update(double dt) noexcept -> int;
 
-SURGE_MODULE_EXPORT void keyboard_event(GLFWwindow *window, int key, int scancode, int action,
-                                        int mods) noexcept;
-
-SURGE_MODULE_EXPORT void mouse_button_event(GLFWwindow *window, int button, int action,
-                                            int mods) noexcept;
-
-SURGE_MODULE_EXPORT void mouse_scroll_event(GLFWwindow *window, double xoffset,
-                                            double yoffset) noexcept;
+SURGE_MODULE_EXPORT void keyboard_event(int key, int scancode, int action, int mods) noexcept;
+SURGE_MODULE_EXPORT void mouse_button_event(int button, int action, int mods) noexcept;
+SURGE_MODULE_EXPORT void mouse_scroll_event(double xoffset, double yoffset) noexcept;
 }
 
 #endif // SURGE_CORE_MODULE_DEFAULT_HPP

@@ -2,6 +2,7 @@
 #define SURGE_CORE_WINDOW_HPP
 
 #include "config.hpp"
+#include "module.hpp"
 #include "renderer.hpp"
 
 #include <optional>
@@ -25,9 +26,8 @@ void swap_buffers() noexcept;
 
 auto get_window_ptr() noexcept -> GLFWwindow *;
 
-auto set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error>;
-auto set_mouse_button_callback(GLFWmousebuttonfun f) noexcept -> std::optional<error>;
-auto set_mouse_scroll_callback(GLFWscrollfun f) noexcept -> std::optional<error>;
+auto bind_module_input_callbacks(module::api *mod_api) noexcept -> std::optional<error>;
+void unbind_input_callbacks() noexcept;
 
 } // namespace surge::window
 

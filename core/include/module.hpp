@@ -30,9 +30,9 @@ using on_unload_t = int (*)();
 using draw_t = int (*)();
 using update_t = int (*)(double);
 
-using keyboard_event_t = void (*)(GLFWwindow *, int, int, int, int);
-using mouse_button_event_t = void (*)(GLFWwindow *, int, int, int);
-using mouse_scroll_event_t = void (*)(GLFWwindow *, double, double);
+using keyboard_event_t = void (*)(int, int, int, int);
+using mouse_button_event_t = void (*)(int, int, int);
+using mouse_scroll_event_t = void (*)(double, double);
 
 struct api {
   on_load_t on_load;

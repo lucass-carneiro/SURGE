@@ -213,39 +213,98 @@ void surge::window::swap_buffers() noexcept { glfwSwapBuffers(g_engine_window); 
 
 auto surge::window::get_window_ptr() noexcept -> GLFWwindow * { return g_engine_window; }
 
-auto surge::window::set_key_callback(GLFWkeyfun f) noexcept -> std::optional<error> {
-  glfwSetKeyCallback(g_engine_window, f);
+static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int action,
+                                int mods) noexcept {
+  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
   auto status{glfwGetError(nullptr)};
+
+  if (status != GLFW_NO_ERROR) {
+    log_error("Unable to retrieve module api from GLFW user pointer: {:#x}", status);
+  } else if (usr_ptr != nullptr) {
+    auto mod_api{static_cast<surge::module::api *>(usr_ptr)};
+    mod_api->keyboard_event(key, scancode, action, mods);
+  }
+}
+
+static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
+  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
+  auto status{glfwGetError(nullptr)};
+
+  if (status != GLFW_NO_ERROR) {
+    log_error("Unable to retrieve module api from GLFW user pointer: {:#x}", status);
+  } else if (usr_ptr != nullptr) {
+    auto mod_api{static_cast<surge::module::api *>(usr_ptr)};
+    mod_api->mouse_button_event(button, action, mods);
+  }
+}
+
+static void glfw_mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noexcept {
+  auto usr_ptr{glfwGetWindowUserPointer(g_engine_window)};
+  auto status{glfwGetError(nullptr)};
+
+  if (status != GLFW_NO_ERROR) {
+    log_error("Unable to retrieve module api from GLFW user pointer: {:#x}", status);
+  } else if (usr_ptr != nullptr) {
+    auto mod_api{static_cast<surge::module::api *>(usr_ptr)};
+    mod_api->mouse_scroll_event(xoffset, yoffset);
+  }
+}
+
+auto surge::window::bind_module_input_callbacks(module::api *mod_api) noexcept
+    -> std::optional<error> {
+  log_info("Binding module interaction callbacks");
+
+  // Set module api as user ptr
+  glfwSetWindowUserPointer(g_engine_window, static_cast<void *>(mod_api));
+  auto status{glfwGetError(nullptr)};
+
+  if (status != GLFW_NO_ERROR) {
+    log_error("Unable to set module api as GLFW user pointer: {:#x}", status);
+    return error::glfw_set_usr_ptr;
+  }
+
+  // Set Keyboard callback
+  glfwSetKeyCallback(g_engine_window, glfw_keyboard_event);
+  status = glfwGetError(nullptr);
 
   if (status != GLFW_NO_ERROR) {
     log_error("Unable to bind keyboard event callback. GLFW error code {:#x}", status);
     return error::keyboard_event_unbinding;
-  } else {
-    return {};
   }
-}
 
-auto surge::window::set_mouse_button_callback(GLFWmousebuttonfun f) noexcept
-    -> std::optional<error> {
-  glfwSetMouseButtonCallback(g_engine_window, f);
-  auto status{glfwGetError(nullptr)};
+  // Set Mouse button callback
+  glfwSetMouseButtonCallback(g_engine_window, glfw_mouse_button_event);
+  status = glfwGetError(nullptr);
 
   if (status != GLFW_NO_ERROR) {
     log_error("Unable to bind keyboard event callback. GLFW error code {:#x}", status);
     return error::mouse_button_event_unbinding;
-  } else {
-    return {};
   }
-}
 
-auto surge::window::set_mouse_scroll_callback(GLFWscrollfun f) noexcept -> std::optional<error> {
-  glfwSetScrollCallback(g_engine_window, f);
-  auto status{glfwGetError(nullptr)};
+  // Set mouse scroll callback
+  glfwSetScrollCallback(g_engine_window, glfw_mouse_scroll_event);
+  status = glfwGetError(nullptr);
 
   if (status != GLFW_NO_ERROR) {
     log_error("Unable to bind keyboard event callback. GLFW error code {:#x}", status);
     return error::mouse_scroll_event_unbinding;
-  } else {
-    return {};
   }
+
+  return {};
+}
+
+void surge::window::unbind_input_callbacks() noexcept {
+  log_info("Unbinding module interaction callbacks");
+
+  // Set moduel api as user ptr
+  glfwSetWindowUserPointer(g_engine_window, nullptr);
+
+  // Set Keyboard callback
+  glfwSetKeyCallback(g_engine_window, nullptr);
+
+  // Set Mouse button callback
+  glfwSetMouseButtonCallback(g_engine_window, nullptr);
+
+  // Set mouse scroll callback
+  glfwSetScrollCallback(g_engine_window, nullptr);
 }
