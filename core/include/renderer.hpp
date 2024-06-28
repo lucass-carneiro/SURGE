@@ -17,6 +17,7 @@
 // clang-format on
 
 #include <optional>
+#include <array>
 #include <tl/expected.hpp>
 
 namespace surge::renderer {
