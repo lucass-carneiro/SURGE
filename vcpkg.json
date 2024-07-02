@@ -48,6 +48,7 @@
         "opengl3-binding",
         "vulkan-binding"
       ]
-    }
+    },
+    "vulkan-memory-allocator"
   ]
 }

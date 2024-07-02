@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "allocators.hpp"
 #include "logging.hpp"
 #include "renderer.hpp"
@@ -122,68 +124,6 @@ static VKAPI_ATTR auto VKAPI_CALL vk_debug_callback(
 }
 #endif
 
-auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
-                                           u32 width, u32 height) noexcept
-    -> tl::expected<swapchain_data, error> {
-  swapchain_data swpc_data{};
-
-  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
-
-  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
-      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-
-  // VSync
-  if (r_attrs.vsync) {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
-  } else {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
-  }
-
-  swpc_builder.set_desired_extent(width, height);
-  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
-
-  const auto swpc_build_result{swpc_builder.build()};
-  if (!swpc_build_result) {
-    log_error("Error while creating Vulkan swapchain {}",
-              string_VkResult(swpc_build_result.vk_result()));
-    return tl::unexpected{error::vk_init_swapchain};
-  } else {
-    swpc_data.swapchain = swpc_build_result.value();
-  }
-
-  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
-  if (!get_swpc_img_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_result.vk_result()));
-    return tl::unexpected{error::vk_swapchain_imgs};
-  } else {
-    swpc_data.imgs = get_swpc_img_result.value();
-  }
-
-  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
-  if (!get_swpc_img_views_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_views_result.vk_result()));
-    return tl::unexpected{error::vk_swapchain_imgs_views};
-  } else {
-    swpc_data.imgs_views = get_swpc_img_views_result.value();
-  }
-
-  return swpc_data;
-}
-
-void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
-  vkb::destroy_swapchain(swpc.swapchain);
-
-  for (auto &img : swpc.imgs_views) {
-    vkDestroyImageView(ctx.device.device, img, &vk_alloc_callbacks);
-  }
-
-  swpc.imgs.clear();
-  swpc.imgs_views.clear();
-}
-
 // NOLINTNEXTLINE
 auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
                                                    VkCommandPoolCreateFlags flags) noexcept
@@ -288,6 +228,46 @@ auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
   return si;
 }
 
+auto surge::renderer::vk::image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
+                                            VkExtent3D extent) noexcept -> VkImageCreateInfo {
+  VkImageCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  ci.pNext = nullptr;
+
+  ci.imageType = VK_IMAGE_TYPE_2D;
+
+  ci.format = format;
+  ci.extent = extent;
+
+  ci.mipLevels = 1;
+  ci.arrayLayers = 1;
+
+  // For MSAA. we will not be using it by default, so default it to 1 sample per pixel.
+  ci.samples = VK_SAMPLE_COUNT_1_BIT;
+
+  ci.tiling = VK_IMAGE_TILING_OPTIMAL;
+  ci.usage = usage_flags;
+  return ci;
+}
+
+auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
+                                                VkImageAspectFlags aspect_flags) noexcept
+    -> VkImageViewCreateInfo {
+  VkImageViewCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  ci.pNext = nullptr;
+
+  ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  ci.image = image;
+  ci.format = format;
+  ci.subresourceRange.baseMipLevel = 0;
+  ci.subresourceRange.levelCount = 1;
+  ci.subresourceRange.baseArrayLayer = 0;
+  ci.subresourceRange.layerCount = 1;
+  ci.subresourceRange.aspectMask = aspect_flags;
+  return ci;
+}
+
 void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
                                            VkImageLayout curr_layout, // NOLINT
                                            VkImageLayout new_layout) noexcept {
@@ -321,6 +301,41 @@ void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
   dep_info.pImageMemoryBarriers = &img_barrier;
 
   vkCmdPipelineBarrier2(cmd, &dep_info);
+}
+
+void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination,
+                                     VkExtent2D src_size, VkExtent2D dst_size) noexcept {
+
+  VkImageBlit2 blit_reg{.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2, .pNext = nullptr};
+
+  blit_reg.srcOffsets[1].x = static_cast<i32>(src_size.width);
+  blit_reg.srcOffsets[1].y = static_cast<i32>(src_size.height);
+  blit_reg.srcOffsets[1].z = 1;
+
+  blit_reg.dstOffsets[1].x = static_cast<i32>(dst_size.width);
+  blit_reg.dstOffsets[1].y = static_cast<i32>(dst_size.height);
+  blit_reg.dstOffsets[1].z = 1;
+
+  blit_reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit_reg.srcSubresource.baseArrayLayer = 0;
+  blit_reg.srcSubresource.layerCount = 1;
+  blit_reg.srcSubresource.mipLevel = 0;
+
+  blit_reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit_reg.dstSubresource.baseArrayLayer = 0;
+  blit_reg.dstSubresource.layerCount = 1;
+  blit_reg.dstSubresource.mipLevel = 0;
+
+  VkBlitImageInfo2 blitInfo{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2, .pNext = nullptr};
+  blitInfo.dstImage = destination;
+  blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  blitInfo.srcImage = source;
+  blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  blitInfo.filter = VK_FILTER_LINEAR;
+  blitInfo.regionCount = 1;
+  blitInfo.pRegions = &blit_reg;
+
+  vkCmdBlitImage2(cmd, &blitInfo);
 }
 
 auto surge::renderer::vk::clear(context &ctx, const config::clear_color &w_ccl) noexcept
@@ -374,6 +389,9 @@ auto surge::renderer::vk::clear(context &ctx, const config::clear_color &w_ccl) 
   auto cmd_beg_info{command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)};
 
   // Start the command buffer recording
+  ctx.draw_extent.width = ctx.draw_image.image_extent.width;
+  ctx.draw_extent.height = ctx.draw_image.image_extent.height;
+
   result = vkBeginCommandBuffer(cmd_buff, &cmd_beg_info);
 
   if (result != VK_SUCCESS) {
@@ -381,19 +399,33 @@ auto surge::renderer::vk::clear(context &ctx, const config::clear_color &w_ccl) 
     return error::vk_cmd_buff_rec_start;
   }
 
-  // Make the swapchain image writeable
-  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+  // transition our main draw image into general layout so we can write into it we will overwrite it
+  // all so we dont care about what was the older layout
+  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                   VK_IMAGE_LAYOUT_GENERAL);
 
   // Clear color
   VkClearColorValue clear_value{{w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a}};
 
   VkImageSubresourceRange clear_range{image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT)};
-  vkCmdClearColorImage(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_GENERAL, &clear_value, 1, &clear_range);
+  vkCmdClearColorImage(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL, &clear_value, 1,
+                       &clear_range);
 
-  // make the swapchain image into presentable mode
-  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  // Transition the draw image and the swapchain image into their correct transfer layouts
+  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL,
+                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_UNDEFINED,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-  // finalize the command buffer (we can no longer add commands, but it can now be executed)
+  // Copy draw image to swapchain image
+  image_blit(cmd_buff, ctx.draw_image.image, swpc_img, ctx.draw_extent,
+             ctx.swpc_data.swapchain.extent);
+
+  // Make the swapchain image presentable
+  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+  // Finalize the command buffer
   result = vkEndCommandBuffer(cmd_buff);
 
   if (result != VK_SUCCESS) {
@@ -446,6 +478,68 @@ auto surge::renderer::vk::clear(context &ctx, const config::clear_color &w_ccl) 
   ctx.frm_data.advance_idx();
 
   return {};
+}
+
+auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
+                                           u32 width, u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
+  swapchain_data swpc_data{};
+
+  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
+
+  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
+      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
+
+  // VSync
+  if (r_attrs.vsync) {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
+  } else {
+    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
+  }
+
+  swpc_builder.set_desired_extent(width, height);
+  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
+
+  const auto swpc_build_result{swpc_builder.build()};
+  if (!swpc_build_result) {
+    log_error("Error while creating Vulkan swapchain {}",
+              string_VkResult(swpc_build_result.vk_result()));
+    return tl::unexpected{error::vk_init_swapchain};
+  } else {
+    swpc_data.swapchain = swpc_build_result.value();
+  }
+
+  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
+  if (!get_swpc_img_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_result.vk_result()));
+    return tl::unexpected{error::vk_swapchain_imgs};
+  } else {
+    swpc_data.imgs = get_swpc_img_result.value();
+  }
+
+  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
+  if (!get_swpc_img_views_result) {
+    log_error("Error while retrieving Vulkan swapchain images {}",
+              string_VkResult(get_swpc_img_views_result.vk_result()));
+    return tl::unexpected{error::vk_swapchain_imgs_views};
+  } else {
+    swpc_data.imgs_views = get_swpc_img_views_result.value();
+  }
+
+  return swpc_data;
+}
+
+void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
+  vkb::destroy_swapchain(swpc.swapchain);
+
+  for (auto &img : swpc.imgs_views) {
+    vkDestroyImageView(ctx.device, img, &vk_alloc_callbacks);
+  }
+
+  swpc.imgs.clear();
+  swpc.imgs_views.clear();
 }
 
 auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
@@ -612,7 +706,7 @@ auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
       ctx.frm_data.graphics_queue_family, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
 
   for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
-    auto result{vkCreateCommandPool(ctx.device.device, &cmd_pool_create_info, &vk_alloc_callbacks,
+    auto result{vkCreateCommandPool(ctx.device, &cmd_pool_create_info, &vk_alloc_callbacks,
                                     &ctx.frm_data.command_pools[i])}; // NOLINT
 
     if (result != VK_SUCCESS) {
@@ -623,7 +717,7 @@ auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
     // Command buffer
     // NOLINTNEXTLINE
     auto cmd_buffer{command_buffer_alloc_info(ctx.frm_data.command_pools[i], 1)};
-    result = vkAllocateCommandBuffers(ctx.device.device, &cmd_buffer,
+    result = vkAllocateCommandBuffers(ctx.device, &cmd_buffer,
                                       &ctx.frm_data.command_buffers[i]); // NOLINT
 
     if (result != VK_SUCCESS) {
@@ -664,17 +758,74 @@ auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
     }
   }
 
+  /*******
+   * VMA *
+   *******/
+  VmaAllocatorCreateInfo alloc_info{};
+  alloc_info.physicalDevice = ctx.phys_device;
+  alloc_info.device = ctx.device;
+  alloc_info.instance = ctx.instance.instance;
+  alloc_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+  vmaCreateAllocator(&alloc_info, &ctx.allocator);
+
+  /**************
+   * Draw Image *
+   **************/
+  VkExtent3D draw_image_extent{static_cast<u32>(w_res.width), static_cast<u32>(w_res.height), 1};
+  ctx.draw_image.image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  ctx.draw_image.image_extent = draw_image_extent;
+
+  VkImageUsageFlags draw_image_usage_flags{};
+  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+  auto rimg_info{
+      image_create_info(ctx.draw_image.image_format, draw_image_usage_flags, draw_image_extent)};
+
+  VmaAllocationCreateInfo rimg_allocinfo{};
+  rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  // Allocate and create the image
+  auto result{vmaCreateImage(ctx.allocator, &rimg_info, &rimg_allocinfo, &ctx.draw_image.image,
+                             &ctx.draw_image.allocation, nullptr)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_init_draw_img};
+  }
+
+  // Build a image-view for the draw image to use for rendering
+  auto rview_info{imageview_create_info(ctx.draw_image.image_format, ctx.draw_image.image,
+                                        VK_IMAGE_ASPECT_COLOR_BIT)};
+
+  result
+      = vkCreateImageView(ctx.device, &rview_info, &vk_alloc_callbacks, &ctx.draw_image.image_view);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image view: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_init_draw_img};
+  }
+
   return ctx;
 }
 
 void surge::renderer::vk::terminate(context &ctx) {
   log_info("Terminating Vulkan");
 
-  log_info("Destroying frame data");
-
-  // Wait until GPU idle
+  log_info("Waiting for GPU idle");
   vkWaitForFences(ctx.device, 2, ctx.frm_data.render_fences.data(), true, 1000000000);
 
+  log_info("Destroying render image");
+  vkDestroyImageView(ctx.device, ctx.draw_image.image_view, &vk_alloc_callbacks);
+  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
+
+  log_info("Destroying memory allocator");
+  vmaDestroyAllocator(ctx.allocator);
+
+  log_info("Destroying frame data");
   for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
     // NOLINTNEXTLINE
     vkDestroySemaphore(ctx.device, ctx.frm_data.swpc_semaphores[i], &vk_alloc_callbacks);

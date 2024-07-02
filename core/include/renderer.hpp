@@ -14,6 +14,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+
+#include <vk_mem_alloc.h>
 // clang-format on
 
 #include <array>
@@ -62,6 +64,14 @@ struct frame_data {
   }
 };
 
+struct allocated_image {
+  VkImage image{nullptr};
+  VkImageView image_view{nullptr};
+  VmaAllocation allocation{nullptr};
+  VkExtent3D image_extent{};
+  VkFormat image_format{};
+};
+
 struct context {
   vkb::Instance instance{};
   VkSurfaceKHR surface{};
@@ -70,12 +80,13 @@ struct context {
   vkb::Device device{};
 
   swapchain_data swpc_data{};
-  frame_data frm_data{};
-};
+  allocated_image draw_image{};
+  VkExtent2D draw_extent{};
 
-auto create_swapchain(const config::renderer_attrs &r_attrs, context &ctx, u32 width,
-                      u32 height) noexcept -> tl::expected<swapchain_data, error>;
-void destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept;
+  frame_data frm_data{};
+
+  VmaAllocator allocator{};
+};
 
 auto command_pool_create_info(u32 queue_family_idx, VkCommandPoolCreateFlags flags = 0) noexcept
     -> VkCommandPoolCreateInfo;
@@ -94,10 +105,22 @@ auto command_buffer_submit_info(VkCommandBuffer cmd) noexcept -> VkCommandBuffer
 auto submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signal_sem_info,
                  VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2;
 
+auto image_create_info(VkFormat format, VkImageUsageFlags usage_flags, VkExtent3D extent) noexcept
+    -> VkImageCreateInfo;
+auto imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspect_flags) noexcept
+    -> VkImageViewCreateInfo;
+
 void transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout curr_layout,
                       VkImageLayout new_layout) noexcept;
 
+void image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D src_size,
+                VkExtent2D dst_size) noexcept;
+
 auto clear(context &ctx, const config::clear_color &ccl) noexcept -> std::optional<error>;
+
+auto create_swapchain(const config::renderer_attrs &r_attrs, context &ctx, u32 width,
+                      u32 height) noexcept -> tl::expected<swapchain_data, error>;
+void destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept;
 
 auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
           const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;

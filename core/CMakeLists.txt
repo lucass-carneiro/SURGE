@@ -246,5 +246,7 @@ target_link_libraries(SurgeCore PUBLIC
   glad::glad
   OpenGL::GL
   Vulkan::Vulkan
+  Vulkan::Headers
+  GPUOpen::VulkanMemoryAllocator
   imgui::imgui
 )

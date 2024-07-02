@@ -72,6 +72,7 @@ enum error : int {
   vk_phys_dev_select,
   vk_logi_dev_select,
   vk_init_swapchain,
+  vk_init_draw_img,
   vk_swapchain_imgs,
   vk_swapchain_imgs_views,
   vk_graphics_queue_retrieve,
