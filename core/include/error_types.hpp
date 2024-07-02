@@ -77,6 +77,15 @@ enum error : int {
   vk_graphics_queue_retrieve,
   vk_cmd_pool_creation,
   vk_cmd_buffer_creation,
+  vk_fence_creation,
+  vk_semaphore_creation,
+  vk_fence_wait,
+  vk_get_swpc_img,
+  vk_cmd_buff_reset,
+  vk_cmd_buff_rec_start,
+  vk_cmd_buff_rec_end,
+  vk_cmd_buff_submit,
+  vk_present,
 
   // Module callback binding
   keyboard_event_binding,

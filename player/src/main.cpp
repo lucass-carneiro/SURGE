@@ -183,6 +183,8 @@ auto main(int, char **) noexcept -> int {
     // Clear buffers
     if (r_attrs.backend == config::renderer_backend::opengl) {
       window::clear_buffers(w_ccl);
+    } else {
+      renderer::vk::clear(vk_ctx, w_ccl);
     }
 
     // Call module draw

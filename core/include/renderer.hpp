@@ -16,8 +16,8 @@
 #include <glm/ext/matrix_transform.hpp>
 // clang-format on
 
-#include <optional>
 #include <array>
+#include <optional>
 #include <tl/expected.hpp>
 
 namespace surge::renderer {
@@ -37,18 +37,29 @@ struct frame_cmd_data {
   VkCommandBuffer buffer{};
 };
 
-struct command_data {
+struct frame_sync_data {
+  VkSemaphore swpc_semaphore{nullptr};
+  VkSemaphore render_semaphore{nullptr};
+  VkFence render_fence{nullptr};
+};
+
+struct frame_data {
   static constexpr usize frame_overlap{2};
-
-  usize frame_number{0};
-
-  std::array<VkCommandPool, frame_overlap> command_pools{};
-  std::array<VkCommandBuffer, frame_overlap> command_buffers{};
+  usize frame_idx{0};
 
   u32 graphics_queue_family{0};
   VkQueue graphics_queue{nullptr};
 
-  [[nodiscard]] auto get_frame_cmd_data() noexcept -> frame_cmd_data;
+  std::array<VkCommandPool, frame_overlap> command_pools{};
+  std::array<VkCommandBuffer, frame_overlap> command_buffers{};
+
+  std::array<VkSemaphore, frame_overlap> swpc_semaphores{};
+  std::array<VkSemaphore, frame_overlap> render_semaphores{};
+  std::array<VkFence, frame_overlap> render_fences{};
+
+  inline void advance_idx() noexcept {
+    frame_idx = frame_idx + 1 < frame_overlap ? frame_idx + 1 : 0;
+  }
 };
 
 struct context {
@@ -59,16 +70,38 @@ struct context {
   vkb::Device device{};
 
   swapchain_data swpc_data{};
-  command_data cmd_data{};
+  frame_data frm_data{};
 };
-
-auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-          const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
-void terminate(context &ctx);
 
 auto create_swapchain(const config::renderer_attrs &r_attrs, context &ctx, u32 width,
                       u32 height) noexcept -> tl::expected<swapchain_data, error>;
 void destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept;
+
+auto command_pool_create_info(u32 queue_family_idx, VkCommandPoolCreateFlags flags = 0) noexcept
+    -> VkCommandPoolCreateInfo;
+auto command_buffer_alloc_info(VkCommandPool pool, u32 count = 1) noexcept
+    -> VkCommandBufferAllocateInfo;
+auto command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0);
+
+auto fence_create_info(VkFenceCreateFlags flags = 0) noexcept -> VkFenceCreateInfo;
+auto semaphore_create_info(VkSemaphoreCreateFlags flags = 0) noexcept -> VkSemaphoreCreateInfo;
+
+auto image_subresource_range(VkImageAspectFlags aspect_mask) noexcept -> VkImageSubresourceRange;
+
+auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept
+    -> VkSemaphoreSubmitInfo;
+auto command_buffer_submit_info(VkCommandBuffer cmd) noexcept -> VkCommandBufferSubmitInfo;
+auto submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signal_sem_info,
+                 VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2;
+
+void transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout curr_layout,
+                      VkImageLayout new_layout) noexcept;
+
+auto clear(context &ctx, const config::clear_color &ccl) noexcept -> std::optional<error>;
+
+auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+          const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
+void terminate(context &ctx);
 
 } // namespace vk
 
