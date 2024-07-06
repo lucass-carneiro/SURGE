@@ -274,9 +274,9 @@ void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
   // See https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples for finer sync
   // options
 
-  VkImageAspectFlags aspect_mask{(new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+  VkImageAspectFlags aspect_mask((new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
                                      ? VK_IMAGE_ASPECT_DEPTH_BIT
-                                     : VK_IMAGE_ASPECT_COLOR_BIT};
+                                     : VK_IMAGE_ASPECT_COLOR_BIT);
 
   VkImageMemoryBarrier2 img_barrier{};
   img_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
