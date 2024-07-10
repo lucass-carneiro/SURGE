@@ -6,6 +6,7 @@
 #include "logging.hpp"
 #include "window.hpp"
 
+#include <algorithm>
 #include <vulkan/vk_enum_string_helper.h>
 
 using namespace surge::renderer;
@@ -350,7 +351,53 @@ auto vk::init_helpers::find_queue_families(VkPhysicalDevice phys_dev) noexcept
   return idxs;
 }
 
+auto vk::init_helpers::get_required_device_extensions(VkPhysicalDevice phys_dev) noexcept
+    -> tl::expected<vector<const char *>, error> {
+  using std::strcmp;
+
+  log_info("Cheking device extensions");
+
+  u32 extension_count{0};
+  auto result{vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &extension_count, nullptr)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable retrieve device extension properties: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_phys_dev_ext_enum};
+  }
+
+  vector<VkExtensionProperties> available_extensions(extension_count);
+  result = vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &extension_count,
+                                                available_extensions.data());
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable retrieve device extension properties: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_phys_dev_ext_enum};
+  }
+
+  vector<const char *> required_extensions{};
+  required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+  for (const auto &ext_name : required_extensions) {
+    bool layer_found{false};
+
+    for (const auto &ext_properties : available_extensions) {
+      if (strcmp(ext_name, ext_properties.extensionName) == 0) {
+        layer_found = true;
+        break;
+      }
+    }
+
+    if (!layer_found) {
+      return tl::unexpected{error::vk_phys_dev_ext_missing};
+    }
+  }
+
+  return required_extensions;
+}
+
 auto vk::init_helpers::is_device_suitable(VkPhysicalDevice phys_dev) noexcept -> bool {
+  log_info("Cheking device suitability");
+
   VkPhysicalDeviceProperties dev_prop{};
   vkGetPhysicalDeviceProperties(phys_dev, &dev_prop);
 
@@ -371,11 +418,12 @@ auto vk::init_helpers::is_device_suitable(VkPhysicalDevice phys_dev) noexcept ->
                                    && features_13.dynamicRendering && features_13.synchronization2};
 
   const auto idxs{find_queue_families(phys_dev)};
-
   const auto has_all_queues{idxs.graphics_family.has_value() && idxs.transfer_family.has_value()
                             && idxs.compute_family.has_value()};
 
-  if (has_required_features && has_all_queues) {
+  const auto has_device_extensions{get_required_device_extensions(phys_dev).has_value()};
+
+  if (has_required_features && has_all_queues && has_device_extensions) {
     log_info("Suitable device found: {}", dev_prop.deviceName);
     return true;
   } else {
@@ -416,6 +464,12 @@ auto vk::init_helpers::create_logical_device(VkPhysicalDevice phys_dev) noexcept
     -> tl::expected<VkDevice, error> {
   log_info("Creating logical device");
 
+  // Extensions
+  const auto device_extensions{get_required_device_extensions(phys_dev)};
+  if (!device_extensions) {
+    return tl::unexpected{device_extensions.error()};
+  }
+
   // vulkan 1.3 features
   VkPhysicalDeviceVulkan13Features features_13{};
   features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -437,8 +491,8 @@ auto vk::init_helpers::create_logical_device(VkPhysicalDevice phys_dev) noexcept
 
   const float queue_priority{1.0f};
 
-  // value_or(0) never returns 0 here because the selected device is only suitable if all queues are
-  // found.
+  // value_or(0) never returns 0 here because the selected device is only suitable if all queues
+  // are found.
   VkDeviceQueueCreateInfo graphics_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                             .pNext = nullptr,
                                             .flags = 0,
@@ -463,17 +517,17 @@ auto vk::init_helpers::create_logical_device(VkPhysicalDevice phys_dev) noexcept
   std::array<VkDeviceQueueCreateInfo, 3> queue_create_infos{graphics_queue_ci, transfer_queue_ci,
                                                             compute_queue_ci};
 
-  VkDeviceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                 .pNext = &features,
-                                 .flags = 0,
-                                 .queueCreateInfoCount
-                                 = static_cast<u32>(queue_create_infos.size()),
-                                 .pQueueCreateInfos = queue_create_infos.data(),
-                                 .enabledLayerCount = 0,
-                                 .ppEnabledLayerNames = nullptr,
-                                 .enabledExtensionCount = 0,
-                                 .ppEnabledExtensionNames = nullptr,
-                                 .pEnabledFeatures = nullptr};
+  VkDeviceCreateInfo create_info{
+      .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+      .pNext = &features,
+      .flags = 0,
+      .queueCreateInfoCount = static_cast<u32>(queue_create_infos.size()),
+      .pQueueCreateInfos = queue_create_infos.data(),
+      .enabledLayerCount = 0,
+      .ppEnabledLayerNames = nullptr,
+      .enabledExtensionCount = static_cast<u32>(device_extensions->size()),
+      .ppEnabledExtensionNames = device_extensions->data(),
+      .pEnabledFeatures = nullptr};
 
   VkDevice log_dev{};
   const auto result{vkCreateDevice(phys_dev, &create_info, &alloc_callbacks, &log_dev)};
@@ -484,21 +538,6 @@ auto vk::init_helpers::create_logical_device(VkPhysicalDevice phys_dev) noexcept
   } else {
     return log_dev;
   }
-}
-
-auto vk::init_helpers::get_queue_handles(VkPhysicalDevice phys_dev,
-                                         VkDevice log_dev) noexcept -> queue_handles {
-  const auto idxs{find_queue_families(phys_dev)};
-
-  queue_handles handles{};
-
-  // value_or(0) never returns 0 here because the selected device is only suitable if all queues are
-  // found.
-  vkGetDeviceQueue(log_dev, idxs.graphics_family.value_or(0), 0, &(handles.graphics));
-  vkGetDeviceQueue(log_dev, idxs.transfer_family.value_or(0), 0, &(handles.transfer));
-  vkGetDeviceQueue(log_dev, idxs.compute_family.value_or(0), 0, &(handles.compute));
-
-  return handles;
 }
 
 auto vk::init_helpers::create_window_surface(VkInstance instance) noexcept
@@ -517,7 +556,204 @@ auto vk::init_helpers::create_window_surface(VkInstance instance) noexcept
   }
 }
 
-auto vk::init(const config::renderer_attrs &, const config::window_resolution &,
+auto vk::init_helpers::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev,
+                                         VkSurfaceKHR surface) noexcept
+    -> tl::expected<queue_handles, error> {
+  log_info("Getting queue handles");
+
+  queue_handles handles{};
+
+  const auto idxs{find_queue_families(phys_dev)};
+
+  VkBool32 graphics_present_suport{false};
+  const auto result{vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev, idxs.graphics_family.value_or(0),
+                                                         surface, &graphics_present_suport)};
+  if (result != VK_SUCCESS) {
+    log_error("Unable to query graphics queue for presentation support: {}",
+              string_VkResult(result));
+    return tl::unexpected{error::vk_surface_present_query};
+  }
+
+  if (!graphics_present_suport) {
+    log_error("The graphics queue provided by the device does not support presentation");
+    return tl::unexpected{error::vk_surface_present_unable};
+  }
+
+  // value_or(0) never returns 0 here because the selected device is only suitable if all queues
+  // are found.
+  vkGetDeviceQueue(log_dev, idxs.graphics_family.value_or(0), 0, &(handles.graphics));
+  vkGetDeviceQueue(log_dev, idxs.transfer_family.value_or(0), 0, &(handles.transfer));
+  vkGetDeviceQueue(log_dev, idxs.compute_family.value_or(0), 0, &(handles.compute));
+
+  return handles;
+}
+
+auto vk::init_helpers::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
+                                        VkSurfaceKHR surface, const config::renderer_attrs &r_attrs,
+                                        u32 width, u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
+  log_info("Creating swapchain");
+
+  using std::clamp;
+
+  swapchain_data swpc_data{};
+
+  VkSurfaceCapabilitiesKHR surface_capabilities{};
+  auto result{vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, surface, &surface_capabilities)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to query physical device surface capabilities: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_swapchain_query};
+  }
+
+  const auto img_format{VK_FORMAT_B8G8R8A8_UNORM};
+  const auto img_colorspace{VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+  const auto img_usage{VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
+
+  VkPresentModeKHR present_mode{};
+
+  // VSync
+  if (r_attrs.vsync) {
+    present_mode = VK_PRESENT_MODE_FIFO_KHR;
+  } else {
+    present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+  }
+
+  VkExtent2D extent{clamp(width, surface_capabilities.minImageExtent.width,
+                          surface_capabilities.maxImageExtent.width),
+                    clamp(height, surface_capabilities.minImageExtent.height,
+                          surface_capabilities.maxImageExtent.height)};
+
+  uint32_t image_count{surface_capabilities.minImageCount + 1};
+
+  if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount) {
+    image_count = surface_capabilities.maxImageCount;
+  }
+
+  VkSwapchainCreateInfoKHR swpc_create_info{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .surface = surface,
+                                            .minImageCount = image_count,
+                                            .imageFormat = img_format,
+                                            .imageColorSpace = img_colorspace,
+                                            .imageExtent = extent,
+                                            .imageArrayLayers = 1,
+                                            .imageUsage = img_usage,
+                                            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                            .queueFamilyIndexCount = 0,
+                                            .pQueueFamilyIndices = nullptr,
+                                            .preTransform = surface_capabilities.currentTransform,
+                                            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                            .presentMode = present_mode,
+                                            .clipped = VK_TRUE,
+                                            .oldSwapchain = VK_NULL_HANDLE};
+
+  result = vkCreateSwapchainKHR(log_dev, &swpc_create_info, &alloc_callbacks, &swpc_data.swapchain);
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create swapchain: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_init_swapchain};
+  }
+
+  result = vkGetSwapchainImagesKHR(log_dev, swpc_data.swapchain, &image_count, nullptr);
+  if (result != VK_SUCCESS) {
+    log_error("Unable to get swapchain images: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_swapchain_imgs};
+  }
+
+  swpc_data.imgs.resize(image_count);
+  result
+      = vkGetSwapchainImagesKHR(log_dev, swpc_data.swapchain, &image_count, swpc_data.imgs.data());
+  if (result != VK_SUCCESS) {
+    log_error("Unable to get swapchain images: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_swapchain_imgs};
+  }
+
+  const VkComponentMapping img_view_components{
+      VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+      VK_COMPONENT_SWIZZLE_IDENTITY};
+
+  const VkImageSubresourceRange img_view_sub_range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                   .baseMipLevel = 0,
+                                                   .levelCount = 1,
+                                                   .baseArrayLayer = 0,
+                                                   .layerCount = 1};
+
+  for (const auto &img : swpc_data.imgs) {
+    VkImageViewCreateInfo img_view_ci{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                      .pNext = nullptr,
+                                      .flags = 0,
+                                      .image = img,
+                                      .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                      .format = img_format,
+                                      .components = img_view_components,
+                                      .subresourceRange = img_view_sub_range};
+
+    VkImageView img_view{};
+    result = vkCreateImageView(log_dev, &img_view_ci, &alloc_callbacks, &img_view);
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create swapchain image view: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_swapchain_imgs_views};
+    } else {
+      swpc_data.imgs_views.push_back(img_view);
+    }
+  }
+
+  return swpc_data;
+}
+
+auto vk::init_helpers::command_pool_create_info(
+    u32 queue_family_idx, VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo {
+  VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                             .pNext = nullptr,
+                             .flags = flags,
+                             .queueFamilyIndex = queue_family_idx};
+  return ci;
+}
+
+auto vk::init_helpers::command_buffer_alloc_info(VkCommandPool pool, u32 count) noexcept
+    -> VkCommandBufferAllocateInfo {
+  VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                 .pNext = nullptr,
+                                 .commandPool = pool,
+                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                 .commandBufferCount = count};
+  return ai;
+}
+
+auto vk::init_helpers::create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
+    -> tl::expected<frame_data, error> {
+  frame_data frm_data{};
+
+  // Resetable command pool
+  auto cmd_pool_create_info{command_pool_create_info(
+      graphics_queue_idx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
+
+  for (usize i = 0; i < frm_data.frame_overlap; i++) {
+    auto result{vkCreateCommandPool(device, &cmd_pool_create_info, &vk_alloc_callbacks,
+                                    &frm_data.command_pools[i])}; // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create command pool: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_cmd_pool_creation};
+    }
+
+    // Command buffer
+    // NOLINTNEXTLINE
+    auto cmd_buffer{command_buffer_alloc_info(frm_data.command_pools[i], 1)};
+    result = vkAllocateCommandBuffers(device, &cmd_buffer,
+                                      &frm_data.command_buffers[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create buffer: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_cmd_buffer_creation};
+    }
+  }
+
+  return frm_data;
+}
+
+auto vk::init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
               const config::window_attrs &) noexcept -> tl::expected<context, error> {
   using namespace init_helpers;
 
@@ -555,13 +791,27 @@ auto vk::init(const config::renderer_attrs &, const config::window_resolution &,
     ctx.log_dev = *log_dev;
   }
 
-  ctx.q_handles = get_queue_handles(*phys_dev, *log_dev);
-
   const auto surface{create_window_surface(*instance)};
   if (!surface) {
     return tl::unexpected{surface.error()};
   } else {
     ctx.surface = *surface;
+  }
+
+  const auto q_handles{get_queue_handles(*phys_dev, *log_dev, *surface)};
+  if (!q_handles) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.q_handles = *q_handles;
+  }
+
+  const auto swpc_data{create_swapchain(*phys_dev, *log_dev, *surface, r_attrs,
+                                        static_cast<u32>(w_res.width),
+                                        static_cast<u32>(w_res.height))};
+  if (!swpc_data) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.swpc_data = *swpc_data;
   }
 
   return ctx;
@@ -570,7 +820,15 @@ auto vk::init(const config::renderer_attrs &, const config::window_resolution &,
 void vk::terminate(context &ctx) noexcept {
   log_info("Terminating vulkan");
 
-  log_info("Destrouing window surface");
+  log_info("Destroying image views");
+  for (const auto &img_view : ctx.swpc_data.imgs_views) {
+    vkDestroyImageView(ctx.log_dev, img_view, &alloc_callbacks);
+  }
+
+  log_info("Destroying swapchain");
+  vkDestroySwapchainKHR(ctx.log_dev, ctx.swpc_data.swapchain, &alloc_callbacks);
+
+  log_info("Destroying window surface");
   vkDestroySurfaceKHR(ctx.instance, ctx.surface, &alloc_callbacks);
 
   log_info("Destroying logical device");

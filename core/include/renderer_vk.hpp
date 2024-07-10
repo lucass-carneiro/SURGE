@@ -26,19 +26,50 @@ struct queue_handles {
   VkQueue compute{};
 };
 
+struct swapchain_data {
+  VkSwapchainKHR swapchain{};
+  vector<VkImage> imgs{};
+  vector<VkImageView> imgs_views{};
+};
+
+struct frame_cmd_data {
+  VkCommandPool pool{};
+  VkCommandBuffer buffer{};
+};
+
+struct frame_sync_data {
+  VkSemaphore swpc_semaphore{nullptr};
+  VkSemaphore render_semaphore{nullptr};
+  VkFence render_fence{nullptr};
+};
+
+struct frame_data {
+  static constexpr usize frame_overlap{2};
+  usize frame_idx{0};
+
+  std::array<VkCommandPool, frame_overlap> command_pools{};
+  std::array<VkCommandBuffer, frame_overlap> command_buffers{};
+
+  std::array<VkSemaphore, frame_overlap> swpc_semaphores{};
+  std::array<VkSemaphore, frame_overlap> render_semaphores{};
+  std::array<VkFence, frame_overlap> render_fences{};
+
+  inline void advance_idx() noexcept {
+    frame_idx = frame_idx + 1 < frame_overlap ? frame_idx + 1 : 0;
+  }
+};
+
 struct context {
   VkInstance instance{};
-
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
   VkDebugUtilsMessengerEXT dbg_msg{};
 #endif
-
   VkPhysicalDevice phys_dev{};
   VkDevice log_dev{};
-
-  queue_handles q_handles{};
-
   VkSurfaceKHR surface{};
+  queue_handles q_handles{};
+  swapchain_data swpc_data{};
+  frame_data frm_data{};
 };
 
 auto clear(context &ctx, const config::clear_color &ccl) noexcept -> std::optional<error>;
@@ -60,13 +91,27 @@ auto create_instance() noexcept -> tl::expected<VkInstance, error>;
 
 auto find_queue_families(VkPhysicalDevice phys_dev) noexcept -> queue_family_indices;
 
+auto get_required_device_extensions(VkPhysicalDevice phys_dev) noexcept
+    -> tl::expected<vector<const char *>, error>;
 auto is_device_suitable(VkPhysicalDevice phys_dev) noexcept -> bool;
 auto select_physical_device(VkInstance instance) noexcept -> tl::expected<VkPhysicalDevice, error>;
 auto create_logical_device(VkPhysicalDevice phys_dev) noexcept -> tl::expected<VkDevice, error>;
 
-auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev) noexcept -> queue_handles;
-
 auto create_window_surface(VkInstance instance) noexcept -> tl::expected<VkSurfaceKHR, error>;
+
+auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev,
+                       VkSurfaceKHR surface) noexcept -> tl::expected<queue_handles, error>;
+
+auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
+                      const config::renderer_attrs &r_attrs, u32 width,
+                      u32 height) noexcept -> tl::expected<swapchain_data, error>;
+
+auto command_pool_create_info(u32 queue_family_idx,
+                              VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo;
+auto command_buffer_alloc_info(VkCommandPool pool,
+                               u32 count) noexcept -> VkCommandBufferAllocateInfo;
+
+auto create_frame_data() noexcept -> tl::expected<frame_data, error>;
 
 } // namespace init_helpers
 
