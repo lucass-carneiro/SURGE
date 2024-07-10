@@ -1,13 +1,14 @@
-#define VMA_IMPLEMENTATION
-
 #include "renderer_vk.hpp"
 
 #include "allocators.hpp"
+#include "container_types.hpp"
+#include "glfw_includes.hpp"
 #include "logging.hpp"
 #include "window.hpp"
 
-#include <array>
-#include <cstring>
+#include <vulkan/vk_enum_string_helper.h>
+
+using namespace surge::renderer;
 
 static auto vk_malloc(void *, size_t size, size_t alignment,
                       [[maybe_unused]] VkSystemAllocationScope scope) noexcept -> void * {
@@ -57,14 +58,15 @@ static void vk_internal_free([[maybe_unused]] void *, [[maybe_unused]] size_t si
 }
 
 // NOLINTNEXTLINE
-static VkAllocationCallbacks vk_alloc_callbacks{.pUserData = nullptr,
-                                                .pfnAllocation = vk_malloc,
-                                                .pfnReallocation = vk_realloc,
-                                                .pfnFree = vk_free,
-                                                .pfnInternalAllocation = vk_internal_malloc,
-                                                .pfnInternalFree = vk_internal_free};
+static const VkAllocationCallbacks alloc_callbacks{.pUserData = nullptr,
+                                                   .pfnAllocation = vk_malloc,
+                                                   .pfnReallocation = vk_realloc,
+                                                   .pfnFree = vk_free,
+                                                   .pfnInternalAllocation = vk_internal_malloc,
+                                                   .pfnInternalFree = vk_internal_free};
+
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-static VKAPI_ATTR auto VKAPI_CALL vk_debug_callback(
+static VKAPI_ATTR auto VKAPI_CALL debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT *callback, void *) -> VkBool32 {
 
@@ -125,434 +127,8 @@ static VKAPI_ATTR auto VKAPI_CALL vk_debug_callback(
 }
 #endif
 
-// NOLINTNEXTLINE
-auto surge::renderer::vk::command_pool_create_info(
-    u32 queue_family_idx, VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo {
-  VkCommandPoolCreateInfo ci{};
-  ci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  ci.pNext = nullptr;
-  ci.queueFamilyIndex = queue_family_idx;
-  ci.flags = flags;
-  return ci;
-}
-
-auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 count) noexcept
-    -> VkCommandBufferAllocateInfo {
-  VkCommandBufferAllocateInfo ai{};
-  ai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  ai.pNext = nullptr;
-  ai.commandPool = pool;
-  ai.commandBufferCount = count;
-  ai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  return ai;
-}
-
-auto surge::renderer::vk::command_buffer_begin_info(VkCommandBufferUsageFlags flags) {
-  VkCommandBufferBeginInfo ci = {};
-  ci.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  ci.pNext = nullptr;
-  ci.pInheritanceInfo = nullptr;
-  ci.flags = flags;
-  return ci;
-}
-
-auto surge::renderer::vk::fence_create_info(VkFenceCreateFlags flags) noexcept
-    -> VkFenceCreateInfo {
-  VkFenceCreateInfo ci{};
-  ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  ci.pNext = nullptr;
-  ci.flags = flags;
-  return ci;
-}
-
-auto surge::renderer::vk::semaphore_create_info(VkSemaphoreCreateFlags flags) noexcept
-    -> VkSemaphoreCreateInfo {
-  VkSemaphoreCreateInfo ci{};
-  ci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  ci.pNext = nullptr;
-  ci.flags = flags;
-  return ci;
-}
-
-auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask) noexcept
-    -> VkImageSubresourceRange {
-  VkImageSubresourceRange sum_img{};
-  sum_img.aspectMask = aspect_mask;
-  sum_img.baseMipLevel = 0;
-  sum_img.levelCount = VK_REMAINING_MIP_LEVELS;
-  sum_img.baseArrayLayer = 0;
-  sum_img.layerCount = VK_REMAINING_ARRAY_LAYERS;
-  return sum_img;
-}
-
-auto surge::renderer::vk::semaphore_submit_info(
-    VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo {
-  VkSemaphoreSubmitInfo si{};
-  si.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-  si.pNext = nullptr;
-  si.semaphore = semaphore;
-  si.stageMask = stage_mask;
-  si.deviceIndex = 0;
-  si.value = 1;
-  return si;
-}
-
-auto surge::renderer::vk::command_buffer_submit_info(VkCommandBuffer cmd) noexcept
-    -> VkCommandBufferSubmitInfo {
-  VkCommandBufferSubmitInfo si{};
-  si.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-  si.pNext = nullptr;
-  si.commandBuffer = cmd;
-  si.deviceMask = 0;
-  return si;
-}
-
-auto surge::renderer::vk::submit_info(
-    VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signam_sem_info,
-    VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2 {
-  VkSubmitInfo2 si{};
-  si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-  si.pNext = nullptr;
-
-  si.waitSemaphoreInfoCount = wai_sem_info == nullptr ? 0 : 1;
-  si.pWaitSemaphoreInfos = wai_sem_info;
-
-  si.signalSemaphoreInfoCount = signam_sem_info == nullptr ? 0 : 1;
-  si.pSignalSemaphoreInfos = signam_sem_info;
-
-  si.commandBufferInfoCount = 1;
-  si.pCommandBufferInfos = cmd;
-
-  return si;
-}
-
-auto surge::renderer::vk::image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
-                                            VkExtent3D extent) noexcept -> VkImageCreateInfo {
-  VkImageCreateInfo ci{};
-  ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  ci.pNext = nullptr;
-
-  ci.imageType = VK_IMAGE_TYPE_2D;
-
-  ci.format = format;
-  ci.extent = extent;
-
-  ci.mipLevels = 1;
-  ci.arrayLayers = 1;
-
-  // For MSAA. we will not be using it by default, so default it to 1 sample per pixel.
-  ci.samples = VK_SAMPLE_COUNT_1_BIT;
-
-  ci.tiling = VK_IMAGE_TILING_OPTIMAL;
-  ci.usage = usage_flags;
-  return ci;
-}
-
-auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
-                                                VkImageAspectFlags aspect_flags) noexcept
-    -> VkImageViewCreateInfo {
-  VkImageViewCreateInfo ci{};
-  ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  ci.pNext = nullptr;
-
-  ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  ci.image = image;
-  ci.format = format;
-  ci.subresourceRange.baseMipLevel = 0;
-  ci.subresourceRange.levelCount = 1;
-  ci.subresourceRange.baseArrayLayer = 0;
-  ci.subresourceRange.layerCount = 1;
-  ci.subresourceRange.aspectMask = aspect_flags;
-  return ci;
-}
-
-void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
-                                           VkImageLayout curr_layout, // NOLINT
-                                           VkImageLayout new_layout) noexcept {
-  // See https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples for finer sync
-  // options
-
-  VkImageAspectFlags aspect_mask((new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
-                                     ? VK_IMAGE_ASPECT_DEPTH_BIT
-                                     : VK_IMAGE_ASPECT_COLOR_BIT);
-
-  VkImageMemoryBarrier2 img_barrier{};
-  img_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-  img_barrier.pNext = nullptr;
-
-  img_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-  img_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-  img_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-  img_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
-
-  img_barrier.oldLayout = curr_layout;
-  img_barrier.newLayout = new_layout;
-
-  img_barrier.image = image;
-  img_barrier.subresourceRange = image_subresource_range(aspect_mask);
-
-  VkDependencyInfo dep_info{};
-  dep_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-  dep_info.pNext = nullptr;
-
-  dep_info.imageMemoryBarrierCount = 1;
-  dep_info.pImageMemoryBarriers = &img_barrier;
-
-  vkCmdPipelineBarrier2(cmd, &dep_info);
-}
-
-void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination,
-                                     VkExtent2D src_size, VkExtent2D dst_size) noexcept {
-
-  VkImageBlit2 blit_reg{};
-  blit_reg.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
-  blit_reg.pNext = nullptr;
-
-  blit_reg.srcOffsets[1].x = static_cast<i32>(src_size.width);
-  blit_reg.srcOffsets[1].y = static_cast<i32>(src_size.height);
-  blit_reg.srcOffsets[1].z = 1;
-
-  blit_reg.dstOffsets[1].x = static_cast<i32>(dst_size.width);
-  blit_reg.dstOffsets[1].y = static_cast<i32>(dst_size.height);
-  blit_reg.dstOffsets[1].z = 1;
-
-  blit_reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  blit_reg.srcSubresource.baseArrayLayer = 0;
-  blit_reg.srcSubresource.layerCount = 1;
-  blit_reg.srcSubresource.mipLevel = 0;
-
-  blit_reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  blit_reg.dstSubresource.baseArrayLayer = 0;
-  blit_reg.dstSubresource.layerCount = 1;
-  blit_reg.dstSubresource.mipLevel = 0;
-
-  VkBlitImageInfo2 blitInfo{};
-  blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
-  blitInfo.pNext = nullptr;
-  blitInfo.dstImage = destination;
-  blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-  blitInfo.srcImage = source;
-  blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  blitInfo.filter = VK_FILTER_LINEAR;
-  blitInfo.regionCount = 1;
-  blitInfo.pRegions = &blit_reg;
-
-  vkCmdBlitImage2(cmd, &blitInfo);
-}
-
-auto surge::renderer::vk::clear(context &ctx,
-                                const config::clear_color &w_ccl) noexcept -> std::optional<error> {
-  // Aliases
-  auto &dev{ctx.device};
-  auto &graphics_queue{ctx.frm_data.graphics_queue};
-  auto &swpc{ctx.swpc_data.swapchain.swapchain};
-  auto &render_fence{ctx.frm_data.render_fences[ctx.frm_data.frame_idx]};
-  auto &swpc_semaphore{ctx.frm_data.swpc_semaphores[ctx.frm_data.frame_idx]};
-  auto &render_semaphore{ctx.frm_data.render_semaphores[ctx.frm_data.frame_idx]};
-  auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
-
-  // Wait until the gpu has finished rendering the last frame. Timeout of 1 sec
-  auto result{vkWaitForFences(dev, 1, &render_fence, true, 1000000000)};
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to wait render fence: {}", string_VkResult(result));
-    return error::vk_surface_init;
-  }
-
-  result = vkResetFences(dev, 1, &render_fence);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to reset render fence: {}", string_VkResult(result));
-    return error::vk_surface_init;
-  }
-
-  // Request new image from the swapchain
-  u32 swpc_img_idx{0};
-  result = vkAcquireNextImageKHR(dev, swpc, 1000000000, swpc_semaphore, nullptr, &swpc_img_idx);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to acquire swapchain image: {}", string_VkResult(result));
-    return error::vk_get_swpc_img;
-  }
-
-  auto swpc_img{ctx.swpc_data.imgs[swpc_img_idx]};
-
-  // Now that we are sure that the commands finished executing, we can safely reset the command
-  // buffer to begin recording again.
-  result = vkResetCommandBuffer(cmd_buff, 0);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to reset command buffer: {}", string_VkResult(result));
-    return error::vk_cmd_buff_reset;
-  }
-
-  // Begin the command buffer recording. We will use this command buffer exactly once, so we want to
-  // let vulkan know that
-  auto cmd_beg_info{command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)};
-
-  // Start the command buffer recording
-  ctx.draw_extent.width = ctx.draw_image.image_extent.width;
-  ctx.draw_extent.height = ctx.draw_image.image_extent.height;
-
-  result = vkBeginCommandBuffer(cmd_buff, &cmd_beg_info);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to start command buffer recording: {}", string_VkResult(result));
-    return error::vk_cmd_buff_rec_start;
-  }
-
-  // transition our main draw image into general layout so we can write into it we will overwrite it
-  // all so we dont care about what was the older layout
-  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
-                   VK_IMAGE_LAYOUT_GENERAL);
-
-  // Clear color
-  VkClearColorValue clear_value{{w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a}};
-
-  VkImageSubresourceRange clear_range{image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT)};
-  vkCmdClearColorImage(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL, &clear_value, 1,
-                       &clear_range);
-
-  // Transition the draw image and the swapchain image into their correct transfer layouts
-  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL,
-                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_UNDEFINED,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-  // Copy draw image to swapchain image
-  image_blit(cmd_buff, ctx.draw_image.image, swpc_img, ctx.draw_extent,
-             ctx.swpc_data.swapchain.extent);
-
-  // Make the swapchain image presentable
-  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-  // Finalize the command buffer
-  result = vkEndCommandBuffer(cmd_buff);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to end command buffer recording: {}", string_VkResult(result));
-    return error::vk_cmd_buff_rec_end;
-  }
-
-  // Prepare the submission to the queue. we want to wait on the _presentSemaphore, as that
-  // semaphore is signaled when the swapchain is ready we will signal the _renderSemaphore, to
-  // signal that rendering has finished.
-  auto cmd_sub_info{command_buffer_submit_info(cmd_buff)};
-
-  auto signal_info{semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, render_semaphore)};
-  auto wait_info{
-      semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, swpc_semaphore)};
-
-  auto sub_info{submit_info(&cmd_sub_info, &signal_info, &wait_info)};
-
-  // Submit command buffer to the queue and execute it. The render fence will now block until the
-  // graphic commands finish execution
-  result = vkQueueSubmit2(graphics_queue, 1, &sub_info, render_fence);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to sumbit command buffer to graphics queue: {}", string_VkResult(result));
-    return error::vk_cmd_buff_submit;
-  }
-
-  // Prepare present this will put the image we just rendered to into the visible window. we want to
-  // wait on the _renderSemaphore for that,  as its necessary that drawing commands have finished
-  // before the image is displayed to the user
-  VkPresentInfoKHR present_info{};
-  present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  present_info.pNext = nullptr;
-  present_info.pSwapchains = &swpc;
-  present_info.swapchainCount = 1;
-
-  present_info.pWaitSemaphores = &render_semaphore;
-  present_info.waitSemaphoreCount = 1;
-
-  present_info.pImageIndices = &swpc_img_idx;
-
-  result = vkQueuePresentKHR(graphics_queue, &present_info);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to present rendering: {}", string_VkResult(result));
-    return error::vk_present;
-  }
-
-  // increase the number of frames drawn
-  ctx.frm_data.advance_idx();
-
-  return {};
-}
-
-auto surge::renderer::vk::create_swapchain(const config::renderer_attrs &r_attrs, context &ctx,
-                                           u32 width, u32 height) noexcept
-    -> tl::expected<swapchain_data, error> {
-  swapchain_data swpc_data{};
-
-  vkb::SwapchainBuilder swpc_builder{ctx.phys_device, ctx.device, ctx.surface};
-
-  swpc_builder.set_desired_format(VkSurfaceFormatKHR{
-      .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR});
-
-  // VSync
-  if (r_attrs.vsync) {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR);
-  } else {
-    swpc_builder.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR);
-  }
-
-  swpc_builder.set_desired_extent(width, height);
-  swpc_builder.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-  swpc_builder.set_allocation_callbacks(&vk_alloc_callbacks);
-
-  const auto swpc_build_result{swpc_builder.build()};
-  if (!swpc_build_result) {
-    log_error("Error while creating Vulkan swapchain {}",
-              string_VkResult(swpc_build_result.vk_result()));
-    return tl::unexpected{error::vk_init_swapchain};
-  } else {
-    swpc_data.swapchain = swpc_build_result.value();
-  }
-
-  const auto get_swpc_img_result{swpc_data.swapchain.get_images()};
-  if (!get_swpc_img_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_result.vk_result()));
-    return tl::unexpected{error::vk_swapchain_imgs};
-  } else {
-    swpc_data.imgs = get_swpc_img_result.value();
-  }
-
-  const auto get_swpc_img_views_result{swpc_data.swapchain.get_image_views()};
-  if (!get_swpc_img_views_result) {
-    log_error("Error while retrieving Vulkan swapchain images {}",
-              string_VkResult(get_swpc_img_views_result.vk_result()));
-    return tl::unexpected{error::vk_swapchain_imgs_views};
-  } else {
-    swpc_data.imgs_views = get_swpc_img_views_result.value();
-  }
-
-  return swpc_data;
-}
-
-void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) noexcept {
-  vkb::destroy_swapchain(swpc.swapchain);
-
-  for (auto &img : swpc.imgs_views) {
-    vkDestroyImageView(ctx.device, img, &vk_alloc_callbacks);
-  }
-
-  swpc.imgs.clear();
-  swpc.imgs_views.clear();
-}
-
-auto surge::renderer::vk::init(
-    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-    const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error> {
-  context ctx{};
-  log_info("Initializing Vulkan");
-
-  /*****************************
-   * Query required extensions *
-   *****************************/
+auto vk::init_helpers::get_required_extensions() noexcept
+    -> tl::expected<vector<const char *>, error> {
   log_info("Querying required Vulkan instance extensions");
 
   // GLFW extensions
@@ -573,287 +149,439 @@ auto surge::renderer::vk::init(
 
   // Printout
   for (const auto &ext : required_extensions) {
-    log_info("Vulkan extension requested: {}", ext);
+    log_info("Vulkan extension required: {}", ext);
   }
 
-  /************
-   * Instance *
-   ************/
-  log_info("Creating Vulkan instance");
+  return required_extensions;
+}
 
-  vkb::InstanceBuilder builder{};
-  builder.set_engine_name("SURGE - The Super Underrated Game Engine");
-  builder.set_app_name(w_attrs.name.c_str());
-
-  builder.set_app_version(VK_MAKE_API_VERSION(0, 1, 0, 0));
-  builder.set_engine_version(
-      VK_MAKE_API_VERSION(0, SURGE_VERSION_MAJOR, SURGE_VERSION_MINOR, SURGE_VERSION_PATCH));
-
-  builder.require_api_version(1, 3, 0);
-  builder.enable_extensions(required_extensions);
-
-  builder.set_allocation_callbacks(&vk_alloc_callbacks);
-
-  // Message handler and validation layers
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  log_info("Enabling Vulkan validation layers");
-  builder.enable_layer("VK_LAYER_KHRONOS_validation");
-  builder.request_validation_layers(true);
-  builder.set_debug_callback(vk_debug_callback);
+auto vk::init_helpers::get_required_validation_layers() noexcept
+    -> tl::expected<vector<const char *>, error> {
+  using std::strcmp;
+
+  log_info("Cheking available validation layers");
+
+  u32 layer_count{0};
+  auto result{vkEnumerateInstanceLayerProperties(&layer_count, nullptr)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable query available validation layers: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_val_layer_query};
+  }
+
+  vector<VkLayerProperties> available_layers(layer_count);
+  result = vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable query available validation layers: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_val_layer_query};
+  }
+
+  for (const auto &layer_properties : available_layers) {
+    log_info("Available validation layer: {}", layer_properties.layerName);
+  }
+
+  vector<const char *> required_layers{};
+  required_layers.push_back("VK_LAYER_KHRONOS_validation");
+
+  for (const auto &layer_name : required_layers) {
+    bool layer_found{false};
+
+    for (const auto &layer_properties : available_layers) {
+      if (strcmp(layer_name, layer_properties.layerName) == 0) {
+        layer_found = true;
+        break;
+      }
+    }
+
+    if (!layer_found) {
+      return tl::unexpected{error::vk_val_layer_missing};
+    }
+  }
+
+  return required_layers;
+}
+
+auto vk::init_helpers::dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT {
+  VkDebugUtilsMessengerCreateInfoEXT create_info{
+      .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+      .pNext = nullptr,
+      .flags = 0,
+      .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT
+                         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+                         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+      .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                     | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                     | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+      .pfnUserCallback = debug_callback,
+      .pUserData = nullptr};
+
+  return create_info;
+}
+
+auto vk::init_helpers::create_dbg_msg(VkInstance instance) noexcept
+    -> tl::expected<VkDebugUtilsMessengerEXT, error> {
+  log_info("Creating debug messenger");
+
+  auto func{reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"))};
+
+  if (func == nullptr) {
+    log_error("Unable to find extension function vkCreateDebugUtilsMessengerEXT");
+    return tl::unexpected{error::vk_dbg_msg_ext_func_ptr};
+  }
+
+  auto create_info{dbg_msg_create_info()};
+
+  VkDebugUtilsMessengerEXT dbg_msg{};
+  const auto result{func(instance, &create_info, &alloc_callbacks, &dbg_msg)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable create debug messenger: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_dbg_msg_create};
+  } else {
+    return dbg_msg;
+  }
+}
+
+auto vk::init_helpers::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg)
+    -> tl::expected<void, error> {
+  log_info("Destroying debug messenger");
+
+  auto func{reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"))};
+
+  if (func == nullptr) {
+    log_error("Unable to find extension function vkDestroyDebugUtilsMessengerEXT");
+    return tl::unexpected{error::vk_dbg_msg_ext_func_ptr};
+  }
+
+  func(instance, dbg_msg, &alloc_callbacks);
+
+  return {};
+}
+
 #endif
 
-  const auto instance_result{builder.build()};
+auto vk::init_helpers::create_instance() noexcept -> tl::expected<VkInstance, error> {
+  log_info("Creating instance");
 
-  if (!instance_result) {
-    log_error("Error while initializing Vulkan instance {}",
-              string_VkResult(instance_result.vk_result()));
-    return tl::unexpected{error::vk_instance_init};
-  } else {
-    ctx.instance = instance_result.value();
+  const auto required_extensions{get_required_extensions()};
+  if (!required_extensions) {
+    return tl::unexpected{required_extensions.error()};
   }
 
-  /**********
-   * Device *
-   **********/
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+  const auto required_layers{get_required_validation_layers()};
+  if (!required_layers) {
+    return tl::unexpected{required_layers.error()};
+  }
+
+  auto dbg_msg_ci{dbg_msg_create_info()};
+#endif
+
+  VkApplicationInfo app_info{
+      .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+      .pNext = nullptr,
+      .pApplicationName = "SURGE Player",
+      .applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
+      .pEngineName = "SURGE",
+      .engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
+      .apiVersion = VK_API_VERSION_1_3,
+  };
+
+  VkInstanceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+                                   .pNext = &dbg_msg_ci,
+#else
+                                   .pNext = nullptr,
+#endif
+                                   .flags = 0,
+                                   .pApplicationInfo = &app_info,
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+                                   .enabledLayerCount = static_cast<u32>(required_layers->size()),
+                                   .ppEnabledLayerNames = required_layers->data(),
+#else
+                                   .enabledLayerCount = 0,
+                                   .ppEnabledLayerNames = nullptr,
+#endif
+                                   .enabledExtensionCount
+                                   = static_cast<u32>(required_extensions->size()),
+                                   .ppEnabledExtensionNames = required_extensions->data()};
+
+  VkInstance instance{};
+  const auto result{vkCreateInstance(&create_info, &alloc_callbacks, &instance)};
+  if (result != VK_SUCCESS) {
+    log_error("Unable initialize vulkan instance: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_instance_init};
+  }
+
+  return instance;
+}
+
+auto vk::init_helpers::find_queue_families(VkPhysicalDevice phys_dev) noexcept
+    -> queue_family_indices {
+  queue_family_indices idxs{};
+
+  uint32_t queue_family_count{0};
+  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, nullptr);
+
+  vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, queue_families.data());
+
+  for (u32 i = 0; const auto &family : queue_families) {
+    if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      idxs.graphics_family = i;
+    }
+
+    if (family.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+      idxs.transfer_family = i;
+    }
+
+    if (family.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+      idxs.compute_family = i;
+    }
+
+    i++;
+  }
+
+  return idxs;
+}
+
+auto vk::init_helpers::is_device_suitable(VkPhysicalDevice phys_dev) noexcept -> bool {
+  VkPhysicalDeviceProperties dev_prop{};
+  vkGetPhysicalDeviceProperties(phys_dev, &dev_prop);
+
+  VkPhysicalDeviceVulkan13Features features_13{};
+  features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+
+  VkPhysicalDeviceVulkan12Features features_12{};
+  features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  features_12.pNext = &features_13;
+
+  VkPhysicalDeviceFeatures2 features{};
+  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  features.pNext = &features_12;
+
+  vkGetPhysicalDeviceFeatures2(phys_dev, &features);
+
+  const auto has_required_features{features_12.bufferDeviceAddress && features_12.descriptorIndexing
+                                   && features_13.dynamicRendering && features_13.synchronization2};
+
+  const auto idxs{find_queue_families(phys_dev)};
+
+  const auto has_all_queues{idxs.graphics_family.has_value() && idxs.transfer_family.has_value()
+                            && idxs.compute_family.has_value()};
+
+  if (has_required_features && has_all_queues) {
+    log_info("Suitable device found: {}", dev_prop.deviceName);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+auto vk::init_helpers::select_physical_device(VkInstance instance) noexcept
+    -> tl::expected<VkPhysicalDevice, error> {
+  log_info("Selecting first suitable physical device");
+
+  uint32_t dev_count{0};
+  auto result{vkEnumeratePhysicalDevices(instance, &dev_count, nullptr)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable enumerate physical devices: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_phys_dev_enum};
+  }
+
+  std::vector<VkPhysicalDevice> phys_devs(dev_count);
+  result = vkEnumeratePhysicalDevices(instance, &dev_count, phys_devs.data());
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable enumerate physical devices: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_phys_dev_enum};
+  }
+
+  for (const auto &phys_dev : phys_devs) {
+    if (is_device_suitable(phys_dev)) {
+      return phys_dev;
+    }
+  }
+
+  return tl::unexpected{error::vk_phys_dev_no_suitable};
+}
+
+auto vk::init_helpers::create_logical_device(VkPhysicalDevice phys_dev) noexcept
+    -> tl::expected<VkDevice, error> {
+  log_info("Creating logical device");
 
   // vulkan 1.3 features
-  VkPhysicalDeviceVulkan13Features features{};
-  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-  features.dynamicRendering = true;
-  features.synchronization2 = true;
+  VkPhysicalDeviceVulkan13Features features_13{};
+  features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  features_13.dynamicRendering = true;
+  features_13.synchronization2 = true;
 
   // vulkan 1.2 features
-  VkPhysicalDeviceVulkan12Features features12{};
-  features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  features12.bufferDeviceAddress = true;
-  features12.descriptorIndexing = true;
+  VkPhysicalDeviceVulkan12Features features_12{};
+  features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  features_12.pNext = &features_13;
+  features_12.bufferDeviceAddress = true;
+  features_12.descriptorIndexing = true;
 
-  // Surface
-  const auto surface_result{glfwCreateWindowSurface(ctx.instance.instance, window::get_window_ptr(),
-                                                    &vk_alloc_callbacks, &ctx.surface)};
-  if (surface_result != VK_SUCCESS) {
-    log_error("Window Vulkan surface creation failed: {}", string_VkResult(surface_result));
+  VkPhysicalDeviceFeatures2 features{};
+  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  features.pNext = &features_12;
+
+  const auto indices{find_queue_families(phys_dev)};
+
+  const float queue_priority{1.0f};
+
+  // value_or(0) never returns 0 here because the selected device is only suitable if all queues are
+  // found.
+  VkDeviceQueueCreateInfo graphics_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .queueFamilyIndex = indices.graphics_family.value_or(0),
+                                            .queueCount = 1,
+                                            .pQueuePriorities = &queue_priority};
+
+  VkDeviceQueueCreateInfo transfer_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .queueFamilyIndex = indices.transfer_family.value_or(0),
+                                            .queueCount = 1,
+                                            .pQueuePriorities = &queue_priority};
+
+  VkDeviceQueueCreateInfo compute_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                           .pNext = nullptr,
+                                           .flags = 0,
+                                           .queueFamilyIndex = indices.compute_family.value_or(0),
+                                           .queueCount = 1,
+                                           .pQueuePriorities = &queue_priority};
+
+  std::array<VkDeviceQueueCreateInfo, 3> queue_create_infos{graphics_queue_ci, transfer_queue_ci,
+                                                            compute_queue_ci};
+
+  VkDeviceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                                 .pNext = &features,
+                                 .flags = 0,
+                                 .queueCreateInfoCount
+                                 = static_cast<u32>(queue_create_infos.size()),
+                                 .pQueueCreateInfos = queue_create_infos.data(),
+                                 .enabledLayerCount = 0,
+                                 .ppEnabledLayerNames = nullptr,
+                                 .enabledExtensionCount = 0,
+                                 .ppEnabledExtensionNames = nullptr,
+                                 .pEnabledFeatures = nullptr};
+
+  VkDevice log_dev{};
+  const auto result{vkCreateDevice(phys_dev, &create_info, &alloc_callbacks, &log_dev)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable create logical device: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_log_dev_create};
+  } else {
+    return log_dev;
+  }
+}
+
+auto vk::init_helpers::get_queue_handles(VkPhysicalDevice phys_dev,
+                                         VkDevice log_dev) noexcept -> queue_handles {
+  const auto idxs{find_queue_families(phys_dev)};
+
+  queue_handles handles{};
+
+  // value_or(0) never returns 0 here because the selected device is only suitable if all queues are
+  // found.
+  vkGetDeviceQueue(log_dev, idxs.graphics_family.value_or(0), 0, &(handles.graphics));
+  vkGetDeviceQueue(log_dev, idxs.transfer_family.value_or(0), 0, &(handles.transfer));
+  vkGetDeviceQueue(log_dev, idxs.compute_family.value_or(0), 0, &(handles.compute));
+
+  return handles;
+}
+
+auto vk::init_helpers::create_window_surface(VkInstance instance) noexcept
+    -> tl::expected<VkSurfaceKHR, error> {
+  log_info("Creating window surface");
+
+  VkSurfaceKHR surface{};
+  const auto result{
+      glfwCreateWindowSurface(instance, window::get_window_ptr(), &alloc_callbacks, &surface)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Window Vulkan surface creation failed: {}", string_VkResult(result));
     return tl::unexpected{error::vk_surface_init};
-  }
-
-  // Physical device
-  vkb::PhysicalDeviceSelector phys_dev_select{ctx.instance};
-  phys_dev_select.set_minimum_version(1, 3);
-  phys_dev_select.set_required_features_13(features);
-  phys_dev_select.set_required_features_12(features12);
-  phys_dev_select.set_surface(ctx.surface);
-
-  const auto phys_dev_select_result{phys_dev_select.select()};
-
-  if (!phys_dev_select_result) {
-    log_error("Error while selecting Vulkan physical device {}",
-              string_VkResult(phys_dev_select_result.vk_result()));
-    return tl::unexpected{error::vk_phys_dev_select};
   } else {
-    log_info("Selected Vulkan device {}", phys_dev_select_result.value().name);
-    ctx.phys_device = phys_dev_select_result.value();
+    return surface;
   }
+}
 
-  // Logical device
-  vkb::DeviceBuilder logi_dev_build{phys_dev_select_result.value()};
-  const auto device_build_result{logi_dev_build.build()};
+auto vk::init(const config::renderer_attrs &, const config::window_resolution &,
+              const config::window_attrs &) noexcept -> tl::expected<context, error> {
+  using namespace init_helpers;
 
-  if (!device_build_result) {
-    log_error("Error while creating Vulkan logical device {}",
-              string_VkResult(device_build_result.vk_result()));
-    return tl::unexpected{error::vk_logi_dev_select};
+  log_info("Initializing Vulkan");
+
+  context ctx{};
+
+  const auto instance{create_instance()};
+  if (!instance) {
+    return tl::unexpected{instance.error()};
   } else {
-    ctx.device = device_build_result.value();
+    ctx.instance = *instance;
   }
 
-  /*************
-   * Swapchain *
-   *************/
-  const auto swpc_create_result{create_swapchain(r_attrs, ctx, static_cast<u32>(w_res.width),
-                                                 static_cast<u32>(w_res.height))};
-  if (!swpc_create_result) {
-    return tl::unexpected{swpc_create_result.error()};
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+  const auto dbg_msg{create_dbg_msg(*instance)};
+  if (!dbg_msg) {
+    return tl::unexpected{dbg_msg.error()};
   } else {
-    ctx.swpc_data = swpc_create_result.value();
+    ctx.dbg_msg = *dbg_msg;
   }
+#endif
 
-  /**********
-   * Queues *
-   **********/
-  const auto get_graph_queue_result{ctx.device.get_queue(vkb::QueueType::graphics)};
-  if (!get_graph_queue_result) {
-    log_error("Error while acquiring Vulkan Graphics Queue Vulkan from device {}",
-              string_VkResult(get_graph_queue_result.vk_result()));
-    return tl::unexpected{error::vk_graphics_queue_retrieve};
+  const auto phys_dev{select_physical_device(*instance)};
+  if (!phys_dev) {
+    return tl::unexpected{phys_dev.error()};
   } else {
-    ctx.frm_data.graphics_queue = get_graph_queue_result.value();
+    ctx.phys_dev = *phys_dev;
   }
 
-  const auto get_graph_queue_family_result{ctx.device.get_queue_index(vkb::QueueType::graphics)};
-  if (!get_graph_queue_family_result) {
-    log_error("Error while acquiring Vulkan Graphics Queue Vulkan from device {}",
-              string_VkResult(get_graph_queue_family_result.vk_result()));
-    return tl::unexpected{error::vk_graphics_queue_retrieve};
+  const auto log_dev{create_logical_device(*phys_dev)};
+  if (!log_dev) {
+    return tl::unexpected{log_dev.error()};
   } else {
-    ctx.frm_data.graphics_queue_family = get_graph_queue_family_result.value();
+    ctx.log_dev = *log_dev;
   }
 
-  /**********************
-   * Command structures *
-   **********************/
+  ctx.q_handles = get_queue_handles(*phys_dev, *log_dev);
 
-  // Resetable command pool
-  auto cmd_pool_create_info{command_pool_create_info(
-      ctx.frm_data.graphics_queue_family, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
-
-  for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
-    auto result{vkCreateCommandPool(ctx.device, &cmd_pool_create_info, &vk_alloc_callbacks,
-                                    &ctx.frm_data.command_pools[i])}; // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create command pool: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_cmd_pool_creation};
-    }
-
-    // Command buffer
-    // NOLINTNEXTLINE
-    auto cmd_buffer{command_buffer_alloc_info(ctx.frm_data.command_pools[i], 1)};
-    result = vkAllocateCommandBuffers(ctx.device, &cmd_buffer,
-                                      &ctx.frm_data.command_buffers[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create buffer: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_cmd_buffer_creation};
-    }
-  }
-
-  /******************************
-   * Synchronization structures *
-   ******************************/
-  auto fence_ci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
-  auto sem_ci{semaphore_create_info()};
-
-  for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
-    auto result{vkCreateFence(ctx.device, &fence_ci, &vk_alloc_callbacks,
-                              &ctx.frm_data.render_fences[i])}; // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create fence: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_fence_creation};
-    }
-
-    result = vkCreateSemaphore(ctx.device, &sem_ci, &vk_alloc_callbacks,
-                               &ctx.frm_data.render_semaphores[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create renderer semaphore: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_semaphore_creation};
-    }
-
-    result = vkCreateSemaphore(ctx.device, &sem_ci, &vk_alloc_callbacks,
-                               &ctx.frm_data.swpc_semaphores[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create swapchain semaphore: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_fence_creation};
-    }
-  }
-
-  /*******
-   * VMA *
-   *******/
-  VmaAllocatorCreateInfo alloc_info{};
-  alloc_info.physicalDevice = ctx.phys_device;
-  alloc_info.device = ctx.device;
-  alloc_info.instance = ctx.instance.instance;
-  alloc_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-  vmaCreateAllocator(&alloc_info, &ctx.allocator);
-
-  /**************
-   * Draw Image *
-   **************/
-  VkExtent3D draw_image_extent{static_cast<u32>(w_res.width), static_cast<u32>(w_res.height), 1};
-  ctx.draw_image.image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
-  ctx.draw_image.image_extent = draw_image_extent;
-
-  VkImageUsageFlags draw_image_usage_flags{};
-  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  draw_image_usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT;
-  draw_image_usage_flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-  auto rimg_info{
-      image_create_info(ctx.draw_image.image_format, draw_image_usage_flags, draw_image_extent)};
-
-  VmaAllocationCreateInfo rimg_allocinfo{};
-  rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-  rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-  // Allocate and create the image
-  auto result{vmaCreateImage(ctx.allocator, &rimg_info, &rimg_allocinfo, &ctx.draw_image.image,
-                             &ctx.draw_image.allocation, nullptr)};
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_init_draw_img};
-  }
-
-  // Build a image-view for the draw image to use for rendering
-  auto rview_info{imageview_create_info(ctx.draw_image.image_format, ctx.draw_image.image,
-                                        VK_IMAGE_ASPECT_COLOR_BIT)};
-
-  result
-      = vkCreateImageView(ctx.device, &rview_info, &vk_alloc_callbacks, &ctx.draw_image.image_view);
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image view: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_init_draw_img};
+  const auto surface{create_window_surface(*instance)};
+  if (!surface) {
+    return tl::unexpected{surface.error()};
+  } else {
+    ctx.surface = *surface;
   }
 
   return ctx;
 }
 
-void surge::renderer::vk::terminate(context &ctx) {
-  log_info("Terminating Vulkan");
+void vk::terminate(context &ctx) noexcept {
+  log_info("Terminating vulkan");
 
-  log_info("Waiting for GPU idle");
-  vkWaitForFences(ctx.device, 2, ctx.frm_data.render_fences.data(), true, 1000000000);
-
-  log_info("Destroying render image");
-  vkDestroyImageView(ctx.device, ctx.draw_image.image_view, &vk_alloc_callbacks);
-  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
-
-  log_info("Destroying memory allocator");
-  vmaDestroyAllocator(ctx.allocator);
-
-  log_info("Destroying frame data");
-  for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
-    // NOLINTNEXTLINE
-    vkDestroySemaphore(ctx.device, ctx.frm_data.swpc_semaphores[i], &vk_alloc_callbacks);
-
-    // NOLINTNEXTLINE
-    vkDestroySemaphore(ctx.device, ctx.frm_data.render_semaphores[i], &vk_alloc_callbacks);
-
-    // NOLINTNEXTLINE
-    vkDestroyFence(ctx.device, ctx.frm_data.render_fences[i], &vk_alloc_callbacks);
-
-    // NOLINTNEXTLINE
-    vkFreeCommandBuffers(ctx.device, ctx.frm_data.command_pools[i], 1,
-                         &ctx.frm_data.command_buffers[i]); // NOLINT
-
-    // NOLINTNEXTLINE
-    vkDestroyCommandPool(ctx.device, ctx.frm_data.command_pools[i], &vk_alloc_callbacks);
-  }
-
-  log_info("Destroying swapchain");
-  destroy_swapchain(ctx, ctx.swpc_data);
-
-  log_info("Destroying window surface");
-  vkb::destroy_surface(ctx.instance, ctx.surface);
+  log_info("Destrouing window surface");
+  vkDestroySurfaceKHR(ctx.instance, ctx.surface, &alloc_callbacks);
 
   log_info("Destroying logical device");
-  vkb::destroy_device(ctx.device);
+  vkDestroyDevice(ctx.log_dev, &alloc_callbacks);
+
+  init_helpers::destroy_dbg_msg(ctx.instance, ctx.dbg_msg);
 
   log_info("Destroying instance");
-  vkb::destroy_instance(ctx.instance);
+  vkDestroyInstance(ctx.instance, &alloc_callbacks);
+}
+
+auto vk::clear(context &, const config::clear_color &) noexcept -> std::optional<error> {
+  return {};
 }

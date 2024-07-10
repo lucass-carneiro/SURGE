@@ -41,6 +41,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/error_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/glfw_includes.hpp"
   "${PROJECT_SOURCE_DIR}/include/imgui_wrapper.hpp"
   "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"

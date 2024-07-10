@@ -68,9 +68,15 @@ enum error : int {
 
   // Vulkan errors
   vk_instance_init,
+  vk_val_layer_query,
+  vk_val_layer_missing,
+  vk_dbg_msg_ext_func_ptr,
+  vk_dbg_msg_create,
+  vk_phys_dev_enum,
+  vk_phys_dev_no_suitable,
+  vk_log_dev_create,
+  vk_surface_present_query,
   vk_surface_init,
-  vk_phys_dev_select,
-  vk_logi_dev_select,
   vk_init_swapchain,
   vk_init_draw_img,
   vk_swapchain_imgs,

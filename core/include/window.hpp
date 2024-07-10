@@ -2,8 +2,8 @@
 #define SURGE_CORE_WINDOW_HPP
 
 #include "config.hpp"
+#include "glfw_includes.hpp"
 #include "module.hpp"
-#include "renderer.hpp"
 
 #include <optional>
 

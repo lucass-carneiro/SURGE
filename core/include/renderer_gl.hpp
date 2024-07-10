@@ -3,11 +3,7 @@
 
 #include "config.hpp"
 #include "error_types.hpp"
-
-// clang-format off
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-// clang-format on
+#include "glfw_includes.hpp"
 
 #include <optional>
 
