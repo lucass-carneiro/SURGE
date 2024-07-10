@@ -3,7 +3,8 @@
 
 #include "error_types.hpp"
 #include "gba.hpp"
-#include "renderer.hpp"
+#include "glm_includes.hpp"
+#include "renderer_gl.hpp"
 
 #include <tl/expected.hpp>
 

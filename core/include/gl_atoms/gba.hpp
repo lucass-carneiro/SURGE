@@ -4,7 +4,7 @@
 #include "integer_types.hpp"
 #include "logging.hpp"
 #include "options.hpp"
-#include "renderer.hpp"
+#include "renderer_gl.hpp"
 
 #include <array>
 

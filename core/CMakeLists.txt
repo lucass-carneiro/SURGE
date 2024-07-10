@@ -46,6 +46,8 @@ set(
   "${PROJECT_SOURCE_DIR}/include/logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_gl.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk.hpp"
   "${PROJECT_SOURCE_DIR}/include/tasks.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/window.hpp"

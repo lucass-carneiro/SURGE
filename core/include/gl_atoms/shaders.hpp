@@ -2,7 +2,7 @@
 #define SURGE_CORE_GL_ATOM_SHADERS_HPP
 
 #include "error_types.hpp"
-#include "renderer.hpp"
+#include "renderer_gl.hpp"
 
 #include <tl/expected.hpp>
 

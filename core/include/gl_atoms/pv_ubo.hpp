@@ -1,7 +1,8 @@
 #ifndef SURGE_CORE_GL_ATOM_PV_UBO_HPP
 #define SURGE_CORE_GL_ATOM_PV_UBO_HPP
 
-#include "renderer.hpp"
+#include "glm/glm.hpp"
+#include "renderer_gl.hpp"
 
 // UBO for storing projection and view matrices
 namespace surge::gl_atom::pv_ubo {

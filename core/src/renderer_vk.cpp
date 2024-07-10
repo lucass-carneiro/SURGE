@@ -1,8 +1,9 @@
 #define VMA_IMPLEMENTATION
 
+#include "renderer_vk.hpp"
+
 #include "allocators.hpp"
 #include "logging.hpp"
-#include "renderer.hpp"
 #include "window.hpp"
 
 #include <array>
@@ -125,9 +126,8 @@ static VKAPI_ATTR auto VKAPI_CALL vk_debug_callback(
 #endif
 
 // NOLINTNEXTLINE
-auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
-                                                   VkCommandPoolCreateFlags flags) noexcept
-    -> VkCommandPoolCreateInfo {
+auto surge::renderer::vk::command_pool_create_info(
+    u32 queue_family_idx, VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{};
   ci.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   ci.pNext = nullptr;
@@ -185,9 +185,8 @@ auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask
   return sum_img;
 }
 
-auto surge::renderer::vk::semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
-                                                VkSemaphore semaphore) noexcept
-    -> VkSemaphoreSubmitInfo {
+auto surge::renderer::vk::semaphore_submit_info(
+    VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo {
   VkSemaphoreSubmitInfo si{};
   si.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
   si.pNext = nullptr;
@@ -208,10 +207,9 @@ auto surge::renderer::vk::command_buffer_submit_info(VkCommandBuffer cmd) noexce
   return si;
 }
 
-auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
-                                      VkSemaphoreSubmitInfo *signam_sem_info,
-                                      VkSemaphoreSubmitInfo *wai_sem_info) noexcept
-    -> VkSubmitInfo2 {
+auto surge::renderer::vk::submit_info(
+    VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signam_sem_info,
+    VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2 {
   VkSubmitInfo2 si{};
   si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   si.pNext = nullptr;
@@ -306,7 +304,9 @@ void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
 void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination,
                                      VkExtent2D src_size, VkExtent2D dst_size) noexcept {
 
-  VkImageBlit2 blit_reg{.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2, .pNext = nullptr};
+  VkImageBlit2 blit_reg{};
+  blit_reg.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+  blit_reg.pNext = nullptr;
 
   blit_reg.srcOffsets[1].x = static_cast<i32>(src_size.width);
   blit_reg.srcOffsets[1].y = static_cast<i32>(src_size.height);
@@ -326,7 +326,9 @@ void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImag
   blit_reg.dstSubresource.layerCount = 1;
   blit_reg.dstSubresource.mipLevel = 0;
 
-  VkBlitImageInfo2 blitInfo{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2, .pNext = nullptr};
+  VkBlitImageInfo2 blitInfo{};
+  blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+  blitInfo.pNext = nullptr;
   blitInfo.dstImage = destination;
   blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
   blitInfo.srcImage = source;
@@ -338,8 +340,8 @@ void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImag
   vkCmdBlitImage2(cmd, &blitInfo);
 }
 
-auto surge::renderer::vk::clear(context &ctx, const config::clear_color &w_ccl) noexcept
-    -> std::optional<error> {
+auto surge::renderer::vk::clear(context &ctx,
+                                const config::clear_color &w_ccl) noexcept -> std::optional<error> {
   // Aliases
   auto &dev{ctx.device};
   auto &graphics_queue{ctx.frm_data.graphics_queue};
@@ -542,10 +544,9 @@ void surge::renderer::vk::destroy_swapchain(context &ctx, swapchain_data &swpc) 
   swpc.imgs_views.clear();
 }
 
-auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
-                               const config::window_resolution &w_res,
-                               const config::window_attrs &w_attrs) noexcept
-    -> tl::expected<context, error> {
+auto surge::renderer::vk::init(
+    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+    const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error> {
   context ctx{};
   log_info("Initializing Vulkan");
 
@@ -616,14 +617,14 @@ auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
    **********/
 
   // vulkan 1.3 features
-  VkPhysicalDeviceVulkan13Features features{
-      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+  VkPhysicalDeviceVulkan13Features features{};
+  features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
   features.dynamicRendering = true;
   features.synchronization2 = true;
 
   // vulkan 1.2 features
-  VkPhysicalDeviceVulkan12Features features12{
-      .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+  VkPhysicalDeviceVulkan12Features features12{};
+  features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
   features12.bufferDeviceAddress = true;
   features12.descriptorIndexing = true;
 

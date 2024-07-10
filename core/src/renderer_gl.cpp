@@ -1,5 +1,6 @@
+#include "renderer_gl.hpp"
+
 #include "logging.hpp"
-#include "renderer.hpp"
 #include "window.hpp"
 
 static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {

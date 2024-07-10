@@ -12,6 +12,7 @@
 #include <freetype/fttypes.h>
 // clang-format on
 
+#include <glm/glm.hpp>
 #include <optional>
 #include <string_view>
 #include <tl/expected.hpp>
@@ -63,14 +64,14 @@ public:
 
   [[nodiscard]] auto get_texture_handles() const noexcept -> const hash_map<FT_ULong, GLuint64> &;
 
-  [[nodiscard]] auto get_bitmap_dims() const noexcept
-      -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> &;
+  [[nodiscard]] auto
+  get_bitmap_dims() const noexcept -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> &;
 
-  [[nodiscard]] auto get_bearings() const noexcept
-      -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> &;
+  [[nodiscard]] auto
+  get_bearings() const noexcept -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> &;
 
-  [[nodiscard]] auto get_advances() const noexcept
-      -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> &;
+  [[nodiscard]] auto
+  get_advances() const noexcept -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> &;
 };
 
 struct text_buffer {
