@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "renderer_vk.hpp"
 
 #include "allocators.hpp"
@@ -204,7 +206,7 @@ auto vk::init_helpers::get_required_validation_layers() noexcept
   return required_layers;
 }
 
-auto vk::init_helpers::dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT {
+auto vk::infos::dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT {
   VkDebugUtilsMessengerCreateInfoEXT create_info{
       .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
       .pNext = nullptr,
@@ -224,6 +226,8 @@ auto vk::init_helpers::dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCr
 
 auto vk::init_helpers::create_dbg_msg(VkInstance instance) noexcept
     -> tl::expected<VkDebugUtilsMessengerEXT, error> {
+  using namespace infos;
+
   log_info("Creating debug messenger");
 
   auto func{reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
@@ -267,6 +271,8 @@ auto vk::init_helpers::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessenge
 #endif
 
 auto vk::init_helpers::create_instance() noexcept -> tl::expected<VkInstance, error> {
+  using namespace infos;
+
   log_info("Creating instance");
 
   const auto required_extensions{get_required_extensions()};
@@ -581,9 +587,13 @@ auto vk::init_helpers::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log
 
   // value_or(0) never returns 0 here because the selected device is only suitable if all queues
   // are found.
-  vkGetDeviceQueue(log_dev, idxs.graphics_family.value_or(0), 0, &(handles.graphics));
-  vkGetDeviceQueue(log_dev, idxs.transfer_family.value_or(0), 0, &(handles.transfer));
-  vkGetDeviceQueue(log_dev, idxs.compute_family.value_or(0), 0, &(handles.compute));
+  handles.graphics_idx = idxs.graphics_family.value_or(0);
+  handles.transfer_idx = idxs.transfer_family.value_or(0);
+  handles.compute_idx = idxs.compute_family.value_or(0);
+
+  vkGetDeviceQueue(log_dev, handles.graphics_idx, 0, &(handles.graphics));
+  vkGetDeviceQueue(log_dev, handles.transfer_idx, 0, &(handles.transfer));
+  vkGetDeviceQueue(log_dev, handles.compute_idx, 0, &(handles.compute));
 
   return handles;
 }
@@ -623,6 +633,7 @@ auto vk::init_helpers::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_
                           surface_capabilities.maxImageExtent.width),
                     clamp(height, surface_capabilities.minImageExtent.height,
                           surface_capabilities.maxImageExtent.height)};
+  swpc_data.extent = extent;
 
   uint32_t image_count{surface_capabilities.minImageCount + 1};
 
@@ -702,7 +713,7 @@ auto vk::init_helpers::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_
   return swpc_data;
 }
 
-auto vk::init_helpers::command_pool_create_info(
+auto vk::infos::command_pool_create_info(
     u32 queue_family_idx, VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                              .pNext = nullptr,
@@ -711,8 +722,8 @@ auto vk::init_helpers::command_pool_create_info(
   return ci;
 }
 
-auto vk::init_helpers::command_buffer_alloc_info(VkCommandPool pool, u32 count) noexcept
-    -> VkCommandBufferAllocateInfo {
+auto vk::infos::command_buffer_alloc_info(VkCommandPool pool,
+                                          u32 count) noexcept -> VkCommandBufferAllocateInfo {
   VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
                                  .pNext = nullptr,
                                  .commandPool = pool,
@@ -721,16 +732,87 @@ auto vk::init_helpers::command_buffer_alloc_info(VkCommandPool pool, u32 count) 
   return ai;
 }
 
+auto vk::infos::command_buffer_begin_info(VkCommandBufferUsageFlags flags) noexcept
+    -> VkCommandBufferBeginInfo {
+  VkCommandBufferBeginInfo ci = {};
+  ci.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  ci.pNext = nullptr;
+  ci.pInheritanceInfo = nullptr;
+  ci.flags = flags;
+  return ci;
+}
+
+auto vk::infos::command_buffer_submit_info(VkCommandBuffer cmd) noexcept
+    -> VkCommandBufferSubmitInfo {
+  VkCommandBufferSubmitInfo si{};
+  si.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+  si.pNext = nullptr;
+  si.commandBuffer = cmd;
+  si.deviceMask = 0;
+  return si;
+}
+
+auto vk::infos::semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
+                                      VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo {
+  VkSemaphoreSubmitInfo si{};
+  si.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+  si.pNext = nullptr;
+  si.semaphore = semaphore;
+  si.stageMask = stage_mask;
+  si.deviceIndex = 0;
+  si.value = 1;
+  return si;
+}
+
+auto vk::infos::submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signam_sem_info,
+                            VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2 {
+  VkSubmitInfo2 si{};
+  si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+  si.pNext = nullptr;
+
+  si.waitSemaphoreInfoCount = wai_sem_info == nullptr ? 0 : 1;
+  si.pWaitSemaphoreInfos = wai_sem_info;
+
+  si.signalSemaphoreInfoCount = signam_sem_info == nullptr ? 0 : 1;
+  si.pSignalSemaphoreInfos = signam_sem_info;
+
+  si.commandBufferInfoCount = 1;
+  si.pCommandBufferInfos = cmd;
+
+  return si;
+}
+
+auto vk::infos::fence_create_info(VkFenceCreateFlags flags) noexcept -> VkFenceCreateInfo {
+  VkFenceCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  ci.pNext = nullptr;
+  ci.flags = flags;
+  return ci;
+}
+
+auto vk::infos::semaphore_create_info(VkSemaphoreCreateFlags flags) noexcept
+    -> VkSemaphoreCreateInfo {
+  VkSemaphoreCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  ci.pNext = nullptr;
+  ci.flags = flags;
+  return ci;
+}
+
 auto vk::init_helpers::create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
     -> tl::expected<frame_data, error> {
+  using namespace infos;
+
   frame_data frm_data{};
 
-  // Resetable command pool
+  /******************************
+   * Command structures *
+   ******************************/
   auto cmd_pool_create_info{command_pool_create_info(
       graphics_queue_idx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
 
   for (usize i = 0; i < frm_data.frame_overlap; i++) {
-    auto result{vkCreateCommandPool(device, &cmd_pool_create_info, &vk_alloc_callbacks,
+    auto result{vkCreateCommandPool(device, &cmd_pool_create_info, &alloc_callbacks,
                                     &frm_data.command_pools[i])}; // NOLINT
 
     if (result != VK_SUCCESS) {
@@ -750,7 +832,396 @@ auto vk::init_helpers::create_frame_data(VkDevice device, u32 graphics_queue_idx
     }
   }
 
+  /******************************
+   * Synchronization structures *
+   ******************************/
+  auto fence_ci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
+  auto sem_ci{semaphore_create_info()};
+
+  for (usize i = 0; i < frm_data.frame_overlap; i++) {
+    auto result{
+        vkCreateFence(device, &fence_ci, &alloc_callbacks, &frm_data.render_fences[i])}; // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create fence: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_fence_creation};
+    }
+
+    result = vkCreateSemaphore(device, &sem_ci, &alloc_callbacks,
+                               &frm_data.render_semaphores[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create renderer semaphore: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_semaphore_creation};
+    }
+
+    result = vkCreateSemaphore(device, &sem_ci, &alloc_callbacks,
+                               &frm_data.swpc_semaphores[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create swapchain semaphore: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_fence_creation};
+    }
+  }
+
   return frm_data;
+}
+
+void vk::init_helpers::destroy_frame_data(context &ctx) noexcept {
+  log_info("Destroying frame data");
+  for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
+    // NOLINTNEXTLINE
+    vkDestroySemaphore(ctx.log_dev, ctx.frm_data.swpc_semaphores[i], &alloc_callbacks);
+
+    // NOLINTNEXTLINE
+    vkDestroySemaphore(ctx.log_dev, ctx.frm_data.render_semaphores[i], &alloc_callbacks);
+
+    // NOLINTNEXTLINE
+    vkDestroyFence(ctx.log_dev, ctx.frm_data.render_fences[i], &alloc_callbacks);
+
+    // NOLINTNEXTLINE
+    vkFreeCommandBuffers(ctx.log_dev, ctx.frm_data.command_pools[i], 1,
+                         &ctx.frm_data.command_buffers[i]); // NOLINT
+
+    // NOLINTNEXTLINE
+    vkDestroyCommandPool(ctx.log_dev, ctx.frm_data.command_pools[i], &alloc_callbacks);
+  }
+}
+
+auto vk::init_helpers::create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
+                                               VkDevice logi_dev) noexcept
+    -> tl::expected<VmaAllocator, error> {
+  log_info("Creating memory allocator");
+
+  VmaAllocatorCreateInfo alloc_info{};
+  alloc_info.physicalDevice = phys_dev;
+  alloc_info.device = logi_dev;
+  alloc_info.instance = instance;
+  alloc_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+  VmaAllocator allocator{};
+  const auto result{vmaCreateAllocator(&alloc_info, &allocator)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable create memory allocator: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_allocator_creation};
+  }
+
+  return allocator;
+}
+
+auto vk::init_helpers::image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
+                                         VkExtent3D extent) noexcept -> VkImageCreateInfo {
+  VkImageCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  ci.pNext = nullptr;
+
+  ci.imageType = VK_IMAGE_TYPE_2D;
+
+  ci.format = format;
+  ci.extent = extent;
+
+  ci.mipLevels = 1;
+  ci.arrayLayers = 1;
+
+  // TODO: Enable MSAA when requested.
+  ci.samples = VK_SAMPLE_COUNT_1_BIT;
+
+  ci.tiling = VK_IMAGE_TILING_OPTIMAL;
+  ci.usage = usage_flags;
+  return ci;
+}
+
+auto vk::infos::imageview_create_info(VkFormat format, VkImage image,
+                                      VkImageAspectFlags aspect_flags) noexcept
+    -> VkImageViewCreateInfo {
+  VkImageViewCreateInfo ci{};
+  ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  ci.pNext = nullptr;
+
+  ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  ci.image = image;
+  ci.format = format;
+  ci.subresourceRange.baseMipLevel = 0;
+  ci.subresourceRange.levelCount = 1;
+  ci.subresourceRange.baseArrayLayer = 0;
+  ci.subresourceRange.layerCount = 1;
+  ci.subresourceRange.aspectMask = aspect_flags;
+  return ci;
+}
+
+auto vk::init_helpers::image_subresource_range(VkImageAspectFlags aspect_mask) noexcept
+    -> VkImageSubresourceRange {
+  VkImageSubresourceRange sum_img{};
+  sum_img.aspectMask = aspect_mask;
+  sum_img.baseMipLevel = 0;
+  sum_img.levelCount = VK_REMAINING_MIP_LEVELS;
+  sum_img.baseArrayLayer = 0;
+  sum_img.layerCount = VK_REMAINING_ARRAY_LAYERS;
+  return sum_img;
+}
+
+void vk::init_helpers::transition_image(VkCommandBuffer cmd, VkImage image,
+                                        VkImageLayout curr_layout,
+                                        VkImageLayout new_layout) noexcept {
+  // See https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples for finer sync
+  // options
+
+  VkImageAspectFlags aspect_mask((new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+                                     ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                     : VK_IMAGE_ASPECT_COLOR_BIT);
+
+  VkImageMemoryBarrier2 img_barrier{};
+  img_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+  img_barrier.pNext = nullptr;
+
+  img_barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+  img_barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+  img_barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+  img_barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+  img_barrier.oldLayout = curr_layout;
+  img_barrier.newLayout = new_layout;
+
+  img_barrier.image = image;
+  img_barrier.subresourceRange = image_subresource_range(aspect_mask);
+
+  VkDependencyInfo dep_info{};
+  dep_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+  dep_info.pNext = nullptr;
+
+  dep_info.imageMemoryBarrierCount = 1;
+  dep_info.pImageMemoryBarriers = &img_barrier;
+
+  vkCmdPipelineBarrier2(cmd, &dep_info);
+}
+
+void vk::init_helpers::image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination,
+                                  VkExtent2D src_size, VkExtent2D dst_size) noexcept {
+  VkImageBlit2 blit_reg{};
+  blit_reg.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+  blit_reg.pNext = nullptr;
+
+  blit_reg.srcOffsets[1].x = static_cast<i32>(src_size.width);
+  blit_reg.srcOffsets[1].y = static_cast<i32>(src_size.height);
+  blit_reg.srcOffsets[1].z = 1;
+
+  blit_reg.dstOffsets[1].x = static_cast<i32>(dst_size.width);
+  blit_reg.dstOffsets[1].y = static_cast<i32>(dst_size.height);
+  blit_reg.dstOffsets[1].z = 1;
+
+  blit_reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit_reg.srcSubresource.baseArrayLayer = 0;
+  blit_reg.srcSubresource.layerCount = 1;
+  blit_reg.srcSubresource.mipLevel = 0;
+
+  blit_reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  blit_reg.dstSubresource.baseArrayLayer = 0;
+  blit_reg.dstSubresource.layerCount = 1;
+  blit_reg.dstSubresource.mipLevel = 0;
+
+  VkBlitImageInfo2 blitInfo{};
+  blitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+  blitInfo.pNext = nullptr;
+  blitInfo.dstImage = destination;
+  blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+  blitInfo.srcImage = source;
+  blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  blitInfo.filter = VK_FILTER_LINEAR;
+  blitInfo.regionCount = 1;
+  blitInfo.pRegions = &blit_reg;
+
+  vkCmdBlitImage2(cmd, &blitInfo);
+}
+
+auto vk::init_helpers::create_draw_img(const config::window_resolution &w_res, VkDevice logi_dev,
+                                       VmaAllocator allocator) noexcept
+    -> tl::expected<allocated_image, error> {
+  using namespace infos;
+
+  log_info("Creating draw image target");
+
+  allocated_image draw_image{};
+
+  VkExtent3D draw_image_extent{static_cast<u32>(w_res.width), static_cast<u32>(w_res.height), 1};
+  draw_image.image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+  draw_image.image_extent = draw_image_extent;
+
+  VkImageUsageFlags draw_image_usage_flags{};
+  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+  draw_image_usage_flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+  auto rimg_info{
+      image_create_info(draw_image.image_format, draw_image_usage_flags, draw_image_extent)};
+
+  VmaAllocationCreateInfo rimg_allocinfo{};
+  rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  // Allocate and create the image
+  auto result{vmaCreateImage(allocator, &rimg_info, &rimg_allocinfo, &draw_image.image,
+                             &draw_image.allocation, nullptr)};
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_init_draw_img};
+  }
+
+  // Build a image-view for the draw image to use for rendering
+  auto rview_info{
+      imageview_create_info(draw_image.image_format, draw_image.image, VK_IMAGE_ASPECT_COLOR_BIT)};
+
+  result = vkCreateImageView(logi_dev, &rview_info, &alloc_callbacks, &draw_image.image_view);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image view: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_init_draw_img};
+  }
+
+  return draw_image;
+}
+
+auto vk::clear(context &ctx, const config::clear_color &w_ccl) noexcept -> std::optional<error> {
+  using namespace init_helpers;
+  using namespace infos;
+
+  // Aliases
+  auto &dev{ctx.log_dev};
+  auto &graphics_queue{ctx.q_handles.graphics};
+  auto &swpc{ctx.swpc_data.swapchain};
+  auto &render_fence{ctx.frm_data.render_fences[ctx.frm_data.frame_idx]};
+  auto &swpc_semaphore{ctx.frm_data.swpc_semaphores[ctx.frm_data.frame_idx]};
+  auto &render_semaphore{ctx.frm_data.render_semaphores[ctx.frm_data.frame_idx]};
+  auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
+
+  // Wait until the gpu has finished rendering the last frame. Timeout of 1 sec
+  auto result{vkWaitForFences(dev, 1, &render_fence, true, 1000000000)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to wait render fence: {}", string_VkResult(result));
+    return error::vk_surface_init;
+  }
+
+  result = vkResetFences(dev, 1, &render_fence);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to reset render fence: {}", string_VkResult(result));
+    return error::vk_surface_init;
+  }
+
+  // Request new image from the swapchain
+  u32 swpc_img_idx{0};
+  result = vkAcquireNextImageKHR(dev, swpc, 1000000000, swpc_semaphore, nullptr, &swpc_img_idx);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to acquire swapchain image: {}", string_VkResult(result));
+    return error::vk_get_swpc_img;
+  }
+
+  auto swpc_img{ctx.swpc_data.imgs[swpc_img_idx]};
+
+  // Now that we are sure that the commands finished executing, we can safely reset the command
+  // buffer to begin recording again.
+  result = vkResetCommandBuffer(cmd_buff, 0);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to reset command buffer: {}", string_VkResult(result));
+    return error::vk_cmd_buff_reset;
+  }
+
+  // Begin the command buffer recording. We will use this command buffer exactly once, so we want to
+  // let vulkan know that
+  auto cmd_beg_info{command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)};
+
+  // Start the command buffer recording
+  result = vkBeginCommandBuffer(cmd_buff, &cmd_beg_info);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to start command buffer recording: {}", string_VkResult(result));
+    return error::vk_cmd_buff_rec_start;
+  }
+
+  // transition our main draw image into general layout so we can write into it we will overwrite it
+  // all so we dont care about what was the older layout
+  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                   VK_IMAGE_LAYOUT_GENERAL);
+
+  // Clear color
+  VkClearColorValue clear_value{{w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a}};
+
+  VkImageSubresourceRange clear_range{image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT)};
+  vkCmdClearColorImage(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL, &clear_value, 1,
+                       &clear_range);
+
+  // Transition the draw image and the swapchain image into their correct transfer layouts
+  transition_image(cmd_buff, ctx.draw_image.image, VK_IMAGE_LAYOUT_GENERAL,
+                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_UNDEFINED,
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+  // Copy draw image to swapchain image
+  VkExtent2D draw_image_ext_2d{ctx.draw_image.image_extent.width,
+                               ctx.draw_image.image_extent.height};
+  image_blit(cmd_buff, ctx.draw_image.image, swpc_img, draw_image_ext_2d, ctx.swpc_data.extent);
+
+  // Make the swapchain image presentable
+  transition_image(cmd_buff, swpc_img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+  // Finalize the command buffer
+  result = vkEndCommandBuffer(cmd_buff);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to end command buffer recording: {}", string_VkResult(result));
+    return error::vk_cmd_buff_rec_end;
+  }
+
+  // Prepare the submission to the queue. we want to wait on the _presentSemaphore, as that
+  // semaphore is signaled when the swapchain is ready we will signal the _renderSemaphore, to
+  // signal that rendering has finished.
+  auto cmd_sub_info{command_buffer_submit_info(cmd_buff)};
+
+  auto signal_info{semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, render_semaphore)};
+  auto wait_info{
+      semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, swpc_semaphore)};
+
+  auto sub_info{submit_info(&cmd_sub_info, &signal_info, &wait_info)};
+
+  // Submit command buffer to the queue and execute it. The render fence will now block until the
+  // graphic commands finish execution
+  result = vkQueueSubmit2(graphics_queue, 1, &sub_info, render_fence);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to sumbit command buffer to graphics queue: {}", string_VkResult(result));
+    return error::vk_cmd_buff_submit;
+  }
+
+  // Prepare present this will put the image we just rendered to into the visible window. we want to
+  // wait on the _renderSemaphore for that,  as its necessary that drawing commands have finished
+  // before the image is displayed to the user
+  VkPresentInfoKHR present_info{};
+  present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  present_info.pNext = nullptr;
+  present_info.pSwapchains = &swpc;
+  present_info.swapchainCount = 1;
+
+  present_info.pWaitSemaphores = &render_semaphore;
+  present_info.waitSemaphoreCount = 1;
+
+  present_info.pImageIndices = &swpc_img_idx;
+
+  result = vkQueuePresentKHR(graphics_queue, &present_info);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to present rendering: {}", string_VkResult(result));
+    return error::vk_present;
+  }
+
+  // increase the number of frames drawn
+  ctx.frm_data.advance_idx();
+
+  return {};
 }
 
 auto vk::init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
@@ -814,11 +1285,45 @@ auto vk::init(const config::renderer_attrs &r_attrs, const config::window_resolu
     ctx.swpc_data = *swpc_data;
   }
 
+  const auto frm_data{create_frame_data(*log_dev, q_handles->graphics_idx)};
+  if (!frm_data) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.frm_data = *frm_data;
+  }
+
+  const auto allocator{create_memory_allocator(*instance, *phys_dev, *log_dev)};
+  if (!allocator) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.allocator = *allocator;
+  }
+
+  const auto draw_image{create_draw_img(w_res, *log_dev, *allocator)};
+  if (!draw_image) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.draw_image = *draw_image;
+  }
+
   return ctx;
 }
 
 void vk::terminate(context &ctx) noexcept {
   log_info("Terminating vulkan");
+
+  log_info("Waiting for GPU idle");
+  vkWaitForFences(ctx.log_dev, ctx.frm_data.frame_overlap, ctx.frm_data.render_fences.data(), true,
+                  1000000000);
+
+  log_info("Destroying draw image");
+  vkDestroyImageView(ctx.log_dev, ctx.draw_image.image_view, &alloc_callbacks);
+  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
+
+  log_info("Destroying memory allocator");
+  vmaDestroyAllocator(ctx.allocator);
+
+  init_helpers::destroy_frame_data(ctx);
 
   log_info("Destroying image views");
   for (const auto &img_view : ctx.swpc_data.imgs_views) {
@@ -838,8 +1343,4 @@ void vk::terminate(context &ctx) noexcept {
 
   log_info("Destroying instance");
   vkDestroyInstance(ctx.instance, &alloc_callbacks);
-}
-
-auto vk::clear(context &, const config::clear_color &) noexcept -> std::optional<error> {
-  return {};
 }

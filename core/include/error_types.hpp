@@ -90,6 +90,7 @@ enum error : int {
   vk_cmd_buffer_creation,
   vk_fence_creation,
   vk_semaphore_creation,
+  vk_allocator_creation,
   vk_fence_wait,
   vk_get_swpc_img,
   vk_cmd_buff_reset,

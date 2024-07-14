@@ -7,6 +7,7 @@
 
 // clang-format off
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 // clang-format on
 
 #include <optional>
@@ -21,6 +22,10 @@ struct queue_family_indices {
 };
 
 struct queue_handles {
+  u32 graphics_idx{};
+  u32 transfer_idx{};
+  u32 compute_idx{};
+
   VkQueue graphics{};
   VkQueue transfer{};
   VkQueue compute{};
@@ -28,6 +33,7 @@ struct queue_handles {
 
 struct swapchain_data {
   VkSwapchainKHR swapchain{};
+  VkExtent2D extent{};
   vector<VkImage> imgs{};
   vector<VkImageView> imgs_views{};
 };
@@ -59,29 +65,69 @@ struct frame_data {
   }
 };
 
+struct allocated_image {
+  VkImage image{nullptr};
+  VkImageView image_view{nullptr};
+  VmaAllocation allocation{nullptr};
+  VkExtent3D image_extent{};
+  VkFormat image_format{};
+};
+
 struct context {
   VkInstance instance{};
+
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
   VkDebugUtilsMessengerEXT dbg_msg{};
 #endif
+
   VkPhysicalDevice phys_dev{};
   VkDevice log_dev{};
+
   VkSurfaceKHR surface{};
   queue_handles q_handles{};
   swapchain_data swpc_data{};
+
   frame_data frm_data{};
+
+  VmaAllocator allocator{};
+
+  allocated_image draw_image{};
 };
 
-auto clear(context &ctx, const config::clear_color &ccl) noexcept -> std::optional<error>;
+} // namespace surge::renderer::vk
 
-namespace init_helpers {
+namespace surge::renderer::vk::infos {
+
+auto dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT;
+
+auto command_pool_create_info(u32 queue_family_idx, VkCommandPoolCreateFlags flags
+                                                    = 0) noexcept -> VkCommandPoolCreateInfo;
+auto command_buffer_alloc_info(VkCommandPool pool,
+                               u32 count = 1) noexcept -> VkCommandBufferAllocateInfo;
+auto command_buffer_begin_info(VkCommandBufferUsageFlags flags
+                               = 0) noexcept -> VkCommandBufferBeginInfo;
+
+auto fence_create_info(VkFenceCreateFlags flags = 0) noexcept -> VkFenceCreateInfo;
+auto semaphore_create_info(VkSemaphoreCreateFlags flags = 0) noexcept -> VkSemaphoreCreateInfo;
+
+auto command_buffer_submit_info(VkCommandBuffer cmd) noexcept -> VkCommandBufferSubmitInfo;
+auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
+                           VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo;
+auto submit_info(VkCommandBufferSubmitInfo *cmd, VkSemaphoreSubmitInfo *signam_sem_info,
+                 VkSemaphoreSubmitInfo *wai_sem_info) noexcept -> VkSubmitInfo2;
+
+auto imageview_create_info(VkFormat format, VkImage image,
+                           VkImageAspectFlags aspect_flags) noexcept -> VkImageViewCreateInfo;
+
+} // namespace surge::renderer::vk::infos
+
+namespace surge::renderer::vk::init_helpers {
 
 auto get_required_extensions() noexcept -> tl::expected<vector<const char *>, error>;
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
 auto get_required_validation_layers() noexcept -> tl::expected<vector<const char *>, error>;
 
-auto dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT;
 auto create_dbg_msg(VkInstance instance) noexcept -> tl::expected<VkDebugUtilsMessengerEXT, error>;
 auto destroy_dbg_msg(VkInstance instance,
                      VkDebugUtilsMessengerEXT dbg_msg) -> tl::expected<void, error>;
@@ -106,14 +152,30 @@ auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR 
                       const config::renderer_attrs &r_attrs, u32 width,
                       u32 height) noexcept -> tl::expected<swapchain_data, error>;
 
-auto command_pool_create_info(u32 queue_family_idx,
-                              VkCommandPoolCreateFlags flags) noexcept -> VkCommandPoolCreateInfo;
-auto command_buffer_alloc_info(VkCommandPool pool,
-                               u32 count) noexcept -> VkCommandBufferAllocateInfo;
+auto create_frame_data(VkDevice device,
+                       u32 graphics_queue_idx) noexcept -> tl::expected<frame_data, error>;
+void destroy_frame_data(context &ctx) noexcept;
 
-auto create_frame_data() noexcept -> tl::expected<frame_data, error>;
+auto create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
+                             VkDevice logi_dev) noexcept -> tl::expected<VmaAllocator, error>;
 
-} // namespace init_helpers
+auto image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
+                       VkExtent3D extent) noexcept -> VkImageCreateInfo;
+
+void transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout curr_layout,
+                      VkImageLayout new_layout) noexcept;
+void image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D src_size,
+                VkExtent2D dst_size) noexcept;
+auto image_subresource_range(VkImageAspectFlags aspect_mask) noexcept -> VkImageSubresourceRange;
+
+auto create_draw_img(const config::window_resolution &w_res, VkDevice logi_dev,
+                     VmaAllocator allocator) noexcept -> tl::expected<allocated_image, error>;
+
+} // namespace surge::renderer::vk::init_helpers
+
+namespace surge::renderer::vk {
+
+auto clear(context &ctx, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
 
 auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
           const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
