@@ -11,6 +11,7 @@
 // clang-format on
 
 #include <optional>
+#include <array>
 
 namespace surge::renderer::vk {
 

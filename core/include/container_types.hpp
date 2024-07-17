@@ -2,7 +2,6 @@
 #define SURGE_CORE_CONTAINER_TYPES_HPP
 
 #include "allocators.hpp"
-#include "static_queue.hpp"
 
 #include <foonathan/memory/container.hpp>
 #include <foonathan/memory/memory_pool.hpp>
