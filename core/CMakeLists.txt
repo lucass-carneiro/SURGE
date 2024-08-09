@@ -107,6 +107,31 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
 endif()
 
 # -----------------------------------------
+# Shader compilation target
+# -----------------------------------------
+
+set(
+  SURGE_CORE_SHADER_LIST
+  "${PROJECT_SOURCE_DIR}/shaders/vk/compute_demo.comp"
+)
+
+foreach(GLSL ${SURGE_CORE_SHADER_LIST})
+  message(STATUS "Building shader ${GLSL}")
+  get_filename_component(FILE_NAME ${GLSL} NAME)
+  get_filename_component(FILE_DIR ${GLSL} DIRECTORY)
+  set(SPIRV "${FILE_DIR}/${FILE_NAME}.spv")
+  add_custom_command(
+    OUTPUT ${SPIRV}
+    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+    DEPENDS ${GLSL}
+  )
+  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL)
+
+add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
+add_dependencies(${PROJECT_NAME} Shaders)
+
+# -----------------------------------------
 # Compilers flags and options
 # -----------------------------------------
 

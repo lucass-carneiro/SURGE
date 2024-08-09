@@ -13,3 +13,5 @@ staging-*/
 modules/*
 !modules/CMakeLists.txt
 !modules/default
+
+core/shaders/vk/*spv

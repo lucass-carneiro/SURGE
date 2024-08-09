@@ -53,6 +53,15 @@ find_package(VulkanHeaders CONFIG)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 
+find_program(
+  GLSL_VALIDATOR
+  glslangValidator
+  HINTS
+  /usr/bin /usr/local/bin
+  $ENV{VULKAN_SDK}/Bin/
+  $ENV{VULKAN_SDK}/Bin32/
+)
+
 # -----------------------------------------
 # Operating system and compiler detection
 # -----------------------------------------
