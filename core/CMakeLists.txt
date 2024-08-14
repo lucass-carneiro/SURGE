@@ -45,7 +45,16 @@ set(
   "${PROJECT_SOURCE_DIR}/include/module.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_gl.hpp"
+  
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_command.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_debug.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_images.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_init.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_malloc.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_sync.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_vk.hpp"
+  
   "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/tasks.hpp"
   "${PROJECT_SOURCE_DIR}/include/timers.hpp"
@@ -67,7 +76,15 @@ set(
   "${PROJECT_SOURCE_DIR}/src/imgui_wrapper.cpp"
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_gl.cpp"
+  
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_command.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_debug.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk.cpp"
+  
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/timers.cpp"
