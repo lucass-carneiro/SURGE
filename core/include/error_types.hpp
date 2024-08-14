@@ -98,6 +98,9 @@ enum error : int {
   vk_cmd_buff_rec_end,
   vk_cmd_buff_submit,
   vk_present,
+  vk_descriptor_set_layout,
+  vk_descriptor_pool,
+  vk_descriptor_set_alloc,
 
   // Module callback binding
   keyboard_event_binding,

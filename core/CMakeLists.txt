@@ -48,6 +48,7 @@ set(
   
   "${PROJECT_SOURCE_DIR}/include/renderer_vk_command.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_vk_debug.hpp"
+  "${PROJECT_SOURCE_DIR}/include/renderer_vk_descriptor.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_vk_images.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_vk_init.hpp"
   "${PROJECT_SOURCE_DIR}/include/renderer_vk_malloc.hpp"
@@ -79,6 +80,7 @@ set(
   
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_command.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_debug.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_descriptor.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
