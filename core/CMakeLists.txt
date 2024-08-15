@@ -78,14 +78,15 @@ set(
   "${PROJECT_SOURCE_DIR}/src/module.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_gl.cpp"
   
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_clear.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_command.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_debug.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_descriptor.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_shader.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/tasks.cpp"

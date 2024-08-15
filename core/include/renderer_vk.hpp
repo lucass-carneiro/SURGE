@@ -2,7 +2,7 @@
 #define SURGE_CORE_RENDERER_VK_HPP
 
 #include "config.hpp"
-#include "options.hpp"
+// #include "options.hpp"
 #include "renderer_vk_types.hpp"
 
 namespace surge::renderer::vk {
@@ -13,6 +13,11 @@ auto init(const config::renderer_attrs &r_attrs, const config::window_resolution
 void terminate(context &ctx) noexcept;
 
 auto clear(context &ctx, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
+
+auto load_shader_module(VkDevice device,
+                        const char *path) noexcept -> tl::expected<VkShaderModule, error>;
+
+void destroy_shader_module(VkDevice device, VkShaderModule module) noexcept;
 
 } // namespace surge::renderer::vk
 

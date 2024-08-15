@@ -14,6 +14,39 @@
 
 namespace surge::renderer::vk {
 
+struct desc_pool_size_ratio {
+  VkDescriptorType type{};
+  float ratio{};
+};
+
+class descriptor_allocator {
+private:
+  vector<desc_pool_size_ratio> ratios{};
+  vector<VkDescriptorPool> full_pools{};
+  vector<VkDescriptorPool> ready_pools{};
+  uint32_t sets_per_pool{0};
+
+  auto get_pool(VkDevice device) noexcept -> tl::expected<VkDescriptorPool, error>;
+
+  auto create_pool(VkDevice device, u32 set_count,
+                   std::span<desc_pool_size_ratio> pool_ratios) noexcept
+      -> tl::expected<VkDescriptorPool, error>;
+
+  descriptor_allocator() noexcept = default;
+
+public:
+  static auto init(VkDevice device, uint32_t initial_sets,
+                   std::span<desc_pool_size_ratio> pool_ratios) noexcept
+      -> tl::expected<descriptor_allocator, error>;
+
+  void destroy(VkDevice device) noexcept;
+
+  void clear(VkDevice device) noexcept;
+
+  auto allocate(VkDevice device, VkDescriptorSetLayout layout,
+                void *pNext = nullptr) noexcept -> tl::expected<VkDescriptorSet, error>;
+};
+
 struct descriptor_layout {
   vector<VkDescriptorSetLayoutBinding> bindings;
 
@@ -24,22 +57,6 @@ struct descriptor_layout {
              VkDescriptorSetLayoutCreateFlags flags
              = 0) noexcept -> tl::expected<VkDescriptorSetLayout, error>;
 };
-
-struct descriptor_pool_size_ratio {
-  VkDescriptorType type{};
-  float ratio{};
-};
-
-auto create_pool(VkDevice device, u32 maxSets,
-                 std::span<descriptor_pool_size_ratio> poolRatios) noexcept
-    -> tl::expected<VkDescriptorPool, error>;
-
-void reset_pool(VkDevice device, VkDescriptorPool pool) noexcept;
-
-void destroy_pool(VkDevice device, VkDescriptorPool pool) noexcept;
-
-auto alloc_from_pool(VkDevice device, VkDescriptorPool pool,
-                     VkDescriptorSetLayout layout) noexcept -> tl::expected<VkDescriptorSet, error>;
 
 } // namespace surge::renderer::vk
 

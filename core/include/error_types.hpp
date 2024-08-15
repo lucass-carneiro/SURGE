@@ -101,6 +101,7 @@ enum error : int {
   vk_descriptor_set_layout,
   vk_descriptor_pool,
   vk_descriptor_set_alloc,
+  vk_shader_module_create,
 
   // Module callback binding
   keyboard_event_binding,

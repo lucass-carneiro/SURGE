@@ -3,14 +3,15 @@
 
 #include "container_types.hpp"
 #include "integer_types.hpp"
+#include "options.hpp"
 
 // clang-format off
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 // clang-format on
 
-#include <optional>
 #include <array>
+#include <optional>
 
 namespace surge::renderer::vk {
 

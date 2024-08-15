@@ -45,63 +45,160 @@ auto descriptor_layout::build(VkDevice device, VkShaderStageFlags shaderStages, 
   return set;
 }
 
-auto surge::renderer::vk::create_pool(VkDevice device, u32 maxSets,
-                                      std::span<descriptor_pool_size_ratio> poolRatios) noexcept
-    -> tl::expected<VkDescriptorPool, error> {
+auto surge::renderer::vk::descriptor_allocator::create_pool(
+    VkDevice device, uint32_t set_count,
+    std::span<desc_pool_size_ratio> pool_ratios) noexcept -> tl::expected<VkDescriptorPool, error> {
 
-  vector<VkDescriptorPoolSize> poolSizes{};
+  vector<VkDescriptorPoolSize> pool_sizes{};
 
-  for (const auto &ratio : poolRatios) {
-    VkDescriptorPoolSize ps{};
-    ps.type = ratio.type;
-    ps.descriptorCount = static_cast<u32>(ratio.ratio * static_cast<float>(maxSets));
-    poolSizes.push_back(ps);
+  for (const auto &ratio : pool_ratios) {
+    VkDescriptorPoolSize pool_size{};
+    pool_size.type = ratio.type;
+    pool_size.descriptorCount = static_cast<u32>(ratio.ratio * static_cast<float>(set_count));
+
+    pool_sizes.push_back(pool_size);
   }
 
   VkDescriptorPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.pNext = nullptr;
   pool_info.flags = 0;
-  pool_info.maxSets = maxSets;
-  pool_info.poolSizeCount = static_cast<u32>(poolSizes.size());
-  pool_info.pPoolSizes = poolSizes.data();
+  pool_info.maxSets = set_count;
+  pool_info.poolSizeCount = static_cast<u32>(pool_sizes.size());
+  pool_info.pPoolSizes = pool_sizes.data();
 
   VkDescriptorPool pool{};
   const auto result{vkCreateDescriptorPool(device, &pool_info, get_alloc_callbacks(), &pool)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to build descriptor pool: {}", string_VkResult(result));
+    log_error("Unable to allocate descriptor pool: {}", string_VkResult(result));
     return tl::unexpected{error::vk_descriptor_pool};
   }
 
   return pool;
 }
 
-void surge::renderer::vk::reset_pool(VkDevice device, VkDescriptorPool pool) noexcept {
-  vkResetDescriptorPool(device, pool, 0);
+auto surge::renderer::vk::descriptor_allocator::get_pool(VkDevice device) noexcept
+    -> tl::expected<VkDescriptorPool, error> {
+
+  VkDescriptorPool pool{};
+
+  if (ready_pools.size() != 0) {
+    pool = ready_pools.back();
+    ready_pools.pop_back();
+  } else {
+    const auto pool_result{create_pool(device, sets_per_pool, ratios)};
+
+    if (!pool_result) {
+      log_error("Unable to create new descriptor pool for expanding the descriptor allocator");
+      return tl::unexpected{pool_result.error()};
+    }
+
+    sets_per_pool += sets_per_pool / 2;
+    if (sets_per_pool > 4092) {
+      sets_per_pool = 4092;
+    }
+  }
+
+  return pool;
 }
 
-void surge::renderer::vk::destroy_pool(VkDevice device, VkDescriptorPool pool) noexcept {
-  vkDestroyDescriptorPool(device, pool, get_alloc_callbacks());
+auto surge::renderer::vk::descriptor_allocator::init(
+    VkDevice device, uint32_t initial_sets, std::span<desc_pool_size_ratio> pool_ratios) noexcept
+    -> tl::expected<descriptor_allocator, error> {
+  log_info("Initializing descriptor allocator");
+
+  descriptor_allocator alloc{};
+
+  alloc.ratios.clear();
+
+  for (const auto &ratio : pool_ratios) {
+    alloc.ratios.push_back(ratio);
+  }
+
+  const auto pool{alloc.create_pool(device, initial_sets, pool_ratios)};
+  if (!pool) {
+    return tl::unexpected{pool.error()};
+  }
+
+  alloc.sets_per_pool = initial_sets + initial_sets / 2;
+
+  alloc.ready_pools.push_back(*pool);
+
+  return alloc;
 }
 
-auto surge::renderer::vk::alloc_from_pool(VkDevice device, VkDescriptorPool pool,
-                                          VkDescriptorSetLayout layout) noexcept
-    -> tl::expected<VkDescriptorSet, error> {
+void surge::renderer::vk::descriptor_allocator::destroy(VkDevice device) noexcept {
+  for (auto &p : ready_pools) {
+    vkDestroyDescriptorPool(device, p, get_alloc_callbacks());
+  }
 
-  VkDescriptorSetAllocateInfo info;
+  ready_pools.clear();
+
+  for (auto &p : full_pools) {
+    vkDestroyDescriptorPool(device, p, get_alloc_callbacks());
+  }
+
+  full_pools.clear();
+}
+
+void surge::renderer::vk::descriptor_allocator::clear(VkDevice device) noexcept {
+  for (auto &p : ready_pools) {
+    vkResetDescriptorPool(device, p, 0);
+  }
+
+  for (auto &p : full_pools) {
+    vkResetDescriptorPool(device, p, 0);
+    ready_pools.push_back(p);
+  }
+
+  full_pools.clear();
+}
+
+auto surge::renderer::vk::descriptor_allocator::allocate(
+    VkDevice device, VkDescriptorSetLayout layout,
+    void *pNext) noexcept -> tl::expected<VkDescriptorSet, error> {
+
+  // Get or create a pool to allocate from
+  auto pool{get_pool(device)};
+
+  if (!pool) {
+    log_error("Unable to allocate descriptor set from pool");
+    return tl::unexpected{pool.error()};
+  }
+
+  VkDescriptorSetAllocateInfo info{};
   info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  info.pNext = nullptr;
-  info.descriptorPool = pool;
+  info.pNext = pNext;
+  info.descriptorPool = *pool;
   info.descriptorSetCount = 1;
   info.pSetLayouts = &layout;
 
   VkDescriptorSet ds{};
-  const auto result{vkAllocateDescriptorSets(device, &info, &ds)};
+  auto result{vkAllocateDescriptorSets(device, &info, &ds)};
 
-  if (result != VK_SUCCESS) {
-    log_error("Unable to allocate descriptor sets: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_descriptor_set_alloc};
+  // allocation failed. Try again
+  if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL) {
+
+    full_pools.push_back(*pool);
+
+    pool = get_pool(device);
+    if (!pool) {
+      log_error("Unable to allocate descriptor set from pool. Allocation retry failed");
+      return tl::unexpected{pool.error()};
+    }
+
+    info.descriptorPool = *pool;
+
+    result = vkAllocateDescriptorSets(device, &info, &ds);
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to allocate descriptor sets from pool: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_descriptor_set_alloc};
+    }
   }
+
+  ready_pools.push_back(*pool);
 
   return ds;
 }

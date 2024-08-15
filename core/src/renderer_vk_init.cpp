@@ -1,8 +1,10 @@
 #include "renderer_vk_init.hpp"
 
 #include "logging.hpp"
+#include "renderer_vk.hpp"
 #include "renderer_vk_command.hpp"
 #include "renderer_vk_debug.hpp"
+#include "renderer_vk_images.hpp"
 #include "renderer_vk_malloc.hpp"
 #include "renderer_vk_sync.hpp"
 #include "window.hpp"
@@ -614,4 +616,125 @@ void surge::renderer::vk::destroy_frame_data(context &ctx) noexcept {
     // NOLINTNEXTLINE
     vkDestroyCommandPool(ctx.log_dev, ctx.frm_data.command_pools[i], get_alloc_callbacks());
   }
+}
+
+auto surge::renderer::vk::init(
+    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+    const config::window_attrs &) noexcept -> tl::expected<context, error> {
+
+  log_info("Initializing Vulkan");
+
+  context ctx{};
+
+  const auto instance{create_instance()};
+  if (!instance) {
+    return tl::unexpected{instance.error()};
+  } else {
+    ctx.instance = *instance;
+  }
+
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+  const auto dbg_msg{create_dbg_msg(*instance)};
+  if (!dbg_msg) {
+    return tl::unexpected{dbg_msg.error()};
+  } else {
+    ctx.dbg_msg = *dbg_msg;
+  }
+#endif
+
+  const auto phys_dev{select_physical_device(*instance)};
+  if (!phys_dev) {
+    return tl::unexpected{phys_dev.error()};
+  } else {
+    ctx.phys_dev = *phys_dev;
+  }
+
+  const auto log_dev{create_logical_device(*phys_dev)};
+  if (!log_dev) {
+    return tl::unexpected{log_dev.error()};
+  } else {
+    ctx.log_dev = *log_dev;
+  }
+
+  const auto surface{create_window_surface(*instance)};
+  if (!surface) {
+    return tl::unexpected{surface.error()};
+  } else {
+    ctx.surface = *surface;
+  }
+
+  const auto q_handles{get_queue_handles(*phys_dev, *log_dev, *surface)};
+  if (!q_handles) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.q_handles = *q_handles;
+  }
+
+  const auto swpc_data{create_swapchain(*phys_dev, *log_dev, *surface, r_attrs,
+                                        static_cast<u32>(w_res.width),
+                                        static_cast<u32>(w_res.height))};
+  if (!swpc_data) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.swpc_data = *swpc_data;
+  }
+
+  const auto frm_data{create_frame_data(*log_dev, q_handles->graphics_idx)};
+  if (!frm_data) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.frm_data = *frm_data;
+  }
+
+  const auto allocator{create_memory_allocator(*instance, *phys_dev, *log_dev)};
+  if (!allocator) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.allocator = *allocator;
+  }
+
+  const auto draw_image{create_draw_img(w_res, *log_dev, *allocator)};
+  if (!draw_image) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.draw_image = *draw_image;
+  }
+
+  return ctx;
+}
+
+void surge::renderer::vk::terminate(context &ctx) noexcept {
+  log_info("Terminating vulkan");
+
+  log_info("Waiting for GPU idle");
+  vkWaitForFences(ctx.log_dev, ctx.frm_data.frame_overlap, ctx.frm_data.render_fences.data(), true,
+                  1000000000);
+
+  log_info("Destroying draw image");
+  vkDestroyImageView(ctx.log_dev, ctx.draw_image.image_view, get_alloc_callbacks());
+  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
+
+  log_info("Destroying memory allocator");
+  vmaDestroyAllocator(ctx.allocator);
+
+  destroy_frame_data(ctx);
+
+  log_info("Destroying image views");
+  for (const auto &img_view : ctx.swpc_data.imgs_views) {
+    vkDestroyImageView(ctx.log_dev, img_view, get_alloc_callbacks());
+  }
+
+  log_info("Destroying swapchain");
+  vkDestroySwapchainKHR(ctx.log_dev, ctx.swpc_data.swapchain, get_alloc_callbacks());
+
+  log_info("Destroying window surface");
+  vkDestroySurfaceKHR(ctx.instance, ctx.surface, get_alloc_callbacks());
+
+  log_info("Destroying logical device");
+  vkDestroyDevice(ctx.log_dev, get_alloc_callbacks());
+
+  destroy_dbg_msg(ctx.instance, ctx.dbg_msg);
+
+  log_info("Destroying instance");
+  vkDestroyInstance(ctx.instance, get_alloc_callbacks());
 }
