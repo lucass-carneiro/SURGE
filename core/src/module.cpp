@@ -7,8 +7,8 @@
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
-    -> tl::expected<string, error> {
+auto surge::module::get_name(handle_t module,
+                             std::size_t max_size) noexcept -> tl::expected<string, error> {
 
   auto module_name{string(max_size, '\0')};
   const auto actual_name_size{
@@ -216,7 +216,7 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, er
   log_info("Loading module {}", path);
 
   // Load and get handle
-  auto handle{dlopen(path, RTLD_NOW)};
+  auto handle{dlopen(path, RTLD_NOW | RTLD_LOCAL)};
   if (!handle) {
     log_error("Unable to load library {}", dlerror());
     return tl::unexpected(error::loading);
