@@ -14,7 +14,6 @@
       "name": "mimalloc",
       "platform": "!windows"
     },
-    "foonathan-memory",
     "gsl-lite",
     "tl-expected",
     "fmt",

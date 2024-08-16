@@ -3,26 +3,28 @@
 
 #include "allocators.hpp"
 
-#include <foonathan/memory/container.hpp>
-#include <foonathan/memory/memory_pool.hpp>
-#include <foonathan/memory/std_allocator.hpp>
+#include <array>
+#include <deque>
+#include <queue>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace surge {
 
 // Allocators
-using fnm_mimalloc = surge::allocators::mimalloc::fnm_allocator;
-template <typename T> using fnm_mimalloc_std = foonathan::memory::std_allocator<T, fnm_mimalloc>;
+template <typename T> using cpp_mimalloc = surge::allocators::mimalloc::cpp_allocator<T>;
 
 // Container Aliases
+template <typename T> using vector = std::vector<T, cpp_mimalloc<T>>;
+template <typename T> using deque = std::deque<T, cpp_mimalloc<T>>;
+template <typename T> using queue = std::queue<T, deque<T>>;
 template <typename T, std::size_t N> using array = std::array<T, N>;
-template <typename T> using deque = foonathan::memory::deque<T, fnm_mimalloc>;
-template <typename T> using queue = foonathan::memory::queue<T, fnm_mimalloc>;
-template <typename T> using vector = foonathan::memory::vector<T, fnm_mimalloc>;
-using string = std::basic_string<char, std::char_traits<char>, fnm_mimalloc_std<char>>;
+using string = std::basic_string<char, std::char_traits<char>, cpp_mimalloc<char>>;
 
 template <typename Key, typename Value> using hash_map
-    = foonathan::memory::unordered_map<Key, Value, fnm_mimalloc>;
+    = std::unordered_map<Key, Value, std::hash<Key>, std::equal_to<Key>,
+                         cpp_mimalloc<std::pair<const Key, Value>>>;
 
 } // namespace surge
 

@@ -133,3 +133,13 @@ git submodule update --remote
 cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
 cmake --build Debug --config Debug -j20
 ```
+
+# Checking for hot reloading blockers
+
+Some C++ code and libraries may insert `STB_GNU_UNIQUE` (or equivalent) symbols in the module dynamic library.
+This effectively prevents hot reloading, because `dlclose` calls will be ignored by the system.
+To check if the binary contains `STB_GNU_UNIQUE` symbols, issue
+
+```bash
+readelf -Ws | grep [module_name.so]
+```

@@ -277,7 +277,6 @@ endif()
 target_link_libraries(SurgeCore PUBLIC
   mimalloc
   mimalloc-static
-  foonathan_memory
   gsl::gsl-lite
   tl::expected
   fmt::fmt

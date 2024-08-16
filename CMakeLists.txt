@@ -35,7 +35,6 @@ endif()
 # -----------------------------------------
 
 find_package(mimalloc CONFIG REQUIRED)
-find_package(foonathan_memory CONFIG REQUIRED)
 find_package(gsl-lite CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)

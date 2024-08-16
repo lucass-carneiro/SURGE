@@ -85,8 +85,8 @@ auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> 
   return p;
 }
 
-auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize, usize alignment) noexcept
-    -> void * {
+auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize,
+                                                  usize alignment) noexcept -> void * {
   auto q{mi_realloc_aligned(p, newsize, alignment)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -131,64 +131,4 @@ void surge::allocators::mimalloc::init() noexcept {
 
   mi_option_set(mi_option_reserve_huge_os_pages, 1);
   mi_option_set(mi_option_eager_commit_delay, 100);
-}
-
-auto surge::allocators::mimalloc::fnm_allocator::allocate_node(usize size, usize alignment)
-    -> void * {
-  auto p{mi_aligned_alloc(alignment, size)};
-
-#ifdef SURGE_DEBUG_MEMORY
-  log_debug("Memory Event\n"
-            "---\n"
-            "type: alloc\n"
-            "allocator: \"fnm_allocator\"\n"
-            "size: {}\n"
-            "alignment: {}\n"
-            "address: {}\n"
-            "failed: {}",
-            size, alignment, p, p ? "false" : "true");
-#endif
-
-  if (!p) {
-    log_error("Memory Event Failed\n"
-              "---\n"
-              "type: alloc\n"
-              "allocator: \"fnm_allocator\"\n"
-              "size: {}\n"
-              "alignment: {}",
-              size, alignment);
-
-    throw std::runtime_error("fnm_allocator alloc failure");
-  }
-
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  TracyAlloc(p, size);
-#endif
-
-  return p;
-}
-
-#ifdef SURGE_DEBUG_MEMORY
-void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, usize size,
-                                                                 usize alignment) noexcept {
-#else
-void surge::allocators::mimalloc::fnm_allocator::deallocate_node(void *p, usize,
-                                                                 usize alignment) noexcept {
-#endif
-#ifdef SURGE_DEBUG_MEMORY
-  log_debug("Memory Event\n"
-            "---\n"
-            "type: free\n"
-            "allocator: \"fnm_allocator\"\n"
-            "size: {}\n"
-            "alignment: {}\n"
-            "address: {}",
-            size, alignment, p);
-#endif
-
-  mi_free_aligned(p, alignment);
-
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
-  TracyFree(p);
-#endif
 }
