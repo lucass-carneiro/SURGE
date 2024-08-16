@@ -26,7 +26,7 @@ static void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity
 }
 #endif
 
-auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcept
+auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
     -> std::optional<error> {
   /***********************
    * OpenGL context init *
@@ -112,4 +112,12 @@ auto surge::renderer::init_opengl(const config::renderer_attrs &r_attrs) noexcep
   }
 
   return {};
+}
+
+void surge::renderer::gl::wait_idle() noexcept { glFinish(); }
+
+void surge::renderer::gl::clear(const config::clear_color &w_ccl) noexcept {
+  glClearColor(w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_DEPTH_BUFFER_BIT);
 }

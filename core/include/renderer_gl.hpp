@@ -7,10 +7,12 @@
 
 #include <optional>
 
-namespace surge::renderer {
+namespace surge::renderer::gl {
 
-auto init_opengl(const config::renderer_attrs &r_attrs) noexcept -> std::optional<error>;
+auto init(const config::renderer_attrs &r_attrs) noexcept -> std::optional<error>;
+void wait_idle() noexcept;
+void clear(const config::clear_color &w_ccl) noexcept;
 
-} // namespace surge::renderer
+} // namespace surge::renderer::gl
 
 #endif // SURGE_CORE_RENDERER_GL_HPP

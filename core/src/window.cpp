@@ -203,12 +203,6 @@ void surge::window::set_should_close(bool value) noexcept {
   glfwSetWindowShouldClose(g_engine_window, value ? GLFW_TRUE : GLFW_FALSE);
 }
 
-void surge::window::clear_buffers(const config::clear_color &w_ccl) noexcept {
-  glClearColor(w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glClear(GL_DEPTH_BUFFER_BIT);
-}
-
 void surge::window::swap_buffers() noexcept { glfwSwapBuffers(g_engine_window); }
 
 auto surge::window::get_window_ptr() noexcept -> GLFWwindow * { return g_engine_window; }

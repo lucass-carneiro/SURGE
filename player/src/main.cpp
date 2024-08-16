@@ -62,7 +62,7 @@ auto main(int, char **) noexcept -> int {
   renderer::vk::context vk_ctx{};
 
   if (r_attrs.backend == config::renderer_backend::opengl) {
-    if (renderer::init_opengl(r_attrs).has_value()) {
+    if (renderer::gl::init(r_attrs).has_value()) {
       window::terminate();
       return EXIT_FAILURE;
     }
@@ -174,18 +174,18 @@ auto main(int, char **) noexcept -> int {
     }
 #endif
 
+    // Clear buffers
+    if (r_attrs.backend == config::renderer_backend::opengl) {
+      renderer::gl::clear(w_ccl);
+    } else {
+      renderer::vk::clear(vk_ctx, w_ccl);
+    }
+
     // Call module update
     if (mod_api->update(update_timer.stop()) != 0) {
       window::set_should_close(true);
     }
     update_timer.start();
-
-    // Clear buffers
-    if (r_attrs.backend == config::renderer_backend::opengl) {
-      window::clear_buffers(w_ccl);
-    } else {
-      renderer::vk::clear(vk_ctx, w_ccl);
-    }
 
     // Call module draw
     mod_api->draw();

@@ -21,7 +21,6 @@ auto get_mouse_button(int button) noexcept -> int;
 auto should_close() noexcept -> bool;
 void set_should_close(bool value) noexcept;
 
-void clear_buffers(const config::clear_color &ccl) noexcept;
 void swap_buffers() noexcept;
 
 auto get_window_ptr() noexcept -> GLFWwindow *;
