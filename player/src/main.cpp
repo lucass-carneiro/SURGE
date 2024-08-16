@@ -195,7 +195,7 @@ auto main(int, char **) noexcept -> int {
       window::swap_buffers();
     }
 
-    // Cache refresh key state
+    // Refresh HR key state
 #ifdef SURGE_ENABLE_HR
     hr_key_old_state = window::get_key(GLFW_KEY_F5) && window::get_key(GLFW_KEY_LEFT_CONTROL);
 #endif

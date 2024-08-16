@@ -24,5 +24,6 @@
 #cmakedefine SURGE_DEBUG_MEMORY
 #cmakedefine SURGE_ENABLE_HR
 #cmakedefine SURGE_ENABLE_TRACY
+#cmakedefine SURGE_ENABLE_FRAME_STEPPING
 
 #endif // SURGE_OPTIONS_HPP
