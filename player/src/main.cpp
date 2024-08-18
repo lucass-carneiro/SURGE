@@ -16,6 +16,7 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 
 auto main(int, char **) noexcept -> int {
   using namespace surge;
+  tracy::StartupProfiler();
 
   // Avoid using integrated graphics on NV hardware.
   // TODO: Set this for AMD hardware
@@ -229,6 +230,7 @@ auto main(int, char **) noexcept -> int {
 
 #if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
   log_info("Tracy may still be collecting profiling data. Please wait...");
+  tracy::ShutdownProfiler();
 #endif
 
   return EXIT_SUCCESS;

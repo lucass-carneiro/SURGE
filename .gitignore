@@ -8,6 +8,7 @@ compile_commands.json
 
 Release/*
 Debug/*
+Profile/*
 staging-*/
 
 modules/*

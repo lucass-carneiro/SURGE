@@ -133,12 +133,14 @@ if(SURGE_ENABLE_TRACY)
   option(TRACY_ENABLE "" ON)
   option(TRACY_CALLSTACK "" ON)
   option(TRACY_STATIC "" OFF)
-  option(TRACY_NO_EXIT "" OBJC_STANDARD_REQUIRED)
+  option(TRACY_ON_DEMAND "" ON)
+
+  add_definitions(-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME)
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(TRACY_LIBUNWIND_BACKTRACE "" ON)
     option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "" ON)
-    add_compile_definitions(TRACY_DEBUGINFOD)
+    add_definitions(-DTRACY_DEBUGINFOD)
   endif()
 
   add_subdirectory(tracy)

@@ -3,6 +3,10 @@
 #include "logging.hpp"
 #include "window.hpp"
 
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 static void glfw_gl_framebuffer_size_callback(GLFWwindow *, int width, int height) noexcept {
   glViewport(GLint{0}, GLint{0}, GLsizei{width}, GLsizei{height});
 }
@@ -110,6 +114,10 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
     glfwWindowHint(GLFW_SAMPLES, 4);
     glEnable(GL_MULTISAMPLE);
   }
+
+#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+  TracyGpuContext;
+#endif
 
   return {};
 }
