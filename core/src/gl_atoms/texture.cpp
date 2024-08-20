@@ -3,11 +3,16 @@
 #include <cstring>
 #include <gsl/gsl-lite.hpp>
 
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
+
 static constexpr XXH64_hash_t hash_seed{100};
 
 auto surge::gl_atom::texture::from_image(const create_info &ci,
                                          const files::image_data &img) noexcept -> create_t {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::create_from_image");
   TracyGpuZone("GPU surge::gl_atom::texture::create_from_image");
 #endif
@@ -77,7 +82,7 @@ auto surge::gl_atom::texture::from_image(const create_info &ci,
 auto surge::gl_atom::texture::from_openEXR(const create_info &ci,
                                            const files::openEXR_image_data &img) noexcept
     -> create_t {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::from_openEXR");
   TracyGpuZone("GPU surge::gl_atom::texture::from_openEXR");
 #endif
@@ -153,7 +158,7 @@ void surge::gl_atom::texture::destroy(create_data &cd) noexcept {
 }
 
 void surge::gl_atom::texture::destroy(GLuint id, GLuint64 handle) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::destroy");
   TracyGpuZone("GPU surge::gl_atom::texture::destroy");
 #endif
@@ -191,7 +196,7 @@ void surge::gl_atom::texture::database::destroy() noexcept {
 
 auto surge::gl_atom::texture::database::find(const char *file_name) const noexcept
     -> std::optional<GLuint64> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::database::find");
 #endif
   using std::strlen;
@@ -219,7 +224,7 @@ void surge::gl_atom::texture::database::reset() noexcept {
 
 void surge::gl_atom::texture::database::add_openEXR(const create_info &ci,
                                                     const char *path) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::database::add_openEXR");
   TracyGpuZone("GPU surge::gl_atom::texture::database::add_openEXR");
 #endif

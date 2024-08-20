@@ -17,7 +17,7 @@
 
 // https://gist.github.com/jiaoyk/c9ba7fed2a086c73aecb3edee83af0f6
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
@@ -36,7 +36,7 @@ static auto FT_realloc(FT_Memory, long, long new_size, void *block) noexcept -> 
 static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
 auto surge::gl_atom::text_engine::create() noexcept -> tl::expected<text_engine, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_engine::create()");
 #endif
   text_engine engine{};
@@ -56,7 +56,7 @@ auto surge::gl_atom::text_engine::create() noexcept -> tl::expected<text_engine,
 }
 
 void surge::gl_atom::text_engine::destroy() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_engine::destroy");
 #endif
 
@@ -76,7 +76,7 @@ void surge::gl_atom::text_engine::destroy() noexcept {
 auto surge::gl_atom::text_engine::load_face(const char *path, std::string_view name,
                                             FT_F26Dot6 size_in_pts, FT_UInt resolution_dpi) noexcept
     -> std::optional<error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_engine::load_face()");
 #endif
   log_info("Loading face {} with name {}", path, name.data());
@@ -117,7 +117,7 @@ auto surge::gl_atom::text_engine::get_faces() noexcept -> hash_map<std::string_v
 
 auto surge::gl_atom::glyph_cache::create(FT_Face face, language lang) noexcept
     -> tl::expected<glyph_cache, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::glyph_cache::create()");
 #endif
   if (!face) {
@@ -307,7 +307,7 @@ auto surge::gl_atom::glyph_cache::get_advances() const noexcept
 
 auto surge::gl_atom::text_buffer::create(usize max_chars) noexcept
     -> tl::expected<text_buffer, error> {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_buffer::create()");
   TracyGpuZone("GPU surge::gl_atom::text_buffer::create()");
 #endif
@@ -371,7 +371,7 @@ auto surge::gl_atom::text_buffer::create(usize max_chars) noexcept
 }
 
 void surge::gl_atom::text_buffer::destroy() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_buffer::destroy()");
   TracyGpuZone("GPU surge::gl_atom::text_buffer::destroy()");
 #endif
@@ -488,7 +488,7 @@ void surge::gl_atom::text_buffer::reset() noexcept {
 }
 
 void surge::gl_atom::text_buffer::draw(const glm::vec4 &color) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::text_buffer::draw");
   TracyGpuZone("GPU surge::gl_atom::text_buffer::draw");
 #endif

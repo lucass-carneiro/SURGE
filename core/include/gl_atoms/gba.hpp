@@ -8,7 +8,7 @@
 
 #include <array>
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
@@ -49,7 +49,7 @@ private:
 #endif
 
   void wait_buffer(usize buffer_idx) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::wait_buffer");
     TracyGpuZone("GPU surge::gba::wait_buffer");
 #endif
@@ -68,7 +68,7 @@ private:
 
 public:
   static auto create(usize cap, [[maybe_unused]] const char *name = "GBA") noexcept -> gba {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::create");
     TracyGpuZone("GPU surge::gba::create");
 #endif
@@ -104,7 +104,7 @@ public:
   }
 
   void destroy() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::destroy");
     TracyGpuZone("GPU surge::gba::destroy");
 #endif
@@ -120,7 +120,7 @@ public:
   }
 
   void push(const T &value) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::push");
 #endif
 
@@ -138,7 +138,7 @@ public:
   }
 
   auto get_elm_ptr(usize idx) -> T * {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::get_elm_ptr");
 #endif
 
@@ -153,7 +153,7 @@ public:
   }
 
   void bind(GLenum target, GLuint location) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::bind");
     TracyGpuZone("GPU surge::gba::bind");
 #endif
@@ -163,7 +163,7 @@ public:
   }
 
   void lock_write_buffer() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::lock_write_buffer");
     TracyGpuZone("GPU surge::gba::lock_write_buffer");
 #endif
@@ -178,7 +178,7 @@ public:
   void reset() noexcept { write_idx = 0; }
 
   void reinit() noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gba::reinit");
     TracyGpuZone("GPU surge::gba::reinit");
 #endif

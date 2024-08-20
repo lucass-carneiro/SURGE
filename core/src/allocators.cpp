@@ -6,7 +6,7 @@
 #include <mimalloc.h>
 #include <stdexcept>
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 

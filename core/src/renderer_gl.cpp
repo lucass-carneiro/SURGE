@@ -3,7 +3,7 @@
 #include "logging.hpp"
 #include "window.hpp"
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
@@ -115,7 +115,7 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
     glEnable(GL_MULTISAMPLE);
   }
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   TracyGpuContext;
 #endif
 

@@ -11,7 +11,7 @@
 #include <optional>
 #include <xxhash.h>
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
@@ -65,7 +65,7 @@ public:
   void add_openEXR(const create_info &ci, const char *path) noexcept;
 
   void add(const create_info &ci, std::convertible_to<std::string_view> auto &&...paths) noexcept {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     ZoneScopedN("surge::gl_atom::texture::database::add");
     TracyGpuZone("GPU surge::gl_atom::texture::database::add");
 #endif

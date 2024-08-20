@@ -28,7 +28,7 @@
 #include <filesystem>
 #include <gsl/gsl-lite.hpp>
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
@@ -104,7 +104,7 @@ auto os_open_read(const char *path, void *buffer, unsigned int file_size) noexce
 #endif
 
 auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -> file {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::files::load_file");
 #endif
 
@@ -138,7 +138,7 @@ auto surge::files::load_file(const char *path, bool append_null_byte) noexcept -
 }
 
 auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::files::load_image");
 #endif
 
@@ -173,7 +173,7 @@ auto surge::files::load_image(const char *p, bool flip) noexcept -> image {
 }
 
 auto surge::files::load_openEXR(const char *p) noexcept -> openEXR_image {
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::files::load_openEXR");
 #endif
 

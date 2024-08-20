@@ -1,6 +1,6 @@
 ﻿#include "surge_core.hpp"
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo) && defined(SURGE_ENABLE_TRACY)
 #  include <common/TracyColor.hpp>
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
@@ -25,7 +25,7 @@ auto main(int, char **) noexcept -> int {
   setenv("__GLX_VENDOR_LIBRARY_NAME", "nvidia", 0);
 #endif
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("suge::main()");
 #endif
 
@@ -211,7 +211,7 @@ auto main(int, char **) noexcept -> int {
     }
 #endif
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
     FrameMark;
     TracyGpuCollect;
 #endif
@@ -228,7 +228,7 @@ auto main(int, char **) noexcept -> int {
   }
   window::terminate();
 
-#if defined(SURGE_BUILD_TYPE_Profile) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
   log_info("Tracy may still be collecting profiling data. Please wait...");
   tracy::ShutdownProfiler();
 #endif

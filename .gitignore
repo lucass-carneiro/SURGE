@@ -1,3 +1,6 @@
+tracy/*
+vcpkg/*
+
 .vs/*
 .cache/*
 out/*
