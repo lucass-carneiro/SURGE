@@ -254,7 +254,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-  target_link_libraries(SurgeCore PUBLIC Tracy::TracyClient)
+  target_link_libraries(SurgeCore PRIVATE Tracy::TracyClient)
   
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
