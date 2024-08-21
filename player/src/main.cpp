@@ -16,7 +16,10 @@ __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 
 auto main(int, char **) noexcept -> int {
   using namespace surge;
+
+#if defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo) && defined(SURGE_ENABLE_TRACY)
   tracy::StartupProfiler();
+#endif
 
   // Avoid using integrated graphics on NV hardware.
   // TODO: Set this for AMD hardware
