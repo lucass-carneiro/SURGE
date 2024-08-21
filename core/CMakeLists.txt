@@ -260,7 +260,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebI
     target_compile_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
   else()
-    target_compile_options(SurgeCore PUBLIC /MP /MD)
+    target_compile_options(SurgeCore PUBLIC /MP /MT)
     target_link_options(SurgeCore PUBLIC /DEBUG:FULL)
   endif()
 
