@@ -3,7 +3,8 @@
 #include "logging.hpp"
 #include "window.hpp"
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
@@ -41,19 +42,6 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
     return error::glfw_make_ctx;
-  }
-
-  if (r_attrs.vsync) {
-    log_info("VSync enabled");
-    glfwSwapInterval(1);
-  } else {
-    glfwSwapInterval(0);
-    log_info("VSync disabled");
-  }
-
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    glfwTerminate();
-    return error::glfw_vsync;
   }
 
   /********
@@ -100,6 +88,20 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
   // NOLINTNEXTLINE
   log_info("Using OpenGL Version {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
 
+  if (r_attrs.vsync) {
+    log_info("VSync enabled");
+    glfwSwapInterval(1);
+  } else {
+    glfwSwapInterval(0);
+    log_info("VSync disabled");
+  }
+
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_error("Unable to set VSync");
+    glfwTerminate();
+    return error::glfw_vsync;
+  }
+
 #ifdef SURGE_GL_LOG
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(gl_error_callback, nullptr);
@@ -115,7 +117,8 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
     glEnable(GL_MULTISAMPLE);
   }
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   TracyGpuContext;
 #endif
 
