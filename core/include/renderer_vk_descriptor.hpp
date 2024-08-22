@@ -14,6 +14,17 @@
 
 namespace surge::renderer::vk {
 
+struct descriptor_layout_builder {
+  vector<VkDescriptorSetLayoutBinding> bindings;
+
+  void add_binding(u32 binding, VkDescriptorType type) noexcept;
+  void clear() noexcept;
+
+  auto build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext = nullptr,
+             VkDescriptorSetLayoutCreateFlags flags
+             = 0) noexcept -> tl::expected<VkDescriptorSetLayout, error>;
+};
+
 struct desc_pool_size_ratio {
   VkDescriptorType type{};
   float ratio{};
@@ -45,17 +56,6 @@ public:
 
   auto allocate(VkDevice device, VkDescriptorSetLayout layout,
                 void *pNext = nullptr) noexcept -> tl::expected<VkDescriptorSet, error>;
-};
-
-struct descriptor_layout {
-  vector<VkDescriptorSetLayoutBinding> bindings;
-
-  void add_binding(u32 binding, VkDescriptorType type) noexcept;
-  void clear() noexcept;
-
-  auto build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext = nullptr,
-             VkDescriptorSetLayoutCreateFlags flags
-             = 0) noexcept -> tl::expected<VkDescriptorSetLayout, error>;
 };
 
 } // namespace surge::renderer::vk

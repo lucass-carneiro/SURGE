@@ -7,7 +7,34 @@
 
 using namespace surge::renderer::vk;
 
-void descriptor_layout::add_binding(u32 binding, VkDescriptorType type) noexcept {
+auto surge::renderer::vk::descriptor_layout_builder::build(
+    VkDevice device, VkShaderStageFlags shaderStages, void *pNext,
+    VkDescriptorSetLayoutCreateFlags flags) noexcept -> tl::expected<VkDescriptorSetLayout, error> {
+
+  for (auto &b : bindings) {
+    b.stageFlags |= shaderStages;
+  }
+
+  VkDescriptorSetLayoutCreateInfo info{};
+  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  info.pNext = pNext;
+
+  info.pBindings = bindings.data();
+  info.bindingCount = (uint32_t)bindings.size();
+  info.flags = flags;
+
+  VkDescriptorSetLayout set{};
+  const auto result{vkCreateDescriptorSetLayout(device, &info, nullptr, &set)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to build descriptor set layout: {}", string_VkResult(result));
+    return tl::unexpected{error::vk_descriptor_set_layout};
+  }
+
+  return set;
+}
+
+void descriptor_layout_builder::add_binding(u32 binding, VkDescriptorType type) noexcept {
   VkDescriptorSetLayoutBinding lb{};
   lb.binding = binding;
   lb.descriptorCount = 1;
@@ -16,10 +43,10 @@ void descriptor_layout::add_binding(u32 binding, VkDescriptorType type) noexcept
   bindings.push_back(lb);
 }
 
-void descriptor_layout::clear() noexcept { bindings.clear(); }
+void descriptor_layout_builder::clear() noexcept { bindings.clear(); }
 
-auto descriptor_layout::build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext,
-                              VkDescriptorSetLayoutCreateFlags flags) noexcept
+auto descriptor_layout_builder::build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext,
+                                      VkDescriptorSetLayoutCreateFlags flags) noexcept
     -> tl::expected<VkDescriptorSetLayout, error> {
 
   for (auto &b : bindings) {
