@@ -45,33 +45,6 @@ void descriptor_layout_builder::add_binding(u32 binding, VkDescriptorType type) 
 
 void descriptor_layout_builder::clear() noexcept { bindings.clear(); }
 
-auto descriptor_layout_builder::build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext,
-                                      VkDescriptorSetLayoutCreateFlags flags) noexcept
-    -> tl::expected<VkDescriptorSetLayout, error> {
-
-  for (auto &b : bindings) {
-    b.stageFlags |= shaderStages;
-  }
-
-  VkDescriptorSetLayoutCreateInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  info.pNext = pNext;
-
-  info.pBindings = bindings.data();
-  info.bindingCount = static_cast<u32>(bindings.size());
-  info.flags = flags;
-
-  VkDescriptorSetLayout set{};
-  const auto result{vkCreateDescriptorSetLayout(device, &info, get_alloc_callbacks(), &set)};
-
-  if (result != VK_SUCCESS) {
-    log_error("Unable to build descriptor set layout: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_descriptor_set_layout};
-  }
-
-  return set;
-}
-
 auto surge::renderer::vk::descriptor_allocator::create_pool(
     VkDevice device, uint32_t set_count,
     std::span<desc_pool_size_ratio> pool_ratios) noexcept -> tl::expected<VkDescriptorPool, error> {
