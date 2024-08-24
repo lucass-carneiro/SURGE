@@ -21,7 +21,8 @@ using opt_error = std::optional<surge::error>;
 
 static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
                                 opt_error &input_bind_result,
-                                const surge::config::clear_color &w_ccl) {
+                                const surge::config::clear_color &w_ccl,
+                                const surge::config::renderer_attrs &r_attrs) {
   using namespace surge;
 
   timers::generic_timer frame_timer;
@@ -115,7 +116,8 @@ static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &
 
 static inline void vk_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
                                 opt_error &input_bind_result,
-                                const surge::config::clear_color &w_ccl, surge::renderer::vk::context &vk_ctx) {
+                                const surge::config::clear_color &w_ccl,
+                                surge::renderer::vk::context &vk_ctx) {
   using namespace surge;
 
   timers::generic_timer frame_timer;
@@ -186,14 +188,6 @@ static inline void vk_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &
 #endif
 
     frame_timer.stop();
-
-// FPS Cap. On Linux, even with VSync this is necessary, otherwise the FPS may go above 60
-#ifdef SURGE_SYSTEM_Linux
-    if (r_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / r_attrs.fps_cap_value))) {
-      std::this_thread::sleep_for(std::chrono::duration<double, std::ratio<1>>(
-          (1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
-    }
-#endif
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
@@ -314,7 +308,7 @@ auto main(int, char **) noexcept -> int {
   }
 
   if (r_attrs.backend == config::renderer_backend::opengl) {
-    gl_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl);
+    gl_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl, r_attrs);
   } else {
     vk_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl, vk_ctx);
   }
