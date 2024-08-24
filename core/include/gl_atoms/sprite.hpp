@@ -45,6 +45,7 @@ public:
 
   void reset() noexcept;
   void reinit() noexcept;
+  void wait_idle() noexcept;
 
   void translate(usize idx, const glm::vec3 &dir) noexcept;
   auto get_pos(usize idx) noexcept -> glm::vec3;

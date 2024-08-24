@@ -5,14 +5,16 @@
 
 #include <gsl/gsl-lite.hpp>
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto surge::gl_atom::sprite::database::create(usize max_sprites) noexcept
     -> tl::expected<database, error> {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::create");
   TracyGpuZone("GPU surge::gl_atom::sprite::database::create");
 #endif
@@ -90,7 +92,8 @@ auto surge::gl_atom::sprite::database::create(usize max_sprites) noexcept
 }
 
 void surge::gl_atom::sprite::database::destroy() noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::destroy");
   TracyGpuZone("GPU surge::gl_atom::sprite::database::destroy");
 #endif
@@ -109,7 +112,8 @@ void surge::gl_atom::sprite::database::destroy() noexcept {
 }
 
 void surge::gl_atom::sprite::database::add(GLuint64 handle, glm::mat4 model, float alpha) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::add");
 #endif
   texture_handles.push(handle);
@@ -120,7 +124,8 @@ void surge::gl_atom::sprite::database::add(GLuint64 handle, glm::mat4 model, flo
 
 void surge::gl_atom::sprite::database::add_depth(GLuint64 texture, GLuint64 depth_map,
                                                  glm::mat4 model) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::add_depth");
 #endif
   depth_texture_handle = texture;
@@ -131,7 +136,8 @@ void surge::gl_atom::sprite::database::add_depth(GLuint64 texture, GLuint64 dept
 void surge::gl_atom::sprite::database::add_view(GLuint64 handle, glm::mat4 model,
                                                 glm::vec4 image_view, glm::vec2 img_dims,
                                                 float alpha) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::add_view");
 #endif
   const auto u0{image_view[0]};
@@ -152,7 +158,8 @@ void surge::gl_atom::sprite::database::add_view(GLuint64 handle, glm::mat4 model
 }
 
 void surge::gl_atom::sprite::database::reset() noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::reset()");
 #endif
   depth_texture_handle = 0;
@@ -166,7 +173,8 @@ void surge::gl_atom::sprite::database::reset() noexcept {
 }
 
 void surge::gl_atom::sprite::database::reinit() noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::reinit()");
 #endif
   depth_texture_handle = 0;
@@ -179,8 +187,20 @@ void surge::gl_atom::sprite::database::reinit() noexcept {
   alphas.reinit();
 }
 
+void surge::gl_atom::sprite::database::wait_idle() noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database::wait_idle()");
+#endif
+  texture_handles.wait_idle();
+  models.wait_idle();
+  image_views.wait_idle();
+  alphas.wait_idle();
+}
+
 void surge::gl_atom::sprite::database::translate(usize idx, const glm::vec3 &dir) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::translate()");
 #endif
 
@@ -197,7 +217,8 @@ void surge::gl_atom::sprite::database::translate(usize idx, const glm::vec3 &dir
 }
 
 auto surge::gl_atom::sprite::database::get_pos(usize idx) noexcept -> glm::vec3 {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::get_pos()");
 #endif
 
@@ -214,7 +235,8 @@ auto surge::gl_atom::sprite::database::get_pos(usize idx) noexcept -> glm::vec3 
 }
 
 void surge::gl_atom::sprite::database::draw() noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database::draw");
   TracyGpuZone("GPU surge::gl_atom::sprite::database::draw");
 #endif
