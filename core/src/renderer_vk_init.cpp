@@ -51,7 +51,7 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
   auto result{vkEnumerateInstanceLayerProperties(&layer_count, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable query available validation layers: {}", string_VkResult(result));
+    log_error("Unable to query available validation layers: {}", string_VkResult(result));
     return tl::unexpected{error::vk_val_layer_query};
   }
 
@@ -59,7 +59,7 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
   result = vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
   if (result != VK_SUCCESS) {
-    log_error("Unable query available validation layers: {}", string_VkResult(result));
+    log_error("Unable to query available validation layers: {}", string_VkResult(result));
     return tl::unexpected{error::vk_val_layer_query};
   }
 
@@ -69,6 +69,10 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
 
   vector<const char *> required_layers{};
   required_layers.push_back("VK_LAYER_KHRONOS_validation");
+
+  for (const auto &layer : required_layers) {
+    log_info("Requiring validation layer {}", layer);
+  }
 
   for (const auto &layer_name : required_layers) {
     bool layer_found{false};
@@ -415,10 +419,11 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
   return handles;
 }
 
-auto surge::renderer::vk::create_swapchain(
-    VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
-    const config::renderer_attrs &r_attrs, u32 width,
-    u32 height) noexcept -> tl::expected<swapchain_data, error> {
+auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
+                                           VkSurfaceKHR surface,
+                                           const config::renderer_attrs &r_attrs, u32 width,
+                                           u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
   log_info("Creating swapchain");
 
   using std::clamp;
@@ -618,9 +623,10 @@ void surge::renderer::vk::destroy_frame_data(context &ctx) noexcept {
   }
 }
 
-auto surge::renderer::vk::init(
-    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-    const config::window_attrs &) noexcept -> tl::expected<context, error> {
+auto surge::renderer::vk::init(const config::renderer_attrs &r_attrs,
+                               const config::window_resolution &w_res,
+                               const config::window_attrs &) noexcept
+    -> tl::expected<context, error> {
 
   log_info("Initializing Vulkan");
 
@@ -738,3 +744,32 @@ void surge::renderer::vk::terminate(context &ctx) noexcept {
   log_info("Destroying instance");
   vkDestroyInstance(ctx.instance, get_alloc_callbacks());
 }
+
+auto surge::renderer::vk::initialize(const config::renderer_attrs &r_attrs,
+                                     const config::window_resolution &w_res,
+                                     const config::window_attrs &w_attrs) noexcept
+    -> tl::expected<context2, error> {
+  log_info("Initializing Vulkan");
+
+  context2 ctx{};
+
+  // Vulkan extensions
+  const auto required_extensions{get_required_extensions()};
+  if (!required_extensions) {
+    log_error("Vulkan initialization error");
+    return tl::unexpected{required_extensions.error()};
+  }
+
+// Validation layers
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+  const auto required_validation_layers{get_required_validation_layers()};
+  if (!required_validation_layers) {
+    log_error("Vulkan initialization error");
+    return tl::unexpected{required_extensions.error()};
+  }
+#endif
+
+  return ctx;
+}
+
+void surge::renderer::vk::terminate2(context2 &ctx) noexcept { log_info("Terminating Vulkan"); }

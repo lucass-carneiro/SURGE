@@ -7,6 +7,11 @@
 
 namespace surge::renderer::vk {
 
+auto initialize(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+                const config::window_attrs &w_attrs) noexcept -> tl::expected<context2, error>;
+
+void terminate2(context2 &ctx) noexcept;
+
 auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
           const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
 
@@ -14,8 +19,8 @@ void terminate(context &ctx) noexcept;
 
 auto clear(context &ctx, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
 
-auto load_shader_module(VkDevice device,
-                        const char *path) noexcept -> tl::expected<VkShaderModule, error>;
+auto load_shader_module(VkDevice device, const char *path) noexcept
+    -> tl::expected<VkShaderModule, error>;
 
 void destroy_shader_module(VkDevice device, VkShaderModule module) noexcept;
 

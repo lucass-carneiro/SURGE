@@ -7,6 +7,9 @@
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
+#include <atomic>
+#include <thread>
+
 // Avoid using integrated graphics
 #ifdef SURGE_SYSTEM_Windows
 extern "C" {
@@ -21,8 +24,12 @@ using opt_error = std::optional<surge::error>;
 
 static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
                                 opt_error &input_bind_result,
+<<<<<<< Updated upstream
                                 const surge::config::clear_color &w_ccl,
                                 const surge::config::renderer_attrs &r_attrs) {
+=======
+                                const surge::config::clear_color &w_ccl) noexcept {
+>>>>>>> Stashed changes
   using namespace surge;
 
   timers::generic_timer frame_timer;
@@ -114,86 +121,49 @@ static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &
   }
 }
 
+<<<<<<< Updated upstream
 static inline void vk_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
                                 opt_error &input_bind_result,
                                 const surge::config::clear_color &w_ccl,
                                 surge::renderer::vk::context &vk_ctx) {
+=======
+static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
+                                  const surge::config::window_resolution &w_res,
+                                  const surge::config::window_attrs &w_attrs,
+                                  std::atomic<bool> *done) noexcept {
+>>>>>>> Stashed changes
   using namespace surge;
 
-  timers::generic_timer frame_timer;
-  timers::generic_timer update_timer;
-  update_timer.start();
+  log_info("Initializing Vulkan rendering thread");
 
-#ifdef SURGE_ENABLE_HR
-  auto hr_key_old_state{window::get_key(GLFW_KEY_F5) && window::get_key(GLFW_KEY_LEFT_CONTROL)};
-#endif
+  auto ctx{renderer::vk::initialize(r_attrs, w_res, w_attrs)};
+  if (!ctx) {
+    log_error("Unable to initialize Vulkan");
+    return;
+  }
 
-  while ((frame_timer.start(), !window::should_close())) {
-    window::poll_events();
+  while (!*done) {
+    // work
+  }
 
-    // Handle hot reloading
-#ifdef SURGE_ENABLE_HR
-    const auto should_hr{window::get_key(GLFW_KEY_F5) == GLFW_PRESS
-                         && window::get_key(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
-                         && hr_key_old_state == GLFW_RELEASE};
-    if (should_hr) {
-      timers::generic_timer t;
-      t.start();
+  renderer::vk::terminate2(*ctx);
 
-      mod_api->on_unload();
-      window::unbind_input_callbacks();
+  log_info("Finalizing Vulkan rendering thread");
+}
 
-      mod = module::reload(*mod);
-      if (!mod) {
-        break;
-      }
-
-      mod_api = module::get_api(*mod);
-      if (!mod_api) {
-        break;
-      }
-
-      on_load_result = mod_api->on_load();
-      if (on_load_result != 0) {
-        log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
-                  on_load_result);
-        break;
-      }
-
-      input_bind_result = window::bind_module_input_callbacks(&(mod_api.value()));
-      if (input_bind_result.has_value()) {
-        break;
-      }
-
-      t.stop();
-      log_info("Hot reloading succsesfull in {} s", t.elapsed());
-    }
-#endif
-
-    // Clear buffers
-    renderer::vk::clear(vk_ctx, w_ccl);
-
-    // Call module update
-    if (mod_api->update(update_timer.stop()) != 0) {
-      window::set_should_close(true);
-    }
-    update_timer.start();
-
-    // Call module draw
-    mod_api->draw();
-
-    // Refresh HR key state
-#ifdef SURGE_ENABLE_HR
-    hr_key_old_state = window::get_key(GLFW_KEY_F5) && window::get_key(GLFW_KEY_LEFT_CONTROL);
-#endif
-
-    frame_timer.stop();
-
+<<<<<<< Updated upstream
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
     FrameMark;
     TracyGpuCollect;
 #endif
+=======
+static inline void vk_main_loop() noexcept {
+  using namespace surge;
+
+  while (!window::should_close()) {
+    window::poll_events();
+>>>>>>> Stashed changes
   }
 }
 
@@ -248,7 +218,8 @@ auto main(int, char **) noexcept -> int {
   /***********************
    * Init render backend *
    ***********************/
-  renderer::vk::context vk_ctx{};
+  std::atomic<bool> render_done{false};
+  std::thread vulkan_render_thread;
 
   if (r_attrs.backend == config::renderer_backend::opengl) {
     if (renderer::gl::init(r_attrs).has_value()) {
@@ -256,13 +227,8 @@ auto main(int, char **) noexcept -> int {
       return EXIT_FAILURE;
     }
   } else {
-    const auto vk_init_result{renderer::vk::init(r_attrs, w_res, w_attrs)};
-    if (!vk_init_result) {
-      window::terminate();
-      return EXIT_FAILURE;
-    } else {
-      vk_ctx = vk_init_result.value();
-    }
+    vulkan_render_thread
+        = std::thread{vk_render_thread_loop, r_attrs, w_res, w_attrs, &render_done};
   }
 
   /*********************
@@ -310,7 +276,7 @@ auto main(int, char **) noexcept -> int {
   if (r_attrs.backend == config::renderer_backend::opengl) {
     gl_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl, r_attrs);
   } else {
-    vk_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl, vk_ctx);
+    vk_main_loop();
   }
 
   // Finalize modules
@@ -319,9 +285,14 @@ auto main(int, char **) noexcept -> int {
   module::unload(*mod);
 
   // Finalize window and renderer
-  if (r_attrs.backend == config::renderer_backend::vulkan) {
-    renderer::vk::terminate(vk_ctx);
+  render_done = true;
+
+  if (r_attrs.backend == config::renderer_backend::opengl) {
+    renderer::gl::wait_idle();
+  } else {
+    vulkan_render_thread.join();
   }
+
   window::terminate();
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \

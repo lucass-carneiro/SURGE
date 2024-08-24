@@ -95,6 +95,19 @@ struct context {
   allocated_image draw_image{};
 };
 
+struct context2 {
+  VkInstance instance{};
+
+#ifdef SURGE_USE_VK_VALIDATION_LAYERS
+  VkDebugUtilsMessengerEXT dbg_msg{};
+#endif
+
+  VkPhysicalDevice phys_dev{};
+  VkDevice log_dev{};
+
+  VkSurfaceKHR surface{};
+};
+
 } // namespace surge::renderer::vk
 
 #endif // SURGE_CORE_RENDERER_VK_TYPES_HPP
