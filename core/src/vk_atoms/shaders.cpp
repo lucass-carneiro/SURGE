@@ -1,11 +1,12 @@
+#include "vk_atoms/shaders.hpp"
+
 #include "files.hpp"
 #include "logging.hpp"
-#include "renderer_vk.hpp"
 #include "renderer_vk_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::load_shader_module(VkDevice device, const char *path) noexcept
+auto surge::vk_atom::shader::load_shader_module(VkDevice device, const char *path) noexcept
     -> tl::expected<VkShaderModule, error> {
   log_info("Loading vulkan shader module {}", path);
 
@@ -23,7 +24,8 @@ auto surge::renderer::vk::load_shader_module(VkDevice device, const char *path) 
   info.pCode = reinterpret_cast<const u32 *>(file->data()); // NOLINT
 
   VkShaderModule module{};
-  const auto result{vkCreateShaderModule(device, &info, get_alloc_callbacks(), &module)};
+  const auto result{
+      vkCreateShaderModule(device, &info, renderer::vk::get_alloc_callbacks(), &module)};
 
   if (result != VK_SUCCESS) {
     log_error("Unable create shader module from file {}: {}", path, string_VkResult(result));
@@ -34,7 +36,8 @@ auto surge::renderer::vk::load_shader_module(VkDevice device, const char *path) 
   }
 }
 
-void surge::renderer::vk::destroy_shader_module(VkDevice device, VkShaderModule module) noexcept {
+void surge::vk_atom::shader::destroy_shader_module(VkDevice device,
+                                                   VkShaderModule module) noexcept {
   log_info("Unloading shader module handle {}", static_cast<void *>(module));
-  vkDestroyShaderModule(device, module, get_alloc_callbacks());
+  vkDestroyShaderModule(device, module, renderer::vk::get_alloc_callbacks());
 }

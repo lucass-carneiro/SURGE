@@ -784,18 +784,35 @@ auto surge::renderer::vk::create_swapchain(
 
   swapchain_data swpc_data{};
 
+  // Capabilities
   VkSurfaceCapabilitiesKHR surface_capabilities{};
   auto result{vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, surface, &surface_capabilities)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to query physical device surface capabilities: {}", string_VkResult(result));
+    log_error("Unable to query surface capabilities: {}", string_VkResult(result));
     return tl::unexpected{error::vk_swapchain_query};
   }
 
+  // Image extents
+  VkExtent2D extent{clamp(width, surface_capabilities.minImageExtent.width,
+                          surface_capabilities.maxImageExtent.width),
+                    clamp(height, surface_capabilities.minImageExtent.height,
+                          surface_capabilities.maxImageExtent.height)};
+  swpc_data.extent = extent;
+
+  // Image formats
   const auto img_format{VK_FORMAT_B8G8R8A8_UNORM};
   const auto img_colorspace{VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
   const auto img_usage{VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
 
+  // Image count
+  uint32_t image_count{surface_capabilities.minImageCount + 1};
+
+  if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount) {
+    image_count = surface_capabilities.maxImageCount;
+  }
+
+  // Presentation mode
   VkPresentModeKHR present_mode{};
 
   // VSync
@@ -805,39 +822,27 @@ auto surge::renderer::vk::create_swapchain(
     present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
   }
 
-  VkExtent2D extent{clamp(width, surface_capabilities.minImageExtent.width,
-                          surface_capabilities.maxImageExtent.width),
-                    clamp(height, surface_capabilities.minImageExtent.height,
-                          surface_capabilities.maxImageExtent.height)};
-  swpc_data.extent = extent;
+  VkSwapchainCreateInfoKHR swpc_ci{};
+  swpc_ci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  swpc_ci.pNext = nullptr;
+  swpc_ci.flags = 0;
+  swpc_ci.surface = surface;
+  swpc_ci.minImageCount = image_count;
+  swpc_ci.imageFormat = img_format;
+  swpc_ci.imageColorSpace = img_colorspace;
+  swpc_ci.imageExtent = extent;
+  swpc_ci.imageArrayLayers = 1;
+  swpc_ci.imageUsage = img_usage;
+  swpc_ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  swpc_ci.queueFamilyIndexCount = 0;
+  swpc_ci.pQueueFamilyIndices = nullptr;
+  swpc_ci.preTransform = surface_capabilities.currentTransform;
+  swpc_ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+  swpc_ci.presentMode = present_mode;
+  swpc_ci.clipped = VK_TRUE;
+  swpc_ci.oldSwapchain = VK_NULL_HANDLE;
 
-  uint32_t image_count{surface_capabilities.minImageCount + 1};
-
-  if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount) {
-    image_count = surface_capabilities.maxImageCount;
-  }
-
-  VkSwapchainCreateInfoKHR swpc_create_info{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                            .pNext = nullptr,
-                                            .flags = 0,
-                                            .surface = surface,
-                                            .minImageCount = image_count,
-                                            .imageFormat = img_format,
-                                            .imageColorSpace = img_colorspace,
-                                            .imageExtent = extent,
-                                            .imageArrayLayers = 1,
-                                            .imageUsage = img_usage,
-                                            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                            .queueFamilyIndexCount = 0,
-                                            .pQueueFamilyIndices = nullptr,
-                                            .preTransform = surface_capabilities.currentTransform,
-                                            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-                                            .presentMode = present_mode,
-                                            .clipped = VK_TRUE,
-                                            .oldSwapchain = VK_NULL_HANDLE};
-
-  result = vkCreateSwapchainKHR(log_dev, &swpc_create_info, get_alloc_callbacks(),
-                                &swpc_data.swapchain);
+  result = vkCreateSwapchainKHR(log_dev, &swpc_ci, get_alloc_callbacks(), &swpc_data.swapchain);
   if (result != VK_SUCCESS) {
     log_error("Unable to create swapchain: {}", string_VkResult(result));
     return tl::unexpected{error::vk_init_swapchain};
@@ -861,21 +866,23 @@ auto surge::renderer::vk::create_swapchain(
       VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
       VK_COMPONENT_SWIZZLE_IDENTITY};
 
-  const VkImageSubresourceRange img_view_sub_range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                   .baseMipLevel = 0,
-                                                   .levelCount = 1,
-                                                   .baseArrayLayer = 0,
-                                                   .layerCount = 1};
+  VkImageSubresourceRange img_view_sub_range{};
+  img_view_sub_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  img_view_sub_range.baseMipLevel = 0;
+  img_view_sub_range.levelCount = 1;
+  img_view_sub_range.baseArrayLayer = 0;
+  img_view_sub_range.layerCount = 1;
 
   for (const auto &img : swpc_data.imgs) {
-    VkImageViewCreateInfo img_view_ci{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                      .pNext = nullptr,
-                                      .flags = 0,
-                                      .image = img,
-                                      .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                                      .format = img_format,
-                                      .components = img_view_components,
-                                      .subresourceRange = img_view_sub_range};
+    VkImageViewCreateInfo img_view_ci{};
+    img_view_ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    img_view_ci.pNext = nullptr;
+    img_view_ci.flags = 0;
+    img_view_ci.image = img;
+    img_view_ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    img_view_ci.format = img_format;
+    img_view_ci.components = img_view_components;
+    img_view_ci.subresourceRange = img_view_sub_range;
 
     VkImageView img_view{};
     result = vkCreateImageView(log_dev, &img_view_ci, get_alloc_callbacks(), &img_view);

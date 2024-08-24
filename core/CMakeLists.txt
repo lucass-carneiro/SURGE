@@ -32,6 +32,8 @@ set(
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/gl_atoms/texture.hpp"
   
+  "${PROJECT_SOURCE_DIR}/include/vk_atoms/shaders.hpp"
+  
   "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/config.hpp"
@@ -69,6 +71,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_atoms/texture.cpp"
+  
+  "${PROJECT_SOURCE_DIR}/src/vk_atoms/shaders.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/cli.cpp"
@@ -85,7 +89,6 @@ set(
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_shader.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
