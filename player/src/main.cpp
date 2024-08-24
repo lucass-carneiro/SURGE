@@ -24,12 +24,8 @@ using opt_error = std::optional<surge::error>;
 
 static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
                                 opt_error &input_bind_result,
-<<<<<<< Updated upstream
                                 const surge::config::clear_color &w_ccl,
                                 const surge::config::renderer_attrs &r_attrs) {
-=======
-                                const surge::config::clear_color &w_ccl) noexcept {
->>>>>>> Stashed changes
   using namespace surge;
 
   timers::generic_timer frame_timer;
@@ -121,17 +117,10 @@ static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &
   }
 }
 
-<<<<<<< Updated upstream
-static inline void vk_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result,
-                                opt_error &input_bind_result,
-                                const surge::config::clear_color &w_ccl,
-                                surge::renderer::vk::context &vk_ctx) {
-=======
 static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
                                   const surge::config::window_resolution &w_res,
                                   const surge::config::window_attrs &w_attrs,
                                   std::atomic<bool> *done) noexcept {
->>>>>>> Stashed changes
   using namespace surge;
 
   log_info("Initializing Vulkan rendering thread");
@@ -151,19 +140,11 @@ static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
   log_info("Finalizing Vulkan rendering thread");
 }
 
-<<<<<<< Updated upstream
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-    FrameMark;
-    TracyGpuCollect;
-#endif
-=======
 static inline void vk_main_loop() noexcept {
   using namespace surge;
 
   while (!window::should_close()) {
     window::poll_events();
->>>>>>> Stashed changes
   }
 }
 
