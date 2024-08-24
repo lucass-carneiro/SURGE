@@ -103,9 +103,11 @@ struct context2 {
 #endif
 
   VkPhysicalDevice phys_dev{};
-  VkDevice log_dev{};
+  VkDevice device{};
 
   VkSurfaceKHR surface{};
+  queue_handles q_handles{};
+  swapchain_data swpc_data{};
 };
 
 } // namespace surge::renderer::vk

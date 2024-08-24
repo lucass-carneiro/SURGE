@@ -67,6 +67,7 @@ enum error : int {
   opengl_feature_missing,
 
   // Vulkan errors
+  vk_api_version_query,
   vk_instance_init,
   vk_val_layer_query,
   vk_val_layer_missing,

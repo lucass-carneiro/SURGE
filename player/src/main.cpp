@@ -135,9 +135,8 @@ static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
     // work
   }
 
-  renderer::vk::terminate2(*ctx);
-
   log_info("Finalizing Vulkan rendering thread");
+  renderer::vk::terminate2(*ctx);
 }
 
 static inline void vk_main_loop() noexcept {
