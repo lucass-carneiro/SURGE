@@ -619,6 +619,7 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
 
   vector<const char *> required_extensions{};
   required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  required_extensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
 
   for (const auto &ext_name : required_extensions) {
     bool found{false};
@@ -661,9 +662,15 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) noexc
   features_12.bufferDeviceAddress = true;
   features_12.descriptorIndexing = true;
 
+  // Shader Objects EXT feature
+  VkPhysicalDeviceShaderObjectFeaturesEXT shader_objects_ext{};
+  shader_objects_ext.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+  shader_objects_ext.pNext = &features_12;
+  shader_objects_ext.shaderObject = true;
+
   VkPhysicalDeviceFeatures2 features{};
   features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-  features.pNext = &features_12;
+  features.pNext = &shader_objects_ext;
 
   const auto indices{find_queue_families(phys_dev)};
 
