@@ -9,7 +9,7 @@
 auto surge::renderer::vk::clear(context &ctx,
                                 const config::clear_color &w_ccl) noexcept -> std::optional<error> {
   // Aliases
-  auto &dev{ctx.log_dev};
+  auto &dev{ctx.device};
   auto &graphics_queue{ctx.q_handles.graphics};
   auto &swpc{ctx.swpc_data.swapchain};
   auto &render_fence{ctx.frm_data.render_fences[ctx.frm_data.frame_idx]};

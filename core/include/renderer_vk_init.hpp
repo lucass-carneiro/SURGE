@@ -49,12 +49,10 @@ auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR 
                       const config::renderer_attrs &r_attrs, u32 width,
                       u32 height) noexcept -> tl::expected<swapchain_data, error>;
 
-auto create_instance() noexcept -> tl::expected<VkInstance, error>;
-
 auto create_frame_data(VkDevice device,
                        u32 graphics_queue_idx) noexcept -> tl::expected<frame_data, error>;
 
-void destroy_frame_data(context &ctx) noexcept;
+void destroy_frame_data(VkDevice device, frame_data &frm_data) noexcept;
 
 } // namespace surge::renderer::vk
 

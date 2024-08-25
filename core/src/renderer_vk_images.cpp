@@ -173,5 +173,6 @@ auto surge::renderer::vk::create_draw_img(const config::window_resolution &w_res
     return tl::unexpected{error::vk_init_draw_img};
   }
 
+  log_info("Draw image created");
   return draw_image;
 }

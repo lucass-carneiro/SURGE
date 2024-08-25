@@ -85,5 +85,6 @@ auto surge::renderer::vk::create_memory_allocator(VkInstance instance, VkPhysica
     return tl::unexpected{error::vk_allocator_creation};
   }
 
+  log_info("Memory allocator created");
   return allocator;
 }

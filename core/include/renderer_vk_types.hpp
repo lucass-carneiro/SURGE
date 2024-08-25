@@ -82,7 +82,7 @@ struct context {
 #endif
 
   VkPhysicalDevice phys_dev{};
-  VkDevice log_dev{};
+  VkDevice device{};
 
   VkSurfaceKHR surface{};
   queue_handles q_handles{};
@@ -93,21 +93,6 @@ struct context {
   VmaAllocator allocator{};
 
   allocated_image draw_image{};
-};
-
-struct context2 {
-  VkInstance instance{};
-
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  VkDebugUtilsMessengerEXT dbg_msg{};
-#endif
-
-  VkPhysicalDevice phys_dev{};
-  VkDevice device{};
-
-  VkSurfaceKHR surface{};
-  queue_handles q_handles{};
-  swapchain_data swpc_data{};
 };
 
 } // namespace surge::renderer::vk

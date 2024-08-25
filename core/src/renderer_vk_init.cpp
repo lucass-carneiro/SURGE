@@ -12,270 +12,6 @@
 #include <algorithm>
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::create_instance() noexcept -> tl::expected<VkInstance, error> {
-  log_info("Creating instance");
-
-  const auto required_extensions{get_required_extensions()};
-  if (!required_extensions) {
-    return tl::unexpected{required_extensions.error()};
-  }
-
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto required_layers{get_required_validation_layers()};
-  if (!required_layers) {
-    return tl::unexpected{required_layers.error()};
-  }
-
-  auto dbg_msg_ci{dbg_msg_create_info()};
-#endif
-
-  VkApplicationInfo app_info{
-      .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-      .pNext = nullptr,
-      .pApplicationName = "SURGE Player",
-      .applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
-      .pEngineName = "SURGE",
-      .engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0),
-      .apiVersion = VK_API_VERSION_1_3,
-  };
-
-  VkInstanceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-                                   .pNext = &dbg_msg_ci,
-#else
-                                   .pNext = nullptr,
-#endif
-                                   .flags = 0,
-                                   .pApplicationInfo = &app_info,
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-                                   .enabledLayerCount = static_cast<u32>(required_layers->size()),
-                                   .ppEnabledLayerNames = required_layers->data(),
-#else
-                                   .enabledLayerCount = 0,
-                                   .ppEnabledLayerNames = nullptr,
-#endif
-                                   .enabledExtensionCount
-                                   = static_cast<u32>(required_extensions->size()),
-                                   .ppEnabledExtensionNames = required_extensions->data()};
-
-  VkInstance instance{};
-  const auto result{vkCreateInstance(&create_info, get_alloc_callbacks(), &instance)};
-  if (result != VK_SUCCESS) {
-    log_error("Unable initialize vulkan instance: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_instance_init};
-  }
-
-  return instance;
-}
-
-auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
-    -> tl::expected<frame_data, error> {
-  frame_data frm_data{};
-
-  /******************************
-   * Command structures *
-   ******************************/
-  auto cmd_pool_create_info{command_pool_create_info(
-      graphics_queue_idx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
-
-  for (usize i = 0; i < frm_data.frame_overlap; i++) {
-    auto result{vkCreateCommandPool(device, &cmd_pool_create_info, get_alloc_callbacks(),
-                                    &frm_data.command_pools[i])}; // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create command pool: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_cmd_pool_creation};
-    }
-
-    // Command buffer
-    // NOLINTNEXTLINE
-    auto cmd_buffer{command_buffer_alloc_info(frm_data.command_pools[i], 1)};
-    result = vkAllocateCommandBuffers(device, &cmd_buffer,
-                                      &frm_data.command_buffers[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create buffer: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_cmd_buffer_creation};
-    }
-  }
-
-  /******************************
-   * Synchronization structures *
-   ******************************/
-  auto fence_ci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
-  auto sem_ci{semaphore_create_info()};
-
-  for (usize i = 0; i < frm_data.frame_overlap; i++) {
-    auto result{vkCreateFence(device, &fence_ci, get_alloc_callbacks(),
-                              &frm_data.render_fences[i])}; // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create fence: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_fence_creation};
-    }
-
-    result = vkCreateSemaphore(device, &sem_ci, get_alloc_callbacks(),
-                               &frm_data.render_semaphores[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create renderer semaphore: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_semaphore_creation};
-    }
-
-    result = vkCreateSemaphore(device, &sem_ci, get_alloc_callbacks(),
-                               &frm_data.swpc_semaphores[i]); // NOLINT
-
-    if (result != VK_SUCCESS) {
-      log_error("Unable to create swapchain semaphore: {}", string_VkResult(result));
-      return tl::unexpected{error::vk_fence_creation};
-    }
-  }
-
-  return frm_data;
-}
-
-void surge::renderer::vk::destroy_frame_data(context &ctx) noexcept {
-  log_info("Destroying frame data");
-  for (usize i = 0; i < ctx.frm_data.frame_overlap; i++) {
-    // NOLINTNEXTLINE
-    vkDestroySemaphore(ctx.log_dev, ctx.frm_data.swpc_semaphores[i], get_alloc_callbacks());
-
-    // NOLINTNEXTLINE
-    vkDestroySemaphore(ctx.log_dev, ctx.frm_data.render_semaphores[i], get_alloc_callbacks());
-
-    // NOLINTNEXTLINE
-    vkDestroyFence(ctx.log_dev, ctx.frm_data.render_fences[i], get_alloc_callbacks());
-
-    // NOLINTNEXTLINE
-    vkFreeCommandBuffers(ctx.log_dev, ctx.frm_data.command_pools[i], 1,
-                         &ctx.frm_data.command_buffers[i]); // NOLINT
-
-    // NOLINTNEXTLINE
-    vkDestroyCommandPool(ctx.log_dev, ctx.frm_data.command_pools[i], get_alloc_callbacks());
-  }
-}
-
-auto surge::renderer::vk::init(
-    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-    const config::window_attrs &) noexcept -> tl::expected<context, error> {
-
-  log_info("Initializing Vulkan");
-
-  context ctx{};
-
-  const auto instance{create_instance()};
-  if (!instance) {
-    return tl::unexpected{instance.error()};
-  } else {
-    ctx.instance = *instance;
-  }
-
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto dbg_msg{create_dbg_msg(*instance)};
-  if (!dbg_msg) {
-    return tl::unexpected{dbg_msg.error()};
-  } else {
-    ctx.dbg_msg = *dbg_msg;
-  }
-#endif
-
-  const auto phys_dev{select_physical_device(*instance)};
-  if (!phys_dev) {
-    return tl::unexpected{phys_dev.error()};
-  } else {
-    ctx.phys_dev = *phys_dev;
-  }
-
-  const auto log_dev{create_logical_device(*phys_dev)};
-  if (!log_dev) {
-    return tl::unexpected{log_dev.error()};
-  } else {
-    ctx.log_dev = *log_dev;
-  }
-
-  const auto surface{create_window_surface(*instance)};
-  if (!surface) {
-    return tl::unexpected{surface.error()};
-  } else {
-    ctx.surface = *surface;
-  }
-
-  const auto q_handles{get_queue_handles(*phys_dev, *log_dev, *surface)};
-  if (!q_handles) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.q_handles = *q_handles;
-  }
-
-  const auto swpc_data{create_swapchain(*phys_dev, *log_dev, *surface, r_attrs,
-                                        static_cast<u32>(w_res.width),
-                                        static_cast<u32>(w_res.height))};
-  if (!swpc_data) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.swpc_data = *swpc_data;
-  }
-
-  const auto frm_data{create_frame_data(*log_dev, q_handles->graphics_idx)};
-  if (!frm_data) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.frm_data = *frm_data;
-  }
-
-  const auto allocator{create_memory_allocator(*instance, *phys_dev, *log_dev)};
-  if (!allocator) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.allocator = *allocator;
-  }
-
-  const auto draw_image{create_draw_img(w_res, *log_dev, *allocator)};
-  if (!draw_image) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.draw_image = *draw_image;
-  }
-
-  return ctx;
-}
-
-void surge::renderer::vk::terminate(context &ctx) noexcept {
-  log_info("Terminating vulkan");
-
-  log_info("Waiting for GPU idle");
-  vkWaitForFences(ctx.log_dev, ctx.frm_data.frame_overlap, ctx.frm_data.render_fences.data(), true,
-                  1000000000);
-
-  log_info("Destroying draw image");
-  vkDestroyImageView(ctx.log_dev, ctx.draw_image.image_view, get_alloc_callbacks());
-  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
-
-  log_info("Destroying memory allocator");
-  vmaDestroyAllocator(ctx.allocator);
-
-  destroy_frame_data(ctx);
-
-  log_info("Destroying image views");
-  for (const auto &img_view : ctx.swpc_data.imgs_views) {
-    vkDestroyImageView(ctx.log_dev, img_view, get_alloc_callbacks());
-  }
-
-  log_info("Destroying swapchain");
-  vkDestroySwapchainKHR(ctx.log_dev, ctx.swpc_data.swapchain, get_alloc_callbacks());
-
-  log_info("Destroying window surface");
-  vkDestroySurfaceKHR(ctx.instance, ctx.surface, get_alloc_callbacks());
-
-  log_info("Destroying logical device");
-  vkDestroyDevice(ctx.log_dev, get_alloc_callbacks());
-
-  destroy_dbg_msg(ctx.instance, ctx.dbg_msg);
-
-  log_info("Destroying instance");
-  vkDestroyInstance(ctx.instance, get_alloc_callbacks());
-}
-
 auto surge::renderer::vk::get_api_version() noexcept -> tl::expected<u32, error> {
   log_info("Querying Vulkan API version");
 
@@ -619,6 +355,7 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
 
   vector<const char *> required_extensions{};
   required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  required_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   required_extensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
 
   for (const auto &ext_name : required_extensions) {
@@ -905,12 +642,101 @@ auto surge::renderer::vk::create_swapchain(
   return swpc_data;
 }
 
+auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
+    -> tl::expected<frame_data, error> {
+  log_info("Creating frame data");
+
+  frame_data frm_data{};
+
+  // Command structures
+  auto cmd_pool_create_info{command_pool_create_info(
+      graphics_queue_idx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
+
+  for (usize i = 0; i < frm_data.frame_overlap; i++) {
+    auto result{vkCreateCommandPool(device, &cmd_pool_create_info, get_alloc_callbacks(),
+                                    &frm_data.command_pools[i])}; // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create command pool: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_cmd_pool_creation};
+    }
+
+    // Command buffer
+    // NOLINTNEXTLINE
+    auto cmd_buffer{command_buffer_alloc_info(frm_data.command_pools[i], 1)};
+    result = vkAllocateCommandBuffers(device, &cmd_buffer,
+                                      &frm_data.command_buffers[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create buffer: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_cmd_buffer_creation};
+    }
+  }
+
+  // Synchronization structures
+  auto fence_ci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
+  auto sem_ci{semaphore_create_info()};
+
+  for (usize i = 0; i < frm_data.frame_overlap; i++) {
+    auto result{vkCreateFence(device, &fence_ci, get_alloc_callbacks(),
+                              &frm_data.render_fences[i])}; // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create fence: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_fence_creation};
+    }
+
+    result = vkCreateSemaphore(device, &sem_ci, get_alloc_callbacks(),
+                               &frm_data.render_semaphores[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create renderer semaphore: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_semaphore_creation};
+    }
+
+    result = vkCreateSemaphore(device, &sem_ci, get_alloc_callbacks(),
+                               &frm_data.swpc_semaphores[i]); // NOLINT
+
+    if (result != VK_SUCCESS) {
+      log_error("Unable to create swapchain semaphore: {}", string_VkResult(result));
+      return tl::unexpected{error::vk_fence_creation};
+    }
+  }
+
+  log_info("Frame data created");
+  return frm_data;
+}
+
+void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_data) noexcept {
+  log_info("Destroying frame data");
+
+  for (usize i = 0; i < frm_data.frame_overlap; i++) {
+    // NOLINTNEXTLINE
+    vkDestroySemaphore(device, frm_data.swpc_semaphores[i], get_alloc_callbacks());
+
+    // NOLINTNEXTLINE
+    vkDestroySemaphore(device, frm_data.render_semaphores[i], get_alloc_callbacks());
+
+    // NOLINTNEXTLINE
+    vkDestroyFence(device, frm_data.render_fences[i], get_alloc_callbacks());
+
+    // NOLINTNEXTLINE
+    vkFreeCommandBuffers(device, frm_data.command_pools[i], 1,
+                         &frm_data.command_buffers[i]); // NOLINT
+
+    // NOLINTNEXTLINE
+    vkDestroyCommandPool(device, frm_data.command_pools[i], get_alloc_callbacks());
+  }
+
+  log_info("Frame data destroyied");
+}
+
 auto surge::renderer::vk::initialize(
     const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-    const config::window_attrs &) noexcept -> tl::expected<context2, error> {
+    const config::window_attrs &) noexcept -> tl::expected<context, error> {
   log_info("Initializing Vulkan");
 
-  context2 ctx{};
+  context ctx{};
 
   // API version
   const auto api_version{get_api_version()};
@@ -1001,14 +827,48 @@ auto surge::renderer::vk::initialize(
     ctx.swpc_data = *swpc_data;
   }
 
+  const auto frm_data{create_frame_data(*device, q_handles->graphics_idx)};
+  if (!frm_data) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.frm_data = *frm_data;
+  }
+
+  const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
+  if (!allocator) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.allocator = *allocator;
+  }
+
+  const auto draw_image{create_draw_img(w_res, *device, *allocator)};
+  if (!draw_image) {
+    return tl::unexpected{q_handles.error()};
+  } else {
+    ctx.draw_image = *draw_image;
+  }
+
   // Initialization done
   log_info("Vulkan initialization completed");
   return ctx;
 }
 
-void surge::renderer::vk::terminate2(context2 &ctx) noexcept {
+void surge::renderer::vk::terminate(context &ctx) noexcept {
   log_info("Terminating Vulkan");
   const auto alloc_callbacks{get_alloc_callbacks()};
+
+  log_info("Waiting for GPU idle");
+  vkWaitForFences(ctx.device, ctx.frm_data.frame_overlap, ctx.frm_data.render_fences.data(), true,
+                  1000000000);
+
+  log_info("Destroying draw image");
+  vkDestroyImageView(ctx.device, ctx.draw_image.image_view, get_alloc_callbacks());
+  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
+
+  log_info("Destroying memory allocator");
+  vmaDestroyAllocator(ctx.allocator);
+
+  destroy_frame_data(ctx.device, ctx.frm_data);
 
   log_info("Destroying image views");
   for (const auto &img_view : ctx.swpc_data.imgs_views) {

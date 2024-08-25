@@ -7,12 +7,7 @@
 namespace surge::renderer::vk {
 
 auto initialize(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-                const config::window_attrs &w_attrs) noexcept -> tl::expected<context2, error>;
-
-void terminate2(context2 &ctx) noexcept;
-
-auto init(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-          const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
+                const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
 
 void terminate(context &ctx) noexcept;
 

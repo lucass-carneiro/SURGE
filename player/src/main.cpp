@@ -120,6 +120,7 @@ static inline void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &
 static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
                                   const surge::config::window_resolution &w_res,
                                   const surge::config::window_attrs &w_attrs,
+                                  const surge::config::clear_color &w_ccl,
                                   std::atomic<bool> *done) noexcept {
   using namespace surge;
 
@@ -132,11 +133,11 @@ static void vk_render_thread_loop(const surge::config::renderer_attrs &r_attrs,
   }
 
   while (!*done) {
-    // work
+    surge::renderer::vk::clear(*ctx, w_ccl);
   }
 
   log_info("Finalizing Vulkan rendering thread");
-  renderer::vk::terminate2(*ctx);
+  renderer::vk::terminate(*ctx);
 }
 
 static inline void vk_main_loop() noexcept {
@@ -208,7 +209,7 @@ auto main(int, char **) noexcept -> int {
     }
   } else {
     vulkan_render_thread
-        = std::thread{vk_render_thread_loop, r_attrs, w_res, w_attrs, &render_done};
+        = std::thread{vk_render_thread_loop, r_attrs, w_res, w_attrs, w_ccl, &render_done};
   }
 
   /*********************
