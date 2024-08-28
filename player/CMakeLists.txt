@@ -17,11 +17,13 @@ project(
 set(
   SURGE_PLAYER_HEADER_LIST
   "${SurgeCore_SOURCE_DIR}/include/surge_core.hpp"
+  "${PROJECT_SOURCE_DIR}/include/player.hpp"
 )
 
 set(
   SURGE_PLAYER_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/main.cpp"
+  "${PROJECT_SOURCE_DIR}/src/player.cpp"
+  "${PROJECT_SOURCE_DIR}/src/gl_main_loop.cpp"
 )
 
 # -----------------------------------------
@@ -31,6 +33,11 @@ set(
 add_executable(SurgePlayer ${SURGE_PLAYER_HEADER_LIST} ${SURGE_PLAYER_SOURCE_LIST})
 target_compile_features(SurgePlayer PRIVATE cxx_std_20)
 set_target_properties(SurgePlayer PROPERTIES OUTPUT_NAME "surge")
+
+target_include_directories(
+  SurgePlayer PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
+)
 
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
