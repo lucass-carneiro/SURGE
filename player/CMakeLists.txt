@@ -24,6 +24,7 @@ set(
   SURGE_PLAYER_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/player.cpp"
   "${PROJECT_SOURCE_DIR}/src/gl_main_loop.cpp"
+  "${PROJECT_SOURCE_DIR}/src/vk_main_loop.cpp"
 )
 
 # -----------------------------------------

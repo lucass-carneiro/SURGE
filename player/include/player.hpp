@@ -13,6 +13,11 @@ void gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_load_result
                   opt_error &input_bind_result, const surge::config::clear_color &w_ccl,
                   const surge::config::renderer_attrs &r_attrs) noexcept;
 
+void vk_main_loop(surge::renderer::vk::context &ctx, opt_mod_handle &mod, opt_mod_api &mod_api,
+                  int &on_load_result, opt_error &input_bind_result,
+                  const surge::config::clear_color &w_ccl,
+                  const surge::config::renderer_attrs &r_attrs) noexcept;
+
 } // namespace player
 
 #endif // SURGE_PLAYER_HPP

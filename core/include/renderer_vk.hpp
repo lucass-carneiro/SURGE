@@ -4,6 +4,8 @@
 #include "config.hpp"
 #include "renderer_vk_types.hpp"
 
+#include <tl/expected.hpp>
+
 namespace surge::renderer::vk {
 
 auto initialize(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
@@ -11,7 +13,10 @@ auto initialize(const config::renderer_attrs &r_attrs, const config::window_reso
 
 void terminate(context &ctx) noexcept;
 
-auto clear(context &ctx, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
+auto request_img(context &ctx) noexcept -> tl::expected<std::tuple<VkImage, u32>, error>;
+auto present(context &ctx, u32 &swpc_img_idx) noexcept -> std::optional<error>;
+
+auto clear(context &ctx, VkImage swpc_image, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
 
 } // namespace surge::renderer::vk
 

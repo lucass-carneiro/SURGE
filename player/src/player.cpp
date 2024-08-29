@@ -61,6 +61,8 @@ auto main(int, char **) -> int {
   /***********************
    * Init render backend *
    ***********************/
+  renderer::vk::context vk_ctx{};
+
   if (r_attrs.backend == config::renderer_backend::opengl) {
     log_info("Using OpenGL render backend.");
 
@@ -70,7 +72,14 @@ auto main(int, char **) -> int {
     }
   } else {
     log_info("Using Vulkan render backend.");
-    // TODO
+
+    const auto ctx{renderer::vk::initialize(r_attrs, w_res, w_attrs)};
+    if (!ctx) {
+      window::terminate();
+      return EXIT_FAILURE;
+    } else {
+      vk_ctx = *ctx;
+    }
   }
 
   /*********************
@@ -121,7 +130,7 @@ auto main(int, char **) -> int {
   if (r_attrs.backend == config::renderer_backend::opengl) {
     gl_main_loop(mod, mod_api, on_load_result, input_bind_result, w_ccl, r_attrs);
   } else {
-    // TODO
+    vk_main_loop(vk_ctx, mod, mod_api, on_load_result, input_bind_result, w_ccl, r_attrs);
   }
 
   /********************
@@ -137,7 +146,7 @@ auto main(int, char **) -> int {
   if (r_attrs.backend == config::renderer_backend::opengl) {
     renderer::gl::wait_idle();
   } else {
-    // TODO
+    renderer::vk::terminate(vk_ctx);
   }
 
   window::terminate();

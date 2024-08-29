@@ -89,6 +89,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/renderer_vk_swpc.cpp"
   "${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
   
   "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
