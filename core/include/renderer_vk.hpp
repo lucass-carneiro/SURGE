@@ -16,7 +16,11 @@ void terminate(context &ctx) noexcept;
 auto request_img(context &ctx) noexcept -> tl::expected<std::tuple<VkImage, u32>, error>;
 auto present(context &ctx, u32 &swpc_img_idx) noexcept -> std::optional<error>;
 
-auto clear(context &ctx, VkImage swpc_image, const config::clear_color &w_ccl) noexcept -> std::optional<error>;
+auto cmd_begin(context &ctx) noexcept -> std::optional<error>;
+auto cmd_end(context &ctx) noexcept -> std::optional<error>;
+auto cmd_submit(context &ctx) noexcept -> std::optional<error>;
+
+void clear(context &ctx, VkImage swpc_image, const config::clear_color &w_ccl) noexcept;
 
 } // namespace surge::renderer::vk
 

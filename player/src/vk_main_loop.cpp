@@ -70,7 +70,16 @@ void player::vk_main_loop(surge::renderer::vk::context &ctx, opt_mod_handle &mod
     }
     auto [img, img_idx] = *img_result;
 
-    // Clear buffers
+    // Begin command recording
+    {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+      ZoneScopedN("Cmd Begin");
+#endif
+      renderer::vk::cmd_begin(ctx);
+    }
+
+    // Clear screen
     {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
@@ -98,6 +107,24 @@ void player::vk_main_loop(surge::renderer::vk::context &ctx, opt_mod_handle &mod
       ZoneScopedN("Draw");
 #endif
       mod_api->draw();
+    }
+
+    // End command recording
+    {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+      ZoneScopedN("Cmd End");
+#endif
+      renderer::vk::cmd_end(ctx);
+    }
+
+    // Submit command buffer
+    {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+      ZoneScopedN("Cmd Submit");
+#endif
+      renderer::vk::cmd_submit(ctx);
     }
 
     // Present
