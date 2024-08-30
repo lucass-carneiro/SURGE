@@ -1,16 +1,9 @@
-#include "logging.hpp"
 #include "renderer_vk.hpp"
-#include "renderer_vk_command.hpp"
 #include "renderer_vk_images.hpp"
-#include "renderer_vk_sync.hpp"
-
-#include <vulkan/vk_enum_string_helper.h>
 
 void surge::renderer::vk::clear(context &ctx, VkImage swpc_image,
                                 const config::clear_color &w_ccl) noexcept {
   auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
-
-  // call begin
 
   // transition our main draw image into general layout so we can write into it we will overwrite it
   // all so we dont care about what was the older layout
@@ -38,8 +31,4 @@ void surge::renderer::vk::clear(context &ctx, VkImage swpc_image,
   // Make the swapchain image presentable
   transition_image(cmd_buff, swpc_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-  // call end
-
-  // call submit
 }
