@@ -68,7 +68,6 @@ auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
 
 auto surge::renderer::vk::cmd_begin(context &ctx) noexcept -> std::optional<error> {
   auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
-  auto &render_semaphore{ctx.frm_data.render_semaphores[ctx.frm_data.frame_idx]};
 
   // Now that we are sure that the commands finished executing, we can safely reset the command
   // buffer to begin recording again.
