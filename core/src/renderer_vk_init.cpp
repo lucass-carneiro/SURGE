@@ -92,11 +92,9 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
   vector<const char *> required_layers{};
   required_layers.push_back("VK_LAYER_KHRONOS_validation");
 
-  for (const auto &layer : required_layers) {
-    log_info("Requiring validation layer {}", layer);
-  }
-
   for (const auto &layer_name : required_layers) {
+    log_info("Requiring validation layer {}", layer_name);
+
     bool layer_found{false};
 
     for (const auto &layer_properties : available_layers) {
@@ -107,6 +105,7 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
     }
 
     if (!layer_found) {
+      log_error("Unable to find validation layer {}", layer_name);
       return tl::unexpected{error::vk_val_layer_missing};
     }
   }
@@ -517,11 +516,10 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
   return handles;
 }
 
-auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
-                                           VkSurfaceKHR surface,
-                                           const config::renderer_attrs &r_attrs, u32 width,
-                                           u32 height) noexcept
-    -> tl::expected<swapchain_data, error> {
+auto surge::renderer::vk::create_swapchain(
+    VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
+    const config::renderer_attrs &r_attrs, u32 width,
+    u32 height) noexcept -> tl::expected<swapchain_data, error> {
 
   log_info("Creating swapchain");
 
@@ -732,10 +730,9 @@ void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_da
   log_info("Frame data destroyied");
 }
 
-auto surge::renderer::vk::initialize(const config::renderer_attrs &r_attrs,
-                                     const config::window_resolution &w_res,
-                                     const config::window_attrs &) noexcept
-    -> tl::expected<context, error> {
+auto surge::renderer::vk::initialize(
+    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+    const config::window_attrs &) noexcept -> tl::expected<context, error> {
   log_info("Initializing Vulkan");
 
   context ctx{};
