@@ -6,20 +6,35 @@ static constexpr surge::usize max_sprites{10};
 
 using tdb_t = surge::gl_atom::texture::database;
 using sdb_t = surge::gl_atom::sprite2::database;
+using pv_ubo_t = surge::gl_atom::pv_ubo::buffer;
 
 namespace globals {
 
 static tdb_t tdb{};
 static sdb_t sdb{};
+static pv_ubo_t pv_ubo{};
 
 } // namespace globals
 
 extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> int {
   using namespace surge;
+
   log_info("Loading Sprite Demo module");
 
+  // PV UBO
+  log_info("Creating projection and view matrices");
+  const auto dims{window::get_dims()};
+  const auto projection{glm::ortho(0.0f, dims[0], dims[1], 0.0f, 0.0f, 1.0f)};
+  const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(0.0f, 1.0f, 0.0f))};
+
+  globals::pv_ubo = gl_atom::pv_ubo::buffer::create();
+  globals::pv_ubo.update_all(&projection, &view);
+
+  // Texture database
   globals::tdb = gl_atom::texture::database::create(max_sprites);
 
+  // Sprite database
   gl_atom::sprite2::database_create_info sdbci{.max_sprites = max_sprites, .buffer_redundancy = 3};
   const auto sdb{gl_atom::sprite2::database_create(sdbci)};
   if (!sdb) {
@@ -27,6 +42,8 @@ extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> int {
     return static_cast<int>(sdb.error());
   } else {
     globals::sdb = *sdb;
+    gl_atom::sprite2::database_add(
+        globals::sdb, 0, gl_atom::sprite::place(glm::vec2{0.0f}, glm::vec2{100.0f}, 1.0), 1.0f);
   }
 
   log_info("Loading resources");
@@ -51,10 +68,19 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload() noexcept -> int {
   gl_atom::sprite2::database_destroy(globals::sdb);
   globals::tdb.destroy();
 
+  globals::pv_ubo.destroy();
+
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int { return 0; }
+extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
+  using namespace surge;
+
+  globals::pv_ubo.bind_to_location(2);
+  gl_atom::sprite2::draw(globals::sdb);
+
+  return 0;
+}
 
 extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int { return 0; }
 

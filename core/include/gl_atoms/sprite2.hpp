@@ -15,21 +15,16 @@ struct database_create_info {
   usize buffer_redundancy{3}; // The number of buffers to cycle trough
 };
 
-struct sprite_info {
-  GLuint64 texture_handle;
-  glm::mat4 model_matrix;
-  float alpha;
-};
-
 struct database_t;
 using database = database_t *;
 
 auto database_create(database_create_info ci) noexcept -> tl::expected<database, error>;
 void database_destroy(database sdb) noexcept;
 
-void database_add(sprite_info ci) noexcept;
+void database_add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
+                  float alpha) noexcept;
 
-void draw() noexcept;
+void draw(database sdb) noexcept;
 
 } // namespace surge::gl_atom::sprite2
 
