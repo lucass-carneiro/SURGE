@@ -125,7 +125,10 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
   return {};
 }
 
-void surge::renderer::gl::wait_idle() noexcept { glFinish(); }
+void surge::renderer::gl::wait_idle() noexcept {
+  glFlush();
+  glFinish();
+}
 
 void surge::renderer::gl::clear(const config::clear_color &w_ccl) noexcept {
   glClearColor(w_ccl.r, w_ccl.g, w_ccl.b, w_ccl.a);

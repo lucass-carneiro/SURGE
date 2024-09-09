@@ -65,6 +65,9 @@ enum error : int {
   // OpenGL errors
   glad_loading,
   opengl_feature_missing,
+  sdb_instance_alloc,
+  sdb_fenc_alloc,
+  sdb_bad_capacity,
 
   // Vulkan errors
   vk_api_version_query,
