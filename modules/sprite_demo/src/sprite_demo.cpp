@@ -1,0 +1,65 @@
+#include "sprite_demo.hpp"
+
+#include "surge_core.hpp"
+
+static constexpr surge::usize max_sprites{10};
+
+using tdb_t = surge::gl_atom::texture::database;
+using sdb_t = surge::gl_atom::sprite2::database;
+
+namespace globals {
+
+static tdb_t tdb{};
+static sdb_t sdb{};
+
+} // namespace globals
+
+extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> int {
+  using namespace surge;
+  log_info("Loading Sprite Demo module");
+
+  globals::tdb = gl_atom::texture::database::create(max_sprites);
+
+  gl_atom::sprite2::database_create_info sdbci{.max_sprites = max_sprites, .buffer_redundancy = 3};
+  const auto sdb{gl_atom::sprite2::database_create(sdbci)};
+  if (!sdb) {
+    log_error("Unable to initialize sprite database");
+    return static_cast<int>(sdb.error());
+  } else {
+    globals::sdb = *sdb;
+  }
+
+  log_info("Loading resources");
+  gl_atom::texture::create_info ci{};
+  ci.filtering = gl_atom::texture::texture_filtering::nearest;
+
+  globals::tdb.add(ci, "resources/bird_red.png", "resources/bird_yellow.png",
+                   "resources/bird_blue.png");
+
+  log_info("Sprite Demo module loaded");
+  return 0;
+}
+
+extern "C" SURGE_MODULE_EXPORT auto on_unload() noexcept -> int {
+  using namespace surge;
+
+  log_info("Unloading Sprite Demo module");
+
+  log_info("Waiting OpenGL idle");
+  renderer::gl::wait_idle();
+
+  gl_atom::sprite2::database_destroy(globals::sdb);
+  globals::tdb.destroy();
+
+  return 0;
+}
+
+extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int { return 0; }
+
+extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int { return 0; }
+
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(int, int, int, int) noexcept {}
+
+extern "C" SURGE_MODULE_EXPORT void mouse_button_event(int, int, int) noexcept {}
+
+extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(double, double) noexcept {}

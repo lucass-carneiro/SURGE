@@ -18,5 +18,6 @@ staging-*/
 modules/*
 !modules/CMakeLists.txt
 !modules/default
+!modules/sprite_demo
 
 core/shaders/vk/*spv
