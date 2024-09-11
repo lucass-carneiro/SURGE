@@ -8,8 +8,6 @@
 #include <gsl/gsl-lite.hpp>
 
 struct sprite_info {
-  GLuint64 texture_handle{0};
-  float alpha;
   float model[16]{
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
@@ -99,10 +97,10 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
   glCreateBuffers(1, &(sdb->EBO));
 
   const std::array<float, 20> vertex_attributes{
-      0.0f,   100.0f, 0.0f, 0.0f,   0.0f,   // bottom left
-      100.0f, 100.0f, 0.0f, 100.0f, 0.0f,   // bottom right
-      100.0f, 0.0f,   0.0f, 100.0f, 100.0f, // top right
-      0.0f,   0.0f,   0.0f, 0.0f,   100.0f, // top left
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
   };
 
   const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
@@ -153,13 +151,11 @@ void surge::gl_atom::sprite2::database_destroy(database sdb) noexcept {
   allocators::mimalloc::free(static_cast<void *>(sdb));
 }
 
-void surge::gl_atom::sprite2::database_add(database sdb, GLuint64 texture_handle,
-                                           const glm::mat4 &model_matrix, float alpha) noexcept {
+void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::mat4 &model_matrix,
+                                           float) noexcept {
   using std::memcpy;
 
   sprite_info si{};
-  si.texture_handle = texture_handle;
-  si.alpha = alpha;
   memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
 
   sdb->buffer_data[sdb->write_idx] = si;
