@@ -42,8 +42,6 @@ extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> int {
     return static_cast<int>(sdb.error());
   } else {
     globals::sdb = *sdb;
-    gl_atom::sprite2::database_add(
-        globals::sdb, 0, gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
   }
 
   log_info("Loading resources");
@@ -77,12 +75,20 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   using namespace surge;
 
   globals::pv_ubo.bind_to_location(2);
-  gl_atom::sprite2::draw(globals::sdb);
+  gl_atom::sprite2::database_draw(globals::sdb);
 
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int { return 0; }
+extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int {
+  using namespace surge;
+
+  gl_atom::sprite2::database_begin_add(globals::sdb);
+  gl_atom::sprite2::database_add(
+      globals::sdb, 0, gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
+
+  return 0;
+}
 
 extern "C" SURGE_MODULE_EXPORT void keyboard_event(int, int, int, int) noexcept {}
 

@@ -33,6 +33,50 @@ struct surge::gl_atom::sprite2::database_t {
   GLuint VAO{0};
 };
 
+void wait_buffer(surge::gl_atom::sprite2::database sdb, surge::usize index) {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::wait_buffer");
+  TracyGpuZone("GPU surge::gl_atom::sprite::wait_buffer");
+#endif
+
+  auto &fence{sdb->fences[index]};
+
+  if (fence != nullptr) {
+    while (true) {
+      const auto wait_res{glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1)};
+      if (wait_res == GL_ALREADY_SIGNALED || wait_res == GL_CONDITION_SATISFIED) {
+        glDeleteSync(fence);
+        fence = nullptr;
+        return;
+      }
+    }
+  }
+}
+
+void lock_and_advance_buffer(surge::gl_atom::sprite2::database sdb, surge::usize index) {
+  auto &fence{sdb->fences[index]};
+
+  if (fence == nullptr) {
+    fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    sdb->write_buffer++;
+    sdb->write_buffer %= sdb->buffer_redundancy;
+    sdb->write_idx = 0;
+  }
+}
+
+void surge::gl_atom::sprite2::database_wait_idle(database sdb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_wait_idle");
+  TracyGpuZone("GPU surge::gl_atom::sprite::database_wait_idle");
+#endif
+
+  for (usize i = 0; i < sdb->buffer_redundancy; i++) {
+    wait_buffer(sdb, i);
+  }
+}
+
 auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
     -> tl::expected<database, error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
@@ -130,7 +174,15 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
 }
 
 void surge::gl_atom::sprite2::database_destroy(database sdb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_destroy");
+  TracyGpuZone("GPU surge::gl_atom::sprite::database_destroy");
+#endif
+
   log_info("Destroying sprite database, handle {}", static_cast<void *>(sdb));
+
+  database_wait_idle(sdb);
 
   // Delete vertex buffers
   glDeleteBuffers(1, &(sdb->EBO));
@@ -151,22 +203,55 @@ void surge::gl_atom::sprite2::database_destroy(database sdb) noexcept {
   allocators::mimalloc::free(static_cast<void *>(sdb));
 }
 
-void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::mat4 &model_matrix,
-                                           float) noexcept {
-  using std::memcpy;
+void surge::gl_atom::sprite2::database_begin_add(database sdb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_begin_add");
+  TracyGpuZone("GPU surge::gl_atom::sprite::database_begin_add");
+#endif
 
-  sprite_info si{};
-  memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
-
-  sdb->buffer_data[sdb->write_idx] = si;
+  wait_buffer(sdb, sdb->write_buffer);
 }
 
-void surge::gl_atom::sprite2::draw(database sdb) noexcept {
+void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::mat4 &model_matrix,
+                                           float) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_add");
+#endif
+
+  using std::memcpy;
+
+  if (sdb->write_idx < sdb->max_sprites) {
+    sprite_info si{};
+    memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
+
+    const auto idx{sdb->write_buffer * sdb->max_sprites + sdb->write_idx};
+    sdb->buffer_data[idx] = si;
+    sdb->write_idx++;
+
+  } else {
+    log_warn("Sprite database {} capacity exceeded. Ignoring push request",
+             static_cast<void *>(sdb));
+  }
+}
+
+void surge::gl_atom::sprite2::database_draw(database sdb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_draw");
+  TracyGpuZone("GPU surge::gl_atom::sprite::database_draw");
+#endif
+
   glUseProgram(sdb->sprite_shader);
 
-  const auto buffer_size{sizeof(sprite_info)};
-  glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, sdb->buffer_id, 0, buffer_size);
+  const auto buffer_size{static_cast<GLsizeiptr>(sizeof(sprite_info) * sdb->write_idx)};
+  const auto buffer_offset{
+      static_cast<GLintptr>(sizeof(sprite_info) * sdb->write_buffer * sdb->max_sprites)};
+  glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, sdb->buffer_id, buffer_offset, buffer_size);
 
   glBindVertexArray(sdb->VAO);
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, gsl::narrow_cast<GLsizei>(1));
+
+  lock_and_advance_buffer(sdb, sdb->write_buffer);
 }

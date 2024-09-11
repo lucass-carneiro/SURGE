@@ -21,10 +21,13 @@ using database = database_t *;
 auto database_create(database_create_info ci) noexcept -> tl::expected<database, error>;
 void database_destroy(database sdb) noexcept;
 
+void database_wait_idle(database sdb) noexcept;
+
+void database_begin_add(database sdb) noexcept;
 void database_add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
                   float alpha) noexcept;
 
-void draw(database sdb) noexcept;
+void database_draw(database sdb) noexcept;
 
 } // namespace surge::gl_atom::sprite2
 
