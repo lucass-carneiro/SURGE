@@ -11,7 +11,7 @@
 #include "gl_atoms/pv_ubo.hpp"
 #include "gl_atoms/shaders.hpp"
 #include "gl_atoms/sprite.hpp"
-#include "gl_atoms/sprite2.hpp"
+#include "gl_atoms/sprite_database.hpp"
 #include "gl_atoms/text.hpp"
 #include "gl_atoms/texture.hpp"
 #include "imgui_wrapper.hpp"

@@ -1,4 +1,4 @@
-#include "gl_atoms/sprite2.hpp"
+#include "gl_atoms/sprite_database.hpp"
 
 #include "allocators.hpp"
 #include "gl_atoms/shaders.hpp"
@@ -135,8 +135,8 @@ auto surge::gl_atom::sprite_database::create(database_create_info ci) noexcept
       glMapNamedBufferRange(sdb->buffer_id, 0, total_buffer_size, map_flags));
 
   // Compile shaders
-  const auto sprite_shader{shader::create_shader_program("shaders/gl/sprite2.vert",
-                                                         "shaders/gl/sprite2.frag")};
+  const auto sprite_shader{
+      shader::create_shader_program("shaders/gl/sprite2.vert", "shaders/gl/sprite2.frag")};
   if (!sprite_shader) {
     log_error("Unable to create sprite shader");
     return tl::unexpected{sprite_shader.error()};
