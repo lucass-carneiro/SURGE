@@ -113,7 +113,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(double delta_t) noexcept -> int {
 
   static const glm::vec2 original_bird_sheet_size{141.0f, 26.0f};
 
-  const auto flap_frame_view{update_bird_flap_animation_frame(delta_t)};
+  const auto flap_frame_view{update_bird_flap_animation_frame(static_cast<float>(delta_t))};
 
   begin_add(globals::sdb);
 
