@@ -4,7 +4,6 @@
 
 struct sprite_info {
   float model[16];
-  float alpha;
 };
 
 layout(location = 0) in vec3 vtx_pos;
@@ -39,5 +38,5 @@ mat4 get_model(uint idx) {
 }
 
 void main() {
-  gl_Position = projection * view * get_model(0) * vec4(vtx_pos, 1.0);
+  gl_Position = projection * view * get_model(gl_InstanceID) * vec4(vtx_pos, 1.0);
 }

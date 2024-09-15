@@ -86,6 +86,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int {
   gl_atom::sprite2::database_begin_add(globals::sdb);
   gl_atom::sprite2::database_add(
       globals::sdb, 0, gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
+  gl_atom::sprite2::database_add(
+      globals::sdb, 0, gl_atom::sprite::place(glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
 
   return 0;
 }

@@ -12,6 +12,7 @@ struct sprite_info {
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
   };
+  //float alpha{0.0f};
 };
 
 struct surge::gl_atom::sprite2::database_t {
@@ -170,6 +171,10 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
   log_info("Created new sprite database, handle {} using {} B of video memory",
            static_cast<void *>(sdb), total_buffer_size);
 
+  GLint alignment{0};
+  glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
+  log_info("Platform requires {} alignment", alignment);
+
   return sdb;
 }
 
@@ -214,7 +219,7 @@ void surge::gl_atom::sprite2::database_begin_add(database sdb) noexcept {
 }
 
 void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::mat4 &model_matrix,
-                                           float) noexcept {
+                                           float alpha) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database_add");
@@ -251,7 +256,8 @@ void surge::gl_atom::sprite2::database_draw(database sdb) noexcept {
   glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, sdb->buffer_id, buffer_offset, buffer_size);
 
   glBindVertexArray(sdb->VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, gsl::narrow_cast<GLsizei>(1));
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
+                          gsl::narrow_cast<GLsizei>(sdb->write_idx));
 
   lock_and_advance_buffer(sdb, sdb->write_buffer);
 }
