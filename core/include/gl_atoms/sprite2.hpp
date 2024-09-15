@@ -24,8 +24,12 @@ void database_destroy(database sdb) noexcept;
 void database_wait_idle(database sdb) noexcept;
 
 void database_begin_add(database sdb) noexcept;
+
 void database_add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
                   float alpha) noexcept;
+
+void database_add_view(database sdb, GLuint64 handle, glm::mat4 model, glm::vec4 image_view,
+                       glm::vec2 img_dims, float alpha) noexcept;
 
 void database_draw(database sdb) noexcept;
 

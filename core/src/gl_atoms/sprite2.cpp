@@ -7,12 +7,20 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <gsl/gsl-lite.hpp>
 
+/* This struct needs to be aligned such that
+ * it is a multiple of `alignment`, where
+ *
+ * GLint alignment{0};
+ * glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
+ */
 struct sprite_info {
+  GLuint64 texture_handle{0};
+  float alpha{0.0f};
   float model[16]{
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
   };
-  //float alpha{0.0f};
+  float view[4]{1.0f, 1.0f, 0.0f, 0.0f};
 };
 
 struct surge::gl_atom::sprite2::database_t {
@@ -171,10 +179,6 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
   log_info("Created new sprite database, handle {} using {} B of video memory",
            static_cast<void *>(sdb), total_buffer_size);
 
-  GLint alignment{0};
-  glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
-  log_info("Platform requires {} alignment", alignment);
-
   return sdb;
 }
 
@@ -218,8 +222,8 @@ void surge::gl_atom::sprite2::database_begin_add(database sdb) noexcept {
   wait_buffer(sdb, sdb->write_buffer);
 }
 
-void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::mat4 &model_matrix,
-                                           float alpha) noexcept {
+void surge::gl_atom::sprite2::database_add(database sdb, GLuint64 texture_handle,
+                                           const glm::mat4 &model_matrix, float alpha) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::database_add");
@@ -229,12 +233,51 @@ void surge::gl_atom::sprite2::database_add(database sdb, GLuint64, const glm::ma
 
   if (sdb->write_idx < sdb->max_sprites) {
     sprite_info si{};
+    si.texture_handle = texture_handle;
+    si.alpha = alpha;
     memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
 
     const auto idx{sdb->write_buffer * sdb->max_sprites + sdb->write_idx};
     sdb->buffer_data[idx] = si;
     sdb->write_idx++;
 
+  } else {
+    log_warn("Sprite database {} capacity exceeded. Ignoring push request",
+             static_cast<void *>(sdb));
+  }
+}
+
+void surge::gl_atom::sprite2::database_add_view(database sdb, GLuint64 texture_handle,
+                                                glm::mat4 model_matrix, glm::vec4 image_view,
+                                                glm::vec2 img_dims, float alpha) noexcept {
+  using std::memcpy;
+
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::database_add_view");
+#endif
+
+  if (sdb->write_idx < sdb->max_sprites) {
+    const auto u0{image_view[0]};
+    const auto v0{image_view[1]};
+
+    const auto w{image_view[2]};
+    const auto h{image_view[3]};
+
+    const auto W{img_dims[0]};
+    const auto H{img_dims[1]};
+
+    const glm::vec4 view_data{w / W, h / H, u0 / W, 1.0f - (v0 + h) / H};
+
+    sprite_info si{};
+    si.texture_handle = texture_handle;
+    si.alpha = alpha;
+    memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
+    memcpy(si.view, glm::value_ptr(view_data), 4 * sizeof(float));
+
+    const auto idx{sdb->write_buffer * sdb->max_sprites + sdb->write_idx};
+    sdb->buffer_data[idx] = si;
+    sdb->write_idx++;
   } else {
     log_warn("Sprite database {} capacity exceeded. Ignoring push request",
              static_cast<void *>(sdb));

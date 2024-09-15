@@ -80,14 +80,53 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(double) noexcept -> int {
+static inline auto update_bird_flap_animation_frame(float delta_t) noexcept -> glm::vec4 {
+  static const std::array<glm::vec4, 4> frame_views{
+      glm::vec4{1.0f, 1.0f, 34.0f, 24.0f}, glm::vec4{36.0f, 1.0f, 34.0f, 24.0f},
+      glm::vec4{71.0f, 1.0f, 34.0f, 24.0f}, glm::vec4{106.0f, 1.0f, 34.0f, 24.0f}};
+
+  static const float frame_rate{10.0f};
+  static const float wait_time{1.0f / frame_rate};
+
+  static surge::u8 frame_idx{0};
+  static float elapsed{0.0f};
+
+  if (elapsed > wait_time) {
+    frame_idx++;
+    frame_idx %= 4;
+    elapsed = 0;
+  } else {
+    elapsed += delta_t;
+  }
+
+  return frame_views[frame_idx]; // NOLINT
+}
+
+extern "C" SURGE_MODULE_EXPORT auto update(double delta_t) noexcept -> int {
   using namespace surge;
 
+  static const auto red_texture{globals::tdb.find("resources/bird_red.png").value_or(0)};
+  static const auto yellow_texture{globals::tdb.find("resources/bird_yellow.png").value_or(0)};
+  static const auto blue_texture{globals::tdb.find("resources/bird_blue.png").value_or(0)};
+
+  static const glm::vec2 original_bird_sheet_size{141.0f, 26.0f};
+
+  static const auto red_pos{gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f)};
+  static const auto yellow_pos{gl_atom::sprite::place(glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f)};
+  static const auto blue_pos{gl_atom::sprite::place(glm::vec2{220.0f}, glm::vec2{100.0f}, 0.1f)};
+
+  const auto flap_frame_view{update_bird_flap_animation_frame(delta_t)};
+
   gl_atom::sprite2::database_begin_add(globals::sdb);
-  gl_atom::sprite2::database_add(
-      globals::sdb, 0, gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
-  gl_atom::sprite2::database_add(
-      globals::sdb, 0, gl_atom::sprite::place(glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f), 1.0f);
+
+  gl_atom::sprite2::database_add_view(globals::sdb, red_texture, red_pos, flap_frame_view,
+                                      original_bird_sheet_size, 1.0f);
+
+  gl_atom::sprite2::database_add_view(globals::sdb, yellow_texture, yellow_pos, flap_frame_view,
+                                      original_bird_sheet_size, 1.0f);
+
+  gl_atom::sprite2::database_add_view(globals::sdb, blue_texture, blue_pos, flap_frame_view,
+                                      original_bird_sheet_size, 1.0f);
 
   return 0;
 }

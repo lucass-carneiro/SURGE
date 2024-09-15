@@ -2,9 +2,16 @@
 
 #extension GL_ARB_bindless_texture : require
 
+// Sprite Info
+
 struct sprite_info {
+  sampler2D texture;
+  float alpha;
   float model[16];
+  float view[4];
 };
+
+// Inputs
 
 layout(location = 0) in vec3 vtx_pos;
 layout(location = 1) in vec2 uv_coords;
@@ -15,6 +22,16 @@ layout(std140, binding = 2) uniform pv_ubo {
 };
 
 layout(std430, binding = 3) readonly buffer ssbo1 { sprite_info sprite_infos[]; };
+
+// Output
+
+out VS_OUT {
+  vec2 uv_coords;
+  flat int instance_ID;
+}
+vs_out;
+
+// Utility functions
 
 mat4 get_model(uint idx) {
   return mat4(
@@ -37,6 +54,10 @@ mat4 get_model(uint idx) {
   );
 }
 
+// Main
+
 void main() {
+  vs_out.uv_coords = uv_coords;
+  vs_out.instance_ID = gl_InstanceID;
   gl_Position = projection * view * get_model(gl_InstanceID) * vec4(vtx_pos, 1.0);
 }
