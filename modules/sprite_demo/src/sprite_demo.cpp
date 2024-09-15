@@ -5,7 +5,7 @@
 static constexpr surge::usize max_sprites{10};
 
 using tdb_t = surge::gl_atom::texture::database;
-using sdb_t = surge::gl_atom::sprite2::database;
+using sdb_t = surge::gl_atom::sprite_database::database;
 using pv_ubo_t = surge::gl_atom::pv_ubo::buffer;
 
 namespace globals {
@@ -35,8 +35,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_load() noexcept -> int {
   globals::tdb = gl_atom::texture::database::create(max_sprites);
 
   // Sprite database
-  gl_atom::sprite2::database_create_info sdbci{.max_sprites = max_sprites, .buffer_redundancy = 3};
-  const auto sdb{gl_atom::sprite2::database_create(sdbci)};
+  gl_atom::sprite_database::database_create_info sdbci{.max_sprites = max_sprites,
+                                                       .buffer_redundancy = 3};
+  const auto sdb{gl_atom::sprite_database::create(sdbci)};
   if (!sdb) {
     log_error("Unable to initialize sprite database");
     return static_cast<int>(sdb.error());
@@ -63,7 +64,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload() noexcept -> int {
   log_info("Waiting OpenGL idle");
   renderer::gl::wait_idle();
 
-  gl_atom::sprite2::database_destroy(globals::sdb);
+  gl_atom::sprite_database::destroy(globals::sdb);
   globals::tdb.destroy();
 
   globals::pv_ubo.destroy();
@@ -75,7 +76,7 @@ extern "C" SURGE_MODULE_EXPORT auto draw() noexcept -> int {
   using namespace surge;
 
   globals::pv_ubo.bind_to_location(2);
-  gl_atom::sprite2::database_draw(globals::sdb);
+  gl_atom::sprite_database::draw(globals::sdb);
 
   return 0;
 }
@@ -104,29 +105,24 @@ static inline auto update_bird_flap_animation_frame(float delta_t) noexcept -> g
 
 extern "C" SURGE_MODULE_EXPORT auto update(double delta_t) noexcept -> int {
   using namespace surge;
+  using namespace gl_atom::sprite_database;
 
-  static const auto red_texture{globals::tdb.find("resources/bird_red.png").value_or(0)};
-  static const auto yellow_texture{globals::tdb.find("resources/bird_yellow.png").value_or(0)};
-  static const auto blue_texture{globals::tdb.find("resources/bird_blue.png").value_or(0)};
+  static const auto r_texture{globals::tdb.find("resources/bird_red.png").value_or(0)};
+  static const auto y_texture{globals::tdb.find("resources/bird_yellow.png").value_or(0)};
+  static const auto b_texture{globals::tdb.find("resources/bird_blue.png").value_or(0)};
 
   static const glm::vec2 original_bird_sheet_size{141.0f, 26.0f};
 
-  static const auto red_pos{gl_atom::sprite::place(glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f)};
-  static const auto yellow_pos{gl_atom::sprite::place(glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f)};
-  static const auto blue_pos{gl_atom::sprite::place(glm::vec2{220.0f}, glm::vec2{100.0f}, 0.1f)};
-
   const auto flap_frame_view{update_bird_flap_animation_frame(delta_t)};
 
-  gl_atom::sprite2::database_begin_add(globals::sdb);
+  begin_add(globals::sdb);
 
-  gl_atom::sprite2::database_add_view(globals::sdb, red_texture, red_pos, flap_frame_view,
-                                      original_bird_sheet_size, 1.0f);
-
-  gl_atom::sprite2::database_add_view(globals::sdb, yellow_texture, yellow_pos, flap_frame_view,
-                                      original_bird_sheet_size, 1.0f);
-
-  gl_atom::sprite2::database_add_view(globals::sdb, blue_texture, blue_pos, flap_frame_view,
-                                      original_bird_sheet_size, 1.0f);
+  add_view(globals::sdb, r_texture, glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
+           original_bird_sheet_size, 1.0f);
+  add_view(globals::sdb, y_texture, glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
+           original_bird_sheet_size, 1.0f);
+  add_view(globals::sdb, b_texture, glm::vec2{220.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
+           original_bird_sheet_size, 1.0f);
 
   return 0;
 }

@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <tl/expected.hpp>
 
-namespace surge::gl_atom::sprite2 {
+namespace surge::gl_atom::sprite_database {
 
 struct database_create_info {
   usize max_sprites{0};       // The size of a single element in the buffer
@@ -18,21 +18,29 @@ struct database_create_info {
 struct database_t;
 using database = database_t *;
 
-auto database_create(database_create_info ci) noexcept -> tl::expected<database, error>;
-void database_destroy(database sdb) noexcept;
+auto create(database_create_info ci) noexcept -> tl::expected<database, error>;
+void destroy(database sdb) noexcept;
 
-void database_wait_idle(database sdb) noexcept;
+void wait_idle(database sdb) noexcept;
 
-void database_begin_add(database sdb) noexcept;
+void begin_add(database sdb) noexcept;
 
-void database_add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
-                  float alpha) noexcept;
+void add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
+         float alpha) noexcept;
+void add(database sdb, GLuint64 texture_handle, glm::vec2 &&pos, glm::vec2 &&scale, float z,
+         float alpha) noexcept;
+void add(database sdb, GLuint64 texture_handle, const glm::vec2 &pos, const glm::vec2 &scale,
+         float z, float alpha) noexcept;
 
-void database_add_view(database sdb, GLuint64 handle, glm::mat4 model, glm::vec4 image_view,
-                       glm::vec2 img_dims, float alpha) noexcept;
+void add_view(database sdb, GLuint64 handle, glm::mat4 model, glm::vec4 image_view,
+              glm::vec2 img_dims, float alpha) noexcept;
+void add_view(database sdb, GLuint64 handle, glm::vec2 &&pos, glm::vec2 &&scale, float z,
+              glm::vec4 image_view, glm::vec2 img_dims, float alpha) noexcept;
+void add_view(database sdb, GLuint64 handle, const glm::vec2 &pos, const glm::vec2 &scale, float z,
+              glm::vec4 image_view, glm::vec2 img_dims, float alpha) noexcept;
 
-void database_draw(database sdb) noexcept;
+void draw(database sdb) noexcept;
 
-} // namespace surge::gl_atom::sprite2
+} // namespace surge::gl_atom::sprite_database
 
 #endif // SURGE_CORE_GL_ATOM_PMB_HPP

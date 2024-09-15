@@ -23,7 +23,7 @@ struct sprite_info {
   float view[4]{1.0f, 1.0f, 0.0f, 0.0f};
 };
 
-struct surge::gl_atom::sprite2::database_t {
+struct surge::gl_atom::sprite_database::database_t {
   usize max_sprites{0};
   usize buffer_redundancy{3};
 
@@ -42,7 +42,7 @@ struct surge::gl_atom::sprite2::database_t {
   GLuint VAO{0};
 };
 
-void wait_buffer(surge::gl_atom::sprite2::database sdb, surge::usize index) {
+void wait_buffer(surge::gl_atom::sprite_database::database sdb, surge::usize index) {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::wait_buffer");
@@ -63,7 +63,7 @@ void wait_buffer(surge::gl_atom::sprite2::database sdb, surge::usize index) {
   }
 }
 
-void lock_and_advance_buffer(surge::gl_atom::sprite2::database sdb, surge::usize index) {
+void lock_and_advance_buffer(surge::gl_atom::sprite_database::database sdb, surge::usize index) {
   auto &fence{sdb->fences[index]};
 
   if (fence == nullptr) {
@@ -74,11 +74,11 @@ void lock_and_advance_buffer(surge::gl_atom::sprite2::database sdb, surge::usize
   }
 }
 
-void surge::gl_atom::sprite2::database_wait_idle(database sdb) noexcept {
+void surge::gl_atom::sprite_database::wait_idle(database sdb) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_wait_idle");
-  TracyGpuZone("GPU surge::gl_atom::sprite::database_wait_idle");
+  ZoneScopedN("surge::gl_atom::sprite::wait_idle");
+  TracyGpuZone("GPU surge::gl_atom::sprite::wait_idle");
 #endif
 
   for (usize i = 0; i < sdb->buffer_redundancy; i++) {
@@ -86,12 +86,12 @@ void surge::gl_atom::sprite2::database_wait_idle(database sdb) noexcept {
   }
 }
 
-auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
+auto surge::gl_atom::sprite_database::create(database_create_info ci) noexcept
     -> tl::expected<database, error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_create");
-  TracyGpuZone("GPU surge::gl_atom::sprite::database_create");
+  ZoneScopedN("surge::gl_atom::sprite::create");
+  TracyGpuZone("GPU surge::gl_atom::sprite::create");
 #endif
 
   // Alloc instance
@@ -135,8 +135,8 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
       glMapNamedBufferRange(sdb->buffer_id, 0, total_buffer_size, map_flags));
 
   // Compile shaders
-  const auto sprite_shader{
-      shader::create_shader_program("shaders/gl/sprite2.vert", "shaders/gl/sprite2.frag")};
+  const auto sprite_shader{shader::create_shader_program("shaders/gl/sprite2.vert",
+                                                         "shaders/gl/sprite2.frag")};
   if (!sprite_shader) {
     log_error("Unable to create sprite shader");
     return tl::unexpected{sprite_shader.error()};
@@ -182,16 +182,16 @@ auto surge::gl_atom::sprite2::database_create(database_create_info ci) noexcept
   return sdb;
 }
 
-void surge::gl_atom::sprite2::database_destroy(database sdb) noexcept {
+void surge::gl_atom::sprite_database::destroy(database sdb) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_destroy");
-  TracyGpuZone("GPU surge::gl_atom::sprite::database_destroy");
+  ZoneScopedN("surge::gl_atom::sprite::destroy");
+  TracyGpuZone("GPU surge::gl_atom::sprite::destroy");
 #endif
 
   log_info("Destroying sprite database, handle {}", static_cast<void *>(sdb));
 
-  database_wait_idle(sdb);
+  wait_idle(sdb);
 
   // Delete vertex buffers
   glDeleteBuffers(1, &(sdb->EBO));
@@ -212,21 +212,21 @@ void surge::gl_atom::sprite2::database_destroy(database sdb) noexcept {
   allocators::mimalloc::free(static_cast<void *>(sdb));
 }
 
-void surge::gl_atom::sprite2::database_begin_add(database sdb) noexcept {
+void surge::gl_atom::sprite_database::begin_add(database sdb) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_begin_add");
-  TracyGpuZone("GPU surge::gl_atom::sprite::database_begin_add");
+  ZoneScopedN("surge::gl_atom::sprite::begin_add");
+  TracyGpuZone("GPU surge::gl_atom::sprite::begin_add");
 #endif
 
   wait_buffer(sdb, sdb->write_buffer);
 }
 
-void surge::gl_atom::sprite2::database_add(database sdb, GLuint64 texture_handle,
-                                           const glm::mat4 &model_matrix, float alpha) noexcept {
+void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
+                                          const glm::mat4 &model_matrix, float alpha) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_add");
+  ZoneScopedN("surge::gl_atom::sprite::add");
 #endif
 
   using std::memcpy;
@@ -247,14 +247,31 @@ void surge::gl_atom::sprite2::database_add(database sdb, GLuint64 texture_handle
   }
 }
 
-void surge::gl_atom::sprite2::database_add_view(database sdb, GLuint64 texture_handle,
-                                                glm::mat4 model_matrix, glm::vec4 image_view,
-                                                glm::vec2 img_dims, float alpha) noexcept {
+void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle, glm::vec2 &&pos,
+                                          glm::vec2 &&scale, float z, float alpha) noexcept {
+  const auto mv{glm::vec3{std::move(pos), z}};
+  const auto sc{glm::vec3{std::move(scale), 1.0f}};
+  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
+  add(sdb, texture_handle, model, alpha);
+}
+
+void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
+                                          const glm::vec2 &pos, const glm::vec2 &scale, float z,
+                                          float alpha) noexcept {
+  const auto mv{glm::vec3{pos, z}};
+  const auto sc{glm::vec3{scale, 1.0f}};
+  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
+  add(sdb, texture_handle, model, alpha);
+}
+
+void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 texture_handle,
+                                               glm::mat4 model_matrix, glm::vec4 image_view,
+                                               glm::vec2 img_dims, float alpha) noexcept {
   using std::memcpy;
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_add_view");
+  ZoneScopedN("surge::gl_atom::sprite::add_view");
 #endif
 
   if (sdb->write_idx < sdb->max_sprites) {
@@ -284,11 +301,30 @@ void surge::gl_atom::sprite2::database_add_view(database sdb, GLuint64 texture_h
   }
 }
 
-void surge::gl_atom::sprite2::database_draw(database sdb) noexcept {
+void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 handle, glm::vec2 &&pos,
+                                               glm::vec2 &&scale, float z, glm::vec4 image_view,
+                                               glm::vec2 img_dims, float alpha) noexcept {
+  const auto mv{glm::vec3{std::move(pos), z}};
+  const auto sc{glm::vec3{std::move(scale), 1.0f}};
+  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
+  add_view(sdb, handle, model, image_view, img_dims, alpha);
+}
+
+void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 handle, const glm::vec2 &pos,
+                                               const glm::vec2 &scale, float z,
+                                               glm::vec4 image_view, glm::vec2 img_dims,
+                                               float alpha) noexcept {
+  const auto mv{glm::vec3{pos, z}};
+  const auto sc{glm::vec3{scale, 1.0f}};
+  const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
+  add_view(sdb, handle, model, image_view, img_dims, alpha);
+}
+
+void surge::gl_atom::sprite_database::draw(database sdb) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::sprite::database_draw");
-  TracyGpuZone("GPU surge::gl_atom::sprite::database_draw");
+  ZoneScopedN("surge::gl_atom::sprite::draw");
+  TracyGpuZone("GPU surge::gl_atom::sprite::draw");
 #endif
 
   glUseProgram(sdb->sprite_shader);
