@@ -34,8 +34,12 @@ struct surge::gl_atom::sprite_database::database_t {
 
   usize write_idx{0};
   usize write_buffer{0};
-
   GLuint sprite_shader{0};
+  GLuint deep_sprite_shader{0};
+
+  GLuint64 depth_texture_handle{0};
+  GLuint64 depth_map_handle{0};
+  glm::mat4 depth_model{1.0f};
 
   GLuint VBO{0};
   GLuint EBO{0};
@@ -142,7 +146,15 @@ auto surge::gl_atom::sprite_database::create(database_create_info ci) noexcept
     return tl::unexpected{sprite_shader.error()};
   }
 
+  const auto deep_sprite_shader{
+      shader::create_shader_program("shaders/gl/deep_sprite.vert", "shaders/gl/deep_sprite.frag")};
+  if (!deep_sprite_shader) {
+    log_error("Unable to create deep sprite shader");
+    return tl::unexpected{deep_sprite_shader.error()};
+  }
+
   sdb->sprite_shader = *sprite_shader;
+  sdb->deep_sprite_shader = *deep_sprite_shader;
 
   // Vertex buffers
   glCreateVertexArrays(1, &(sdb->VAO));
@@ -320,6 +332,17 @@ void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 handle, co
   add_view(sdb, handle, model, image_view, img_dims, alpha);
 }
 
+void surge::gl_atom::sprite_database::add_depth(database sdb, GLuint64 texture, GLuint64 depth_map,
+                                                glm::mat4 model) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::sprite::add_depth");
+#endif
+  sdb->depth_texture_handle = texture;
+  sdb->depth_map_handle = depth_map;
+  sdb->depth_model = model;
+}
+
 void surge::gl_atom::sprite_database::draw(database sdb) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
@@ -327,16 +350,31 @@ void surge::gl_atom::sprite_database::draw(database sdb) noexcept {
   TracyGpuZone("GPU surge::gl_atom::sprite::draw");
 #endif
 
-  glUseProgram(sdb->sprite_shader);
+  // Regular sprites
+  if (sdb->write_idx != 0) {
+    glUseProgram(sdb->sprite_shader);
 
-  const auto buffer_size{static_cast<GLsizeiptr>(sizeof(sprite_info) * sdb->write_idx)};
-  const auto buffer_offset{
-      static_cast<GLintptr>(sizeof(sprite_info) * sdb->write_buffer * sdb->max_sprites)};
-  glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, sdb->buffer_id, buffer_offset, buffer_size);
+    const auto buffer_size{static_cast<GLsizeiptr>(sizeof(sprite_info) * sdb->write_idx)};
+    const auto buffer_offset{
+        static_cast<GLintptr>(sizeof(sprite_info) * sdb->write_buffer * sdb->max_sprites)};
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, sdb->buffer_id, buffer_offset, buffer_size);
 
-  glBindVertexArray(sdb->VAO);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
-                          gsl::narrow_cast<GLsizei>(sdb->write_idx));
+    glBindVertexArray(sdb->VAO);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr,
+                            gsl::narrow_cast<GLsizei>(sdb->write_idx));
 
-  lock_and_advance_buffer(sdb, sdb->write_buffer);
+    lock_and_advance_buffer(sdb, sdb->write_buffer);
+  }
+
+  // Depth sprite
+  if (sdb->depth_texture_handle != 0 && sdb->depth_map_handle != 0) {
+    glUseProgram(sdb->deep_sprite_shader);
+
+    glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(sdb->depth_model));
+    glUniformHandleui64ARB(4, sdb->depth_texture_handle);
+    glUniformHandleui64ARB(5, sdb->depth_map_handle);
+
+    glBindVertexArray(sdb->VAO);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, 1);
+  }
 }

@@ -39,6 +39,8 @@ void add_view(database sdb, GLuint64 handle, glm::vec2 &&pos, glm::vec2 &&scale,
 void add_view(database sdb, GLuint64 handle, const glm::vec2 &pos, const glm::vec2 &scale, float z,
               glm::vec4 image_view, glm::vec2 img_dims, float alpha) noexcept;
 
+void add_depth(database sdb, GLuint64 texture, GLuint64 depth_map, glm::mat4 model) noexcept;
+
 void draw(database sdb) noexcept;
 
 } // namespace surge::gl_atom::sprite_database
