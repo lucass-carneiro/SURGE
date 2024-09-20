@@ -119,7 +119,9 @@ void player::gl_main_loop(opt_mod_handle &mod, opt_mod_api &mod_api, int &on_loa
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
     FrameMark;
+#  ifndef SURGE_SYSTEM_Windows
     TracyGpuCollect;
+#  endif
 #endif
   }
 }
