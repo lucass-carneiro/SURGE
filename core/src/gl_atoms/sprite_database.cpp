@@ -3,9 +3,16 @@
 #include "allocators.hpp"
 #include "gl_atoms/shaders.hpp"
 #include "logging.hpp"
+#include "options.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <gsl/gsl-lite.hpp>
+
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#  include <tracy/TracyOpenGL.hpp>
+#endif
 
 /* This struct needs to be aligned such that
  * it is a multiple of `alignment`, where
