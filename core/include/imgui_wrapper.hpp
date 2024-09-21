@@ -1,7 +1,7 @@
 #ifndef SURGE_CORE_IMGUI_HPP
 #define SURGE_CORE_IMGUI_HPP
 
-#include "gl_atoms/sprite.hpp"
+#include "gl_atoms/sprite_database.hpp"
 #include "gl_atoms/texture.hpp"
 #include "imgui.h"
 #include "options.hpp"
@@ -26,7 +26,7 @@ void frame_end() noexcept;
 
 #ifdef SURGE_BUILD_TYPE_Debug
 void texture_database_window(bool *open, const gl_atom::texture::database &tdb) noexcept;
-void sprite_database_window(bool *open, const gl_atom::sprite::database &sdb) noexcept;
+void sprite_database_window(bool *open, const gl_atom::sprite_database::database sdb) noexcept;
 #endif
 
 } // namespace gl

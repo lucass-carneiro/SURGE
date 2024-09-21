@@ -97,8 +97,8 @@ void surge::imgui::gl::texture_database_window(bool *open,
   ImGui::End();
 }
 
-void surge::imgui::gl::sprite_database_window(bool *open,
-                                              const gl_atom::sprite::database &sdb) noexcept {
+void surge::imgui::gl::sprite_database_window(
+    bool *open, const gl_atom::sprite_database::database sdb) noexcept {
   // Early out if the window is collapsed, as an optimization.
   if (!ImGui::Begin("Sprite Database", open, 0)) {
     ImGui::End();
@@ -109,58 +109,20 @@ void surge::imgui::gl::sprite_database_window(bool *open,
                                   | ImGuiTableFlags_BordersH
                                   | ImGuiTableFlags_HighlightHoveredColumn};
 
-  if (ImGui::CollapsingHeader("Texture Handles")) {
-    if (ImGui::BeginTable("sdb_table_texture_handle", 2, flags)) {
-      ImGui::TableSetupColumn("Size");
-      ImGui::TableSetupColumn("Write Buffer");
-      ImGui::TableHeadersRow();
+  if (ImGui::BeginTable("sdb_table", 2, flags)) {
+    ImGui::TableSetupColumn("Buffer Index");
+    ImGui::TableSetupColumn("Elements in buffer");
+    ImGui::TableHeadersRow();
 
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
 
-      ImGui::Text("%lu", sdb.texture_handles.size());
-      ImGui::TableNextColumn();
+    ImGui::Text("%lu", gl_atom::sprite_database::get_current_buffer_idx(sdb));
+    ImGui::TableNextColumn();
 
-      ImGui::Text("%lu", sdb.texture_handles.get_write_buffer());
+    ImGui::Text("%lu", gl_atom::sprite_database::get_sprites_in_buffer(sdb));
 
-      ImGui::EndTable();
-    }
-  }
-
-  if (ImGui::CollapsingHeader("Model Matrices")) {
-    if (ImGui::BeginTable("sdb_table_model_matrices", 2, flags)) {
-      ImGui::TableSetupColumn("Size");
-      ImGui::TableSetupColumn("Write Buffer");
-      ImGui::TableHeadersRow();
-
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-
-      ImGui::Text("%lu", sdb.models.size());
-      ImGui::TableNextColumn();
-
-      ImGui::Text("%lu", sdb.models.get_write_buffer());
-
-      ImGui::EndTable();
-    }
-  }
-
-  if (ImGui::CollapsingHeader("Alphas")) {
-    if (ImGui::BeginTable("sdb_table_alphas", 2, flags)) {
-      ImGui::TableSetupColumn("Size");
-      ImGui::TableSetupColumn("Write Buffer");
-      ImGui::TableHeadersRow();
-
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-
-      ImGui::Text("%lu", sdb.alphas.size());
-      ImGui::TableNextColumn();
-
-      ImGui::Text("%lu", sdb.alphas.get_write_buffer());
-
-      ImGui::EndTable();
-    }
+    ImGui::EndTable();
   }
 
   ImGui::End();

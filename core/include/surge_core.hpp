@@ -10,7 +10,6 @@
 #include "gl_atoms/gba.hpp"
 #include "gl_atoms/pv_ubo.hpp"
 #include "gl_atoms/shaders.hpp"
-#include "gl_atoms/sprite.hpp"
 #include "gl_atoms/sprite_database.hpp"
 #include "gl_atoms/text.hpp"
 #include "gl_atoms/texture.hpp"

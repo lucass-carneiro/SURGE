@@ -3,6 +3,7 @@
 
 #include "error_types.hpp"
 #include "integer_types.hpp"
+#include "options.hpp"
 #include "renderer_gl.hpp"
 
 #include <glm/glm.hpp>
@@ -42,6 +43,14 @@ void add_view(database sdb, GLuint64 handle, const glm::vec2 &pos, const glm::ve
 void add_depth(database sdb, GLuint64 texture, GLuint64 depth_map, glm::mat4 model) noexcept;
 
 void draw(database sdb) noexcept;
+
+auto place_sprite(glm::vec2 &&pos, glm::vec2 &&scale, float z) noexcept -> glm::mat4;
+auto place_sprite(const glm::vec2 &pos, const glm::vec2 &scale, float z) noexcept -> glm::mat4;
+
+#ifdef SURGE_BUILD_TYPE_Debug
+auto get_sprites_in_buffer(database sdb) noexcept -> usize;
+auto get_current_buffer_idx(database sdb) noexcept -> usize;
+#endif
 
 } // namespace surge::gl_atom::sprite_database
 

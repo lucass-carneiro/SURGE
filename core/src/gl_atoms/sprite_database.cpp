@@ -385,3 +385,29 @@ void surge::gl_atom::sprite_database::draw(database sdb) noexcept {
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr, 1);
   }
 }
+
+auto surge::gl_atom::sprite_database::place_sprite(glm::vec2 &&pos, glm::vec2 &&scale,
+                                                   float z) noexcept -> glm::mat4 {
+  const auto mv{glm::vec3{std::move(pos), z}};
+  const auto sc{glm::vec3{std::move(scale), 1.0f}};
+  return glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc);
+}
+
+auto surge::gl_atom::sprite_database::place_sprite(const glm::vec2 &pos, const glm::vec2 &scale,
+                                                   float z) noexcept -> glm::mat4 {
+  const auto mv{glm::vec3{pos, z}};
+  const auto sc{glm::vec3{scale, 1.0f}};
+  return glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc);
+}
+
+#ifdef SURGE_BUILD_TYPE_Debug
+
+auto surge::gl_atom::sprite_database::get_sprites_in_buffer(database sdb) noexcept -> usize {
+  return sdb->write_idx;
+}
+
+auto surge::gl_atom::sprite_database::get_current_buffer_idx(database sdb) noexcept -> usize {
+  return sdb->write_buffer;
+}
+
+#endif
