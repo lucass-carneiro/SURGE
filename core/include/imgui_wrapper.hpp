@@ -18,7 +18,7 @@ struct create_config {
 
 namespace gl {
 
-void create(create_config &&cfg) noexcept;
+void create(create_config &&cfg = create_config{}) noexcept;
 void destroy() noexcept;
 
 void frame_begin() noexcept;
