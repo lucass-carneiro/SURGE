@@ -27,18 +27,20 @@ void wait_idle(database sdb) noexcept;
 void begin_add(database sdb) noexcept;
 
 void add(database sdb, GLuint64 texture_handle, const glm::mat4 &model_matrix,
-         float alpha) noexcept;
+         const glm::vec4 &color_mod = glm::vec4{1.0f}) noexcept;
 void add(database sdb, GLuint64 texture_handle, glm::vec2 &&pos, glm::vec2 &&scale, float z,
-         float alpha) noexcept;
+         glm::vec4 &&color_mod = glm::vec4{1.0f}) noexcept;
 void add(database sdb, GLuint64 texture_handle, const glm::vec2 &pos, const glm::vec2 &scale,
-         float z, float alpha) noexcept;
+         float z, const glm::vec4 &color_mod = glm::vec4{1.0f}) noexcept;
 
 void add_view(database sdb, GLuint64 handle, glm::mat4 model, glm::vec4 image_view,
-              glm::vec2 img_dims, float alpha) noexcept;
+              glm::vec2 img_dims, const glm::vec4 &color_mod = glm::vec4{1.0f}) noexcept;
 void add_view(database sdb, GLuint64 handle, glm::vec2 &&pos, glm::vec2 &&scale, float z,
-              glm::vec4 image_view, glm::vec2 img_dims, float alpha) noexcept;
+              glm::vec4 image_view, glm::vec2 img_dims,
+              glm::vec4 &&color_mod = glm::vec4{1.0f}) noexcept;
 void add_view(database sdb, GLuint64 handle, const glm::vec2 &pos, const glm::vec2 &scale, float z,
-              glm::vec4 image_view, glm::vec2 img_dims, float alpha) noexcept;
+              glm::vec4 image_view, glm::vec2 img_dims,
+              const glm::vec4 &color_mod = glm::vec4{1.0f}) noexcept;
 
 void add_depth(database sdb, GLuint64 texture, GLuint64 depth_map, glm::mat4 model) noexcept;
 

@@ -22,7 +22,7 @@
  */
 struct sprite_info {
   GLuint64 texture_handle{0};
-  float alpha{0.0f};
+  float color_mod[4]{1.0f, 1.0f, 1.0f, 1.0f};
   float model[16]{
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
@@ -242,7 +242,8 @@ void surge::gl_atom::sprite_database::begin_add(database sdb) noexcept {
 }
 
 void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
-                                          const glm::mat4 &model_matrix, float alpha) noexcept {
+                                          const glm::mat4 &model_matrix,
+                                          const glm::vec4 &color_mod) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::sprite::add");
@@ -253,7 +254,7 @@ void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
   if (sdb->write_idx < sdb->max_sprites) {
     sprite_info si{};
     si.texture_handle = texture_handle;
-    si.alpha = alpha;
+    memcpy(si.color_mod, glm::value_ptr(color_mod), 4 * sizeof(float));
     memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
 
     const auto idx{sdb->write_buffer * sdb->max_sprites + sdb->write_idx};
@@ -267,25 +268,27 @@ void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
 }
 
 void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle, glm::vec2 &&pos,
-                                          glm::vec2 &&scale, float z, float alpha) noexcept {
+                                          glm::vec2 &&scale, float z,
+                                          glm::vec4 &&color_mod) noexcept {
   const auto mv{glm::vec3{std::move(pos), z}};
   const auto sc{glm::vec3{std::move(scale), 1.0f}};
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
-  add(sdb, texture_handle, model, alpha);
+  add(sdb, texture_handle, model, color_mod);
 }
 
 void surge::gl_atom::sprite_database::add(database sdb, GLuint64 texture_handle,
                                           const glm::vec2 &pos, const glm::vec2 &scale, float z,
-                                          float alpha) noexcept {
+                                          const glm::vec4 &color_mod) noexcept {
   const auto mv{glm::vec3{pos, z}};
   const auto sc{glm::vec3{scale, 1.0f}};
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
-  add(sdb, texture_handle, model, alpha);
+  add(sdb, texture_handle, model, color_mod);
 }
 
 void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 texture_handle,
                                                glm::mat4 model_matrix, glm::vec4 image_view,
-                                               glm::vec2 img_dims, float alpha) noexcept {
+                                               glm::vec2 img_dims,
+                                               const glm::vec4 &color_mod) noexcept {
   using std::memcpy;
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
@@ -307,7 +310,7 @@ void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 texture_ha
 
     sprite_info si{};
     si.texture_handle = texture_handle;
-    si.alpha = alpha;
+    memcpy(si.color_mod, glm::value_ptr(color_mod), 4 * sizeof(float));
     memcpy(si.model, glm::value_ptr(model_matrix), 16 * sizeof(float));
     memcpy(si.view, glm::value_ptr(view_data), 4 * sizeof(float));
 
@@ -322,21 +325,21 @@ void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 texture_ha
 
 void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 handle, glm::vec2 &&pos,
                                                glm::vec2 &&scale, float z, glm::vec4 image_view,
-                                               glm::vec2 img_dims, float alpha) noexcept {
+                                               glm::vec2 img_dims, glm::vec4 &&color_mod) noexcept {
   const auto mv{glm::vec3{std::move(pos), z}};
   const auto sc{glm::vec3{std::move(scale), 1.0f}};
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
-  add_view(sdb, handle, model, image_view, img_dims, alpha);
+  add_view(sdb, handle, model, image_view, img_dims, color_mod);
 }
 
 void surge::gl_atom::sprite_database::add_view(database sdb, GLuint64 handle, const glm::vec2 &pos,
                                                const glm::vec2 &scale, float z,
                                                glm::vec4 image_view, glm::vec2 img_dims,
-                                               float alpha) noexcept {
+                                               const glm::vec4 &color_mod) noexcept {
   const auto mv{glm::vec3{pos, z}};
   const auto sc{glm::vec3{scale, 1.0f}};
   const auto model{glm::scale(glm::translate(glm::mat4{1.0f}, mv), sc)};
-  add_view(sdb, handle, model, image_view, img_dims, alpha);
+  add_view(sdb, handle, model, image_view, img_dims, color_mod);
 }
 
 void surge::gl_atom::sprite_database::add_depth(database sdb, GLuint64 texture, GLuint64 depth_map,

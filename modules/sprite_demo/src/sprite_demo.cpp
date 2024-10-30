@@ -118,11 +118,11 @@ extern "C" SURGE_MODULE_EXPORT auto update(double delta_t) noexcept -> int {
   begin_add(globals::sdb);
 
   add_view(globals::sdb, r_texture, glm::vec2{10.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
-           original_bird_sheet_size, 1.0f);
+           original_bird_sheet_size);
   add_view(globals::sdb, y_texture, glm::vec2{120.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
-           original_bird_sheet_size, 1.0f);
+           original_bird_sheet_size);
   add_view(globals::sdb, b_texture, glm::vec2{220.0f}, glm::vec2{100.0f}, 0.1f, flap_frame_view,
-           original_bird_sheet_size, 1.0f);
+           original_bird_sheet_size);
 
   return 0;
 }

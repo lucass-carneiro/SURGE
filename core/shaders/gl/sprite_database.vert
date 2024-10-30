@@ -6,7 +6,7 @@
 
 struct sprite_info {
   sampler2D texture;
-  float alpha;
+  float color_mod[4];
   float model[16];
   float view[4];
 };

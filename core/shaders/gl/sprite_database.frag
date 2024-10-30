@@ -6,7 +6,7 @@
 
 struct sprite_info {
   sampler2D texture;
-  float alpha;
+  float color_mod[4];
   float model[16];
   float view[4];
 };
@@ -27,8 +27,13 @@ out vec4 fragment_color;
 
 // Utility functions
 
-float get_alpha(uint idx) {
-  return sprite_infos[idx].alpha;
+vec4 get_color_mod(uint idx) {
+  return vec4(
+    sprite_infos[idx].color_mod[0],
+    sprite_infos[idx].color_mod[1],
+    sprite_infos[idx].color_mod[2],
+    sprite_infos[idx].color_mod[3]
+  );
 }
 
 sampler2D get_texture(uint idx) {
@@ -57,12 +62,9 @@ void main() {
 
   // Obtain color from texture
   const vec4 texture_color = texture(texture_sampler, cropped_uv_coords);
-  
-  // Obtain sprite alpha
-  const vec4 alpha_mod = vec4(1.0, 1.0, 1.0, get_alpha(fs_in.instance_ID));
 
   // Final color
-  const vec4 final_color = texture_color * alpha_mod;
+  const vec4 final_color = texture_color * get_color_mod(fs_in.instance_ID);
   
   // Alpha discarding
   if (final_color.a < 0.1) {
