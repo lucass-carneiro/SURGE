@@ -13,7 +13,7 @@
       "variables": [
         {
           "name": "VCPKG_TARGET_TRIPLET",
-          "value": "x64-windows-static",
+          "value": "x64-windows",
           "type": "STRING"
         }
       ]
@@ -31,7 +31,7 @@
       "variables": [
         {
           "name": "VCPKG_TARGET_TRIPLET",
-          "value": "x64-windows-static",
+          "value": "x64-windows",
           "type": "STRING"
         }
       ]
@@ -49,7 +49,7 @@
       "variables": [
         {
           "name": "VCPKG_TARGET_TRIPLET",
-          "value": "x64-windows-static",
+          "value": "x64-windows",
           "type": "STRING"
         }
       ]

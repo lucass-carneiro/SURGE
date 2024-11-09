@@ -241,7 +241,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
       )
       target_link_options(SurgeCore PUBLIC -Og -g3 -ggdb3 -rdynamic)
   else()
-    target_compile_options(SurgeCore PUBLIC /Wall /MP /MTd)
+    target_compile_options(SurgeCore PUBLIC /Wall /MP /MDd)
     target_link_options(SurgeCore PUBLIC /DEBUG:FULL)
   endif()
 
@@ -253,7 +253,7 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
-    target_compile_options(SurgeCore PUBLIC /MP /MT)
+    target_compile_options(SurgeCore PUBLIC /MP /MD)
    endif()
 endif()
 
@@ -264,7 +264,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebI
     target_compile_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
   else()
-    target_compile_options(SurgeCore PUBLIC /MP /MT)
+    target_compile_options(SurgeCore PUBLIC /MP /MD)
     target_link_options(SurgeCore PUBLIC /DEBUG:FULL)
   endif()
 
