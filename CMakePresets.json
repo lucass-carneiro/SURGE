@@ -39,7 +39,7 @@
     },
     {
       "name": "x64-profile",
-      "displayName": "x64 Relese",
+      "displayName": "x64 Profile",
       "inherits": "x64-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo "
