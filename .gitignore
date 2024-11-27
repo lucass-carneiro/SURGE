@@ -1,15 +1,13 @@
-tracy/*
-triplets/*
-vcpkg/*
-
 .vs/*
 .cache/*
-out/*
+
+tracy/*
 
 core/include/options.hpp
 
 compile_commands.json
 
+build/*
 Release/*
 Debug/*
 Profile/*

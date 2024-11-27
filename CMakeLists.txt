@@ -1,19 +1,12 @@
 ﻿cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 # -----------------------------------------
-# Vcpkg configuration
-# -----------------------------------------
-
-set(CMAKE_TOOLCHAIN_FILE vcpkg/scripts/buildsystems/vcpkg.cmake)
-set(VCPKG_OVERLAY_TRIPLETS triplets/)
-
-# -----------------------------------------
 # Project
 # -----------------------------------------
 
 project(
   Surge
-  VERSION 1.1.0
+  VERSION 1.2.0
   LANGUAGES CXX
 )
 # Generate compile_commands.json for IDEs
@@ -34,23 +27,23 @@ endif()
 # External dependencies
 # -----------------------------------------
 
-find_package(mimalloc CONFIG REQUIRED)
-find_package(gsl-lite CONFIG REQUIRED)
-find_package(tl-expected CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
-find_package(Taskflow CONFIG REQUIRED)
-find_package(xxHash CONFIG REQUIRED)
-find_package(Stb REQUIRED)
-find_package(OpenEXR CONFIG REQUIRED)
-find_package(ryml CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(gsl-lite CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
+find_package(OpenEXR CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(ryml CONFIG REQUIRED)
+find_package(Stb REQUIRED)
+find_package(tl-expected CONFIG REQUIRED)
+find_package(Taskflow CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanHeaders CONFIG)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
+find_package(xxHash CONFIG REQUIRED)
 
 find_program(
   GLSL_VALIDATOR
@@ -73,7 +66,7 @@ endif()
 
 message(STATUS "Selected compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(SURGE_COMPILER_FLAG_STYLE "gcc")
 else()
   set(SURGE_COMPILER_FLAG_STYLE "msvc")

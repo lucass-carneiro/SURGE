@@ -1,10 +1,3 @@
-[submodule "triplets"]
-	path = triplets
-	url = https://github.com/Neumann-A/my-vcpkg-triplets
-	branch = master
-[submodule "vcpkg"]
-	path = vcpkg
-	url = https://github.com/microsoft/vcpkg
 [submodule "tracy"]
 	path = tracy
 	url = https://github.com/wolfpld/tracy

@@ -1,8 +1,33 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "surge",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "dependencies": [
+    "fmt",
+    {
+      "name": "freetype",
+      "features": [
+        "error-strings"
+      ]
+    },
+    {
+      "name": "glad",
+      "features": [
+        "loader",
+        "extensions"
+      ]
+    },
+    "glfw3",
+    "glm",
+    "gsl-lite",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding",
+        "vulkan-binding"
+      ]
+    },
     {
       "name": "mimalloc",
       "features": [
@@ -14,40 +39,15 @@
       "name": "mimalloc",
       "platform": "!windows"
     },
-    "gsl-lite",
-    "tl-expected",
-    "fmt",
-    "taskflow",
-    "xxhash",
-    "stb",
     "openexr",
-    "ryml",
-    {
-      "name": "freetype",
-      "features": [
-        "error-strings"
-      ]
-    },
-    "glfw3",
-    "glm",
-    {
-      "name": "glad",
-      "features": [
-        "loader",
-        "extensions"
-      ]
-    },
     "opengl",
+    "ryml",
+    "stb",
+    "taskflow",
+    "tl-expected",
     "vulkan",
+    "vulkan-memory-allocator",
     "vulkan-validationlayers",
-    {
-      "name": "imgui",
-      "features": [
-        "glfw-binding",
-        "opengl3-binding",
-        "vulkan-binding"
-      ]
-    },
-    "vulkan-memory-allocator"
+    "xxhash"
   ]
 }

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project(
   SurgeCore
-  VERSION 1.0.0
+  VERSION 1.2.0
   LANGUAGES CXX
 )
 
@@ -106,7 +106,7 @@ add_library(SurgeCore SHARED ${SURGE_CORE_HEADER_LIST} ${SURGE_CORE_SOURCE_LIST}
 target_compile_features(SurgeCore PRIVATE cxx_std_20)
 set_target_properties(SurgeCore PROPERTIES OUTPUT_NAME "surge_core")
 set_target_properties(SurgeCore PROPERTIES PREFIX "")
-set_target_properties(SurgeCore PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/default.hpp")
+set_target_properties(SurgeCore PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/surge_core.hpp")
 set_target_properties(SurgeCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS True)
 set_target_properties(SurgeCore PROPERTIES ENABLE_EXPORTS True)
 
@@ -279,21 +279,21 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgeCore PUBLIC
+  fmt::fmt
+  Freetype::Freetype
+  glad::glad
+  glfw
+  gsl::gsl-lite
+  imgui::imgui
   mimalloc
   mimalloc-static
-  gsl::gsl-lite
-  tl::expected
-  fmt::fmt
-  Taskflow::Taskflow
-  xxHash::xxhash
   OpenEXR::OpenEXR
-  ryml::ryml
-  Freetype::Freetype
-  glfw
-  glad::glad
   OpenGL::GL
-  Vulkan::Vulkan
+  ryml::ryml
+  Taskflow::Taskflow
+  tl::expected
   Vulkan::Headers
+  Vulkan::Vulkan
   GPUOpen::VulkanMemoryAllocator
-  imgui::imgui
+  xxHash::xxhash
 )
