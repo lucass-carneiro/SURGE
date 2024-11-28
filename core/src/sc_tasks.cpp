@@ -1,8 +1,8 @@
-#include "tasks.hpp"
+#include "sc_tasks.hpp"
 
 static const auto num_workers{std::thread::hardware_concurrency() - 1};
 
 // NOLINTNEXTLINE
 static tf::Executor global_task_executor{num_workers};
 
-auto surge::tasks::executor() noexcept -> tf::Executor & { return global_task_executor; }
+auto surge::tasks::executor() -> tf::Executor & { return global_task_executor; }

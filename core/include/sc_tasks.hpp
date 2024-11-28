@@ -5,7 +5,7 @@
 
 namespace surge::tasks {
 
-auto executor() noexcept -> tf::Executor &;
+auto executor() -> tf::Executor &;
 
 } // namespace surge::tasks
 

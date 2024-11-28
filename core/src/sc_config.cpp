@@ -1,8 +1,8 @@
-#include "config.hpp"
+#include "sc_config.hpp"
 
-#include "allocators.hpp"
-#include "files.hpp"
-#include "logging.hpp"
+#include "sc_allocators.hpp"
+#include "sc_files.hpp"
+#include "sc_logging.hpp"
 
 #include <array>
 #include <cstring>
@@ -23,7 +23,7 @@ static auto ryml_alloc(size_t len, void *, void *) -> void * {
 
 static void ryml_free(void *mem, size_t, void *) { surge::allocators::mimalloc::free(mem); }
 
-auto surge::config::parse_config() noexcept -> tl::expected<config_data, error> {
+auto surge::config::parse_config() -> tl::expected<config_data, error> {
   using std::atof;
   using std::atoi;
 

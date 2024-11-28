@@ -3,7 +3,7 @@
 
 namespace surge::cli {
 
-void draw_logo() noexcept;
+void draw_logo();
 
 } // namespace surge::cli
 

@@ -1,7 +1,7 @@
 #ifndef SURGE_CORE_CONTAINER_TYPES_HPP
 #define SURGE_CORE_CONTAINER_TYPES_HPP
 
-#include "allocators.hpp"
+#include "sc_allocators.hpp"
 
 #include <array>
 #include <deque>

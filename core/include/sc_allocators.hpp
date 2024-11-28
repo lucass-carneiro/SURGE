@@ -1,7 +1,7 @@
 #ifndef SURGE_CORE_ALLOCATORS_HPP
 #define SURGE_CORE_ALLOCATORS_HPP
 
-#include "integer_types.hpp"
+#include "sc_integer_types.hpp"
 
 #include <exception>
 #include <limits>
@@ -9,23 +9,23 @@
 
 namespace surge::allocators::mimalloc {
 
-void init() noexcept;
+void init();
 
-auto malloc(usize size) noexcept -> void *;
-auto realloc(void *p, usize newsize) noexcept -> void *;
-auto calloc(usize count, usize size) noexcept -> void *;
-void free(void *p) noexcept;
+auto malloc(usize size) -> void *;
+auto realloc(void *p, usize newsize) -> void *;
+auto calloc(usize count, usize size) -> void *;
+void free(void *p);
 
 auto aligned_alloc(usize size, usize alignment) -> void *;
-auto aligned_realloc(void *p, usize newsize, usize alignment) noexcept -> void *;
-void aligned_free(void *p, usize alignment) noexcept;
+auto aligned_realloc(void *p, usize newsize, usize alignment) -> void *;
+void aligned_free(void *p, usize alignment);
 
 template <class T> struct cpp_allocator {
   using value_type = T;
 
   cpp_allocator() = default;
 
-  template <class U> constexpr cpp_allocator(const cpp_allocator<U> &) noexcept {}
+  template <class U> constexpr cpp_allocator(const cpp_allocator<U> &) {}
 
   [[nodiscard]] auto allocate(std::size_t n) -> T * {
     if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
@@ -41,13 +41,13 @@ template <class T> struct cpp_allocator {
   void deallocate(T *p, std::size_t) noexcept { surge::allocators::mimalloc::free(p); }
 };
 
-template <class T, class U>
-auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
+template <class T, class U> auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &)
+    -> bool {
   return true;
 }
 
-template <class T, class U>
-auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
+template <class T, class U> auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &)
+    -> bool {
   return false;
 }
 

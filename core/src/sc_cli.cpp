@@ -1,6 +1,6 @@
-#include "cli.hpp"
+#include "sc_cli.hpp"
 
-#include "options.hpp"
+#include "sc_options.hpp"
 
 #include <fmt/core.h>
 
@@ -22,7 +22,7 @@ static constexpr const char* LOGO =
 
 } // namespace surge::cli
 
-void surge::cli::draw_logo() noexcept {
+void surge::cli::draw_logo() {
 #ifdef SURGE_USE_LOG_COLOR
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   fmt::print("\033[1;38;2;220;20;60m{}\033[m", LOGO);

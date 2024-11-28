@@ -1,16 +1,17 @@
-#include "allocators.hpp"
+#include "sc_allocators.hpp"
 
-#include "logging.hpp"
-#include "options.hpp"
+#include "sc_logging.hpp"
+#include "sc_options.hpp"
 
 #include <mimalloc.h>
 #include <stdexcept>
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto surge::allocators::mimalloc::malloc(usize size) noexcept -> void * {
+auto surge::allocators::mimalloc::malloc(usize size) -> void * {
   auto p{mi_malloc(size)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -25,7 +26,7 @@ auto surge::allocators::mimalloc::malloc(usize size) noexcept -> void * {
   return p;
 }
 
-auto surge::allocators::mimalloc::realloc(void *p, usize newsize) noexcept -> void * {
+auto surge::allocators::mimalloc::realloc(void *p, usize newsize) -> void * {
   auto q{mi_realloc(p, newsize)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -41,7 +42,7 @@ auto surge::allocators::mimalloc::realloc(void *p, usize newsize) noexcept -> vo
   return q;
 }
 
-auto surge::allocators::mimalloc::calloc(usize count, usize size) noexcept -> void * {
+auto surge::allocators::mimalloc::calloc(usize count, usize size) -> void * {
   auto p{mi_calloc(count, size)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -57,7 +58,7 @@ auto surge::allocators::mimalloc::calloc(usize count, usize size) noexcept -> vo
   return p;
 }
 
-void surge::allocators::mimalloc::free(void *p) noexcept {
+void surge::allocators::mimalloc::free(void *p) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"
@@ -85,8 +86,8 @@ auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> 
   return p;
 }
 
-auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize,
-                                                  usize alignment) noexcept -> void * {
+auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize, usize alignment)
+    -> void * {
   auto q{mi_realloc_aligned(p, newsize, alignment)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -103,7 +104,7 @@ auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize,
   return q;
 }
 
-void surge::allocators::mimalloc::aligned_free(void *p, usize alignment) noexcept {
+void surge::allocators::mimalloc::aligned_free(void *p, usize alignment) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"
@@ -115,7 +116,7 @@ void surge::allocators::mimalloc::aligned_free(void *p, usize alignment) noexcep
   mi_free_aligned(p, alignment);
 }
 
-void surge::allocators::mimalloc::init() noexcept {
+void surge::allocators::mimalloc::init() {
   // see https://microsoft.github.io/mimalloc/group__options.html
 #ifdef SURGE_DEBUG_MEMORY
   mi_option_enable(mi_option_show_errors);

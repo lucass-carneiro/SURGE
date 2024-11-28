@@ -1,7 +1,7 @@
 #ifndef SURGE_CORE_LOGGING_HPP
 #define SURGE_CORE_LOGGING_HPP
 
-#include "options.hpp"
+#include "sc_options.hpp"
 
 #ifdef SURGE_SYSTEM_IS_POSIX
 #  include <unistd.h>

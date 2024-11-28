@@ -1,8 +1,8 @@
 #ifndef SURGE_CORE_CONFIG_HPP
 #define SURGE_CORE_CONFIG_HPP
 
-#include "container_types.hpp"
-#include "error_types.hpp"
+#include "sc_container_types.hpp"
+#include "sc_error_types.hpp"
 
 #include <tl/expected.hpp>
 
@@ -45,7 +45,7 @@ struct config_data {
   string module{};
 };
 
-auto parse_config() noexcept -> tl::expected<config_data, error>;
+auto parse_config() -> tl::expected<config_data, error>;
 
 } // namespace surge::config
 
