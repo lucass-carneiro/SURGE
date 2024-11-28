@@ -5,7 +5,17 @@
 
 namespace surge::tasks {
 
-auto executor() -> tf::Executor &;
+class executor {
+private:
+  executor() = default;
+  ~executor() = default;
+
+public:
+  static auto get() -> tf::Executor &;
+
+  executor(const executor &) = delete;
+  executor &operator=(const executor &) = delete;
+};
 
 } // namespace surge::tasks
 

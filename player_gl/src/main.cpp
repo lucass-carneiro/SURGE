@@ -2,6 +2,7 @@
 #include "sc_cli.hpp"
 #include "sc_config.hpp"
 #include "sc_options.hpp"
+#include "sc_tasks.hpp"
 
 #include <cstdio>
 #include <exception>
@@ -42,10 +43,16 @@ int main() {
      *******************/
     allocators::mimalloc::init();
 
+    /**********************
+     * Init Task executor *
+     **********************/
+    tasks::executor::get();
+
     /********
      * Logo *
      ********/
     cli::draw_logo();
+    
 
     /*********************
      * Parse config file *

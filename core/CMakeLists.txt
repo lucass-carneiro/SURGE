@@ -59,7 +59,7 @@ set(
   #"${PROJECT_SOURCE_DIR}/include/renderer_vk.hpp"
   
   #"${PROJECT_SOURCE_DIR}/include/renderer.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
   #"${PROJECT_SOURCE_DIR}/include/timers.hpp"
   #"${PROJECT_SOURCE_DIR}/include/window.hpp"
 )
@@ -93,7 +93,7 @@ set(
   #"${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
   
   #"${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
   #"${PROJECT_SOURCE_DIR}/src/timers.cpp"
   #"${PROJECT_SOURCE_DIR}/src/window.cpp"
 )
@@ -287,7 +287,7 @@ target_link_libraries(SurgeCore PUBLIC
   glfw
   gsl::gsl-lite
   imgui::imgui
-  #OpenEXR::OpenEXR
+  OpenEXR::OpenEXR
   OpenGL::GL
   ryml::ryml
   Taskflow::Taskflow

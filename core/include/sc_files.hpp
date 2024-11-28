@@ -3,7 +3,7 @@
 
 #include "sc_container_types.hpp"
 #include "sc_error_types.hpp"
-//#include "sc_tasks.hpp"
+#include "sc_tasks.hpp"
 
 #include <tl/expected.hpp>
 
@@ -25,24 +25,24 @@ struct image_data {
   const char *file_name;
 };
 
-/*struct openEXR_image_data {
+struct openEXR_image_data {
   int width;
   int height;
   void *pixels;
   const char *file_name;
-};*/
+};
 
 using image = tl::expected<image_data, error>;
-// using openEXR_image = tl::expected<openEXR_image_data, error>;
-//using img_future = std::future<image>;
+using openEXR_image = tl::expected<openEXR_image_data, error>;
+using img_future = std::future<image>;
 
 auto load_image(const char *path, bool flip = true) -> image;
-//auto load_image_task(const char *path, bool flip = true) -> img_future;
+auto load_image_task(const char *path, bool flip = true) -> img_future;
 void free_image(image_data &);
-//void free_image_task(image_data &);
+void free_image_task(image_data &);
 
-// auto load_openEXR(const char *path) -> openEXR_image;
-// void free_openEXR(openEXR_image_data &data);
+auto load_openEXR(const char *path) -> openEXR_image;
+void free_openEXR(openEXR_image_data &data);
 
 } // namespace surge::files
 

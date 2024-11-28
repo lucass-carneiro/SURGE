@@ -19,9 +19,9 @@
 #define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
 #include <stb_image.h>
 
-//#include <OpenEXR/ImfRgbaFile.h>
-//#include <Imath/ImathVec.h>
-//#include <Imath/ImathBox.h>
+#include <OpenEXR/ImfRgbaFile.h>
+#include <Imath/ImathVec.h>
+#include <Imath/ImathBox.h>
 // clang-format on
 
 #include <cstring>
@@ -175,7 +175,7 @@ auto surge::files::load_image(const char *p, bool flip) -> image {
   return image_data{iw, ih, channels_in_file, pixels, p};
 }
 
-/* auto surge::files::load_openEXR(const char *p) -> openEXR_image {
+auto surge::files::load_openEXR(const char *p) -> openEXR_image {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::files::load_openEXR");
@@ -187,7 +187,7 @@ auto surge::files::load_image(const char *p, bool flip) -> image {
   // TODO: This image needs to be fliped around the y axis. Figure out how to do that. For now, flip
   // it in blender See:
   //
-https://developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26-openexr-image-file-format
+https: // developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26-openexr-image-file-format
   try {
     Imf::RgbaInputFile in(p);
 
@@ -215,17 +215,17 @@ https://developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26
 
 void surge::files::free_openEXR(openEXR_image_data &data) {
   allocators::mimalloc::free(data.pixels);
-}*/
+}
 
 void surge::files::free_image(image_data &image) { stbi_image_free(image.pixels); }
 
-//auto surge::files::load_image_task(const char *path, bool flip) -> img_future {
-//  // This option has to be set before the parallel tasks because STBI implements it as a global
-//  // variable
-//  stbi_set_flip_vertically_on_load(static_cast<int>(flip));
-//  return tasks::executor().async([=]() { return load_image(path, false); });
-//}
-//
-//void surge::files::free_image_task(image_data &image) {
-//  tasks::executor().silent_async([=]() { stbi_image_free(image.pixels); });
-//}
+auto surge::files::load_image_task(const char *path, bool flip) -> img_future {
+  // This option has to be set before the parallel tasks because STBI implements it as a global
+  // variable
+  stbi_set_flip_vertically_on_load(static_cast<int>(flip));
+  return tasks::executor::get().async([=]() { return load_image(path, false); });
+}
+
+void surge::files::free_image_task(image_data &image) {
+  tasks::executor::get().silent_async([=]() { stbi_image_free(image.pixels); });
+}
