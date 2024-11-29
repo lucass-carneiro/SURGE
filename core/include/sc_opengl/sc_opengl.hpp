@@ -1,9 +1,9 @@
 #ifndef SURGE_CORE_RENDERER_GL_HPP
 #define SURGE_CORE_RENDERER_GL_HPP
 
-#include "config.hpp"
-#include "error_types.hpp"
-#include "glfw_includes.hpp"
+#include "sc_config.hpp"
+#include "sc_error_types.hpp"
+#include "sc_glfw_includes.hpp"
 
 #include <optional>
 

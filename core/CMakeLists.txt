@@ -25,15 +25,8 @@ configure_file(
 
 set(
   SURGE_CORE_HEADER_LIST
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/gba.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/pv_ubo.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/shaders.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/sprite_database.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/text.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/gl_atoms/texture.hpp"
-  
-  #"${PROJECT_SOURCE_DIR}/include/vk_atoms/shaders.hpp"
-  
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
+
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
@@ -42,24 +35,9 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/imgui_wrapper.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_gl.hpp"
-  
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_command.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_debug.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_descriptor.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_images.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_init.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_malloc.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_sync.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk_types.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/renderer_vk.hpp"
-  
-  #"${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
@@ -67,33 +45,13 @@ set(
 
 set(
   SURGE_CORE_SOURCE_LIST
-  #"${PROJECT_SOURCE_DIR}/src/gl_atoms/pv_ubo.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/gl_atoms/shaders.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite_database.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/gl_atoms/text.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/gl_atoms/texture.cpp"
-  
-  #"${PROJECT_SOURCE_DIR}/src/vk_atoms/shaders.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/imgui_wrapper.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_gl.cpp"
-  
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_clear.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_command.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_debug.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_descriptor.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_swpc.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
-  
-  #"${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_window.cpp"

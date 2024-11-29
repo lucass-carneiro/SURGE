@@ -1,7 +1,8 @@
-#include "renderer_gl.hpp"
+#include "sc_opengl/sc_opengl.hpp"
 
-#include "logging.hpp"
-#include "window.hpp"
+#include "sc_logging.hpp"
+#include "sc_options.hpp"
+#include "sc_window.hpp"
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)

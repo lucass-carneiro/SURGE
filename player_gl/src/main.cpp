@@ -2,6 +2,7 @@
 #include "sc_cli.hpp"
 #include "sc_config.hpp"
 #include "sc_logging.hpp"
+#include "sc_opengl/sc_opengl.hpp"
 #include "sc_options.hpp"
 #include "sc_tasks.hpp"
 #include "sc_timers.hpp"
@@ -64,13 +65,23 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    const auto [w_res, w_ccl, w_attrs, r_attrs, first_mod] = *config_data;
+    const auto &[w_res, w_ccl, w_attrs, r_attrs, first_mod] = *config_data;
 
     /***************
      * Init window *
      ***************/
     const auto window_init_result{window::init(w_res, w_attrs, r_attrs)};
     if (window_init_result.has_value()) {
+      return EXIT_FAILURE;
+    }
+
+    /***********************
+     * Init render backend *
+     ***********************/
+    log_info("Using OpenGL render backend.");
+
+    if (renderer::gl::init(r_attrs).has_value()) {
+      window::terminate();
       return EXIT_FAILURE;
     }
 
@@ -178,7 +189,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Clear");
 #endif
-        //TODO renderer::gl::clear(w_ccl);
+        renderer::gl::clear(w_ccl);
       }
 
       // Call module update
@@ -208,8 +219,8 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Present");
 #endif
-        //TODO renderer::gl::wait_idle();
-        //TODO window::swap_buffers();
+        renderer::gl::wait_idle();
+        window::swap_buffers();
       }
 
       // Refresh HR key state
@@ -246,6 +257,7 @@ int main() {
     /********************************
      * Finalize window and renderer *
      ********************************/
+    renderer::gl::wait_idle();
     window::terminate();
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
