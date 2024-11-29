@@ -1,6 +1,12 @@
 #include "sprite_demo.hpp"
 
-#include "surge_core.hpp"
+#include "sc_glm_includes.hpp"
+#include "sc_integer_types.hpp"
+#include "sc_logging.hpp"
+#include "sc_opengl/atoms/pv_ubo.hpp"
+#include "sc_opengl/atoms/sprite_database.hpp"
+#include "sc_opengl/atoms/texture.hpp"
+#include "sc_window.hpp"
 
 static constexpr surge::usize max_sprites{10};
 

@@ -1,7 +1,7 @@
 #ifndef SURGE_MODULE_SPRITE_DEMO
 #define SURGE_MODULE_SPRITE_DEMO
 
-#include "surge_core.hpp"
+#include "sc_options.hpp"
 
 #if defined(SURGE_COMPILER_Clang)                                                                  \
     || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_SPRITE_DEMO

@@ -1,9 +1,9 @@
-#include "gl_atoms/sprite_database.hpp"
+#include "sc_opengl/atoms/sprite_database.hpp"
 
-#include "allocators.hpp"
-#include "gl_atoms/shaders.hpp"
-#include "logging.hpp"
-#include "options.hpp"
+#include "sc_allocators.hpp"
+#include "sc_logging.hpp"
+#include "sc_opengl/atoms/shaders.hpp"
+#include "sc_options.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <gsl/gsl-lite.hpp>

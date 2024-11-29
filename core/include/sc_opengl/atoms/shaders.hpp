@@ -1,8 +1,8 @@
 #ifndef SURGE_CORE_GL_ATOM_SHADERS_HPP
 #define SURGE_CORE_GL_ATOM_SHADERS_HPP
 
-#include "error_types.hpp"
-#include "renderer_gl.hpp"
+#include "sc_error_types.hpp"
+#include "sc_opengl/sc_opengl.hpp"
 
 #include <tl/expected.hpp>
 

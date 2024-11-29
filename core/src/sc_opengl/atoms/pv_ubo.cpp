@@ -1,14 +1,17 @@
-#include "gl_atoms/pv_ubo.hpp"
+#include "sc_opengl/atoms/pv_ubo.hpp"
 
-#include "logging.hpp"
+#include "sc_logging.hpp"
+#include "sc_options.hpp"
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 #endif
 
 auto surge::gl_atom::pv_ubo::buffer::create() noexcept -> buffer {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::pv_ubo::buffer::create");
   TracyGpuZone("GPU surge::gl_atom::pv_ubo::buffer::create");
 #endif
@@ -25,7 +28,8 @@ auto surge::gl_atom::pv_ubo::buffer::create() noexcept -> buffer {
 }
 
 void surge::gl_atom::pv_ubo::buffer::destroy() noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::pv_ubo::buffer::destroy");
   TracyGpuZone("GPU surge::gl_atom::pv_ubo::buffer::destroy");
 #endif
@@ -35,7 +39,8 @@ void surge::gl_atom::pv_ubo::buffer::destroy() noexcept {
 
 void surge::gl_atom::pv_ubo::buffer::update_all(const glm::mat4 *projection,
                                                 const glm::mat4 *view) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::pv_ubo::buffer::update_all");
   TracyGpuZone("GPU surge::gl_atom::pv_ubo::buffer::update_all");
 #endif
@@ -45,7 +50,8 @@ void surge::gl_atom::pv_ubo::buffer::update_all(const glm::mat4 *projection,
 }
 
 void surge::gl_atom::pv_ubo::buffer::update_view(const glm::mat4 *view) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::pv_ubo::buffer::update_view");
   TracyGpuZone("GPU surge::gl_atom::pv_ubo::buffer::update_view");
 #endif
@@ -54,7 +60,8 @@ void surge::gl_atom::pv_ubo::buffer::update_view(const glm::mat4 *view) noexcept
 }
 
 void surge::gl_atom::pv_ubo::buffer::bind_to_location(GLuint location) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::pv_ubo::buffer::bind_to_location");
   TracyGpuZone("GPU surge::gl_atom::pv_ubo::buffer::bind_to_location");
 #endif

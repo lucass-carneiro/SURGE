@@ -1,9 +1,11 @@
-#include "gl_atoms/shaders.hpp"
+#include "sc_opengl/atoms/shaders.hpp"
 
-#include "files.hpp"
-#include "logging.hpp"
+#include "sc_files.hpp"
+#include "sc_logging.hpp"
+#include "sc_options.hpp"
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
 #  include <tracy/TracyOpenGL.hpp>
 
@@ -13,7 +15,8 @@
 
 static auto load_and_compile_shader(const char *p, GLenum shader_type) noexcept
     -> tl::expected<GLuint, surge::error> {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::load_and_compile_shader");
   TracyGpuZone("GPU load_and_compile_shader");
 #endif
@@ -79,7 +82,8 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
                                 bool destroy_shaders = true) noexcept
     -> tl::expected<GLuint, surge::error> {
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::link_shader_program");
   TracyGpuZone("GPU surge::gl_atom::shader::link_shader_program");
 #endif
@@ -141,7 +145,8 @@ static auto link_shader_program(GLuint vertex_shader_handle, GLuint fragment_sha
 static auto link_single_shader(GLuint shader_handle, bool destroy_shaders = true) noexcept
     -> tl::expected<GLuint, surge::error> {
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::link_shader_program");
   TracyGpuZone("GPU surge::gl_atom::shader::link_shader_program");
 #endif
@@ -198,7 +203,8 @@ auto surge::gl_atom::shader::create_shader_program(const char *vertex_shader_pat
                                                    const char *fragment_shader_path) noexcept
     -> tl::expected<GLuint, error> {
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::create_shader_program");
 #endif
 
@@ -219,7 +225,8 @@ auto surge::gl_atom::shader::create_shader_program(const char *vertex_shader_pat
 
 auto surge::gl_atom::shader::create_compute_shader(const char *compute_shader_path) noexcept
     -> tl::expected<GLuint, error> {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::create_compute_shader");
 #endif
 
@@ -233,7 +240,8 @@ auto surge::gl_atom::shader::create_compute_shader(const char *compute_shader_pa
 }
 
 void surge::gl_atom::shader::destroy_shader_program(GLuint program) noexcept {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo)) && defined(SURGE_ENABLE_TRACY)
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::shader::destroy_shader_program");
   TracyGpuZone("GPU surge::gl_atom::shader::destroy_shader_program");
 #endif

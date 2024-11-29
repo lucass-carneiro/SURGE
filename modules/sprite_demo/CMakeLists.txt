@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(
   SurgeSpriteDemoModule
-  VERSION 1.0.0
+  VERSION 1.3.0
   LANGUAGES CXX
 )
 
@@ -16,7 +16,6 @@ project(
 
 set(
   SURGE_MODULE_SPRITE_DEMO_HEADER_LIST
-  "${SurgeCore_SOURCE_DIR}/include/surge_core.hpp"
   "${PROJECT_SOURCE_DIR}/include/sprite_demo.hpp"
 )
 
@@ -31,9 +30,7 @@ set(
 
 add_library(SurgeSpriteDemoModule MODULE ${SURGE_MODULE_SPRITE_DEMO_HEADER_LIST} ${SURGE_MODULE_SPRITE_DEMO_SOURCE_LIST})
 target_compile_features(SurgeSpriteDemoModule PRIVATE cxx_std_20)
-set_target_properties(SurgeSpriteDemoModule PROPERTIES PREFIX "")
 set_target_properties(SurgeSpriteDemoModule PROPERTIES OUTPUT_NAME "sprite_demo")
-set_target_properties(SurgeSpriteDemoModule PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/sprite_demo.hpp")
 set_target_properties(SurgeSpriteDemoModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_compile_definitions(SurgeSpriteDemoModule PUBLIC COMPILING_SURGE_MODULE_SPRITE_DEMO)

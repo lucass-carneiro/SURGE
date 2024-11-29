@@ -3,7 +3,7 @@
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/default)
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/sprite_demo)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/sprite_demo)
 
 # -----------------------------------------
 # User Modules
