@@ -1,18 +1,18 @@
-#include "window.hpp"
+#include "sc_window.hpp"
 
-#include "error_types.hpp"
-#include "logging.hpp"
+#include "sc_error_types.hpp"
+#include "sc_logging.hpp"
 
 #include <gsl/gsl-lite.hpp>
 
 static GLFWwindow *g_engine_window{nullptr};
 
-static void glfw_error_callback(int code, const char *description) noexcept {
+static void glfw_error_callback(int code, const char *description) {
   log_error("GLFW error code {}: {}", code, description);
 }
 
 auto surge::window::init(const config::window_resolution &wres, const config::window_attrs &w_attrs,
-                         const config::renderer_attrs &r_attrs) noexcept -> std::optional<error> {
+                         const config::renderer_attrs &r_attrs) -> std::optional<error> {
   /*************
    * GLFW init *
    *************/
@@ -158,15 +158,15 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
   return {};
 }
 
-void surge::window::terminate() noexcept {
+void surge::window::terminate() {
   log_info("Terminating window and renderer");
   glfwDestroyWindow(g_engine_window);
   glfwTerminate();
 }
 
-void surge::window::poll_events() noexcept { glfwPollEvents(); }
+void surge::window::poll_events() { glfwPollEvents(); }
 
-auto surge::window::get_dims() noexcept -> glm::vec2 {
+auto surge::window::get_dims() -> glm::vec2 {
   int ww{0}, wh{0};
   glfwGetWindowSize(g_engine_window, &ww, &wh);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
@@ -177,7 +177,7 @@ auto surge::window::get_dims() noexcept -> glm::vec2 {
   }
 }
 
-auto surge::window::get_cursor_pos() noexcept -> glm::vec2 {
+auto surge::window::get_cursor_pos() -> glm::vec2 {
   double x{0}, y{0};
   glfwGetCursorPos(g_engine_window, &x, &y);
 
@@ -189,26 +189,25 @@ auto surge::window::get_cursor_pos() noexcept -> glm::vec2 {
   }
 }
 
-auto surge::window::get_key(int key) noexcept -> int { return glfwGetKey(g_engine_window, key); }
+auto surge::window::get_key(int key) -> int { return glfwGetKey(g_engine_window, key); }
 
-auto surge::window::get_mouse_button(int button) noexcept -> int {
+auto surge::window::get_mouse_button(int button) -> int {
   return glfwGetMouseButton(g_engine_window, button);
 }
 
-auto surge::window::should_close() noexcept -> bool {
+auto surge::window::should_close() -> bool {
   return static_cast<bool>(glfwWindowShouldClose(g_engine_window));
 }
 
-void surge::window::set_should_close(bool value) noexcept {
+void surge::window::set_should_close(bool value) {
   glfwSetWindowShouldClose(g_engine_window, value ? GLFW_TRUE : GLFW_FALSE);
 }
 
-void surge::window::swap_buffers() noexcept { glfwSwapBuffers(g_engine_window); }
+void surge::window::swap_buffers() { glfwSwapBuffers(g_engine_window); }
 
-auto surge::window::get_window_ptr() noexcept -> GLFWwindow * { return g_engine_window; }
+auto surge::window::get_window_ptr() -> GLFWwindow * { return g_engine_window; }
 
-static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int action,
-                                int mods) noexcept {
+static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int action, int mods) {
   auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
@@ -220,7 +219,7 @@ static void glfw_keyboard_event(GLFWwindow *window, int key, int scancode, int a
   }
 }
 
-static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, int mods) noexcept {
+static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, int mods) {
   auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
@@ -232,7 +231,7 @@ static void glfw_mouse_button_event(GLFWwindow *window, int button, int action, 
   }
 }
 
-static void glfw_mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) noexcept {
+static void glfw_mouse_scroll_event(GLFWwindow *window, double xoffset, double yoffset) {
   auto usr_ptr{glfwGetWindowUserPointer(window)};
   auto status{glfwGetError(nullptr)};
 
@@ -244,8 +243,7 @@ static void glfw_mouse_scroll_event(GLFWwindow *window, double xoffset, double y
   }
 }
 
-auto surge::window::bind_module_input_callbacks(module::api *mod_api) noexcept
-    -> std::optional<error> {
+auto surge::window::bind_module_input_callbacks(module::api *mod_api) -> std::optional<error> {
   log_info("Binding module interaction callbacks");
 
   // Set module api as user ptr
@@ -287,7 +285,7 @@ auto surge::window::bind_module_input_callbacks(module::api *mod_api) noexcept
   return {};
 }
 
-void surge::window::unbind_input_callbacks() noexcept {
+void surge::window::unbind_input_callbacks() {
   log_info("Unbinding module interaction callbacks");
 
   // Set moduel api as user ptr

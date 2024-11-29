@@ -1,10 +1,9 @@
 #ifndef SURGE_CORE_MODULE_HPP
 #define SURGE_CORE_MODULE_HPP
 
-#include "container_types.hpp"
-#include "error_types.hpp"
-#include "options.hpp"
-#include "renderer.hpp"
+#include "sc_container_types.hpp"
+#include "sc_error_types.hpp"
+#include "sc_options.hpp"
 
 // clang-format off
 #ifdef SURGE_SYSTEM_Windows

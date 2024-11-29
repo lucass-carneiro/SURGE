@@ -40,11 +40,12 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_error_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/glfw_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
   #"${PROJECT_SOURCE_DIR}/include/imgui_wrapper.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/module.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
   #"${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   #"${PROJECT_SOURCE_DIR}/include/renderer_gl.hpp"
   
@@ -60,8 +61,8 @@ set(
   
   #"${PROJECT_SOURCE_DIR}/include/renderer.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/timers.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/window.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
 )
 
 set(
@@ -79,7 +80,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
   #"${PROJECT_SOURCE_DIR}/src/imgui_wrapper.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/module.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
   #"${PROJECT_SOURCE_DIR}/src/renderer_gl.cpp"
   
   #"${PROJECT_SOURCE_DIR}/src/renderer_vk_clear.cpp"
@@ -94,8 +95,8 @@ set(
   
   #"${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/timers.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/window.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
 )
 
 # -----------------------------------------

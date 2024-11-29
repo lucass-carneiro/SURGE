@@ -1,14 +1,14 @@
-#include "module.hpp"
+#include "sc_module.hpp"
 
-#include "logging.hpp"
+#include "sc_logging.hpp"
 
 #include <filesystem>
 #include <gsl/gsl-lite.hpp>
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module,
-                             std::size_t max_size) noexcept -> tl::expected<string, error> {
+auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
+    -> tl::expected<string, error> {
 
   auto module_name{string(max_size, '\0')};
   const auto actual_name_size{

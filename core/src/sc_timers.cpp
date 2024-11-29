@@ -1,4 +1,4 @@
-#include "timers.hpp"
+#include "sc_timers.hpp"
 
 surge::timers::generic_timer::generic_timer() noexcept { begin = clock_t::now(); }
 
