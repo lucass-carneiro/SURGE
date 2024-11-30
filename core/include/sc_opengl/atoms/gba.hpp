@@ -1,10 +1,10 @@
 #ifndef SURGE_CORE_GL_ATOM_GBA_HPP
 #define SURGE_CORE_GL_ATOM_GBA_HPP
 
-#include "integer_types.hpp"
-#include "logging.hpp"
-#include "options.hpp"
-#include "renderer_gl.hpp"
+#include "sc_integer_types.hpp"
+#include "sc_logging.hpp"
+#include "sc_opengl/sc_opengl.hpp"
+#include "sc_options.hpp"
 
 #include <array>
 

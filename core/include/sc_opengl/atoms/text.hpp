@@ -1,9 +1,9 @@
 #ifndef SURGE_CORE_GL_ATOM_TEXT_HPP
 #define SURGE_CORE_GL_ATOM_TEXT_HPP
 
-#include "container_types.hpp"
-#include "error_types.hpp"
 #include "gba.hpp"
+#include "sc_container_types.hpp"
+#include "sc_error_types.hpp"
 
 // clang-format off
 #include <ft2build.h>
@@ -64,14 +64,14 @@ public:
 
   [[nodiscard]] auto get_texture_handles() const noexcept -> const hash_map<FT_ULong, GLuint64> &;
 
-  [[nodiscard]] auto
-  get_bitmap_dims() const noexcept -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> &;
+  [[nodiscard]] auto get_bitmap_dims() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> &;
 
-  [[nodiscard]] auto
-  get_bearings() const noexcept -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> &;
+  [[nodiscard]] auto get_bearings() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> &;
 
-  [[nodiscard]] auto
-  get_advances() const noexcept -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> &;
+  [[nodiscard]] auto get_advances() const noexcept
+      -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> &;
 };
 
 struct text_buffer {

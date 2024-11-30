@@ -26,9 +26,12 @@ configure_file(
 set(
   SURGE_CORE_HEADER_LIST
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/gba.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/pv_ubo.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/shaders.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
 
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
@@ -39,6 +42,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
@@ -50,15 +54,18 @@ set(
 set(
   SURGE_CORE_SOURCE_LIST
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/imgui.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/pv_ubo.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/shaders.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
