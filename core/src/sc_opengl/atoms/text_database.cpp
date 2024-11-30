@@ -134,9 +134,11 @@ auto surge::gl_atom::text_database::glyph_cache::create(create_info ci)
 #endif
 
   // Read creation data
-  const bool size_equals{ci.fonts.size() == ci.sizes_in_pts.size()
-                         && ci.fonts.size() == ci.resolution_dpis.size()
-                         && ci.fonts.size() == ci.langs.size()};
+  const bool size_equals{
+      ci.fonts.size() == ci.sizes_in_pts.size() && ci.fonts.size() == ci.resolution_dpis.size()
+      && ci.fonts.size() == ci.langs.size() && ci.fonts.size() == ci.replacement_char_codes.size()
+
+  };
 
   if (!size_equals) {
     log_error("Glyph cache creation failed due to inconsistent data. The number of fonts, sizes, "
@@ -206,6 +208,7 @@ auto surge::gl_atom::text_database::glyph_cache::create(create_info ci)
     const auto &path{ci.fonts[i]};
     const auto &face{faces[i]};
     const auto &lang{ci.langs[i]};
+    const auto &replacement_char_code{ci.replacement_char_codes[i]};
 
     log_info("Creating glyph cache for font {} {}", path, static_cast<void *>(face));
 
@@ -247,7 +250,7 @@ auto surge::gl_atom::text_database::glyph_cache::create(create_info ci)
       }
 
       // Replacement character
-      load_err = load_nonprintable_character(cd, face, ci.replacement_char_code);
+      load_err = load_nonprintable_character(cd, face, replacement_char_code);
       if (load_err) {
         return tl::unexpected{load_err.value()};
       }
@@ -338,4 +341,210 @@ void surge::gl_atom::text_database::glyph_cache::unreside_all(cache gc) {
       }
     }
   }
+}
+
+void surge::gl_atom::text_database::glyph_cache::reside(cache gc, usize index) {
+  if (index < gc->caches.size()) {
+    for (const auto &handle : gc->caches[index].texture_handles) {
+      if (handle.second != 0 && !glIsTextureHandleResidentARB(handle.second)) {
+        glMakeTextureHandleResidentARB(handle.second);
+      }
+    }
+  } else {
+    log_warn(
+        "Unable to make font index {} in glyph cache {} non resident. The index does not exist",
+        index, static_cast<void *>(gc));
+  }
+}
+
+void surge::gl_atom::text_database::glyph_cache::unreside(cache gc, usize index) {
+  if (index < gc->caches.size()) {
+    for (const auto &handle : gc->caches[index].texture_handles) {
+      if (handle.second != 0 && glIsTextureHandleResidentARB(handle.second)) {
+        glMakeTextureHandleNonResidentARB(handle.second);
+      }
+    }
+  } else {
+    log_warn(
+        "Unable to make font index {} in glyph cache {} non resident. The index does not exist",
+        index, static_cast<void *>(gc));
+  }
+}
+
+/* This struct needs to be aligned such that
+ * it is a multiple of `alignment`, where
+ *
+ * GLint alignment{0};
+ * glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &alignment);
+ */
+struct text_info {
+  GLuint64 texture_handle{0};
+  float color_mod[4]{1.0f, 1.0f, 1.0f, 1.0f};
+  float model[16]{
+      0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+  };
+};
+
+struct surge::gl_atom::text_database::text_buffer::buffer_t {
+  usize max_glyphs{0};
+
+  GLsync fence{nullptr};
+
+  GLuint buffer_id{0};
+  text_info *buffer_data{nullptr};
+
+  usize write_idx{0};
+
+  GLuint text_shader{0};
+
+  GLuint VBO{0};
+  GLuint EBO{0};
+  GLuint VAO{0};
+};
+
+auto surge::gl_atom::text_database::text_buffer::create(create_info ci) noexcept
+    -> tl::expected<buffer, error> {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::text_database::text_buffer::create");
+  TracyGpuZone("GPU surge::gl_atom::text_database::text_buffer::create");
+#endif
+
+  // Alloc instance
+  auto txtb{static_cast<buffer>(allocators::mimalloc::malloc(sizeof(buffer_t)))};
+
+  if (txtb == nullptr) {
+    log_error("Unable to allocate sprite database instance");
+    return tl::unexpected{sdb_instance_alloc};
+  }
+
+  new (txtb)(buffer_t)();
+
+  // Read create info
+  txtb->max_glyphs = ci.max_glyphs;
+
+  // Alloc GPU buffer
+  const auto total_buffer_size{static_cast<GLsizeiptr>(sizeof(text_info) * txtb->max_glyphs)};
+
+  constexpr GLbitfield map_flags{GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT};
+  constexpr GLbitfield create_flags{map_flags | GL_DYNAMIC_STORAGE_BIT};
+
+  glCreateBuffers(1, &(txtb->buffer_id));
+  glNamedBufferStorage(txtb->buffer_id, total_buffer_size, nullptr, create_flags);
+  txtb->buffer_data = static_cast<text_info *>(
+      glMapNamedBufferRange(txtb->buffer_id, 0, total_buffer_size, map_flags));
+
+  // Compile shaders
+  const auto text_shader{shader::create_shader_program("shaders/gl/text_database.vert",
+                                                       "shaders/gl/text_database.frag")};
+  if (!text_shader) {
+    log_error("Unable to create text_database shader");
+    return tl::unexpected{text_shader.error()};
+  }
+
+  txtb->text_shader = *text_shader;
+
+  // Vertex buffers
+  glCreateVertexArrays(1, &(txtb->VAO));
+  glCreateBuffers(1, &(txtb->VBO));
+  glCreateBuffers(1, &(txtb->EBO));
+
+  const std::array<float, 20> vertex_attributes{
+      0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+      1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left
+  };
+
+  const std::array<GLuint, 6> draw_indices{0, 1, 2, 2, 3, 0};
+
+  glBindVertexArray(txtb->VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, txtb->VBO);
+  glBufferData(GL_ARRAY_BUFFER, vertex_attributes.size() * sizeof(float), vertex_attributes.data(),
+               GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, txtb->EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, draw_indices.size() * sizeof(GLuint), draw_indices.data(),
+               GL_STATIC_DRAW);
+
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        reinterpret_cast<const void *>(3 * sizeof(float))); // NOLINT
+
+  // Done
+  log_info("Created new text buffer, handle {} using {} B of video memory",
+           static_cast<void *>(txtb), total_buffer_size);
+
+  return txtb;
+}
+
+void surge::gl_atom::text_database::text_buffer::destroy(buffer txtb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::text_database::text_buffer::destroy");
+  TracyGpuZone("GPU surge::gl_atom::text_database::text_buffer::destroy");
+#endif
+
+  log_info("Destroying text buffer, handle {}", static_cast<void *>(txtb));
+
+  wait_idle(txtb);
+
+  // Delete vertex buffers
+  glDeleteBuffers(1, &(txtb->EBO));
+  glDeleteBuffers(1, &(txtb->VBO));
+  glDeleteVertexArrays(1, &(txtb->VAO));
+
+  // Delete shader program
+  shader::destroy_shader_program(txtb->text_shader);
+
+  // Free GPU buffer
+  glUnmapNamedBuffer(txtb->buffer_id);
+  glDeleteBuffers(1, &(txtb->buffer_id));
+
+  // Free instance
+  allocators::mimalloc::free(static_cast<void *>(txtb));
+}
+
+static void wait_buffer(surge::gl_atom::text_database::text_buffer::buffer txtb) {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::text_database::text_buffer::wait_buffer");
+  TracyGpuZone("GPU surge::gl_atom::text_database::text_buffer::wait_buffer");
+#endif
+
+  auto &fence{txtb->fence};
+
+  if (fence != nullptr) {
+    while (true) {
+      const auto wait_res{glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1)};
+      if (wait_res == GL_ALREADY_SIGNALED || wait_res == GL_CONDITION_SATISFIED) {
+        glDeleteSync(fence);
+        fence = nullptr;
+        return;
+      }
+    }
+  }
+}
+
+static void lock_buffer(surge::gl_atom::text_database::text_buffer::buffer txtb) {
+  auto &fence{txtb->fence};
+
+  if (fence == nullptr) {
+    fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  }
+}
+
+void surge::gl_atom::text_database::text_buffer::wait_idle(buffer txtb) noexcept {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::text_database::text_buffer::wait_idle");
+  TracyGpuZone("GPU surge::gl_atom::text_database::text_buffer::wait_idle");
+#endif
+
+  wait_buffer(txtb);
 }

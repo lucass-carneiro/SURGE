@@ -22,7 +22,7 @@
  * infrastructure would allow for more characters to be handled. Maybe.
  *
  */
-namespace surge::gl_atom {
+namespace surge::gl_atom::text {
 
 struct text_engine {
 private:
@@ -103,6 +103,6 @@ public:
   void draw(const glm::vec4 &color) noexcept;
 };
 
-} // namespace surge::gl_atom
+} // namespace surge::gl_atom::text
 
 #endif // SURGE_CORE_GL_ATOM_TEXT_HPP

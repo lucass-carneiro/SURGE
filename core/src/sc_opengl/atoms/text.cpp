@@ -37,10 +37,10 @@ static auto FT_realloc(FT_Memory, long, long new_size, void *block) noexcept -> 
 // NOLINTNEXTLINE
 static FT_MemoryRec_ ft_mimalloc{nullptr, FT_malloc, FT_free, FT_realloc};
 
-auto surge::gl_atom::text_engine::create() noexcept -> tl::expected<text_engine, error> {
+auto surge::gl_atom::text::text_engine::create() noexcept -> tl::expected<text_engine, error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_engine::create()");
+  ZoneScopedN("surge::gl_atom::text::text_engine::create()");
 #endif
   text_engine engine{};
 
@@ -58,10 +58,10 @@ auto surge::gl_atom::text_engine::create() noexcept -> tl::expected<text_engine,
   return engine;
 }
 
-void surge::gl_atom::text_engine::destroy() noexcept {
+void surge::gl_atom::text::text_engine::destroy() noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_engine::destroy");
+  ZoneScopedN("surge::gl_atom::text::text_engine::destroy");
 #endif
 
   for (auto &face : faces) {
@@ -77,12 +77,13 @@ void surge::gl_atom::text_engine::destroy() noexcept {
   }
 }
 
-auto surge::gl_atom::text_engine::load_face(const char *path, std::string_view name,
-                                            FT_F26Dot6 size_in_pts, FT_UInt resolution_dpi) noexcept
+auto surge::gl_atom::text::text_engine::load_face(const char *path, std::string_view name,
+                                                  FT_F26Dot6 size_in_pts,
+                                                  FT_UInt resolution_dpi) noexcept
     -> std::optional<error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_engine::load_face()");
+  ZoneScopedN("surge::gl_atom::text::text_engine::load_face()");
 #endif
   log_info("Loading face {} with name {}", path, name.data());
 
@@ -106,7 +107,7 @@ auto surge::gl_atom::text_engine::load_face(const char *path, std::string_view n
   return {};
 }
 
-auto surge::gl_atom::text_engine::get_face(std::string_view name) noexcept
+auto surge::gl_atom::text::text_engine::get_face(std::string_view name) noexcept
     -> std::optional<FT_Face> {
   if (faces.contains(name)) {
     return faces[name];
@@ -116,15 +117,16 @@ auto surge::gl_atom::text_engine::get_face(std::string_view name) noexcept
   }
 }
 
-auto surge::gl_atom::text_engine::get_faces() noexcept -> hash_map<std::string_view, FT_Face> & {
+auto surge::gl_atom::text::text_engine::get_faces() noexcept
+    -> hash_map<std::string_view, FT_Face> & {
   return faces;
 }
 
-auto surge::gl_atom::glyph_cache::create(FT_Face face, language lang) noexcept
+auto surge::gl_atom::text::glyph_cache::create(FT_Face face, language lang) noexcept
     -> tl::expected<glyph_cache, error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::glyph_cache::create()");
+  ZoneScopedN("surge::gl_atom::text::glyph_cache::create()");
 #endif
   if (!face) {
     log_error("Unable to create glyph cache: null font face passed");
@@ -185,7 +187,7 @@ auto surge::gl_atom::glyph_cache::create(FT_Face face, language lang) noexcept
   return cache;
 }
 
-void surge::gl_atom::glyph_cache::destroy() noexcept {
+void surge::gl_atom::text::glyph_cache::destroy() noexcept {
   log_info("Destroying glyph cache");
 
   make_non_resident();
@@ -196,7 +198,7 @@ void surge::gl_atom::glyph_cache::destroy() noexcept {
   }
 }
 
-auto surge::gl_atom::glyph_cache::load_character(FT_Face face, FT_ULong c) noexcept
+auto surge::gl_atom::text::glyph_cache::load_character(FT_Face face, FT_ULong c) noexcept
     -> std::optional<error> {
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -253,7 +255,8 @@ auto surge::gl_atom::glyph_cache::load_character(FT_Face face, FT_ULong c) noexc
   return {};
 }
 
-auto surge::gl_atom::glyph_cache::load_nonprintable_character(FT_Face face, FT_ULong c) noexcept
+auto surge::gl_atom::text::glyph_cache::load_nonprintable_character(FT_Face face,
+                                                                    FT_ULong c) noexcept
     -> std::optional<error> {
 
   const auto status{FT_Load_Char(face, c, FT_LOAD_RENDER)};
@@ -275,7 +278,7 @@ auto surge::gl_atom::glyph_cache::load_nonprintable_character(FT_Face face, FT_U
   }
 }
 
-void surge::gl_atom::glyph_cache::make_resident() noexcept {
+void surge::gl_atom::text::glyph_cache::make_resident() noexcept {
   for (const auto &handle : texture_handles) {
     if (handle.second != 0 && !glIsTextureHandleResidentARB(handle.second)) {
       glMakeTextureHandleResidentARB(handle.second);
@@ -283,7 +286,7 @@ void surge::gl_atom::glyph_cache::make_resident() noexcept {
   }
 }
 
-void surge::gl_atom::glyph_cache::make_non_resident() noexcept {
+void surge::gl_atom::text::glyph_cache::make_non_resident() noexcept {
   for (const auto &handle : texture_handles) {
     if (handle.second != 0 && glIsTextureHandleResidentARB(handle.second)) {
       glMakeTextureHandleNonResidentARB(handle.second);
@@ -291,32 +294,32 @@ void surge::gl_atom::glyph_cache::make_non_resident() noexcept {
   }
 }
 
-auto surge::gl_atom::glyph_cache::get_texture_handles() const noexcept
+auto surge::gl_atom::text::glyph_cache::get_texture_handles() const noexcept
     -> const hash_map<FT_ULong, GLuint64> & {
   return texture_handles;
 }
 
-auto surge::gl_atom::glyph_cache::get_bitmap_dims() const noexcept
+auto surge::gl_atom::text::glyph_cache::get_bitmap_dims() const noexcept
     -> const hash_map<FT_ULong, glm::vec<2, unsigned int>> & {
   return bitmap_dims;
 }
 
-auto surge::gl_atom::glyph_cache::get_bearings() const noexcept
+auto surge::gl_atom::text::glyph_cache::get_bearings() const noexcept
     -> const hash_map<FT_ULong, glm::vec<2, FT_Int>> & {
   return bearings;
 }
 
-auto surge::gl_atom::glyph_cache::get_advances() const noexcept
+auto surge::gl_atom::text::glyph_cache::get_advances() const noexcept
     -> const hash_map<FT_ULong, glm::vec<2, FT_Pos>> & {
   return advances;
 }
 
-auto surge::gl_atom::text_buffer::create(usize max_chars) noexcept
+auto surge::gl_atom::text::text_buffer::create(usize max_chars) noexcept
     -> tl::expected<text_buffer, error> {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_buffer::create()");
-  TracyGpuZone("GPU surge::gl_atom::text_buffer::create()");
+  ZoneScopedN("surge::gl_atom::text::text_buffer::create()");
+  TracyGpuZone("GPU surge::gl_atom::text::text_buffer::create()");
 #endif
 
   text_buffer tb{};
@@ -378,11 +381,11 @@ auto surge::gl_atom::text_buffer::create(usize max_chars) noexcept
   return tb;
 }
 
-void surge::gl_atom::text_buffer::destroy() noexcept {
+void surge::gl_atom::text::text_buffer::destroy() noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_buffer::destroy()");
-  TracyGpuZone("GPU surge::gl_atom::text_buffer::destroy()");
+  ZoneScopedN("surge::gl_atom::text::text_buffer::destroy()");
+  TracyGpuZone("GPU surge::gl_atom::text::text_buffer::destroy()");
 #endif
   log_info("Destroying Text Buffer");
 
@@ -395,8 +398,8 @@ void surge::gl_atom::text_buffer::destroy() noexcept {
   shader::destroy_shader_program(text_shader);
 }
 
-auto surge::gl_atom::text_buffer::get_bbox_size(glyph_cache &cache, std::string_view text) noexcept
-    -> glm::vec2 {
+auto surge::gl_atom::text::text_buffer::get_bbox_size(glyph_cache &cache,
+                                                      std::string_view text) noexcept -> glm::vec2 {
   float bb_w{0.0f};
   float bb_h{0.0f};
 
@@ -427,8 +430,9 @@ auto surge::gl_atom::text_buffer::get_bbox_size(glyph_cache &cache, std::string_
   return glm::vec2{bb_w, bb_h};
 }
 
-void surge::gl_atom::text_buffer::push(const glm::vec3 &baseline_origin, const glm::vec2 &scale,
-                                       glyph_cache &cache, std::string_view text) noexcept {
+void surge::gl_atom::text::text_buffer::push(const glm::vec3 &baseline_origin,
+                                             const glm::vec2 &scale, glyph_cache &cache,
+                                             std::string_view text) noexcept {
 
   auto pen_origin{baseline_origin};
 
@@ -470,10 +474,11 @@ void surge::gl_atom::text_buffer::push(const glm::vec3 &baseline_origin, const g
   }
 }
 
-void surge::gl_atom::text_buffer::push_centered(const glm::vec3 &baseline_origin,
-                                                float intended_scale, const glm::vec2 &region_dims,
-                                                glyph_cache &cache, std::string_view text,
-                                                float decrement_step) noexcept {
+void surge::gl_atom::text::text_buffer::push_centered(const glm::vec3 &baseline_origin,
+                                                      float intended_scale,
+                                                      const glm::vec2 &region_dims,
+                                                      glyph_cache &cache, std::string_view text,
+                                                      float decrement_step) noexcept {
 
   const auto bbox{get_bbox_size(cache, text)};
 
@@ -491,16 +496,16 @@ void surge::gl_atom::text_buffer::push_centered(const glm::vec3 &baseline_origin
   push(baseline_origin + shift, glm::vec2{scale}, cache, text);
 }
 
-void surge::gl_atom::text_buffer::reset() noexcept {
+void surge::gl_atom::text::text_buffer::reset() noexcept {
   models.reset();
   texture_handles.reset();
 }
 
-void surge::gl_atom::text_buffer::draw(const glm::vec4 &color) noexcept {
+void surge::gl_atom::text::text_buffer::draw(const glm::vec4 &color) noexcept {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::gl_atom::text_buffer::draw");
-  TracyGpuZone("GPU surge::gl_atom::text_buffer::draw");
+  ZoneScopedN("surge::gl_atom::text::text_buffer::draw");
+  TracyGpuZone("GPU surge::gl_atom::text::text_buffer::draw");
 #endif
 
   if (texture_handles.size() != 0 && models.size() != 0) {
