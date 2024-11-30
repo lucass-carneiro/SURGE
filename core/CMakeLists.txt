@@ -33,6 +33,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text_database.hpp"
 
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
@@ -60,6 +61,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text_database.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"

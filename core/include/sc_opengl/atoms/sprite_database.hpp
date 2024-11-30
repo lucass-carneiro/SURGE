@@ -1,5 +1,5 @@
-#ifndef SURGE_CORE_GL_ATOM_PMB_HPP
-#define SURGE_CORE_GL_ATOM_PMB_HPP
+#ifndef SURGE_CORE_GL_ATOM_SPRITE_DATABASE_HPP
+#define SURGE_CORE_GL_ATOM_SPRITE_DATABASE_HPP
 
 #include "sc_error_types.hpp"
 #include "sc_integer_types.hpp"
@@ -56,4 +56,4 @@ auto get_current_buffer_idx(database sdb) noexcept -> usize;
 
 } // namespace surge::gl_atom::sprite_database
 
-#endif // SURGE_CORE_GL_ATOM_PMB_HPP
+#endif // SURGE_CORE_GL_ATOM_SPRITE_DATABASE_HPP

@@ -41,6 +41,7 @@ struct surge::gl_atom::sprite_database::database_t {
 
   usize write_idx{0};
   usize write_buffer{0};
+  
   GLuint sprite_shader{0};
   GLuint deep_sprite_shader{0};
 
@@ -125,7 +126,7 @@ auto surge::gl_atom::sprite_database::create(database_create_info ci) noexcept
 
   if (sdb->fences == nullptr) {
 
-    log_error("Unable to allocat sprite databes fence array");
+    log_error("Unable to allocate sprite databese fence array");
     return tl::unexpected{sdb_fenc_alloc};
   }
 

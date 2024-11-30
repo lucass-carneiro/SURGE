@@ -68,6 +68,8 @@ enum error : int {
   sdb_instance_alloc,
   sdb_fenc_alloc,
   sdb_bad_capacity,
+  gc_inconsistent_creation_size,
+  gc_instance_alloc,
 
   // Vulkan errors
   vk_api_version_query,
