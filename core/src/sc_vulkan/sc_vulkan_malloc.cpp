@@ -1,10 +1,10 @@
 #define VMA_IMPLEMENTATION
 
-#include "renderer_vk_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
-#include "allocators.hpp"
-#include "logging.hpp"
-#include "options.hpp"
+#include "sc_allocators.hpp"
+#include "sc_logging.hpp"
+#include "sc_options.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 

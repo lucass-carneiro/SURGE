@@ -1,8 +1,8 @@
-#ifndef SURGE_CORE_RENDERER_VK_HPP
-#define SURGE_CORE_RENDERER_VK_HPP
+#ifndef SURGE_CORE_RENDERER_VULKAN_HPP
+#define SURGE_CORE_RENDERER_VULKAN_HPP
 
-#include "config.hpp"
-#include "renderer_vk_types.hpp"
+#include "sc_config.hpp"
+#include "sc_vulkan_types.hpp"
 
 #include <tl/expected.hpp>
 
@@ -24,4 +24,4 @@ void clear(context &ctx, VkImage swpc_image, const config::clear_color &w_ccl) n
 
 } // namespace surge::renderer::vk
 
-#endif // SURGE_CORE_RENDERER_VK_HPP
+#endif // SURGE_CORE_RENDERER_VULKAN_HPP

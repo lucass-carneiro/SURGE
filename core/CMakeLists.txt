@@ -34,6 +34,16 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
 
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_command.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_debug.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_descriptor.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_images.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_init.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_malloc.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_sync.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_types.hpp"
+
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
@@ -60,6 +70,16 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
+
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_descriptor.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"

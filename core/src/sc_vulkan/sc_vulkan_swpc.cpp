@@ -1,5 +1,5 @@
-#include "logging.hpp"
-#include "renderer_vk.hpp"
+#include "sc_logging.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 

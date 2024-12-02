@@ -11,8 +11,8 @@ auto fence_create_info(VkFenceCreateFlags flags = 0) noexcept -> VkFenceCreateIn
 
 auto semaphore_create_info(VkSemaphoreCreateFlags flags = 0) noexcept -> VkSemaphoreCreateInfo;
 
-auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
-                           VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo;
+auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept
+    -> VkSemaphoreSubmitInfo;
 
 } // namespace surge::renderer::vk
 

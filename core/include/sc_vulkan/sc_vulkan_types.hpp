@@ -1,9 +1,9 @@
 #ifndef SURGE_CORE_RENDERER_VK_TYPES_HPP
 #define SURGE_CORE_RENDERER_VK_TYPES_HPP
 
-#include "container_types.hpp"
-#include "integer_types.hpp"
-#include "options.hpp"
+#include "sc_container_types.hpp"
+#include "sc_integer_types.hpp"
+#include "sc_options.hpp"
 
 // clang-format off
 #include <vulkan/vulkan.h>

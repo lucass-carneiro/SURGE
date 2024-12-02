@@ -1,11 +1,11 @@
-#ifndef SURGE_CORE_RENDERER_VK_INIT_HPP
-#define SURGE_CORE_RENDERER_VK_INIT_HPP
+#ifndef SURGE_CORE_RENDERER_VULKAN_INIT_HPP
+#define SURGE_CORE_RENDERER_VULKAN_INIT_HPP
 
-#include "config.hpp"
-#include "container_types.hpp"
-#include "error_types.hpp"
-#include "options.hpp"
-#include "renderer_vk_types.hpp"
+#include "sc_config.hpp"
+#include "sc_container_types.hpp"
+#include "sc_error_types.hpp"
+#include "sc_options.hpp"
+#include "sc_vulkan_types.hpp"
 
 #include <tl/expected.hpp>
 
@@ -42,18 +42,18 @@ auto create_logical_device(VkPhysicalDevice phys_dev) noexcept -> tl::expected<V
 
 auto create_window_surface(VkInstance instance) noexcept -> tl::expected<VkSurfaceKHR, error>;
 
-auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev,
-                       VkSurfaceKHR surface) noexcept -> tl::expected<queue_handles, error>;
+auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface) noexcept
+    -> tl::expected<queue_handles, error>;
 
 auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
-                      const config::renderer_attrs &r_attrs, u32 width,
-                      u32 height) noexcept -> tl::expected<swapchain_data, error>;
+                      const config::renderer_attrs &r_attrs, u32 width, u32 height) noexcept
+    -> tl::expected<swapchain_data, error>;
 
-auto create_frame_data(VkDevice device,
-                       u32 graphics_queue_idx) noexcept -> tl::expected<frame_data, error>;
+auto create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
+    -> tl::expected<frame_data, error>;
 
 void destroy_frame_data(VkDevice device, frame_data &frm_data) noexcept;
 
 } // namespace surge::renderer::vk
 
-#endif
+#endif // SURGE_CORE_RENDERER_VULKAN_INIT_HPP

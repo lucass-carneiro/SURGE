@@ -1,7 +1,7 @@
-#include "renderer_vk_descriptor.hpp"
+#include "sc_vulkan/sc_vulkan_descriptor.hpp"
 
-#include "logging.hpp"
-#include "renderer_vk_malloc.hpp"
+#include "sc_logging.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -46,8 +46,8 @@ void descriptor_layout_builder::add_binding(u32 binding, VkDescriptorType type) 
 void descriptor_layout_builder::clear() noexcept { bindings.clear(); }
 
 auto surge::renderer::vk::descriptor_allocator::create_pool(
-    VkDevice device, uint32_t set_count,
-    std::span<desc_pool_size_ratio> pool_ratios) noexcept -> tl::expected<VkDescriptorPool, error> {
+    VkDevice device, uint32_t set_count, std::span<desc_pool_size_ratio> pool_ratios) noexcept
+    -> tl::expected<VkDescriptorPool, error> {
 
   vector<VkDescriptorPoolSize> pool_sizes{};
 
@@ -155,9 +155,10 @@ void surge::renderer::vk::descriptor_allocator::clear(VkDevice device) noexcept 
   full_pools.clear();
 }
 
-auto surge::renderer::vk::descriptor_allocator::allocate(
-    VkDevice device, VkDescriptorSetLayout layout,
-    void *pNext) noexcept -> tl::expected<VkDescriptorSet, error> {
+auto surge::renderer::vk::descriptor_allocator::allocate(VkDevice device,
+                                                         VkDescriptorSetLayout layout,
+                                                         void *pNext) noexcept
+    -> tl::expected<VkDescriptorSet, error> {
 
   // Get or create a pool to allocate from
   auto pool{get_pool(device)};

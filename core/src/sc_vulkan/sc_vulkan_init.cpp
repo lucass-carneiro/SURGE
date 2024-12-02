@@ -1,13 +1,13 @@
-#include "renderer_vk_init.hpp"
+#include "sc_vulkan/sc_vulkan_init.hpp"
 
-#include "logging.hpp"
-#include "renderer_vk.hpp"
-#include "renderer_vk_command.hpp"
-#include "renderer_vk_debug.hpp"
-#include "renderer_vk_images.hpp"
-#include "renderer_vk_malloc.hpp"
-#include "renderer_vk_sync.hpp"
-#include "window.hpp"
+#include "sc_logging.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
+#include "sc_vulkan/sc_vulkan_command.hpp"
+#include "sc_vulkan/sc_vulkan_debug.hpp"
+#include "sc_vulkan/sc_vulkan_images.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_sync.hpp"
+#include "sc_window.hpp"
 
 #include <algorithm>
 #include <vulkan/vk_enum_string_helper.h>
@@ -516,10 +516,11 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
   return handles;
 }
 
-auto surge::renderer::vk::create_swapchain(
-    VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
-    const config::renderer_attrs &r_attrs, u32 width,
-    u32 height) noexcept -> tl::expected<swapchain_data, error> {
+auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
+                                           VkSurfaceKHR surface,
+                                           const config::renderer_attrs &r_attrs, u32 width,
+                                           u32 height) noexcept
+    -> tl::expected<swapchain_data, error> {
 
   log_info("Creating swapchain");
 
@@ -730,9 +731,10 @@ void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_da
   log_info("Frame data destroyied");
 }
 
-auto surge::renderer::vk::initialize(
-    const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
-    const config::window_attrs &) noexcept -> tl::expected<context, error> {
+auto surge::renderer::vk::initialize(const config::renderer_attrs &r_attrs,
+                                     const config::window_resolution &w_res,
+                                     const config::window_attrs &) noexcept
+    -> tl::expected<context, error> {
   log_info("Initializing Vulkan");
 
   context ctx{};

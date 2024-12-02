@@ -1,5 +1,5 @@
-#include "renderer_vk.hpp"
-#include "renderer_vk_images.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
+#include "sc_vulkan/sc_vulkan_images.hpp"
 
 void surge::renderer::vk::clear(context &ctx, VkImage swpc_image,
                                 const config::clear_color &w_ccl) noexcept {

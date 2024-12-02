@@ -1,7 +1,7 @@
-#include "renderer_vk_debug.hpp"
+#include "sc_vulkan/sc_vulkan_debug.hpp"
 
-#include "logging.hpp"
-#include "renderer_vk_malloc.hpp"
+#include "sc_logging.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -135,8 +135,9 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
   }
 }
 
-auto surge::renderer::vk::destroy_dbg_msg(
-    VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg) noexcept -> tl::expected<void, error> {
+auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance,
+                                          VkDebugUtilsMessengerEXT dbg_msg) noexcept
+    -> tl::expected<void, error> {
   log_info("Destroying debug messenger");
 
   auto func{reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(

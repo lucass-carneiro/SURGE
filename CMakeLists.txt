@@ -160,10 +160,11 @@ endif()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 
 # -----------------------------------------
-#  Engine player target
+#  Engine player targets
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_gl)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_vk)
 
 # -----------------------------------------
 #  Module targets

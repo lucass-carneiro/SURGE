@@ -1,5 +1,5 @@
-#ifndef SURGE_CORE_RENDERER_GL_HPP
-#define SURGE_CORE_RENDERER_GL_HPP
+#ifndef SURGE_CORE_RENDERER_OPENGL_HPP
+#define SURGE_CORE_RENDERER_OPENGL_HPP
 
 #include "sc_config.hpp"
 #include "sc_error_types.hpp"
@@ -15,4 +15,4 @@ void clear(const config::clear_color &w_ccl) noexcept;
 
 } // namespace surge::renderer::gl
 
-#endif // SURGE_CORE_RENDERER_GL_HPP
+#endif // SURGE_CORE_RENDERER_OPENGL_HPP

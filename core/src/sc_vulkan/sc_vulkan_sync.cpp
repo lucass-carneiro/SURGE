@@ -1,4 +1,4 @@
-#include "renderer_vk_sync.hpp"
+#include "sc_vulkan/sc_vulkan_sync.hpp"
 
 auto surge::renderer::vk::fence_create_info(VkFenceCreateFlags flags) noexcept
     -> VkFenceCreateInfo {
@@ -18,8 +18,9 @@ auto surge::renderer::vk::semaphore_create_info(VkSemaphoreCreateFlags flags) no
   return ci;
 }
 
-auto surge::renderer::vk::semaphore_submit_info(
-    VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept -> VkSemaphoreSubmitInfo {
+auto surge::renderer::vk::semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
+                                                VkSemaphore semaphore) noexcept
+    -> VkSemaphoreSubmitInfo {
   VkSemaphoreSubmitInfo si{};
   si.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
   si.pNext = nullptr;

@@ -1,9 +1,9 @@
-#ifndef SURGE_CORE_RENDERER_VK_DESCRIPTOR_HPP
-#define SURGE_CORE_RENDERER_VK_DESCRIPTOR_HPP
+#ifndef SURGE_CORE_RENDERER_VULKAN_DESCRIPTOR_HPP
+#define SURGE_CORE_RENDERER_VULKAN_DESCRIPTOR_HPP
 
-#include "container_types.hpp"
-#include "error_types.hpp"
-#include "integer_types.hpp"
+#include "sc_container_types.hpp"
+#include "sc_error_types.hpp"
+#include "sc_integer_types.hpp"
 
 // clang-format off
 #include <vulkan/vulkan.h>
@@ -21,8 +21,8 @@ struct descriptor_layout_builder {
   void clear() noexcept;
 
   auto build(VkDevice device, VkShaderStageFlags shaderStages, void *pNext = nullptr,
-             VkDescriptorSetLayoutCreateFlags flags
-             = 0) noexcept -> tl::expected<VkDescriptorSetLayout, error>;
+             VkDescriptorSetLayoutCreateFlags flags = 0) noexcept
+      -> tl::expected<VkDescriptorSetLayout, error>;
 };
 
 struct desc_pool_size_ratio {
@@ -54,10 +54,10 @@ public:
 
   void clear(VkDevice device) noexcept;
 
-  auto allocate(VkDevice device, VkDescriptorSetLayout layout,
-                void *pNext = nullptr) noexcept -> tl::expected<VkDescriptorSet, error>;
+  auto allocate(VkDevice device, VkDescriptorSetLayout layout, void *pNext = nullptr) noexcept
+      -> tl::expected<VkDescriptorSet, error>;
 };
 
 } // namespace surge::renderer::vk
 
-#endif // SURGE_CORE_RENDERER_VK_DESCRIPTOR_HPP
+#endif // SURGE_CORE_RENDERER_VULKAN_DESCRIPTOR_HPP

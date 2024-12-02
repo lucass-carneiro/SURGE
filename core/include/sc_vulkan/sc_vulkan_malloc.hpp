@@ -1,7 +1,7 @@
-#ifndef SURGE_RENDERER_VK_MALLOC_HPP
-#define SURGE_RENDERER_VK_MALLOC_HPP
+#ifndef SURGE_RENDERER_VULKAN_MALLOC_HPP
+#define SURGE_RENDERER_VULKAN_MALLOC_HPP
 
-#include "error_types.hpp"
+#include "sc_error_types.hpp"
 
 // clang-format off
 #include <vulkan/vulkan.h>
@@ -19,4 +19,4 @@ auto create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
 
 } // namespace surge::renderer::vk
 
-#endif // SURGE_RENDERER_VK_MALLOC_HPP
+#endif // SURGE_RENDERER_VULKAN_MALLOC_HPP
