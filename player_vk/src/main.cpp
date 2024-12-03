@@ -44,7 +44,7 @@ int main() {
     /*********************
      * Parse config file *
      *********************/
-    const auto config_data{config::parse_config()};
+    const auto config_data{config::parse_config(config::renderer_backend::vulkan)};
     if (!config_data) {
       return EXIT_FAILURE;
     }

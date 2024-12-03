@@ -27,10 +27,10 @@ struct window_attrs {
   bool cursor{true};
 };
 
-enum class renderer_backend { opengl, vulkan };
+enum class renderer_backend { opengl, vulkan, none };
 
 struct renderer_attrs {
-  renderer_backend backend{renderer_backend::opengl};
+  renderer_backend backend{renderer_backend::none};
   bool vsync{true};
   bool MSAA{true};
   bool fps_cap{true};
@@ -45,7 +45,7 @@ struct config_data {
   string module{};
 };
 
-auto parse_config() -> tl::expected<config_data, error>;
+auto parse_config(renderer_backend backend) -> tl::expected<config_data, error>;
 
 } // namespace surge::config
 
