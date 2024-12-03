@@ -187,7 +187,8 @@ auto surge::files::load_openEXR(const char *p) -> openEXR_image {
   // TODO: This image needs to be fliped around the y axis. Figure out how to do that. For now, flip
   // it in blender See:
   //
-https: // developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26-openexr-image-file-format
+  // https: //
+  // developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26-openexr-image-file-format
   try {
     Imf::RgbaInputFile in(p);
 
