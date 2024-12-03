@@ -31,6 +31,7 @@ set(
 add_library(SurgeImGUIModule MODULE ${SURGE_MODULE_DEFAULT_HEADER_LIST} ${SURGE_MODULE_DEFAULT_SOURCE_LIST})
 target_compile_features(SurgeImGUIModule PRIVATE cxx_std_20)
 set_target_properties(SurgeImGUIModule PROPERTIES OUTPUT_NAME "imgui_demo")
+set_target_properties(SurgeImGUIModule PROPERTIES PREFIX "") # removes the lib prefix on Linux
 set_target_properties(SurgeImGUIModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(SurgeImGUIModule PUBLIC COMPILING_SURGE_MODULE_IMGUI_DEMO)
 

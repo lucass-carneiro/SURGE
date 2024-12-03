@@ -31,6 +31,7 @@ set(
 add_library(SurgeDefaultModule MODULE ${SURGE_MODULE_DEFAULT_HEADER_LIST} ${SURGE_MODULE_DEFAULT_SOURCE_LIST})
 target_compile_features(SurgeDefaultModule PRIVATE cxx_std_20)
 set_target_properties(SurgeDefaultModule PROPERTIES OUTPUT_NAME "default")
+set_target_properties(SurgeDefaultModule PROPERTIES PREFIX "") # removes the lib prefix on Linux
 set_target_properties(SurgeDefaultModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(SurgeDefaultModule PUBLIC COMPILING_SURGE_MODULE_DEFAULT)
 

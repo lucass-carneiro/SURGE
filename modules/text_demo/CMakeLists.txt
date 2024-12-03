@@ -31,6 +31,7 @@ set(
 add_library(SurgeTextDemoModule MODULE ${SURGE_MODULE_TEXT_DEMO_HEADER_LIST} ${SURGE_MODULE_TEXT_DEMO_SOURCE_LIST})
 target_compile_features(SurgeTextDemoModule PRIVATE cxx_std_20)
 set_target_properties(SurgeTextDemoModule PROPERTIES OUTPUT_NAME "text_demo")
+set_target_properties(SurgeTextDemoModule PROPERTIES PREFIX "") # removes the lib prefix on Linux
 set_target_properties(SurgeTextDemoModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(SurgeTextDemoModule PUBLIC COMPILING_SURGE_MODULE_TEXT_DEMO)
 

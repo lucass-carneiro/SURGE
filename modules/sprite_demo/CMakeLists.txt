@@ -31,6 +31,7 @@ set(
 add_library(SurgeSpriteDemoModule MODULE ${SURGE_MODULE_SPRITE_DEMO_HEADER_LIST} ${SURGE_MODULE_SPRITE_DEMO_SOURCE_LIST})
 target_compile_features(SurgeSpriteDemoModule PRIVATE cxx_std_20)
 set_target_properties(SurgeSpriteDemoModule PROPERTIES OUTPUT_NAME "sprite_demo")
+set_target_properties(SurgeSpriteDemoModule PROPERTIES PREFIX "") # removes the lib prefix on Linux
 set_target_properties(SurgeSpriteDemoModule PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_compile_definitions(SurgeSpriteDemoModule PUBLIC COMPILING_SURGE_MODULE_SPRITE_DEMO)
