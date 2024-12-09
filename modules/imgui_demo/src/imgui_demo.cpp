@@ -1,7 +1,6 @@
 #include "imgui_demo.hpp"
 
 #include "sc_opengl/atoms/imgui.hpp"
-#include "sc_window.hpp"
 
 static ImGuiContext *imgui_ctx{nullptr};
 
@@ -12,17 +11,12 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) -> int {
   imgui_ctx = gl_atom::imgui::create(w, imgui::create_config{});
   ImGui::SetCurrentContext(imgui_ctx);
 
-  // Set module functions as input callbacks
-  glfwSetMouseButtonCallback(w, mouse_button_event);
-  glfwSetScrollCallback(w, mouse_scroll_event);
-
   return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t w) -> int {
   using namespace surge;
   gl_atom::imgui::destroy(imgui_ctx);
-  window::unbind_input_callbacks(w);
   return 0;
 }
 

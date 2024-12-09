@@ -24,6 +24,7 @@ void set_should_close(window_t window, bool value);
 
 void swap_buffers(window_t window);
 
+void bind_input_callbacks(window_t window, module::handle_t handle, const module::api &api);
 void unbind_input_callbacks(window_t window);
 
 } // namespace surge::window

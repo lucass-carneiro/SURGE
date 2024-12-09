@@ -205,6 +205,26 @@ void surge::window::set_should_close(window_t window, bool value) {
 
 void surge::window::swap_buffers(window_t window) { glfwSwapBuffers(window); }
 
+void surge::window::bind_input_callbacks(window_t window, module::handle_t handle,
+                                         const module::api &api) {
+  log_info("Binding module {} interaction callbacks", static_cast<void *>(handle));
+
+  glfwSetKeyCallback(window, api.keyboard_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetMouseButtonCallback(window, api.mouse_button_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetScrollCallback(window, api.mouse_scroll_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(handle));
+  }
+}
+
 void surge::window::unbind_input_callbacks(window_t window) {
   log_info("Unbinding all interaction callbacks for window {}", static_cast<void *>(window));
 
