@@ -9,7 +9,8 @@
 
 namespace surge::renderer::gl {
 
-auto init(const config::renderer_attrs &r_attrs) noexcept -> std::optional<error>;
+auto init(window::window_t w, const config::renderer_attrs &r_attrs) noexcept
+    -> std::optional<error>;
 void wait_idle() noexcept;
 void clear(const config::clear_color &w_ccl) noexcept;
 

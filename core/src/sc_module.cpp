@@ -71,121 +71,77 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
-  // on_load
-  const auto on_load_addr{GetProcAddress(module, "on_load")};
-  if (!on_load_addr) {
+static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
+    -> tl::expected<FARPROC, surge::error> {
+  const auto addr{GetProcAddress(module, func_name)};
+  if (!addr) {
     const auto error_code{GetLastError()};
     LPSTR error_txt{nullptr};
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to on_load in module {}: {}", static_cast<void *>(module),
-              error_txt);
+    log_error("Unable to obtain handle to function {} in module {}: {}", func_name,
+              static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{surge::error::symbol_retrival};
+  } else {
+    return addr;
+  }
+}
+
+auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
+  // on_load
+  const auto on_load_addr{get_func_addr(module, "on_load")};
+  if (!on_load_addr) {
+    return tl::unexpected{on_load_addr.error()};
   }
 
   // on_unload
-  const auto on_unload_addr{GetProcAddress(module, "on_unload")};
+  const auto on_unload_addr{get_func_addr(module, "on_unload")};
   if (!on_unload_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to on_unload in module {}: {}", static_cast<void *>(module),
-              error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{on_unload_addr.error()};
   }
 
   // draw
-  const auto draw_addr{GetProcAddress(module, "draw")};
+  const auto draw_addr{get_func_addr(module, "draw")};
   if (!draw_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to draw in module {}: {}", static_cast<void *>(module),
-              error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{draw_addr.error()};
   }
 
   // update
-  const auto update_addr{GetProcAddress(module, "update")};
+  const auto update_addr{get_func_addr(module, "update")};
   if (!update_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to update in module {}: {}", static_cast<void *>(module),
-              error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{update_addr.error()};
   }
 
   // keyboard_event
-  const auto keyboard_event_addr{GetProcAddress(module, "keyboard_event")};
+  const auto keyboard_event_addr{get_func_addr(module, "keyboard_event")};
   if (!keyboard_event_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to keyboard_event in module {}: {}",
-              static_cast<void *>(module), error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{keyboard_event_addr.error()};
   }
 
   // mouse_button_event
-  const auto mouse_button_event_addr{GetProcAddress(module, "mouse_button_event")};
+  const auto mouse_button_event_addr{get_func_addr(module, "mouse_button_event")};
   if (!mouse_button_event_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to mouse_button_event in module {}: {}",
-              static_cast<void *>(module), error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{mouse_button_event_addr.error()};
   }
 
   // mouse_scroll_event
-  const auto mouse_scroll_event_addr{GetProcAddress(module, "mouse_scroll_event")};
+  const auto mouse_scroll_event_addr{get_func_addr(module, "mouse_scroll_event")};
   if (!mouse_scroll_event_addr) {
-    const auto error_code{GetLastError()};
-    LPSTR error_txt{nullptr};
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-                       | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                   (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to mouse_scroll_event in module {}: {}",
-              static_cast<void *>(module), error_txt);
-    LocalFree(error_txt);
-    return tl::unexpected(error::symbol_retrival);
+    return tl::unexpected{mouse_scroll_event_addr.error()};
   }
 
   // clang-format off
   return api{
-    reinterpret_cast<on_load_t>(on_load_addr),
-    reinterpret_cast<on_unload_t>(on_unload_addr),
-    reinterpret_cast<draw_t>(draw_addr),
-    reinterpret_cast<update_t>(update_addr),
-    reinterpret_cast<keyboard_event_t>(keyboard_event_addr),
-    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr),
-    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr)
+    reinterpret_cast<on_load_t>(on_load_addr.value()),
+    reinterpret_cast<on_unload_t>(on_unload_addr.value()),
+    reinterpret_cast<draw_t>(draw_addr.value()),
+    reinterpret_cast<update_t>(update_addr.value()),
+    reinterpret_cast<keyboard_event_t>(keyboard_event_addr.value()),
+    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr.value()),
+    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr.value())
   };
   // clang-format on
 }

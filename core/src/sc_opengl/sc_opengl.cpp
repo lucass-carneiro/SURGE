@@ -32,14 +32,14 @@ static void GLAPIENTRY gl_error_callback(GLenum, GLenum, GLuint, GLenum severity
 }
 #endif
 
-auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
+auto surge::renderer::gl::init(window::window_t w, const config::renderer_attrs &r_attrs) noexcept
     -> std::optional<error> {
   /***********************
    * OpenGL context init *
    ***********************/
   log_info("Initializing OpenGL");
 
-  glfwMakeContextCurrent(window::get_window_ptr());
+  glfwMakeContextCurrent(w);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
     return error::glfw_make_ctx;
@@ -77,7 +77,7 @@ auto surge::renderer::gl::init(const config::renderer_attrs &r_attrs) noexcept
   }
 
   // Resize callback
-  glfwSetFramebufferSizeCallback(window::get_window_ptr(), glfw_gl_framebuffer_size_callback);
+  glfwSetFramebufferSizeCallback(w, glfw_gl_framebuffer_size_callback);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
     return error::glfw_resize_callback;

@@ -3,12 +3,14 @@
 
 #include "sc_config.hpp"
 #include "sc_vulkan_types.hpp"
+#include "sc_window.hpp"
 
 #include <tl/expected.hpp>
 
 namespace surge::renderer::vk {
 
-auto initialize(const config::renderer_attrs &r_attrs, const config::window_resolution &w_res,
+auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
+                const config::window_resolution &w_res,
                 const config::window_attrs &w_attrs) noexcept -> tl::expected<context, error>;
 
 void terminate(context &ctx) noexcept;

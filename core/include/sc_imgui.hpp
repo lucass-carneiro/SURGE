@@ -1,6 +1,8 @@
 #ifndef SURGE_CORE_SC_IMGUI_HPP
 #define SURGE_CORE_SC_IMGUI_HPP
 
+#include "sc_glfw_includes.hpp"
+
 #include <imgui.h>
 
 namespace surge::imgui {
@@ -13,8 +15,8 @@ struct create_config {
   themes theme{themes::dark};
 };
 
-void register_mouse_callback(int button, int action, int mods) noexcept;
-void register_mouse_scroll_callback(double xoffset, double yoffset) noexcept;
+void mouse_callback(window::window_t w, int button, int action, int mods) noexcept;
+void mouse_scroll_callback(window::window_t w, double xoffset, double yoffset) noexcept;
 
 } // namespace surge::imgui
 

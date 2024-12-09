@@ -1,6 +1,7 @@
 #ifndef SURGE_CORE_GL_ATOM_IMGUI_HPP
 #define SURGE_CORE_GL_ATOM_IMGUI_HPP
 
+#include "sc_glfw_includes.hpp"
 #include "sc_imgui.hpp"
 #include "sc_options.hpp"
 #include "sprite_database.hpp"
@@ -8,7 +9,8 @@
 
 namespace surge::gl_atom::imgui {
 
-auto create(surge::imgui::create_config &&cfg = surge::imgui::create_config{}) -> ImGuiContext *;
+auto create(window::window_t w, surge::imgui::create_config &&cfg = surge::imgui::create_config{})
+    -> ImGuiContext *;
 void destroy(ImGuiContext *ctx);
 
 void frame_begin();

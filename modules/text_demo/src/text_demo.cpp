@@ -27,7 +27,7 @@ static pv_ubo_t pv_ubo{};
 
 } // namespace globals
 
-extern "C" SURGE_MODULE_EXPORT auto on_load() -> int {
+extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) -> int {
   using namespace surge;
   using namespace gl_atom;
 
@@ -74,7 +74,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load() -> int {
 
   // PV UBO
   log_info("Creating projection and view matrices");
-  const auto dims{window::get_dims()};
+  const auto dims{window::get_dims(w)};
   const auto projection{glm::ortho(0.0f, dims[0], dims[1], 0.0f, 0.0f, 1.0f)};
   const auto view{glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(0.0f, 1.0f, 0.0f))};
@@ -85,7 +85,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load() -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload() -> int {
+extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) -> int {
   using namespace surge;
 
   log_info("Unloading Text Demo module");
@@ -102,13 +102,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload() -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw() -> int {
+extern "C" SURGE_MODULE_EXPORT auto draw(surge::window::window_t) -> int {
   globals::pv_ubo.bind_to_location(2);
   globals::txt_b.draw(glm::vec4{1.0f});
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(double dt) -> int {
+extern "C" SURGE_MODULE_EXPORT auto update(surge::window::window_t, double dt) -> int {
   using std::snprintf;
 
   auto &txt_gc{globals::txt_gc};
@@ -124,7 +124,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) -> int {
 
   txt_b.push(glm::vec3{10.0f, 160.0f, 0.1f}, glm::vec2{0.20f}, txt_gc, "Current frame rate:");
 
-  std::array<char, 5> fps_buffer{};
+  std::array<char, 8> fps_buffer{};
   std::fill(fps_buffer.begin(), fps_buffer.end(), '\0');
   snprintf(fps_buffer.data(), fps_buffer.size(), "%.0f", (1.0f / dt));
 
@@ -133,8 +133,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(double dt) -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(int, int, int, int) {}
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::window_t, int, int, int, int) {}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_button_event(int, int, int) {}
+extern "C" SURGE_MODULE_EXPORT void mouse_button_event(surge::window::window_t, int, int, int) {}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(double, double) {}
+extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(surge::window::window_t, double, double) {}

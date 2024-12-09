@@ -7,7 +7,8 @@
 #include <imgui_impl_opengl3.h>
 // clang-format on
 
-auto surge::gl_atom::imgui::create(surge::imgui::create_config &&cfg) -> ImGuiContext * {
+auto surge::gl_atom::imgui::create(window::window_t w, surge::imgui::create_config &&cfg)
+    -> ImGuiContext * {
   using namespace surge::imgui;
 
   log_info("Initializing DearImGui window");
@@ -34,7 +35,7 @@ auto surge::gl_atom::imgui::create(surge::imgui::create_config &&cfg) -> ImGuiCo
   }
 
   // Platform/Renderer backends
-  ImGui_ImplGlfw_InitForOpenGL(window::get_window_ptr(), false);
+  ImGui_ImplGlfw_InitForOpenGL(w, false);
   ImGui_ImplOpenGL3_Init("#version 460");
 
   return ctx;

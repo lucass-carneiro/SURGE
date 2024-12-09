@@ -3,6 +3,7 @@
 
 #include "sc_container_types.hpp"
 #include "sc_error_types.hpp"
+#include "sc_glfw_includes.hpp"
 #include "sc_options.hpp"
 
 // clang-format off
@@ -24,14 +25,16 @@ using handle_t = HMODULE;
 using handle_t = void *;
 #endif
 
-using on_load_t = int (*)();
-using on_unload_t = int (*)();
-using draw_t = int (*)();
-using update_t = int (*)(double);
+using on_load_t = int (*)(surge::window::window_t);
+using on_unload_t = int (*)(surge::window::window_t);
+using draw_t = int (*)(surge::window::window_t);
+using update_t = int (*)(surge::window::window_t, double);
 
-using keyboard_event_t = void (*)(int, int, int, int);
-using mouse_button_event_t = void (*)(int, int, int);
-using mouse_scroll_event_t = void (*)(double, double);
+using keyboard_event_t = void (*)(surge::window::window_t, int, int, int, int);
+using mouse_button_event_t = void (*)(surge::window::window_t, int, int, int);
+using mouse_scroll_event_t = void (*)(surge::window::window_t, double, double);
+
+using test_func_t = void (*)(GLFWwindow *);
 
 struct api {
   on_load_t on_load;

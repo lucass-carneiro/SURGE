@@ -1,3 +1,4 @@
+#define GLFW_INCLUDE_VULKAN
 #include "sc_vulkan/sc_vulkan_init.hpp"
 
 #include "sc_logging.hpp"
@@ -461,13 +462,12 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) noexc
   }
 }
 
-auto surge::renderer::vk::create_window_surface(VkInstance instance) noexcept
+auto surge::renderer::vk::create_window_surface(window::window_t w, VkInstance instance) noexcept
     -> tl::expected<VkSurfaceKHR, error> {
   log_info("Creating window surface");
 
   VkSurfaceKHR surface{};
-  const auto result{
-      glfwCreateWindowSurface(instance, window::get_window_ptr(), get_alloc_callbacks(), &surface)};
+  const auto result{glfwCreateWindowSurface(instance, w, get_alloc_callbacks(), &surface)};
 
   if (result != VK_SUCCESS) {
     log_error("Window Vulkan surface creation failed: {}", string_VkResult(result));
@@ -731,7 +731,7 @@ void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_da
   log_info("Frame data destroyied");
 }
 
-auto surge::renderer::vk::initialize(const config::renderer_attrs &r_attrs,
+auto surge::renderer::vk::initialize(window::window_t w, const config::renderer_attrs &r_attrs,
                                      const config::window_resolution &w_res,
                                      const config::window_attrs &) noexcept
     -> tl::expected<context, error> {
@@ -805,7 +805,7 @@ auto surge::renderer::vk::initialize(const config::renderer_attrs &r_attrs,
   }
 
   // Window surface
-  const auto surface{create_window_surface(*instance)};
+  const auto surface{create_window_surface(w, *instance)};
   if (!surface) {
     return tl::unexpected{surface.error()};
   } else {

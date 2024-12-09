@@ -70,8 +70,8 @@ int main() {
     /***************
      * Init window *
      ***************/
-    const auto window_init_result{window::init(w_res, w_attrs, r_attrs)};
-    if (window_init_result.has_value()) {
+    const auto engine_window{window::init(w_res, w_attrs, r_attrs)};
+    if (!engine_window) {
       return EXIT_FAILURE;
     }
 
@@ -80,8 +80,8 @@ int main() {
      ***********************/
     log_info("Using OpenGL render backend.");
 
-    if (renderer::gl::init(r_attrs).has_value()) {
-      window::terminate();
+    if (renderer::gl::init(*engine_window, r_attrs).has_value()) {
+      window::terminate(*engine_window);
       return EXIT_FAILURE;
     }
 
@@ -92,37 +92,30 @@ int main() {
 
     if (!module::set_module_path()) {
       log_error("Unable to set the module path");
-      window::terminate();
+      window::terminate(*engine_window);
       return EXIT_FAILURE;
     }
 
     auto mod{module::load(first_mod_name)};
     if (!mod) {
       log_error("Unable to load first module {}", first_mod_name);
-      window::terminate();
+      window::terminate(*engine_window);
       return EXIT_FAILURE;
     }
 
     auto mod_api{module::get_api(*mod)};
     if (!mod_api) {
       log_error("Unable to recover first module {} API", first_mod_name);
-      window::terminate();
+      window::terminate(*engine_window);
       module::unload(*mod);
       return EXIT_FAILURE;
     }
 
-    auto on_load_result{mod_api->on_load()};
+    auto on_load_result{mod_api->on_load(*engine_window)};
     if (on_load_result != 0) {
       log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                 on_load_result);
-      window::terminate();
-      module::unload(*mod);
-      return EXIT_FAILURE;
-    }
-
-    auto input_bind_result{window::bind_module_input_callbacks(&(mod_api.value()))};
-    if (input_bind_result.has_value()) {
-      window::terminate();
+      window::terminate(*engine_window);
       module::unload(*mod);
       return EXIT_FAILURE;
     }
@@ -135,26 +128,26 @@ int main() {
     update_timer.start();
 
 #ifdef SURGE_ENABLE_HR
-    auto hr_key_old_state{window::get_key(GLFW_KEY_F5) && window::get_key(GLFW_KEY_LEFT_CONTROL)};
+    auto hr_key_old_state{window::get_key(*engine_window, GLFW_KEY_F5)
+                          && window::get_key(*engine_window, GLFW_KEY_LEFT_CONTROL)};
 #endif
 
     /*************
      * Main loop *
      *************/
-    while ((frame_timer.start(), !window::should_close())) {
+    while ((frame_timer.start(), !window::should_close(*engine_window))) {
       window::poll_events();
 
       // Handle hot reloading
 #ifdef SURGE_ENABLE_HR
-      const auto should_hr{window::get_key(GLFW_KEY_F5) == GLFW_PRESS
-                           && window::get_key(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
+      const auto should_hr{window::get_key(*engine_window, GLFW_KEY_F5) == GLFW_PRESS
+                           && window::get_key(*engine_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS
                            && hr_key_old_state == GLFW_RELEASE};
       if (should_hr) {
         timers::generic_timer t;
         t.start();
 
-        mod_api->on_unload();
-        window::unbind_input_callbacks();
+        mod_api->on_unload(*engine_window);
 
         mod = module::reload(*mod);
         if (!mod) {
@@ -166,15 +159,10 @@ int main() {
           break;
         }
 
-        on_load_result = mod_api->on_load();
+        on_load_result = mod_api->on_load(*engine_window);
         if (on_load_result != 0) {
           log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                     on_load_result);
-          break;
-        }
-
-        input_bind_result = window::bind_module_input_callbacks(&(mod_api.value()));
-        if (input_bind_result.has_value()) {
           break;
         }
 
@@ -198,8 +186,8 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Update");
 #endif
-        if (mod_api->update(update_timer.stop()) != 0) {
-          window::set_should_close(true);
+        if (mod_api->update(*engine_window, update_timer.stop()) != 0) {
+          window::set_should_close(*engine_window, true);
         }
       }
       update_timer.start();
@@ -210,7 +198,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Draw");
 #endif
-        mod_api->draw();
+        mod_api->draw(*engine_window);
       }
 
       // Present rendering
@@ -220,12 +208,13 @@ int main() {
         ZoneScopedN("Present");
 #endif
         renderer::gl::wait_idle();
-        window::swap_buffers();
+        window::swap_buffers(*engine_window);
       }
 
       // Refresh HR key state
 #ifdef SURGE_ENABLE_HR
-      hr_key_old_state = window::get_key(GLFW_KEY_F5) && window::get_key(GLFW_KEY_LEFT_CONTROL);
+      hr_key_old_state = window::get_key(*engine_window, GLFW_KEY_F5)
+                         && window::get_key(*engine_window, GLFW_KEY_LEFT_CONTROL);
 #endif
 
       frame_timer.stop();
@@ -250,15 +239,14 @@ int main() {
     /********************
      * Finalize modules *
      ********************/
-    mod_api->on_unload();
-    window::unbind_input_callbacks();
+    mod_api->on_unload(*engine_window);
     module::unload(*mod);
 
     /********************************
      * Finalize window and renderer *
      ********************************/
     renderer::gl::wait_idle();
-    window::terminate();
+    window::terminate(*engine_window);
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
