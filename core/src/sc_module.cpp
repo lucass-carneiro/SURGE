@@ -90,6 +90,74 @@ static inline auto get_func_addr(surge::module::handle_t module, const char *fun
   }
 }
 
+auto surge::module::set_module_path() noexcept -> bool {
+  char buff[2048];
+  GetCurrentDirectoryA(2048, buff);
+  log_info("CWD: {}", buff);
+  return SetDllDirectoryA(buff);
+}
+
+#else
+
+static inline auto get_func_addr(handle_t module, const char *func_name)
+    -> tl::expected<void *, surge::error> {
+  (void)dlerror();
+  auto addr{dlsym(module, "func_name")};
+  if (!addr) {
+    log_error("Unable to obtain handle to function {} in module {}: {}", func_name, module,
+              dlerror());
+    return tl::unexpected{error::symbol_retrival};
+  } else {
+    return addr;
+  }
+}
+
+auto surge::module::get_name(handle_t module, usize) noexcept -> tl::expected<string, error> {
+
+  Dl_info info;
+  const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
+
+  if (dladdr_stats == 0) {
+    log_error("Unable to retrieve module {} name.", module);
+    return tl::unexpected(error::name_retrival);
+  } else {
+    return string{info.dli_fname};
+  }
+}
+
+auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
+  log_info("Loading module {}", path);
+
+  // Load and get handle
+  auto handle{dlopen(path, RTLD_NOW | RTLD_LOCAL)};
+  if (!handle) {
+    log_error("Unable to load library {}", dlerror());
+    return tl::unexpected(error::loading);
+  } else {
+    log_info("Loaded module {}, address {}", path, handle);
+    return handle;
+  }
+}
+
+void surge::module::unload(handle_t module) noexcept {
+  if (!module) {
+    return;
+  }
+
+  log_info("Unloading module {}", module);
+
+  const auto result{dlclose(module)};
+  if (result != 0) {
+    log_error("Unable to close module {}: {}", module, dlerror());
+  } else {
+    log_info("Unloaded module {}", module);
+  }
+}
+
+auto surge::module::set_module_path() noexcept -> bool { return true; }
+
+#endif
+
 auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
   // on_load
   const auto on_load_addr{get_func_addr(module, "on_load")};
@@ -145,130 +213,6 @@ auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error
   };
   // clang-format on
 }
-
-auto surge::module::set_module_path() noexcept -> bool {
-  char buff[2048];
-  GetCurrentDirectoryA(2048, buff);
-  log_info("CWD: {}", buff);
-  return SetDllDirectoryA(buff);
-}
-
-#else
-
-auto surge::module::get_name(handle_t module, usize) noexcept -> tl::expected<string, error> {
-
-  Dl_info info;
-  const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
-
-  if (dladdr_stats == 0) {
-    log_error("Unable to retrieve module {} name.", module);
-    return tl::unexpected(error::name_retrival);
-  } else {
-    return string{info.dli_fname};
-  }
-}
-
-auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
-  log_info("Loading module {}", path);
-
-  // Load and get handle
-  auto handle{dlopen(path, RTLD_NOW | RTLD_LOCAL)};
-  if (!handle) {
-    log_error("Unable to load library {}", dlerror());
-    return tl::unexpected(error::loading);
-  } else {
-    log_info("Loaded module {}, address {}", path, handle);
-    return handle;
-  }
-}
-
-void surge::module::unload(handle_t module) noexcept {
-  if (!module) {
-    return;
-  }
-
-  log_info("Unloading module {}", module);
-
-  const auto result{dlclose(module)};
-  if (result != 0) {
-    log_error("Unable to close module {}: {}", module, dlerror());
-  } else {
-    log_info("Unloaded module {}", module);
-  }
-}
-
-auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
-  // on_load
-  auto on_load_addr{dlsym(module, "on_load")};
-  if (!on_load_addr) {
-    log_error("Unable to obtain handle to on_unload in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // on_unload
-  (void)dlerror();
-  auto on_unload_addr{dlsym(module, "on_unload")};
-  if (!on_unload_addr) {
-    log_error("Unable to obtain handle to on_unload in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // draw
-  (void)dlerror();
-  auto draw_addr{dlsym(module, "draw")};
-  if (!draw_addr) {
-    log_error("Unable to obtain handle to draw in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // update
-  (void)dlerror();
-  auto update_addr{dlsym(module, "update")};
-  if (!update_addr) {
-    log_error("Unable to obtain handle to update in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // keyboard_event
-  (void)dlerror();
-  auto keyboard_event_addr{dlsym(module, "keyboard_event")};
-  if (!keyboard_event_addr) {
-    log_error("Unable to obtain handle to keyboard_event in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // mouse_button_event
-  (void)dlerror();
-  auto mouse_button_event_addr{dlsym(module, "mouse_button_event")};
-  if (!mouse_button_event_addr) {
-    log_error("Unable to obtain handle to mouse_button_event in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // mouse_scroll_event
-  (void)dlerror();
-  auto mouse_scroll_event_addr{dlsym(module, "mouse_scroll_event")};
-  if (!mouse_scroll_event_addr) {
-    log_error("Unable to obtain handle to mouse_scroll_event in module {}: {}", module, dlerror());
-    return tl::unexpected(error::symbol_retrival);
-  }
-
-  // clang-format off
-  return api{
-    reinterpret_cast<on_load_t>(on_load_addr),    // NOLINT
-    reinterpret_cast<on_unload_t>(on_unload_addr), // NOLINT
-    reinterpret_cast<draw_t>(draw_addr), // NOLINT
-    reinterpret_cast<update_t>(update_addr), // NOLINT
-    reinterpret_cast<keyboard_event_t>(keyboard_event_addr), // NOLINT
-    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr), // NOLINT
-    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr) // NOLINT
-  };
-  // clang-format on
-}
-
-auto surge::module::set_module_path() noexcept -> bool { return true; }
-
-#endif
 
 auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, error> {
   // Get module file name
