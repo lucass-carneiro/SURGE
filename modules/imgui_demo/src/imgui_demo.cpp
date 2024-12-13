@@ -14,7 +14,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t w) -> int {
+extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) -> int {
   using namespace surge;
   gl_atom::imgui::destroy(imgui_ctx);
   return 0;

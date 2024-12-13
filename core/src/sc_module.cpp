@@ -7,8 +7,8 @@
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
-    -> tl::expected<string, error> {
+auto surge::module::get_name(handle_t module,
+                             std::size_t max_size) noexcept -> tl::expected<string, error> {
 
   auto module_name{string(max_size, '\0')};
   const auto actual_name_size{
@@ -71,8 +71,8 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
-    -> tl::expected<FARPROC, surge::error> {
+static inline auto get_func_addr(surge::module::handle_t module,
+                                 const char *func_name) -> tl::expected<FARPROC, surge::error> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
     const auto error_code{GetLastError()};
@@ -99,14 +99,14 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-static inline auto get_func_addr(handle_t module, const char *func_name)
-    -> tl::expected<void *, surge::error> {
+static inline auto get_func_addr(surge::module::handle_t module,
+                                 const char *func_name) -> tl::expected<void *, surge::error> {
   (void)dlerror();
   auto addr{dlsym(module, "func_name")};
   if (!addr) {
     log_error("Unable to obtain handle to function {} in module {}: {}", func_name, module,
               dlerror());
-    return tl::unexpected{error::symbol_retrival};
+    return tl::unexpected{surge::error::symbol_retrival};
   } else {
     return addr;
   }
