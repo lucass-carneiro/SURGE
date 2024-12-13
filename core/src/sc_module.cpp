@@ -102,7 +102,7 @@ auto surge::module::set_module_path() noexcept -> bool {
 static inline auto get_func_addr(surge::module::handle_t module,
                                  const char *func_name) -> tl::expected<void *, surge::error> {
   (void)dlerror();
-  auto addr{dlsym(module, "func_name")};
+  auto addr{dlsym(module, func_name)};
   if (!addr) {
     log_error("Unable to obtain handle to function {} in module {}: {}", func_name, module,
               dlerror());
