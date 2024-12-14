@@ -103,7 +103,7 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    auto mod_api{module::get_api(*mod)};
+    auto mod_api{module::get_gl_api(*mod)};
     if (!mod_api) {
       log_error("Unable to recover first module {} API", first_mod_name);
       window::terminate(*engine_window);
@@ -157,7 +157,7 @@ int main() {
           break;
         }
 
-        mod_api = module::get_api(*mod);
+        mod_api = module::get_gl_api(*mod);
         if (!mod_api) {
           break;
         }

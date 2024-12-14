@@ -22,7 +22,7 @@ static pv_ubo_t pv_ubo{};
 
 } // namespace globals
 
-extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) noexcept -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_on_load(surge::window::window_t w) noexcept -> int {
   using namespace surge;
 
   log_info("Loading Sprite Demo module");
@@ -62,7 +62,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) noexcept 
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) noexcept -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_on_unload(surge::window::window_t) noexcept -> int {
   using namespace surge;
 
   log_info("Unloading Sprite Demo module");
@@ -78,7 +78,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) noexcept 
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw(surge::window::window_t) noexcept -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_draw(surge::window::window_t) noexcept -> int {
   using namespace surge;
 
   globals::pv_ubo.bind_to_location(2);
@@ -109,7 +109,7 @@ static inline auto update_bird_flap_animation_frame(float delta_t) noexcept -> g
   return frame_views[frame_idx]; // NOLINT
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(surge::window::window_t, double delta_t) noexcept
+extern "C" SURGE_MODULE_EXPORT auto gl_update(surge::window::window_t, double delta_t) noexcept
     -> int {
   using namespace surge;
   using namespace gl_atom::sprite_database;
@@ -134,11 +134,11 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::window::window_t, double delta
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::window_t, int, int, int,
-                                                   int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void gl_keyboard_event(surge::window::window_t, int, int, int,
+                                                      int) noexcept {}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_button_event(surge::window::window_t, int, int,
-                                                       int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void gl_mouse_button_event(surge::window::window_t, int, int,
+                                                          int) noexcept {}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(surge::window::window_t, double,
-                                                       double) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void gl_mouse_scroll_event(surge::window::window_t, double,
+                                                          double) noexcept {}

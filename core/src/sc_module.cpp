@@ -4,11 +4,12 @@
 
 #include <filesystem>
 #include <gsl/gsl-lite.hpp>
+#include <optional>
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module,
-                             std::size_t max_size) noexcept -> tl::expected<string, error> {
+auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
+    -> tl::expected<string, error> {
 
   auto module_name{string(max_size, '\0')};
   const auto actual_name_size{
@@ -71,8 +72,8 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-static inline auto get_func_addr(surge::module::handle_t module,
-                                 const char *func_name) -> tl::expected<FARPROC, surge::error> {
+static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
+    -> std::optional<FARPROC> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
     const auto error_code{GetLastError()};
@@ -81,10 +82,10 @@ static inline auto get_func_addr(surge::module::handle_t module,
                        | FORMAT_MESSAGE_IGNORE_INSERTS,
                    nullptr, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                    (LPSTR)&error_txt, 0, nullptr);
-    log_error("Unable to obtain handle to function {} in module {}: {}", func_name,
-              static_cast<void *>(module), error_txt);
+    log_warn("Unable to obtain handle to function {} in module {}: {}", func_name,
+             static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
-    return tl::unexpected{surge::error::symbol_retrival};
+    return {};
   } else {
     return addr;
   }
@@ -99,14 +100,14 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-static inline auto get_func_addr(surge::module::handle_t module,
-                                 const char *func_name) -> tl::expected<void *, surge::error> {
+static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
+    -> std::optional<void *> {
   (void)dlerror();
   auto addr{dlsym(module, func_name)};
   if (!addr) {
-    log_error("Unable to obtain handle to function {} in module {}: {}", func_name, module,
-              dlerror());
-    return tl::unexpected{surge::error::symbol_retrival};
+    log_warn("Unable to obtain handle to function {} in module {}: {}", func_name, module,
+             dlerror());
+    return {};
   } else {
     return addr;
   }
@@ -158,58 +159,128 @@ auto surge::module::set_module_path() noexcept -> bool { return true; }
 
 #endif
 
-auto surge::module::get_api(handle_t module) noexcept -> tl::expected<api, error> {
+auto surge::module::get_gl_api(handle_t module) noexcept -> tl::expected<gl_api, error> {
   // on_load
-  const auto on_load_addr{get_func_addr(module, "on_load")};
+  const auto on_load_addr{get_func_addr(module, "gl_on_load")};
   if (!on_load_addr) {
-    return tl::unexpected{on_load_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // on_unload
-  const auto on_unload_addr{get_func_addr(module, "on_unload")};
+  const auto on_unload_addr{get_func_addr(module, "gl_on_unload")};
   if (!on_unload_addr) {
-    return tl::unexpected{on_unload_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // draw
-  const auto draw_addr{get_func_addr(module, "draw")};
+  const auto draw_addr{get_func_addr(module, "gl_draw")};
   if (!draw_addr) {
-    return tl::unexpected{draw_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // update
-  const auto update_addr{get_func_addr(module, "update")};
+  const auto update_addr{get_func_addr(module, "gl_update")};
   if (!update_addr) {
-    return tl::unexpected{update_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // keyboard_event
-  const auto keyboard_event_addr{get_func_addr(module, "keyboard_event")};
+  const auto keyboard_event_addr{get_func_addr(module, "gl_keyboard_event")};
   if (!keyboard_event_addr) {
-    return tl::unexpected{keyboard_event_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // mouse_button_event
-  const auto mouse_button_event_addr{get_func_addr(module, "mouse_button_event")};
+  const auto mouse_button_event_addr{get_func_addr(module, "gl_mouse_button_event")};
   if (!mouse_button_event_addr) {
-    return tl::unexpected{mouse_button_event_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // mouse_scroll_event
-  const auto mouse_scroll_event_addr{get_func_addr(module, "mouse_scroll_event")};
+  const auto mouse_scroll_event_addr{get_func_addr(module, "gl_mouse_scroll_event")};
   if (!mouse_scroll_event_addr) {
-    return tl::unexpected{mouse_scroll_event_addr.error()};
+    log_error("Incomplete OpenGL module API!");
+    return tl::unexpected{error::symbol_retrival};
   }
 
   // clang-format off
-  return api{
-    reinterpret_cast<on_load_t>(on_load_addr.value()),
-    reinterpret_cast<on_unload_t>(on_unload_addr.value()),
-    reinterpret_cast<draw_t>(draw_addr.value()),
-    reinterpret_cast<update_t>(update_addr.value()),
-    reinterpret_cast<keyboard_event_t>(keyboard_event_addr.value()),
-    reinterpret_cast<mouse_button_event_t>(mouse_button_event_addr.value()),
-    reinterpret_cast<mouse_scroll_event_t>(mouse_scroll_event_addr.value())
+  return gl_api{
+    reinterpret_cast<gl_api::on_load_t>(on_load_addr.value()),
+    reinterpret_cast<gl_api::on_unload_t>(on_unload_addr.value()),
+    reinterpret_cast<gl_api::draw_t>(draw_addr.value()),
+    reinterpret_cast<gl_api::update_t>(update_addr.value()),
+    reinterpret_cast<gl_api::keyboard_event_t>(keyboard_event_addr.value()),
+    reinterpret_cast<gl_api::mouse_button_event_t>(mouse_button_event_addr.value()),
+    reinterpret_cast<gl_api::mouse_scroll_event_t>(mouse_scroll_event_addr.value())
+  };
+  // clang-format on
+}
+
+auto surge::module::get_vk_api(handle_t module) noexcept -> tl::expected<vk_api, error> {
+  // on_load
+  const auto on_load_addr{get_func_addr(module, "vk_on_load")};
+  if (!on_load_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // on_unload
+  const auto on_unload_addr{get_func_addr(module, "vk_on_unload")};
+  if (!on_unload_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // draw
+  const auto draw_addr{get_func_addr(module, "vk_draw")};
+  if (!draw_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // update
+  const auto update_addr{get_func_addr(module, "vk_update")};
+  if (!update_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // keyboard_event
+  const auto keyboard_event_addr{get_func_addr(module, "vk_keyboard_event")};
+  if (!keyboard_event_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // mouse_button_event
+  const auto mouse_button_event_addr{get_func_addr(module, "vk_mouse_button_event")};
+  if (!mouse_button_event_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // mouse_scroll_event
+  const auto mouse_scroll_event_addr{get_func_addr(module, "vk_mouse_scroll_event")};
+  if (!mouse_scroll_event_addr) {
+    log_error("Incomplete Vulkan module API!");
+    return tl::unexpected{error::symbol_retrival};
+  }
+
+  // clang-format off
+  return vk_api{
+    reinterpret_cast<vk_api::on_load_t>(on_load_addr.value()),
+    reinterpret_cast<vk_api::on_unload_t>(on_unload_addr.value()),
+    reinterpret_cast<vk_api::draw_t>(draw_addr.value()),
+    reinterpret_cast<vk_api::update_t>(update_addr.value()),
+    reinterpret_cast<vk_api::keyboard_event_t>(keyboard_event_addr.value()),
+    reinterpret_cast<vk_api::mouse_button_event_t>(mouse_button_event_addr.value()),
+    reinterpret_cast<vk_api::mouse_scroll_event_t>(mouse_scroll_event_addr.value())
   };
   // clang-format on
 }

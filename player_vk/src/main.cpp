@@ -75,6 +75,7 @@ int main() {
 
     if (!module::set_module_path()) {
       log_error("Unable to set the module path");
+      renderer::vk::terminate(*vk_ctx);
       window::terminate(*engine_window);
       return EXIT_FAILURE;
     }
@@ -82,13 +83,15 @@ int main() {
     auto mod{module::load(first_mod_name)};
     if (!mod) {
       log_error("Unable to load first module {}", first_mod_name);
+      renderer::vk::terminate(*vk_ctx);
       window::terminate(*engine_window);
       return EXIT_FAILURE;
     }
 
-    auto mod_api{module::get_api(*mod)};
+    auto mod_api{module::get_vk_api(*mod)};
     if (!mod_api) {
       log_error("Unable to recover first module {} API", first_mod_name);
+      renderer::vk::terminate(*vk_ctx);
       window::terminate(*engine_window);
       module::unload(*mod);
       return EXIT_FAILURE;
@@ -98,6 +101,7 @@ int main() {
     if (on_load_result != 0) {
       log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                 on_load_result);
+      renderer::vk::terminate(*vk_ctx);
       window::terminate(*engine_window);
       module::unload(*mod);
       return EXIT_FAILURE;
@@ -140,7 +144,7 @@ int main() {
           break;
         }
 
-        mod_api = module::get_api(*mod);
+        mod_api = module::get_vk_api(*mod);
         if (!mod_api) {
           break;
         }

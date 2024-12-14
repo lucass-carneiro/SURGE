@@ -27,7 +27,7 @@ static pv_ubo_t pv_ubo{};
 
 } // namespace globals
 
-extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_on_load(surge::window::window_t w) -> int {
   using namespace surge;
   using namespace gl_atom;
 
@@ -85,7 +85,7 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_on_unload(surge::window::window_t) -> int {
   using namespace surge;
 
   log_info("Unloading Text Demo module");
@@ -102,13 +102,13 @@ extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t) -> int {
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto draw(surge::window::window_t) -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_draw(surge::window::window_t) -> int {
   globals::pv_ubo.bind_to_location(2);
   globals::txt_b.draw(glm::vec4{1.0f});
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto update(surge::window::window_t, double dt) -> int {
+extern "C" SURGE_MODULE_EXPORT auto gl_update(surge::window::window_t, double dt) -> int {
   using std::snprintf;
 
   auto &txt_gc{globals::txt_gc};
@@ -133,8 +133,10 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::window::window_t, double dt) -
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::window_t, int, int, int, int) {}
+extern "C" SURGE_MODULE_EXPORT void gl_keyboard_event(surge::window::window_t, int, int, int, int) {
+}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_button_event(surge::window::window_t, int, int, int) {}
+extern "C" SURGE_MODULE_EXPORT void gl_mouse_button_event(surge::window::window_t, int, int, int) {}
 
-extern "C" SURGE_MODULE_EXPORT void mouse_scroll_event(surge::window::window_t, double, double) {}
+extern "C" SURGE_MODULE_EXPORT void gl_mouse_scroll_event(surge::window::window_t, double, double) {
+}

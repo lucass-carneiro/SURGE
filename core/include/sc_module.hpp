@@ -25,18 +25,37 @@ using handle_t = HMODULE;
 using handle_t = void *;
 #endif
 
-using on_load_t = int (*)(surge::window::window_t);
-using on_unload_t = int (*)(surge::window::window_t);
-using draw_t = int (*)(surge::window::window_t);
-using update_t = int (*)(surge::window::window_t, double);
+struct gl_api {
+  using on_load_t = int (*)(surge::window::window_t);
+  using on_unload_t = int (*)(surge::window::window_t);
+  using draw_t = int (*)(surge::window::window_t);
+  using update_t = int (*)(surge::window::window_t, double);
 
-using keyboard_event_t = void (*)(surge::window::window_t, int, int, int, int);
-using mouse_button_event_t = void (*)(surge::window::window_t, int, int, int);
-using mouse_scroll_event_t = void (*)(surge::window::window_t, double, double);
+  using keyboard_event_t = void (*)(surge::window::window_t, int, int, int, int);
+  using mouse_button_event_t = void (*)(surge::window::window_t, int, int, int);
+  using mouse_scroll_event_t = void (*)(surge::window::window_t, double, double);
 
-using test_func_t = void (*)(GLFWwindow *);
+  on_load_t on_load;
+  on_unload_t on_unload;
 
-struct api {
+  draw_t draw;
+  update_t update;
+
+  keyboard_event_t keyboard_event;
+  mouse_button_event_t mouse_button_event;
+  mouse_scroll_event_t mouse_scroll_event;
+};
+
+struct vk_api {
+  using on_load_t = int (*)(surge::window::window_t);
+  using on_unload_t = int (*)(surge::window::window_t);
+  using draw_t = int (*)(surge::window::window_t);
+  using update_t = int (*)(surge::window::window_t, double);
+
+  using keyboard_event_t = void (*)(surge::window::window_t, int, int, int, int);
+  using mouse_button_event_t = void (*)(surge::window::window_t, int, int, int);
+  using mouse_scroll_event_t = void (*)(surge::window::window_t, double, double);
+
   on_load_t on_load;
   on_unload_t on_unload;
 
@@ -54,7 +73,8 @@ auto load(const char *path) noexcept -> tl::expected<handle_t, error>;
 void unload(handle_t module) noexcept;
 auto reload(handle_t module) noexcept -> tl::expected<handle_t, error>;
 
-auto get_api(handle_t module) noexcept -> tl::expected<api, error>;
+auto get_gl_api(handle_t module) noexcept -> tl::expected<gl_api, error>;
+auto get_vk_api(handle_t module) noexcept -> tl::expected<vk_api, error>;
 
 auto set_module_path() noexcept -> bool;
 

@@ -17,22 +17,22 @@
 
 extern "C" {
 
-SURGE_MODULE_EXPORT auto on_load(surge::window::window_t w) noexcept -> int;
+SURGE_MODULE_EXPORT auto gl_on_load(surge::window::window_t w) noexcept -> int;
 
-SURGE_MODULE_EXPORT auto on_unload(surge::window::window_t w) noexcept -> int;
+SURGE_MODULE_EXPORT auto gl_on_unload(surge::window::window_t w) noexcept -> int;
 
-SURGE_MODULE_EXPORT auto draw(surge::window::window_t w) noexcept -> int;
+SURGE_MODULE_EXPORT auto gl_draw(surge::window::window_t w) noexcept -> int;
 
-SURGE_MODULE_EXPORT auto update(surge::window::window_t w, double dt) noexcept -> int;
+SURGE_MODULE_EXPORT auto gl_update(surge::window::window_t w, double dt) noexcept -> int;
 
-SURGE_MODULE_EXPORT void keyboard_event(surge::window::window_t w, int key, int scancode,
-                                        int action, int mods) noexcept;
+SURGE_MODULE_EXPORT void gl_keyboard_event(surge::window::window_t w, int key, int scancode,
+                                           int action, int mods) noexcept;
 
-SURGE_MODULE_EXPORT void mouse_button_event(surge::window::window_t w, int button, int action,
-                                            int mods) noexcept;
+SURGE_MODULE_EXPORT void gl_mouse_button_event(surge::window::window_t w, int button, int action,
+                                               int mods) noexcept;
 
-SURGE_MODULE_EXPORT void mouse_scroll_event(surge::window::window_t w, double xoffset,
-                                            double yoffset) noexcept;
+SURGE_MODULE_EXPORT void gl_mouse_scroll_event(surge::window::window_t w, double xoffset,
+                                               double yoffset) noexcept;
 }
 
 #endif // SURGE_MODULE_SPRITE_DEMO
