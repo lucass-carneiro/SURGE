@@ -6,7 +6,7 @@
 #include "sc_error_types.hpp"
 #include "sc_glfw_includes.hpp"
 #include "sc_options.hpp"
-#include "sc_vulkan_types.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 
 #include <tl/expected.hpp>
 
@@ -41,7 +41,8 @@ auto get_required_device_extensions(VkPhysicalDevice phys_dev) noexcept
 
 auto create_logical_device(VkPhysicalDevice phys_dev) noexcept -> tl::expected<VkDevice, error>;
 
-auto create_window_surface(window::window_t w, VkInstance instance) noexcept -> tl::expected<VkSurfaceKHR, error>;
+auto create_window_surface(window::window_t w, VkInstance instance) noexcept
+    -> tl::expected<VkSurfaceKHR, error>;
 
 auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface) noexcept
     -> tl::expected<queue_handles, error>;

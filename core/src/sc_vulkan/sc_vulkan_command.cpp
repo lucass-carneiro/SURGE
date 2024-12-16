@@ -1,8 +1,8 @@
-#include "sc_vulkan/sc_vulkan_command.hpp"
+#include "sc_vulkan_command.hpp"
 
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan/sc_vulkan_sync.hpp"
+#include "sc_vulkan_sync.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 

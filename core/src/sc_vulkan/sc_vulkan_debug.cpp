@@ -1,7 +1,7 @@
-#include "sc_vulkan/sc_vulkan_debug.hpp"
+#include "sc_vulkan_debug.hpp"
 
 #include "sc_logging.hpp"
-#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 

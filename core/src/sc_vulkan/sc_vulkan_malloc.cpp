@@ -1,6 +1,6 @@
 #define VMA_IMPLEMENTATION
 
-#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan_malloc.hpp"
 
 #include "sc_allocators.hpp"
 #include "sc_logging.hpp"

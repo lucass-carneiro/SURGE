@@ -1,8 +1,8 @@
-#include "sc_vulkan/sc_vulkan_images.hpp"
+#include "sc_vulkan_images.hpp"
 
 #include "sc_integer_types.hpp"
 #include "sc_logging.hpp"
-#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 

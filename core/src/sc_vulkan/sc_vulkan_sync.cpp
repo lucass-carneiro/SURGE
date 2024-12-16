@@ -1,4 +1,4 @@
-#include "sc_vulkan/sc_vulkan_sync.hpp"
+#include "sc_vulkan_sync.hpp"
 
 auto surge::renderer::vk::fence_create_info(VkFenceCreateFlags flags) noexcept
     -> VkFenceCreateInfo {

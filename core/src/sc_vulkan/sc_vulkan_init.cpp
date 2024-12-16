@@ -1,13 +1,13 @@
 #define GLFW_INCLUDE_VULKAN
-#include "sc_vulkan/sc_vulkan_init.hpp"
+#include "sc_vulkan_init.hpp"
 
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan/sc_vulkan_command.hpp"
-#include "sc_vulkan/sc_vulkan_debug.hpp"
-#include "sc_vulkan/sc_vulkan_images.hpp"
-#include "sc_vulkan/sc_vulkan_malloc.hpp"
-#include "sc_vulkan/sc_vulkan_sync.hpp"
+#include "sc_vulkan_command.hpp"
+#include "sc_vulkan_debug.hpp"
+#include "sc_vulkan_images.hpp"
+#include "sc_vulkan_malloc.hpp"
+#include "sc_vulkan_sync.hpp"
 #include "sc_window.hpp"
 
 #include <algorithm>

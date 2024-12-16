@@ -2,7 +2,7 @@
 #define SURGE_CORE_RENDERER_VULKAN_IMAGES_HPP
 
 #include "sc_config.hpp"
-#include "sc_vulkan_types.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 
 #include <tl/expected.hpp>
 
