@@ -23,7 +23,8 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
 void terminate(context ctx);
 
 auto request_img(context ctx) -> tl::expected<std::tuple<image, u32>, error>;
-auto present(context ctx, u32 &swpc_img_idx) -> std::optional<error>;
+auto present(context ctx, u32 &swpc_img_idx, const config::renderer_attrs &r_attrs,
+             const config::window_resolution &w_res) -> std::optional<error>;
 
 auto cmd_begin(context ctx) -> std::optional<error>;
 auto cmd_end(context ctx) -> std::optional<error>;

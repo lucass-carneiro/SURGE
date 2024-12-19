@@ -148,8 +148,7 @@ void terminate(context ctx) {
   const auto alloc_callbacks{get_alloc_callbacks()};
 
   log_info("Waiting for GPU idle");
-  vkWaitForFences(ctx->device, ctx->frm_data.frame_overlap, ctx->frm_data.render_fences.data(),
-                  true, 1000000000);
+  vkDeviceWaitIdle(ctx->device);
 
   log_info("Destroying draw image");
   vkDestroyImageView(ctx->device, ctx->draw_image.image_view, get_alloc_callbacks());

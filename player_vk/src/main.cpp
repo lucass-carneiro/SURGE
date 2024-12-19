@@ -234,7 +234,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("SWPC Present");
 #endif
-        const auto present_result{renderer::vk::present(*vk_ctx, img_idx)};
+        const auto present_result{renderer::vk::present(*vk_ctx, img_idx, r_attrs, w_res)};
         if (present_result.has_value()) {
           log_error("Vulkan error while presenting swapchain images");
           break;
