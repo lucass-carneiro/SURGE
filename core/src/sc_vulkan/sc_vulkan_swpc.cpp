@@ -1,5 +1,6 @@
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
+#include "sc_vulkan_types.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -8,18 +9,17 @@
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto surge::renderer::vk::request_img(context &ctx) noexcept
-    -> tl::expected<std::tuple<VkImage, u32>, error> {
+auto surge::renderer::vk::request_img(context ctx) -> tl::expected<std::tuple<image, u32>, error> {
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("SWPC Acquire");
 #endif
 
-  auto &dev{ctx.device};
-  auto &swpc{ctx.swpc_data.swapchain};
-  auto &render_fence{ctx.frm_data.render_fences[ctx.frm_data.frame_idx]};
-  auto &swpc_semaphore{ctx.frm_data.swpc_semaphores[ctx.frm_data.frame_idx]};
+  auto &dev{ctx->device};
+  auto &swpc{ctx->swpc_data.swapchain};
+  auto &render_fence{ctx->frm_data.render_fences[ctx->frm_data.frame_idx]};
+  auto &swpc_semaphore{ctx->frm_data.swpc_semaphores[ctx->frm_data.frame_idx]};
 
   // Wait until the gpu has finished rendering the last frame. Timeout of 1 sec
   auto result{vkWaitForFences(dev, 1, &render_fence, true, 1000000000)};
@@ -45,18 +45,17 @@ auto surge::renderer::vk::request_img(context &ctx) noexcept
     return tl::unexpected{error::vk_get_swpc_img};
   }
 
-  return std::make_tuple(ctx.swpc_data.imgs[swpc_img_idx], swpc_img_idx);
+  return std::make_tuple(ctx->swpc_data.imgs[swpc_img_idx], swpc_img_idx);
 }
 
-auto surge::renderer::vk::present(context &ctx, u32 &swpc_img_idx) noexcept
-    -> std::optional<error> {
+auto surge::renderer::vk::present(context ctx, u32 &swpc_img_idx) -> std::optional<error> {
   // Prepare present. This will put the image we just rendered to into the visible window. we want
   // to wait on the render_semaphore for that, as its necessary that drawing commands have finished
   // before the image is displayed to the user
 
-  auto &graphics_queue{ctx.q_handles.graphics};
-  auto &swpc{ctx.swpc_data.swapchain};
-  auto &render_semaphore{ctx.frm_data.render_semaphores[ctx.frm_data.frame_idx]};
+  auto &graphics_queue{ctx->q_handles.graphics};
+  auto &swpc{ctx->swpc_data.swapchain};
+  auto &render_semaphore{ctx->frm_data.render_semaphores[ctx->frm_data.frame_idx]};
 
   VkPresentInfoKHR present_info{};
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -77,7 +76,7 @@ auto surge::renderer::vk::present(context &ctx, u32 &swpc_img_idx) noexcept
   }
 
   // increase the number of frames drawn
-  ctx.frm_data.advance_idx();
+  ctx->frm_data.advance_idx();
 
   return {};
 }

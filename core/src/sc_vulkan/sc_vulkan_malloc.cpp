@@ -9,7 +9,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 
 static auto vk_malloc(void *, size_t size, size_t alignment,
-                      [[maybe_unused]] VkSystemAllocationScope scope) noexcept -> void * {
+                      [[maybe_unused]] VkSystemAllocationScope scope) -> void * {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk memory event with scope {}", static_cast<int>(scope));
 #endif
@@ -17,14 +17,14 @@ static auto vk_malloc(void *, size_t size, size_t alignment,
 }
 
 static auto vk_realloc(void *, void *pOriginal, size_t size, size_t alignment,
-                       [[maybe_unused]] VkSystemAllocationScope scope) noexcept -> void * {
+                       [[maybe_unused]] VkSystemAllocationScope scope) -> void * {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk memory event with scope {}", static_cast<int>(scope));
 #endif
   return surge::allocators::mimalloc::aligned_realloc(pOriginal, size, alignment);
 }
 
-static void vk_free(void *, void *pMemory) noexcept {
+static void vk_free(void *, void *pMemory) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Vk memory free event");
 #endif
@@ -62,12 +62,12 @@ static const VkAllocationCallbacks alloc_callbacks{.pUserData = nullptr,
                                                    .pfnInternalAllocation = vk_internal_malloc,
                                                    .pfnInternalFree = vk_internal_free};
 
-auto surge::renderer::vk::get_alloc_callbacks() noexcept -> const VkAllocationCallbacks * {
+auto surge::renderer::vk::get_alloc_callbacks() -> const VkAllocationCallbacks * {
   return &alloc_callbacks;
 }
 
 auto surge::renderer::vk::create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
-                                                  VkDevice logi_dev) noexcept
+                                                  VkDevice logi_dev)
     -> tl::expected<VmaAllocator, error> {
   log_info("Creating memory allocator");
 

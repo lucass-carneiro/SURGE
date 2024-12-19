@@ -12,10 +12,10 @@
 
 namespace surge::renderer::vk {
 
-auto get_alloc_callbacks() noexcept -> const VkAllocationCallbacks *;
+auto get_alloc_callbacks() -> const VkAllocationCallbacks *;
 
 auto create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
-                             VkDevice logi_dev) noexcept -> tl::expected<VmaAllocator, error>;
+                             VkDevice logi_dev) -> tl::expected<VmaAllocator, error>;
 
 } // namespace surge::renderer::vk
 

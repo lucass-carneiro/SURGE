@@ -7,12 +7,12 @@
 
 namespace surge::renderer::vk {
 
-auto fence_create_info(VkFenceCreateFlags flags = 0) noexcept -> VkFenceCreateInfo;
+auto fence_create_info(VkFenceCreateFlags flags = 0) -> VkFenceCreateInfo;
 
-auto semaphore_create_info(VkSemaphoreCreateFlags flags = 0) noexcept -> VkSemaphoreCreateInfo;
+auto semaphore_create_info(VkSemaphoreCreateFlags flags = 0) -> VkSemaphoreCreateInfo;
 
-auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) noexcept
-    -> VkSemaphoreSubmitInfo;
+auto semaphore_submit_info(VkPipelineStageFlags2 stage_mask,
+                           VkSemaphore semaphore) -> VkSemaphoreSubmitInfo;
 
 } // namespace surge::renderer::vk
 

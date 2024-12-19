@@ -1,19 +1,19 @@
+// clang-format off
 #define GLFW_INCLUDE_VULKAN
+#include "sc_glfw_includes.hpp"
+// clang-fomat on
+
 #include "sc_vulkan_init.hpp"
-
-#include "sc_logging.hpp"
-#include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_vulkan_command.hpp"
-#include "sc_vulkan_debug.hpp"
-#include "sc_vulkan_images.hpp"
-#include "sc_vulkan_malloc.hpp"
 #include "sc_vulkan_sync.hpp"
-#include "sc_window.hpp"
+#include "sc_logging.hpp"
+#include "sc_vulkan_malloc.hpp"
 
-#include <algorithm>
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::get_api_version() noexcept -> tl::expected<u32, error> {
+#include <algorithm>
+
+auto surge::renderer::vk::get_api_version() -> tl::expected<u32, error> {
   log_info("Querying Vulkan API version");
 
   u32 vulkan_api_version{0};
@@ -35,8 +35,7 @@ auto surge::renderer::vk::get_api_version() noexcept -> tl::expected<u32, error>
   return vulkan_api_version;
 }
 
-auto surge::renderer::vk::get_required_extensions() noexcept
-    -> tl::expected<vector<const char *>, error> {
+auto surge::renderer::vk::get_required_extensions() -> tl::expected<vector<const char *>, error> {
   log_info("Querying required Vulkan instance extensions");
 
   // GLFW extensions
@@ -64,7 +63,7 @@ auto surge::renderer::vk::get_required_extensions() noexcept
 }
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-auto surge::renderer::vk::get_required_validation_layers() noexcept
+auto surge::renderer::vk::get_required_validation_layers()
     -> tl::expected<vector<const char *>, error> {
   using std::strcmp;
 
@@ -116,10 +115,9 @@ auto surge::renderer::vk::get_required_validation_layers() noexcept
 #endif
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-auto surge::renderer::vk::build_instance(
-    const vector<const char *> &required_extensions,
-    const vector<const char *> &required_validation_layers,
-    const VkDebugUtilsMessengerCreateInfoEXT &dbg_msg_ci) noexcept
+auto surge::renderer::vk::build_instance(const vector<const char *> &required_extensions,
+                                         const vector<const char *> &required_validation_layers,
+                                         const VkDebugUtilsMessengerCreateInfoEXT &dbg_msg_ci)
     -> tl::expected<VkInstance, error> {
   log_info("Creating Vulkan Instance");
 
@@ -155,7 +153,7 @@ auto surge::renderer::vk::build_instance(
   return instance;
 }
 #else
-auto surge::renderer::vk::build_instance(const vector<const char *> &required_extensions) noexcept
+auto surge::renderer::vk::build_instance(const vector<const char *> &required_extensions)
     -> tl::expected<VkInstance, error> {
   log_info("Creating Vulkan Instance");
 
@@ -192,7 +190,7 @@ auto surge::renderer::vk::build_instance(const vector<const char *> &required_ex
 }
 #endif
 
-auto surge::renderer::vk::select_physical_device(VkInstance instance) noexcept
+auto surge::renderer::vk::select_physical_device(VkInstance instance)
     -> tl::expected<VkPhysicalDevice, error> {
   log_info("Selecting first suitable physical device");
 
@@ -223,7 +221,7 @@ auto surge::renderer::vk::select_physical_device(VkInstance instance) noexcept
   return tl::unexpected{error::vk_phys_dev_no_suitable};
 }
 
-auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) noexcept -> bool {
+auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool {
   log_info("Cheking device suitability");
 
   VkPhysicalDeviceProperties dev_prop{};
@@ -301,8 +299,7 @@ auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) noexcept
   }
 }
 
-auto surge::renderer::vk::find_queue_families(VkPhysicalDevice phys_dev) noexcept
-    -> queue_family_indices {
+auto surge::renderer::vk::find_queue_families(VkPhysicalDevice phys_dev) -> queue_family_indices {
   queue_family_indices idxs{};
 
   uint32_t queue_family_count{0};
@@ -330,7 +327,7 @@ auto surge::renderer::vk::find_queue_families(VkPhysicalDevice phys_dev) noexcep
   return idxs;
 }
 
-auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_dev) noexcept
+auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_dev)
     -> tl::expected<vector<const char *>, error> {
   using std::strcmp;
 
@@ -376,7 +373,7 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
   return required_extensions;
 }
 
-auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) noexcept
+auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev)
     -> tl::expected<VkDevice, error> {
   log_info("Creating logical device");
 
@@ -462,7 +459,7 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) noexc
   }
 }
 
-auto surge::renderer::vk::create_window_surface(window::window_t w, VkInstance instance) noexcept
+auto surge::renderer::vk::create_window_surface(window::window_t w, VkInstance instance)
     -> tl::expected<VkSurfaceKHR, error> {
   log_info("Creating window surface");
 
@@ -479,7 +476,7 @@ auto surge::renderer::vk::create_window_surface(window::window_t w, VkInstance i
 }
 
 auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev,
-                                            VkSurfaceKHR surface) noexcept
+                                            VkSurfaceKHR surface)
     -> tl::expected<queue_handles, error> {
   log_info("Getting queue handles");
 
@@ -519,8 +516,7 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
 auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
                                            VkSurfaceKHR surface,
                                            const config::renderer_attrs &r_attrs, u32 width,
-                                           u32 height) noexcept
-    -> tl::expected<swapchain_data, error> {
+                                           u32 height) -> tl::expected<swapchain_data, error> {
 
   log_info("Creating swapchain");
 
@@ -642,7 +638,7 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
   return swpc_data;
 }
 
-auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_idx) noexcept
+auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_idx)
     -> tl::expected<frame_data, error> {
   log_info("Creating frame data");
 
@@ -707,7 +703,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
   return frm_data;
 }
 
-void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_data) noexcept {
+void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_data) {
   log_info("Destroying frame data");
 
   for (usize i = 0; i < frm_data.frame_overlap; i++) {
@@ -729,168 +725,4 @@ void surge::renderer::vk::destroy_frame_data(VkDevice device, frame_data &frm_da
   }
 
   log_info("Frame data destroyied");
-}
-
-auto surge::renderer::vk::initialize(window::window_t w, const config::renderer_attrs &r_attrs,
-                                     const config::window_resolution &w_res,
-                                     const config::window_attrs &) noexcept
-    -> tl::expected<context, error> {
-  log_info("Initializing Vulkan");
-
-  context ctx{};
-
-  // API version
-  const auto api_version{get_api_version()};
-  if (!api_version) {
-    return tl::unexpected{api_version.error()};
-  }
-
-  // Extensions
-  const auto instance_extensions{get_required_extensions()};
-  if (!instance_extensions) {
-    return tl::unexpected{instance_extensions.error()};
-  }
-
-  // Validation layers
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto validation_layers{get_required_validation_layers()};
-  if (!validation_layers) {
-    return tl::unexpected{validation_layers.error()};
-  }
-
-  auto dbg_msg_ci{dbg_msg_create_info()};
-#endif
-
-// Instance
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto instance{build_instance(*instance_extensions, *validation_layers, dbg_msg_ci)};
-  if (!instance) {
-    return tl::unexpected{instance.error()};
-  } else {
-    ctx.instance = *instance;
-  }
-#else
-  const auto instance{build_instance(*instance_extensions)};
-  if (!instance) {
-    return tl::unexpected{instance.error()};
-  } else {
-    ctx.instance = *instance;
-  }
-#endif
-
-// Debug MSG
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto dbg_msg{create_dbg_msg(*instance, dbg_msg_ci)};
-  if (!dbg_msg) {
-    return tl::unexpected{dbg_msg.error()};
-  } else {
-    ctx.dbg_msg = *dbg_msg;
-  }
-#endif
-
-  // Physical device selection
-  const auto phys_dev{select_physical_device(*instance)};
-  if (!phys_dev) {
-    return tl::unexpected{phys_dev.error()};
-  } else {
-    ctx.phys_dev = *phys_dev;
-  }
-
-  // Logical device creation
-  const auto device{create_logical_device(*phys_dev)};
-  if (!device) {
-    return tl::unexpected{device.error()};
-  } else {
-    ctx.device = *device;
-  }
-
-  // Window surface
-  const auto surface{create_window_surface(w, *instance)};
-  if (!surface) {
-    return tl::unexpected{surface.error()};
-  } else {
-    ctx.surface = *surface;
-  }
-
-  const auto q_handles{get_queue_handles(*phys_dev, *device, *surface)};
-  if (!q_handles) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.q_handles = *q_handles;
-  }
-
-  const auto swpc_data{create_swapchain(*phys_dev, *device, *surface, r_attrs,
-                                        static_cast<u32>(w_res.width),
-                                        static_cast<u32>(w_res.height))};
-  if (!swpc_data) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.swpc_data = *swpc_data;
-  }
-
-  const auto frm_data{create_frame_data(*device, q_handles->graphics_idx)};
-  if (!frm_data) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.frm_data = *frm_data;
-  }
-
-  const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
-  if (!allocator) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.allocator = *allocator;
-  }
-
-  const auto draw_image{create_draw_img(w_res, *device, *allocator)};
-  if (!draw_image) {
-    return tl::unexpected{q_handles.error()};
-  } else {
-    ctx.draw_image = *draw_image;
-  }
-
-  // Initialization done
-  log_info("Vulkan initialization completed");
-  return ctx;
-}
-
-void surge::renderer::vk::terminate(context &ctx) noexcept {
-  log_info("Terminating Vulkan");
-  const auto alloc_callbacks{get_alloc_callbacks()};
-
-  log_info("Waiting for GPU idle");
-  vkWaitForFences(ctx.device, ctx.frm_data.frame_overlap, ctx.frm_data.render_fences.data(), true,
-                  1000000000);
-
-  log_info("Destroying draw image");
-  vkDestroyImageView(ctx.device, ctx.draw_image.image_view, get_alloc_callbacks());
-  vmaDestroyImage(ctx.allocator, ctx.draw_image.image, ctx.draw_image.allocation);
-
-  log_info("Destroying memory allocator");
-  vmaDestroyAllocator(ctx.allocator);
-
-  destroy_frame_data(ctx.device, ctx.frm_data);
-
-  log_info("Destroying image views");
-  for (const auto &img_view : ctx.swpc_data.imgs_views) {
-    vkDestroyImageView(ctx.device, img_view, alloc_callbacks);
-  }
-
-  log_info("Destroying swapchain");
-  vkDestroySwapchainKHR(ctx.device, ctx.swpc_data.swapchain, alloc_callbacks);
-
-  log_info("Destroying window surface");
-  vkDestroySurfaceKHR(ctx.instance, ctx.surface, alloc_callbacks);
-
-  log_info("Destroying logical device");
-  vkDestroyDevice(ctx.device, alloc_callbacks);
-
-#ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  destroy_dbg_msg(ctx.instance, ctx.dbg_msg);
-#endif
-
-  log_info("Terminating instnace");
-  vkDestroyInstance(ctx.instance, alloc_callbacks);
-
-  log_info("Vulkan terminated");
 }

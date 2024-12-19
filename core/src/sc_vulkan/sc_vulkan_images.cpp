@@ -6,9 +6,8 @@
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
-                                                VkImageAspectFlags aspect_flags) noexcept
-    -> VkImageViewCreateInfo {
+auto surge::renderer::vk::imageview_create_info(
+    VkFormat format, VkImage image, VkImageAspectFlags aspect_flags) -> VkImageViewCreateInfo {
   VkImageViewCreateInfo ci{};
   ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   ci.pNext = nullptr;
@@ -25,7 +24,7 @@ auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
 }
 
 auto surge::renderer::vk::image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
-                                            VkExtent3D extent) noexcept -> VkImageCreateInfo {
+                                            VkExtent3D extent) -> VkImageCreateInfo {
   VkImageCreateInfo ci{};
   ci.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   ci.pNext = nullptr;
@@ -47,8 +46,7 @@ auto surge::renderer::vk::image_create_info(VkFormat format, VkImageUsageFlags u
 }
 
 void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
-                                           VkImageLayout curr_layout,
-                                           VkImageLayout new_layout) noexcept {
+                                           VkImageLayout curr_layout, VkImageLayout new_layout) {
   // See https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples for finer sync
   // options
 
@@ -82,7 +80,7 @@ void surge::renderer::vk::transition_image(VkCommandBuffer cmd, VkImage image,
 }
 
 void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination,
-                                     VkExtent2D src_size, VkExtent2D dst_size) noexcept {
+                                     VkExtent2D src_size, VkExtent2D dst_size) {
   VkImageBlit2 blit_reg{};
   blit_reg.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
   blit_reg.pNext = nullptr;
@@ -119,7 +117,7 @@ void surge::renderer::vk::image_blit(VkCommandBuffer cmd, VkImage source, VkImag
   vkCmdBlitImage2(cmd, &blitInfo);
 }
 
-auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask) noexcept
+auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask)
     -> VkImageSubresourceRange {
   VkImageSubresourceRange sum_img{};
   sum_img.aspectMask = aspect_mask;
@@ -131,7 +129,7 @@ auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask
 }
 
 auto surge::renderer::vk::create_draw_img(const config::window_resolution &w_res, VkDevice logi_dev,
-                                          VmaAllocator allocator) noexcept
+                                          VmaAllocator allocator)
     -> tl::expected<allocated_image, error> {
   log_info("Creating draw image target");
 

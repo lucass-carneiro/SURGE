@@ -67,7 +67,7 @@ static VKAPI_ATTR auto VKAPI_CALL debug_callback(
   }
 }
 
-auto surge::renderer::vk::dbg_msg_create_info() noexcept -> VkDebugUtilsMessengerCreateInfoEXT {
+auto surge::renderer::vk::dbg_msg_create_info() -> VkDebugUtilsMessengerCreateInfoEXT {
   VkDebugUtilsMessengerCreateInfoEXT create_info{
       .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
       .pNext = nullptr,
@@ -85,7 +85,7 @@ auto surge::renderer::vk::dbg_msg_create_info() noexcept -> VkDebugUtilsMessenge
   return create_info;
 }
 
-auto surge::renderer::vk::create_dbg_msg(VkInstance instance) noexcept
+auto surge::renderer::vk::create_dbg_msg(VkInstance instance)
     -> tl::expected<VkDebugUtilsMessengerEXT, error> {
   log_info("Creating debug messenger");
 
@@ -111,7 +111,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance) noexcept
 }
 
 auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
-                                         VkDebugUtilsMessengerCreateInfoEXT create_info) noexcept
+                                         VkDebugUtilsMessengerCreateInfoEXT create_info)
     -> tl::expected<VkDebugUtilsMessengerEXT, error> {
   log_info("Creating debug messenger");
 
@@ -135,8 +135,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
   }
 }
 
-auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance,
-                                          VkDebugUtilsMessengerEXT dbg_msg) noexcept
+auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg)
     -> tl::expected<void, error> {
   log_info("Destroying debug messenger");
 

@@ -3,12 +3,12 @@
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_vulkan_sync.hpp"
+#include "sc_vulkan_types.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
-                                                   VkCommandPoolCreateFlags flags) noexcept
-    -> VkCommandPoolCreateInfo {
+auto surge::renderer::vk::command_pool_create_info(
+    u32 queue_family_idx, VkCommandPoolCreateFlags flags) -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                              .pNext = nullptr,
                              .flags = flags,
@@ -16,8 +16,8 @@ auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
   return ci;
 }
 
-auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 count) noexcept
-    -> VkCommandBufferAllocateInfo {
+auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool,
+                                                    u32 count) -> VkCommandBufferAllocateInfo {
   VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
                                  .pNext = nullptr,
                                  .commandPool = pool,
@@ -26,7 +26,7 @@ auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 coun
   return ai;
 }
 
-auto surge::renderer::vk::command_buffer_begin_info(VkCommandBufferUsageFlags flags) noexcept
+auto surge::renderer::vk::command_buffer_begin_info(VkCommandBufferUsageFlags flags)
     -> VkCommandBufferBeginInfo {
   VkCommandBufferBeginInfo ci = {};
   ci.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -36,7 +36,7 @@ auto surge::renderer::vk::command_buffer_begin_info(VkCommandBufferUsageFlags fl
   return ci;
 }
 
-auto surge::renderer::vk::command_buffer_submit_info(VkCommandBuffer cmd) noexcept
+auto surge::renderer::vk::command_buffer_submit_info(VkCommandBuffer cmd)
     -> VkCommandBufferSubmitInfo {
   VkCommandBufferSubmitInfo si{};
   si.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
@@ -48,8 +48,7 @@ auto surge::renderer::vk::command_buffer_submit_info(VkCommandBuffer cmd) noexce
 
 auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
                                       VkSemaphoreSubmitInfo *signam_sem_info,
-                                      VkSemaphoreSubmitInfo *wai_sem_info) noexcept
-    -> VkSubmitInfo2 {
+                                      VkSemaphoreSubmitInfo *wai_sem_info) -> VkSubmitInfo2 {
   VkSubmitInfo2 si{};
   si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   si.pNext = nullptr;
@@ -66,8 +65,8 @@ auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
   return si;
 }
 
-auto surge::renderer::vk::cmd_begin(context &ctx) noexcept -> std::optional<error> {
-  auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
+auto surge::renderer::vk::cmd_begin(context ctx) -> std::optional<error> {
+  auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
 
   // Now that we are sure that the commands finished executing, we can safely reset the command
   // buffer to begin recording again.
@@ -93,8 +92,8 @@ auto surge::renderer::vk::cmd_begin(context &ctx) noexcept -> std::optional<erro
   return {};
 }
 
-auto surge::renderer::vk::cmd_end(context &ctx) noexcept -> std::optional<error> {
-  auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
+auto surge::renderer::vk::cmd_end(context ctx) -> std::optional<error> {
+  auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
 
   // Finalize the command buffer
   const auto result{vkEndCommandBuffer(cmd_buff)};
@@ -107,12 +106,12 @@ auto surge::renderer::vk::cmd_end(context &ctx) noexcept -> std::optional<error>
   return {};
 }
 
-auto surge::renderer::vk::cmd_submit(context &ctx) noexcept -> std::optional<error> {
-  auto &graphics_queue{ctx.q_handles.graphics};
-  auto &render_fence{ctx.frm_data.render_fences[ctx.frm_data.frame_idx]};
-  auto &swpc_semaphore{ctx.frm_data.swpc_semaphores[ctx.frm_data.frame_idx]};
-  auto &render_semaphore{ctx.frm_data.render_semaphores[ctx.frm_data.frame_idx]};
-  auto &cmd_buff{ctx.frm_data.command_buffers[ctx.frm_data.frame_idx]};
+auto surge::renderer::vk::cmd_submit(context ctx) -> std::optional<error> {
+  auto &graphics_queue{ctx->q_handles.graphics};
+  auto &render_fence{ctx->frm_data.render_fences[ctx->frm_data.frame_idx]};
+  auto &swpc_semaphore{ctx->frm_data.swpc_semaphores[ctx->frm_data.frame_idx]};
+  auto &render_semaphore{ctx->frm_data.render_semaphores[ctx->frm_data.frame_idx]};
+  auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
 
   // Prepare the submission to the queue. we want to wait on the _presentSemaphore, as that
   // semaphore is signaled when the swapchain is ready we will signal the _renderSemaphore, to

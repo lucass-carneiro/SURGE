@@ -72,6 +72,7 @@ enum error : int {
   gc_instance_alloc,
 
   // Vulkan errors
+  vk_ctx_alloc,
   vk_api_version_query,
   vk_instance_init,
   vk_val_layer_query,
