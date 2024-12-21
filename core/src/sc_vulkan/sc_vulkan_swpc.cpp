@@ -76,7 +76,7 @@ auto surge::renderer::vk::present(context ctx, u32 &swpc_img_idx,
   const auto result{vkQueuePresentKHR(graphics_queue, &present_info)};
 
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    log_warn("Recreating swapchain");
+    log_info("Swapchain out of date. Recreating");
     vkDeviceWaitIdle(ctx->device);
 
     const auto alloc_callbacks{get_alloc_callbacks()};

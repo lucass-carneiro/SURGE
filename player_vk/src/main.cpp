@@ -2,6 +2,7 @@
 #include "sc_cli.hpp"
 #include "sc_config.hpp"
 #include "sc_logging.hpp"
+#include "sc_module.hpp"
 #include "sc_options.hpp"
 #include "sc_tasks.hpp"
 #include "sc_timers.hpp"
@@ -107,7 +108,7 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    window::bind_input_callbacks(*engine_window, *mod, *mod_api);
+    module::bind_input_callbacks(*engine_window, *mod, *mod_api);
 
     /***********************
      * Main Loop variables *
@@ -136,7 +137,7 @@ int main() {
         timers::generic_timer t;
         t.start();
 
-        window::unbind_input_callbacks(*engine_window);
+        module::unbind_input_callbacks(*engine_window);
         mod_api->on_unload(*engine_window);
 
         mod = module::reload(*mod);
@@ -156,7 +157,7 @@ int main() {
           break;
         }
 
-        window::bind_input_callbacks(*engine_window, *mod, *mod_api);
+        module::bind_input_callbacks(*engine_window, *mod, *mod_api);
 
         t.stop();
         log_info("Hot reloading succsesfull in {} s", t.elapsed());
@@ -266,7 +267,7 @@ int main() {
     /********************
      * Finalize modules *
      ********************/
-    window::unbind_input_callbacks(*engine_window);
+    module::unbind_input_callbacks(*engine_window);
     mod_api->on_unload(*engine_window);
     module::unload(*mod);
 

@@ -3,9 +3,8 @@
 
 #include "sc_config.hpp"
 #include "sc_glfw_includes.hpp"
-#include "sc_glm_includes.hpp"
-#include "sc_module.hpp"
 
+#include <glm/glm.hpp>
 #include <tl/expected.hpp>
 
 namespace surge::window {
@@ -23,10 +22,6 @@ auto should_close(window_t window) -> bool;
 void set_should_close(window_t window, bool value);
 
 void swap_buffers(window_t window);
-
-void bind_input_callbacks(window_t window, module::handle_t handle, const module::gl_api &api);
-void bind_input_callbacks(window_t window, module::handle_t handle, const module::vk_api &api);
-void unbind_input_callbacks(window_t window);
 
 } // namespace surge::window
 

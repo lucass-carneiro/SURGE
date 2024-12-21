@@ -8,8 +8,8 @@
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module, std::size_t max_size) noexcept
-    -> tl::expected<string, error> {
+auto surge::module::get_name(handle_t module,
+                             std::size_t max_size) noexcept -> tl::expected<string, error> {
 
   auto module_name{string(max_size, '\0')};
   const auto actual_name_size{
@@ -72,8 +72,8 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
-    -> std::optional<FARPROC> {
+static inline auto get_func_addr(surge::module::handle_t module,
+                                 const char *func_name) -> std::optional<FARPROC> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
     const auto error_code{GetLastError()};
@@ -100,8 +100,8 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-static inline auto get_func_addr(surge::module::handle_t module, const char *func_name)
-    -> std::optional<void *> {
+static inline auto get_func_addr(surge::module::handle_t module,
+                                 const char *func_name) -> std::optional<void *> {
   (void)dlerror();
   auto addr{dlsym(module, func_name)};
   if (!addr) {
@@ -321,4 +321,57 @@ auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, e
   }
 
   return new_handle;
+}
+
+void surge::module::bind_input_callbacks(surge::window::window_t window, handle_t handle,
+                                         const gl_api &api) {
+  log_info("Binding module {} interaction callbacks", static_cast<void *>(handle));
+
+  glfwSetKeyCallback(window, api.keyboard_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetMouseButtonCallback(window, api.mouse_button_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetScrollCallback(window, api.mouse_scroll_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(handle));
+  }
+}
+
+void surge::module::bind_input_callbacks(surge::window::window_t window, handle_t handle,
+                                         const vk_api &api) {
+  log_info("Binding module {} interaction callbacks", static_cast<void *>(handle));
+
+  glfwSetKeyCallback(window, api.keyboard_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetMouseButtonCallback(window, api.mouse_button_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(handle));
+  }
+
+  glfwSetScrollCallback(window, api.mouse_scroll_event);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(handle));
+  }
+}
+
+void surge::module::unbind_input_callbacks(surge::window::window_t window) {
+  log_info("Unbinding all interaction callbacks for window {}", static_cast<void *>(window));
+
+  // Set Keyboard callback
+  glfwSetKeyCallback(window, nullptr);
+
+  // Set Mouse button callback
+  glfwSetMouseButtonCallback(window, nullptr);
+
+  // Set mouse scroll callback
+  glfwSetScrollCallback(window, nullptr);
 }

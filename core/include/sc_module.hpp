@@ -78,6 +78,10 @@ auto get_vk_api(handle_t module) noexcept -> tl::expected<vk_api, error>;
 
 auto set_module_path() noexcept -> bool;
 
+void bind_input_callbacks(surge::window::window_t window, handle_t handle, const gl_api &api);
+void bind_input_callbacks(surge::window::window_t window, handle_t handle, const vk_api &api);
+void unbind_input_callbacks(surge::window::window_t window);
+
 } // namespace surge::module
 
 #endif // SURGE_CORE_MODULE_HPP
