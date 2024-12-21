@@ -98,7 +98,7 @@ int main() {
       return EXIT_FAILURE;
     }
 
-    auto on_load_result{mod_api->on_load(*engine_window)};
+    auto on_load_result{mod_api->on_load(*engine_window, *vk_ctx)};
     if (on_load_result != 0) {
       log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                 on_load_result);
@@ -138,7 +138,7 @@ int main() {
         t.start();
 
         module::unbind_input_callbacks(*engine_window);
-        mod_api->on_unload(*engine_window);
+        mod_api->on_unload(*engine_window, *vk_ctx);
 
         mod = module::reload(*mod);
         if (!mod) {
@@ -150,7 +150,7 @@ int main() {
           break;
         }
 
-        on_load_result = mod_api->on_load(*engine_window);
+        on_load_result = mod_api->on_load(*engine_window, *vk_ctx);
         if (on_load_result != 0) {
           log_error("Mudule {} returned error {} while calling on_load", static_cast<void *>(*mod),
                     on_load_result);
@@ -196,7 +196,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Update");
 #endif
-        if (mod_api->update(*engine_window, update_timer.stop()) != 0) {
+        if (mod_api->update(*engine_window, *vk_ctx, update_timer.stop()) != 0) {
           window::set_should_close(*engine_window, true);
         }
       }
@@ -208,7 +208,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Draw");
 #endif
-        mod_api->draw(*engine_window);
+        mod_api->draw(*engine_window, *vk_ctx);
       }
 
       // End command recording
@@ -268,7 +268,7 @@ int main() {
      * Finalize modules *
      ********************/
     module::unbind_input_callbacks(*engine_window);
-    mod_api->on_unload(*engine_window);
+    mod_api->on_unload(*engine_window, *vk_ctx);
     module::unload(*mod);
 
     /********************************

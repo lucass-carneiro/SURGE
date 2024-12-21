@@ -2,8 +2,8 @@
 #define SURGE_CORE_RENDERER_VULKAN_NEW_HPP
 
 #include "sc_config.hpp"
+#include "sc_glfw_includes.hpp"
 #include "sc_integer_types.hpp"
-#include "sc_window.hpp"
 
 #include <optional>
 #include <tl/expected.hpp>

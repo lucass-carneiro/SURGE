@@ -5,6 +5,7 @@
 #include "sc_error_types.hpp"
 #include "sc_glfw_includes.hpp"
 #include "sc_options.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 
 // clang-format off
 #ifdef SURGE_SYSTEM_Windows
@@ -47,10 +48,10 @@ struct gl_api {
 };
 
 struct vk_api {
-  using on_load_t = int (*)(surge::window::window_t);
-  using on_unload_t = int (*)(surge::window::window_t);
-  using draw_t = int (*)(surge::window::window_t);
-  using update_t = int (*)(surge::window::window_t, double);
+  using on_load_t = int (*)(surge::window::window_t, surge::renderer::vk::context);
+  using on_unload_t = int (*)(surge::window::window_t, surge::renderer::vk::context);
+  using draw_t = int (*)(surge::window::window_t, surge::renderer::vk::context);
+  using update_t = int (*)(surge::window::window_t, surge::renderer::vk::context, double);
 
   using keyboard_event_t = void (*)(surge::window::window_t, int, int, int, int);
   using mouse_button_event_t = void (*)(surge::window::window_t, int, int, int);
