@@ -1,12 +1,14 @@
-#include "vk_atoms/shaders.hpp"
+#include "sc_vulkan/atoms/shader.hpp"
 
-#include "files.hpp"
-#include "logging.hpp"
-#include "renderer_vk_malloc.hpp"
+#include "../sc_vulkan_malloc.hpp"
+#include "../sc_vulkan_types.hpp"
+#include "sc_files.hpp"
+#include "sc_logging.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::vk_atom::shader::load_shader_module(VkDevice device, const char *path) noexcept
+auto surge::vk_atom::shader::load_shader_module(renderer::vk::context ctx,
+                                                const char *path) noexcept
     -> tl::expected<VkShaderModule, error> {
   log_info("Loading vulkan shader module {}", path);
 
@@ -25,7 +27,7 @@ auto surge::vk_atom::shader::load_shader_module(VkDevice device, const char *pat
 
   VkShaderModule module{};
   const auto result{
-      vkCreateShaderModule(device, &info, renderer::vk::get_alloc_callbacks(), &module)};
+      vkCreateShaderModule(ctx->device, &info, renderer::vk::get_alloc_callbacks(), &module)};
 
   if (result != VK_SUCCESS) {
     log_error("Unable create shader module from file {}: {}", path, string_VkResult(result));
@@ -36,20 +38,21 @@ auto surge::vk_atom::shader::load_shader_module(VkDevice device, const char *pat
   }
 }
 
-void surge::vk_atom::shader::destroy_shader_module(VkDevice device,
+void surge::vk_atom::shader::destroy_shader_module(renderer::vk::context ctx,
                                                    VkShaderModule module) noexcept {
   log_info("Unloading shader module handle {}", static_cast<void *>(module));
-  vkDestroyShaderModule(device, module, renderer::vk::get_alloc_callbacks());
+  vkDestroyShaderModule(ctx->device, module, renderer::vk::get_alloc_callbacks());
 }
 
-auto surge::vk_atom::shader::create_shader_object(
-    VkInstance instance, VkDevice device, const char *vertex_shader_path,
-    const char *fragment_shader_path) noexcept -> tl::expected<program_shaders, error> {
+auto surge::vk_atom::shader::create_shader_object(renderer::vk::context ctx,
+                                                  const char *vertex_shader_path,
+                                                  const char *fragment_shader_path) noexcept
+    -> tl::expected<program_shaders, error> {
   log_info("Creating shader objects from {} and {}", vertex_shader_path, fragment_shader_path);
 
   // Find function
   auto func{reinterpret_cast<PFN_vkCreateShadersEXT>(
-      vkGetInstanceProcAddr(instance, "vkCreateShadersEXT"))};
+      vkGetInstanceProcAddr(ctx->instance, "vkCreateShadersEXT"))};
 
   if (func == nullptr) {
     log_error("Unable to find extension function vkCreateShadersEXT");
@@ -102,8 +105,8 @@ auto surge::vk_atom::shader::create_shader_object(
   const std::array<VkShaderCreateInfoEXT, 2> shader_infos{vs_info, fs_info};
 
   program_shaders shaders{};
-  const auto result{
-      func(device, 2, shader_infos.data(), renderer::vk::get_alloc_callbacks(), shaders.data())};
+  const auto result{func(ctx->device, 2, shader_infos.data(), renderer::vk::get_alloc_callbacks(),
+                         shaders.data())};
 
   if (result != VK_SUCCESS) {
     log_error("Unable create shader objects from files {} and {}: {}", vertex_shader_path,
@@ -115,19 +118,19 @@ auto surge::vk_atom::shader::create_shader_object(
   }
 }
 
-void surge::vk_atom::shader::destroy_shader_object(VkInstance instance, VkDevice device,
+void surge::vk_atom::shader::destroy_shader_object(renderer::vk::context ctx,
                                                    program_shaders &shaders) noexcept {
   log_info("Destroying shader object");
 
   // Find function
   auto func{reinterpret_cast<PFN_vkDestroyShaderEXT>(
-      vkGetInstanceProcAddr(instance, "vkDestroyShaderEXT"))};
+      vkGetInstanceProcAddr(ctx->instance, "vkDestroyShaderEXT"))};
 
   if (func == nullptr) {
     log_error("Unable to find extension function vkDestroyShaderEXT");
   } else {
     for (auto &shader : shaders) {
-      func(device, shader, renderer::vk::get_alloc_callbacks());
+      func(ctx->device, shader, renderer::vk::get_alloc_callbacks());
     }
   }
 }

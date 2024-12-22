@@ -73,6 +73,11 @@ struct allocated_image {
   VkFormat image_format{};
 };
 
+struct swpc_image {
+  VkImage image{};
+  u32 index{};
+};
+
 struct context_t {
   VkInstance instance{};
 
@@ -92,6 +97,8 @@ struct context_t {
   VmaAllocator allocator{};
 
   allocated_image draw_image{};
+
+  swpc_image swpc_requested_img{};
 };
 
 } // namespace surge::renderer::vk

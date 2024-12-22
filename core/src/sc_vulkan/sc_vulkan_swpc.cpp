@@ -12,7 +12,7 @@
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto surge::renderer::vk::request_img(context ctx) -> tl::expected<std::tuple<image, u32>, error> {
+auto surge::renderer::vk::request_swpc_img(context ctx) -> tl::expected<void, error> {
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
@@ -48,12 +48,14 @@ auto surge::renderer::vk::request_img(context ctx) -> tl::expected<std::tuple<im
     return tl::unexpected{error::vk_get_swpc_img};
   }
 
-  return std::make_tuple(ctx->swpc_data.imgs[swpc_img_idx], swpc_img_idx);
+  ctx->swpc_requested_img = swpc_image{ctx->swpc_data.imgs[swpc_img_idx], swpc_img_idx};
+
+  return {};
 }
 
-auto surge::renderer::vk::present(context ctx, u32 &swpc_img_idx,
-                                  const config::renderer_attrs &r_attrs,
-                                  const config::window_resolution &w_res) -> std::optional<error> {
+auto surge::renderer::vk::present_swpc(context ctx, const config::renderer_attrs &r_attrs,
+                                       const config::window_resolution &w_res)
+    -> std::optional<error> {
   // Prepare present. This will put the image we just rendered to into the visible window. we want
   // to wait on the render_semaphore for that, as its necessary that drawing commands have finished
   // before the image is displayed to the user
@@ -61,6 +63,7 @@ auto surge::renderer::vk::present(context ctx, u32 &swpc_img_idx,
   auto &graphics_queue{ctx->q_handles.graphics};
   auto &swpc{ctx->swpc_data.swapchain};
   auto &render_semaphore{ctx->frm_data.render_semaphores[ctx->frm_data.frame_idx]};
+  auto &swpc_img_idx{ctx->swpc_requested_img.index};
 
   VkPresentInfoKHR present_info{};
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

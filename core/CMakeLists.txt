@@ -34,8 +34,8 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
 
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/desc_alloc.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/desc_builder.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.hpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.hpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.hpp"
@@ -72,8 +72,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
 
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/desc_alloc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/desc_builder.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"

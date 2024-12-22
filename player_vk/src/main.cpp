@@ -165,12 +165,11 @@ int main() {
 #endif
 
       // Acquire swapchain image
-      const auto img_result{renderer::vk::request_img(*vk_ctx)};
+      const auto img_result{renderer::vk::request_swpc_img(*vk_ctx)};
       if (!img_result) {
         log_error("Vulkan error while acquiring swapchain images");
         break;
       }
-      auto [img, img_idx] = *img_result;
 
       // Begin command recording
       {
@@ -187,7 +186,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("Clear");
 #endif
-        renderer::vk::clear(*vk_ctx, img, w_ccl);
+        renderer::vk::clear_swpc(*vk_ctx, w_ccl);
       }
 
       // Call module update
@@ -235,7 +234,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("SWPC Present");
 #endif
-        const auto present_result{renderer::vk::present(*vk_ctx, img_idx, r_attrs, w_res)};
+        const auto present_result{renderer::vk::present_swpc(*vk_ctx, r_attrs, w_res)};
         if (present_result.has_value()) {
           log_error("Vulkan error while presenting swapchain images");
           break;

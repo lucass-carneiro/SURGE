@@ -13,24 +13,21 @@ namespace surge::renderer::vk {
 struct context_t;
 using context = context_t *;
 
-struct image_t;
-using image = void *;
-
 auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
-                const config::window_resolution &w_res,
-                const config::window_attrs &w_attrs) -> tl::expected<context, error>;
+                const config::window_resolution &w_res, const config::window_attrs &w_attrs)
+    -> tl::expected<context, error>;
 
 void terminate(context ctx);
 
-auto request_img(context ctx) -> tl::expected<std::tuple<image, u32>, error>;
-auto present(context ctx, u32 &swpc_img_idx, const config::renderer_attrs &r_attrs,
-             const config::window_resolution &w_res) -> std::optional<error>;
+auto request_swpc_img(context ctx) -> tl::expected<void, error>;
+auto present_swpc(context ctx, const config::renderer_attrs &r_attrs,
+                  const config::window_resolution &w_res) -> std::optional<error>;
 
 auto cmd_begin(context ctx) -> std::optional<error>;
 auto cmd_end(context ctx) -> std::optional<error>;
 auto cmd_submit(context ctx) -> std::optional<error>;
 
-void clear(context ctx, image img, const config::clear_color &w_ccl);
+void clear_swpc(context ctx, const config::clear_color &w_ccl);
 
 } // namespace surge::renderer::vk
 
