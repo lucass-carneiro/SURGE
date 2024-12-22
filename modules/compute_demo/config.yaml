@@ -1,0 +1,25 @@
+window:
+  name: "SURGE: Compute Shaders Demo"
+  monitor_index: 1
+  windowed: 1
+  cursor: 1
+
+resolution:
+  width: 800
+  height: 600
+
+renderer:
+  VSync: 1
+  MSAA: 1
+  fps_cap: 1 # Ignored on Windows
+  fps_cap_value: 60
+
+
+clear_color:
+  r: 0.2
+  g: 0.3
+  b: 0.3
+  a: 1.0
+
+modules:
+  first_module: "compute"

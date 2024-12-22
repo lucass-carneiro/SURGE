@@ -15,6 +15,7 @@ staging-*/
 
 modules/*
 !modules/CMakeLists.txt
+!modules/compute_demo
 !modules/default
 !modules/imgui_demo
 !modules/sprite_demo

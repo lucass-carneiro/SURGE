@@ -1,5 +1,5 @@
-#ifndef SURGE_RENDERER_VULKAN_DESCRIPTOR_BUILDER_HPP
-#define SURGE_RENDERER_VULKAN_DESCRIPTOR_BUILDER_HPP
+#ifndef SURGE_CORE_VULKAN_ATOM_DESC_BUILDER_HPP
+#define SURGE_CORE_VULKAN_ATOM_DESC_BUILDER_HPP
 
 #include "sc_container_types.hpp"
 #include "sc_error_types.hpp"
@@ -11,7 +11,7 @@
 
 #include <tl/expected.hpp>
 
-namespace surge::renderer::vk {
+namespace surge::vk_atom {
 
 class desc_builder {
 private:
@@ -25,6 +25,6 @@ public:
       -> tl::expected<VkDescriptorSetLayout, error>;
 };
 
-} // namespace surge::renderer::vk
+} // namespace surge::vk_atom
 
-#endif // SURGE_RENDERER_VULKAN_DESCRIPTOR_BUILDER_HPP
+#endif // SURGE_CORE_VULKAN_ATOM_DESC_BUILDER_HPP

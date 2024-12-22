@@ -1,5 +1,5 @@
-#ifndef SURGE_RENDERER_VULKAN_DESCRIPTOR_ALLOCATOR_HPP
-#define SURGE_RENDERER_VULKAN_DESCRIPTOR_ALLOCATOR_HPP
+#ifndef SURGE_CORE_VULKAN_ATOM_DESC_ALLOC_HPP
+#define SURGE_CORE_VULKAN_ATOM_DESC_ALLOC_HPP
 
 #include "sc_error_types.hpp"
 #include "sc_integer_types.hpp"
@@ -11,7 +11,7 @@
 #include <span>
 #include <tl/expected.hpp>
 
-namespace surge::renderer::vk {
+namespace surge::vk_atom {
 
 struct desc_pool_size_ratio {
   VkDescriptorType type{};
@@ -34,6 +34,6 @@ public:
       -> tl::expected<VkDescriptorSet, error>;
 };
 
-} // namespace surge::renderer::vk
+} // namespace surge::vk_atom
 
-#endif // SURGE_RENDERER_VULKAN_DESCRIPTOR_ALLOCATOR_HPP
+#endif // SURGE_CORE_VULKAN_ATOM_DESC_ALLOC_HPP

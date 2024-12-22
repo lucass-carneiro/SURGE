@@ -1,11 +1,11 @@
-#include "sc_vulkan_desc_builder.hpp"
+#include "sc_vulkan/atoms/desc_builder.hpp"
 
+#include "../sc_vulkan_malloc.hpp"
 #include "sc_logging.hpp"
-#include "sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-void surge::renderer::vk::desc_builder::add_binding(u32 binding, VkDescriptorType type) {
+void surge::vk_atom::desc_builder::add_binding(u32 binding, VkDescriptorType type) {
   VkDescriptorSetLayoutBinding b{};
   b.binding = binding;
   b.descriptorCount = 1;
@@ -14,10 +14,10 @@ void surge::renderer::vk::desc_builder::add_binding(u32 binding, VkDescriptorTyp
   bindings.push_back(b);
 }
 
-void surge::renderer::vk::desc_builder::clear() { bindings.clear(); }
+void surge::vk_atom::desc_builder::clear() { bindings.clear(); }
 
-auto surge::renderer::vk::desc_builder::build(VkDevice device, VkShaderStageFlags shader_stages,
-                                              void *pNext, VkDescriptorSetLayoutCreateFlags flags)
+auto surge::vk_atom::desc_builder::build(VkDevice device, VkShaderStageFlags shader_stages,
+                                         void *pNext, VkDescriptorSetLayoutCreateFlags flags)
     -> tl::expected<VkDescriptorSetLayout, error> {
   for (auto &b : bindings) {
     b.stageFlags |= shader_stages;
@@ -31,7 +31,8 @@ auto surge::renderer::vk::desc_builder::build(VkDevice device, VkShaderStageFlag
   info.flags = flags;
 
   VkDescriptorSetLayout set{};
-  const auto result{vkCreateDescriptorSetLayout(device, &info, get_alloc_callbacks(), &set)};
+  const auto result{
+      vkCreateDescriptorSetLayout(device, &info, renderer::vk::get_alloc_callbacks(), &set)};
 
   if (result != VK_SUCCESS) {
     log_error("Unable to create descriptor set layout: {}", string_VkResult(result));

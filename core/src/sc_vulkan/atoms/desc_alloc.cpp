@@ -1,13 +1,13 @@
-#include "sc_vulkan_desc_alloc.hpp"
+#include "sc_vulkan/atoms/desc_alloc.hpp"
 
+#include "../sc_vulkan_malloc.hpp"
 #include "sc_container_types.hpp"
 #include "sc_logging.hpp"
-#include "sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::desc_alloc::init_pool(VkDevice device, u32 max_sets,
-                                                std::span<desc_pool_size_ratio> pool_ratios)
+auto surge::vk_atom::desc_alloc::init_pool(VkDevice device, u32 max_sets,
+                                           std::span<desc_pool_size_ratio> pool_ratios)
     -> tl::expected<void, error> {
   vector<VkDescriptorPoolSize> pool_sizes{};
   for (const auto &ratio : pool_ratios) {
@@ -21,7 +21,8 @@ auto surge::renderer::vk::desc_alloc::init_pool(VkDevice device, u32 max_sets,
   pool_info.poolSizeCount = static_cast<u32>(pool_sizes.size());
   pool_info.pPoolSizes = pool_sizes.data();
 
-  const auto result{vkCreateDescriptorPool(device, &pool_info, get_alloc_callbacks(), &pool)};
+  const auto result{
+      vkCreateDescriptorPool(device, &pool_info, renderer::vk::get_alloc_callbacks(), &pool)};
 
   if (result != VK_SUCCESS) {
     log_error("Unable to create descriptor pool: {}", string_VkResult(result));
@@ -29,8 +30,7 @@ auto surge::renderer::vk::desc_alloc::init_pool(VkDevice device, u32 max_sets,
   }
 }
 
-auto surge::renderer::vk::desc_alloc::clear_descriptors(VkDevice device)
-    -> tl::expected<void, error> {
+auto surge::vk_atom::desc_alloc::clear_descriptors(VkDevice device) -> tl::expected<void, error> {
   const auto result{vkResetDescriptorPool(device, pool, 0)};
   if (result != VK_SUCCESS) {
     log_error("Unable to reset descriptor pool: {}", string_VkResult(result));
@@ -38,11 +38,11 @@ auto surge::renderer::vk::desc_alloc::clear_descriptors(VkDevice device)
   }
 }
 
-void surge::renderer::vk::desc_alloc::destroy_pool(VkDevice device) {
-  vkDestroyDescriptorPool(device, pool, get_alloc_callbacks());
+void surge::vk_atom::desc_alloc::destroy_pool(VkDevice device) {
+  vkDestroyDescriptorPool(device, pool, renderer::vk::get_alloc_callbacks());
 }
 
-auto surge::renderer::vk::desc_alloc::allocate(VkDevice device, VkDescriptorSetLayout layout)
+auto surge::vk_atom::desc_alloc::allocate(VkDevice device, VkDescriptorSetLayout layout)
     -> tl::expected<VkDescriptorSet, error> {
   VkDescriptorSetAllocateInfo ai = {};
   ai.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
