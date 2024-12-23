@@ -18,9 +18,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/text_demo)
 #endif()
 
 # Nguyễn Hà Đông's Flappy Bird
-#if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/SURGE-FlappyBird/CMakeLists.txt)
-#  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/SURGE-FlappyBird/FlappyBird)
-#endif()
+if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/SURGE-FlappyBird/CMakeLists.txt)
+  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/SURGE-FlappyBird/FlappyBird)
+endif()
 
 # Drizzle: The Unveiling
 #if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/SURGE-DTU/CMakeLists.txt)
