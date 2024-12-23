@@ -6,7 +6,7 @@
 
 project(
   Surge
-  VERSION 1.2.0
+  VERSION 1.3.0
   LANGUAGES CXX
 )
 # Generate compile_commands.json for IDEs
@@ -160,10 +160,11 @@ endif()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 
 # -----------------------------------------
-#  Engine player target
+#  Engine player targets
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_gl)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_vk)
 
 # -----------------------------------------
 #  Module targets

@@ -3,7 +3,7 @@
 
 tracy/*
 
-core/include/options.hpp
+core/include/sc_options.hpp
 
 compile_commands.json
 
@@ -15,7 +15,10 @@ staging-*/
 
 modules/*
 !modules/CMakeLists.txt
+!modules/compute_demo
 !modules/default
+!modules/imgui_demo
 !modules/sprite_demo
+!modules/text_demo
 
 core/shaders/vk/*spv

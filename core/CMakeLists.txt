@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 project(
   SurgeCore
-  VERSION 1.2.0
+  VERSION 1.3.0
   LANGUAGES CXX
 )
 
@@ -15,8 +15,8 @@ project(
 # -----------------------------------------
 
 configure_file(
-  "${PROJECT_SOURCE_DIR}/include/options_in.txt"
-  "${PROJECT_SOURCE_DIR}/include/options.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_options_in.txt"
+  "${PROJECT_SOURCE_DIR}/include/sc_options.hpp"
 )
 
 # -----------------------------------------
@@ -24,78 +24,77 @@ configure_file(
 # -----------------------------------------
 
 set(
-  SURGE_PLAYER_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/gba.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/pv_ubo.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/shaders.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/sprite_database.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/text.hpp"
-  "${PROJECT_SOURCE_DIR}/include/gl_atoms/texture.hpp"
-  
-  "${PROJECT_SOURCE_DIR}/include/vk_atoms/shaders.hpp"
-  
-  "${PROJECT_SOURCE_DIR}/include/allocators.hpp"
-  "${PROJECT_SOURCE_DIR}/include/cli.hpp"
-  "${PROJECT_SOURCE_DIR}/include/config.hpp"
-  "${PROJECT_SOURCE_DIR}/include/container_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/error_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/files.hpp"
-  "${PROJECT_SOURCE_DIR}/include/glfw_includes.hpp"
-  "${PROJECT_SOURCE_DIR}/include/imgui_wrapper.hpp"
-  "${PROJECT_SOURCE_DIR}/include/integer_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/logging.hpp"
-  "${PROJECT_SOURCE_DIR}/include/module.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_gl.hpp"
-  
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_command.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_debug.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_descriptor.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_images.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_init.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_malloc.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_sync.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/renderer_vk.hpp"
-  
-  "${PROJECT_SOURCE_DIR}/include/renderer.hpp"
-  "${PROJECT_SOURCE_DIR}/include/tasks.hpp"
-  "${PROJECT_SOURCE_DIR}/include/timers.hpp"
-  "${PROJECT_SOURCE_DIR}/include/window.hpp"
+  SURGE_CORE_HEADER_LIST
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/gba.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/imgui.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/pv_ubo.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/shaders.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
+
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.hpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan.hpp"
+
+  "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_container_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_error_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
 )
 
 set(
   SURGE_CORE_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/pv_ubo.cpp"
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/shaders.cpp"
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/sprite_database.cpp"
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/text.cpp"
-  "${PROJECT_SOURCE_DIR}/src/gl_atoms/texture.cpp"
-  
-  "${PROJECT_SOURCE_DIR}/src/vk_atoms/shaders.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/imgui.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/pv_ubo.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/shaders.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
 
-  "${PROJECT_SOURCE_DIR}/src/allocators.cpp"
-  "${PROJECT_SOURCE_DIR}/src/cli.cpp"
-  "${PROJECT_SOURCE_DIR}/src/config.cpp"
-  "${PROJECT_SOURCE_DIR}/src/files.cpp"
-  "${PROJECT_SOURCE_DIR}/src/imgui_wrapper.cpp"
-  "${PROJECT_SOURCE_DIR}/src/module.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_gl.cpp"
-  
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_clear.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_command.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_debug.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_descriptor.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_images.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_init.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_malloc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_swpc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/renderer_vk_sync.cpp"
-  
-  "${PROJECT_SOURCE_DIR}/src/surge_core.cpp"
-  "${PROJECT_SOURCE_DIR}/src/tasks.cpp"
-  "${PROJECT_SOURCE_DIR}/src/timers.cpp"
-  "${PROJECT_SOURCE_DIR}/src/window.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
+
+  "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
 )
 
 # -----------------------------------------
@@ -106,12 +105,11 @@ add_library(SurgeCore SHARED ${SURGE_CORE_HEADER_LIST} ${SURGE_CORE_SOURCE_LIST}
 target_compile_features(SurgeCore PRIVATE cxx_std_20)
 set_target_properties(SurgeCore PROPERTIES OUTPUT_NAME "surge_core")
 set_target_properties(SurgeCore PROPERTIES PREFIX "")
-set_target_properties(SurgeCore PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/surge_core.hpp")
 set_target_properties(SurgeCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS True)
 set_target_properties(SurgeCore PROPERTIES ENABLE_EXPORTS True)
 
-target_include_directories(
-  SurgeCore PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+target_include_directories(SurgeCore PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
@@ -129,31 +127,6 @@ endif()
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /D NOMINMAX)
 endif()
-
-# -----------------------------------------
-# Shader compilation target
-# -----------------------------------------
-
-set(
-  SURGE_CORE_SHADER_LIST
-  "${PROJECT_SOURCE_DIR}/shaders/vk/compute_demo.comp"
-)
-
-foreach(GLSL ${SURGE_CORE_SHADER_LIST})
-  message(STATUS "Building shader ${GLSL}")
-  get_filename_component(FILE_NAME ${GLSL} NAME)
-  get_filename_component(FILE_DIR ${GLSL} DIRECTORY)
-  set(SPIRV "${FILE_DIR}/${FILE_NAME}.spv")
-  add_custom_command(
-    OUTPUT ${SPIRV}
-    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL}
-  )
-  list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
-
-add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
-add_dependencies(${PROJECT_NAME} Shaders)
 
 # -----------------------------------------
 # Compilers flags and options
@@ -279,14 +252,15 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgeCore PUBLIC
+  # mimalloc needs to be the first library linked on Windows
+  mimalloc-static
+  mimalloc
   fmt::fmt
   Freetype::Freetype
   glad::glad
   glfw
   gsl::gsl-lite
   imgui::imgui
-  mimalloc
-  mimalloc-static
   OpenEXR::OpenEXR
   OpenGL::GL
   ryml::ryml
@@ -297,3 +271,9 @@ target_link_libraries(SurgeCore PUBLIC
   GPUOpen::VulkanMemoryAllocator
   xxHash::xxhash
 )
+
+# -----------------------------------------
+# Shader compilation
+# -----------------------------------------
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/shaders)
