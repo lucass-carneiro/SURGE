@@ -34,6 +34,7 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
 
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.hpp"
@@ -72,6 +73,7 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
 
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
