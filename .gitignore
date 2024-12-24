@@ -8,6 +8,8 @@ core/include/sc_options.hpp
 compile_commands.json
 
 build/*
+build-*/
+
 Release/*
 Debug/*
 Profile/*

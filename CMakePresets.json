@@ -21,6 +21,7 @@
       "name": "x64-debug",
       "displayName": "x64 Debug",
       "inherits": "vcpkg",
+      "binaryDir": "${sourceDir}/build-debug",
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -33,6 +34,7 @@
       "name": "x64-release",
       "displayName": "x64 Release",
       "inherits": "x64-debug",
+      "binaryDir": "${sourceDir}/build-release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -41,6 +43,7 @@
       "name": "x64-profile",
       "displayName": "x64 Profile",
       "inherits": "x64-release",
+      "binaryDir": "${sourceDir}/build-profile",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo "
       }
