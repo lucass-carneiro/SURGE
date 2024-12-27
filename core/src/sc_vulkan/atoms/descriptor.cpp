@@ -29,6 +29,8 @@ auto surge::vk_atom::descriptor::desc_alloc::init_pool(renderer::vk::context ctx
     log_error("Unable to create descriptor pool: {}", string_VkResult(result));
     return tl::unexpected{vk_descriptor_pool_init};
   }
+
+  return {};
 }
 
 auto surge::vk_atom::descriptor::desc_alloc::clear_descriptors(renderer::vk::context ctx)
@@ -38,6 +40,8 @@ auto surge::vk_atom::descriptor::desc_alloc::clear_descriptors(renderer::vk::con
     log_error("Unable to reset descriptor pool: {}", string_VkResult(result));
     return tl::unexpected{vk_descriptor_pool_reset};
   }
+
+  return {};
 }
 
 void surge::vk_atom::descriptor::desc_alloc::destroy_pool(renderer::vk::context ctx) {
@@ -85,10 +89,9 @@ void surge::vk_atom::descriptor::desc_builder::add_binding(u32 binding, VkDescri
 
 void surge::vk_atom::descriptor::desc_builder::clear() { bindings.clear(); }
 
-auto surge::vk_atom::descriptor::desc_builder::build(renderer::vk::context ctx,
-                                                     VkShaderStageFlags shader_stages, void *pNext,
-                                                     VkDescriptorSetLayoutCreateFlags flags)
-    -> tl::expected<VkDescriptorSetLayout, error> {
+auto surge::vk_atom::descriptor::desc_builder::build(
+    renderer::vk::context ctx, VkShaderStageFlags shader_stages, void *pNext,
+    VkDescriptorSetLayoutCreateFlags flags) -> tl::expected<VkDescriptorSetLayout, error> {
   for (auto &b : bindings) {
     b.stageFlags |= shader_stages;
   }

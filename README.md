@@ -31,14 +31,15 @@ This section describes how to obtain and compile **SURGE**.
 
 ## Dependencies
 
-**SURGE** depends on only two software components being preinstalled in the user's machine:
+**SURGE** depends on the following software components being preinstalled in the user's machine:
 
 1. `git`
 2. `CMake`
+3. `vcpkg`
+4. A working `C++` toolchain, such as `GCC`, `Clang` or `MSVC` via Visual Studio.
 
-Additionally, **SURGE** expects that a C++ compiler toolchain such as `GCC`, `Clang` or `MSVC` is installed and working.
-
-All other dependencies are obtained automatically at compile time via `vcpkg`, which is a submodule of this repository
+All dependencies are obtained automatically at compile time via `vcpkg`, which should be installed and configured prior to building `SURGE`.
+To do that, follow the [official instructions](https://learn.microsoft.com/en-us/vcpkg/get_started/overview) and set the environment variables `VCPKG_ROOT` and `PATH` appropriatelly.
 
 ## Cloning
 
@@ -90,49 +91,37 @@ SURGE_OPENGL_ERROR_BUFFER_SIZE | Buffer size (Bytes) for storing OpenGL error me
 To create a `CMake` build system, issue
 
 ```
-cmake -B [CONFIG] -S . -DVCPKG_TARGET_TRIPLET=[VCPKG TARGET TRIPLET] -DCMAKE_BUILD_TYPE=[CONFIG] -D[OTHER BUILD  OPTIONS]=[OPTION VALUES]
+ cmake --preset [PRESET] -S . [OTHER BUILD OPTIONS]
 ```
 
 Where
 
-* `[CONFIG]` is either `Debug`, `Release` or `Profile`
-* `[VCPKG TARGET TRIPLET]` is the target `vcpkg` triplet for the machine. For example, 64-bit Linux builds will use `x64-linux` and 64-bit Windows builds will use `x64-windows`
+* `[PRESET]` is either `x64-debug`, `x64-release` or `x64-profile`
 * `[OTHER BUILD OPTIONS]` are options from the table above or options such as `-DCMAKE_CXX_COMPILER` for using different `C++` compilers
 
 To build the configuration, issue
 
 ```
-cmake --build [CONFIG] --config [CONFIG]
+cmake --build `[PRESET]`
 ```
 
-Where `[CONFIG]` matches the previous command. If multithreading is available in the machine compiling the code, `-j[NUM THREADS]` can be passed as well to speed up the build process.
+Where `[PRESET]` matches the previous command. If multithreading is available in the machine compiling the code, `-j[NUM THREADS]` can be passed as well to speed up the build process.
 
-## Example Debug Build On Linux
+## Example Debug Build On Linux using Clang
 
 ```
 git clone https://github.com/lucass-carneiro/SURGE
 cd SURGE
 git submodule init
 git submodule update --remote
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
-cmake --build Debug --config Debug -j20
-```
-Most used build command
-
-```
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-linux -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug -DSURGE_DEBUG_MEMORY=OFF -DSURGE_LOG_GL_NOTIFICATIONS=OFF
+cmake --preset "x64-release" -S . -DCMAKE_CXX_COMPILER=clang++
+cmake --build build-release -j10
 ```
 
 ## Example Debug Build On Windows
 
-```
-git clone https://github.com/lucass-carneiro/SURGE
-cd SURGE
-git submodule init
-git submodule update --remote
-cmake -B Debug -S . -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_BUILD_TYPE=Debug
-cmake --build Debug --config Debug -j20
-```
+* TODO: On windows, one should use MSVC and import the `CMake` project into Visual Studio. I will write more detailed instructions on how to do that later
+* It may also be possible to build it directly from the command line using the instructions for Linux.
 
 # Checking for hot reloading blockers
 
