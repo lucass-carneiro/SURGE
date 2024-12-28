@@ -72,7 +72,7 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-auto surgesurge::module::get_func_addr(surge::module::handle_t module,
+auto surge::module::get_func_addr(surge::module::handle_t module,
                                        const char *func_name) -> std::optional<FARPROC> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
