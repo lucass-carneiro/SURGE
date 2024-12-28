@@ -36,7 +36,8 @@ extern "C" SURGE_MODULE_EXPORT auto vk_on_load(surge::window::window_t,
 
   // create a descriptor pool that will hold 10 sets with 1 image each
   log_info("Creating descriptor pool");
-  std::array<desc_pool_size_ratio, 1> sizes{{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+  std::array<desc_pool_size_ratio, 1> sizes{
+      desc_pool_size_ratio{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
 
   vk_globals::desc_alloc.init_pool(ctx, 10, sizes);
 
@@ -81,8 +82,8 @@ extern "C" SURGE_MODULE_EXPORT auto vk_on_unload(surge::window::window_t,
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT auto vk_draw(surge::window::window_t, surge::renderer::vk::context)
-    -> int {
+extern "C" SURGE_MODULE_EXPORT auto vk_draw(surge::window::window_t,
+                                            surge::renderer::vk::context) -> int {
   return 0;
 }
 

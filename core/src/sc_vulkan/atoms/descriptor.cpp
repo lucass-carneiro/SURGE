@@ -16,8 +16,10 @@ auto surge::vk_atom::descriptor::desc_alloc::init_pool(renderer::vk::context ctx
         .type = ratio.type, .descriptorCount = static_cast<u32>(ratio.ratio * max_sets)});
   }
 
-  VkDescriptorPoolCreateInfo pool_info = {.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+  VkDescriptorPoolCreateInfo pool_info{};
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   pool_info.flags = 0;
+  pool_info.pNext = nullptr;
   pool_info.maxSets = max_sets;
   pool_info.poolSizeCount = static_cast<u32>(pool_sizes.size());
   pool_info.pPoolSizes = pool_sizes.data();
