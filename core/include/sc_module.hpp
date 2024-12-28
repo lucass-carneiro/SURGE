@@ -16,6 +16,7 @@
 #endif
 // clang-format on
 
+#include <optional>
 #include <tl/expected.hpp>
 
 namespace surge::module {
@@ -69,6 +70,12 @@ struct vk_api {
 };
 
 auto get_name(handle_t module, usize max_size = 256) noexcept -> tl::expected<string, error>;
+
+#ifdef SURGE_SYSTEM_Windows
+auto get_func_addr(surge::module::handle_t module, const char *func_name) -> std::optional<FARPROC>;
+#else
+auto get_func_addr(surge::module::handle_t module, const char *func_name) -> std::optional<void *>;
+#endif
 
 auto load(const char *path) noexcept -> tl::expected<handle_t, error>;
 void unload(handle_t module) noexcept;

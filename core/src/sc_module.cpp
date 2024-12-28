@@ -72,8 +72,8 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-static inline auto get_func_addr(surge::module::handle_t module,
-                                 const char *func_name) -> std::optional<FARPROC> {
+auto surgesurge::module::get_func_addr(surge::module::handle_t module,
+                                       const char *func_name) -> std::optional<FARPROC> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
     const auto error_code{GetLastError()};
@@ -100,8 +100,8 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-static inline auto get_func_addr(surge::module::handle_t module,
-                                 const char *func_name) -> std::optional<void *> {
+auto surge::module::get_func_addr(surge::module::handle_t module,
+                                  const char *func_name) -> std::optional<void *> {
   (void)dlerror();
   auto addr{dlsym(module, func_name)};
   if (!addr) {
