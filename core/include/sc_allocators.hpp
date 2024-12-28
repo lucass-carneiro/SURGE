@@ -3,9 +3,11 @@
 
 #include "sc_integer_types.hpp"
 
+#include <cstddef>
 #include <exception>
 #include <limits>
 #include <type_traits>
+#include <vector>
 
 namespace surge::allocators::mimalloc {
 
@@ -41,15 +43,30 @@ template <class T> struct cpp_allocator {
   void deallocate(T *p, std::size_t) noexcept { surge::allocators::mimalloc::free(p); }
 };
 
-template <class T, class U> auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &)
-    -> bool {
+template <class T, class U>
+auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
   return true;
 }
 
-template <class T, class U> auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &)
-    -> bool {
+template <class T, class U>
+auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
   return false;
 }
+
+class arena {
+private:
+  using byte_t = std::byte;
+  std::vector<byte_t, cpp_allocator<byte_t>> data{};
+
+  usize capacity{0};
+  usize offset{0};
+
+public:
+  arena(usize capacity);
+  auto allocate(usize size, usize alignment) -> void *;
+  void reset();
+  auto size() const -> usize;
+};
 
 } // namespace surge::allocators::mimalloc
 
