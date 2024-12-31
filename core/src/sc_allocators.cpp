@@ -86,8 +86,8 @@ auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> 
   return p;
 }
 
-auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize,
-                                                  usize alignment) -> void * {
+auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize, usize alignment)
+    -> void * {
   auto q{mi_realloc_aligned(p, newsize, alignment)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -134,7 +134,7 @@ void surge::allocators::mimalloc::init() {
   mi_option_set(mi_option_eager_commit_delay, 100);
 }
 
-surge::allocators::mimalloc::arena::arena(usize cap) : capacity{cap} { data.reserve(capacity); }
+surge::allocators::mimalloc::arena::arena(usize cap) : data(cap, std::byte{0}), capacity{cap} {}
 
 void surge::allocators::mimalloc::arena::reset() {
   log_info("Arena reset");
