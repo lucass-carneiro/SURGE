@@ -45,7 +45,7 @@
       "inherits": "x64-release",
       "binaryDir": "${sourceDir}/build-profile",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo "
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     }
   ]

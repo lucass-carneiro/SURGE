@@ -12,6 +12,11 @@
 #include <cstdio>
 #include <exception>
 
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+#  include <tracy/Tracy.hpp>
+#endif
+
 int main() {
   using namespace surge;
   using std::printf;
