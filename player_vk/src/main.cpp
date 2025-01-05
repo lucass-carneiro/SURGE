@@ -131,6 +131,7 @@ int main() {
      * Main Loop *
      *************/
     while ((frame_timer.start(), !window::should_close(*engine_window))) {
+      // Event handling
       window::poll_events();
 
       // Handle hot reloading
@@ -252,15 +253,14 @@ int main() {
                          && window::get_key(*engine_window, GLFW_KEY_LEFT_CONTROL);
 #endif
 
-      frame_timer.stop();
-
-// FPS Cap. On Linux, even with VSync this is necessary, otherwise the FPS may go above 60
-#ifdef SURGE_SYSTEM_Linux
-      if (r_attrs.fps_cap && (frame_timer.elapsed() < (1.0 / r_attrs.fps_cap_value))) {
-        std::this_thread::sleep_for(std::chrono::duration<double, std::ratio<1>>(
-            (1.0 / r_attrs.fps_cap_value) - frame_timer.elapsed()));
+      // FPS Cap.
+      if (r_attrs.fps_cap) {
+        while (frame_timer.since_start() < (1.0 / r_attrs.fps_cap_value)) {
+          // Spin wait
+        }
       }
-#endif
+
+      frame_timer.stop();
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)

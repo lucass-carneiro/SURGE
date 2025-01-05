@@ -110,6 +110,16 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
       glfwTerminate();
       return tl::unexpected{error::glfw_window_hint_profile};
     }
+
+    if (r_attrs.MSAA) {
+      glfwWindowHint(GLFW_SAMPLES, 4);
+
+      if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+        glfwTerminate();
+        return tl::unexpected{error::glfw_window_hint_msaa};
+      }
+    }
+
   } else {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {

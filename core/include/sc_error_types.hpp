@@ -52,6 +52,7 @@ enum error : int {
   glfw_window_hint_major,
   glfw_window_hint_minor,
   glfw_window_hint_profile,
+  glfw_window_hint_msaa,
   glfw_window_hint_api,
   glfw_window_hint_resize,
   glfw_window_creation,

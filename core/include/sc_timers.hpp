@@ -16,6 +16,7 @@ public:
   void start() noexcept;
   auto stop() noexcept -> double;
   [[nodiscard]] auto elapsed() noexcept -> double;
+  [[nodiscard]] auto since_start() noexcept -> double;
 
 private:
   time_pt_t begin;

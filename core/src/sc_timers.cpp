@@ -12,3 +12,7 @@ auto surge::timers::generic_timer::stop() noexcept -> double {
 [[nodiscard]] auto surge::timers::generic_timer::elapsed() noexcept -> double {
   return last_elapsed;
 }
+
+[[nodiscard]] auto surge::timers::generic_timer::since_start() noexcept -> double {
+  return duration_t{clock_t::now() - begin}.count();
+}
