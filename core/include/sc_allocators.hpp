@@ -68,6 +68,29 @@ public:
   auto size() const -> usize;
 };
 
+template <class T> class arena_cpp_allocator {
+private:
+  arena *arena_allocator;
+
+public:
+  using value_type = T;
+
+  arena_cpp_allocator(arena *a) : arena_allocator{a} {}
+
+  [[nodiscard]] auto allocate(std::size_t n) -> T * {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T))
+      throw std::bad_array_new_length();
+
+    if (auto p = static_cast<T *>(arena_allocator->allocate(n * sizeof(T), alignof(T)))) {
+      return p;
+    }
+
+    throw std::bad_alloc();
+  }
+
+  void deallocate(T *, std::size_t) noexcept {}
+};
+
 } // namespace surge::allocators::mimalloc
 
 #endif // SURGE_CORE_ALLOCATORS_HPP
