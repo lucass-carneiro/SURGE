@@ -3,6 +3,7 @@
   "name": "surge",
   "version": "1.2.0",
   "dependencies": [
+    "entt",
     "fmt",
     {
       "name": "freetype",

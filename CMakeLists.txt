@@ -27,6 +27,7 @@ endif()
 # External dependencies
 # -----------------------------------------
 
+find_package(EnTT CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(glad CONFIG REQUIRED)
