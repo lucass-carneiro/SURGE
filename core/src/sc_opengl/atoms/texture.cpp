@@ -13,6 +13,36 @@
 
 static constexpr XXH64_hash_t hash_seed{100};
 
+auto surge::gl_atom::texture::database::add(const create_info &ci, const char *path)
+    -> tl::expected<GLuint64, surge::error> {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+  ZoneScopedN("surge::gl_atom::texture::database::add(single)");
+  TracyGpuZone("GPU surge::gl_atom::texture::database::add(single)");
+#endif
+
+  // Load image file
+  auto img{files::load_image(path)};
+
+  // Handle image load errors and push image data to record.
+  if (img) {
+    const auto texture_data{from_image(ci, *img)};
+    if (texture_data) {
+      ids.push_back(texture_data->id);
+      handles.push_back(texture_data->handle);
+      name_hashes.push_back(texture_data->name_hash);
+      files::free_image(*img);
+      return texture_data->handle;
+    } else {
+      log_error("Unable to create texture from %s", img->file_name);
+      files::free_image(*img);
+      return tl::unexpected{texture_data.error()};
+    }
+  } else {
+    return tl::unexpected{img.error()};
+  }
+}
+
 auto surge::gl_atom::texture::from_image(const create_info &ci,
                                          const files::image_data &img) noexcept -> create_t {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
@@ -83,9 +113,8 @@ auto surge::gl_atom::texture::from_image(const create_info &ci,
   return create_data{texture, handle, XXH64(img.file_name, strlen(img.file_name), hash_seed)};
 }
 
-auto surge::gl_atom::texture::from_openEXR(const create_info &ci,
-                                           const files::openEXR_image_data &img) noexcept
-    -> create_t {
+auto surge::gl_atom::texture::from_openEXR(
+    const create_info &ci, const files::openEXR_image_data &img) noexcept -> create_t {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
   ZoneScopedN("surge::gl_atom::texture::from_openEXR");

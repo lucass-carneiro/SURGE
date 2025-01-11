@@ -100,6 +100,8 @@ public:
     }
   }
 
+  auto add(const create_info &ci, const char *path) -> tl::expected<GLuint64, surge::error>;
+
   [[nodiscard]] inline auto size() const noexcept -> usize { return ids.size(); }
 
 #ifdef SURGE_BUILD_TYPE_Debug
