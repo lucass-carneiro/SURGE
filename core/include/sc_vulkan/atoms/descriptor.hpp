@@ -15,28 +15,55 @@
 
 namespace surge::vk_atom::descriptor {
 
-struct desc_pool_size_ratio {
+struct pool_size_ratio {
   VkDescriptorType type{};
   float ratio{};
 };
 
-class desc_alloc {
+class allocator {
 private:
-  VkDescriptorPool pool{};
+  static constexpr u32 max_sets_per_pool{4096};
+  u32 sets_per_pool{0};
+
+  vector<pool_size_ratio> ratios{};
+  vector<VkDescriptorPool> full_pools{};
+  vector<VkDescriptorPool> ready_pools{};
+
+  auto get_pool(VkDevice device) -> VkDescriptorPool;
+
+  auto create_pool(VkDevice device, u32 set_count, std::span<pool_size_ratio> pool_ratios)
+      -> VkDescriptorPool;
 
 public:
-  auto init_pool(renderer::vk::context ctx, u32 max_sets,
-                 std::span<desc_pool_size_ratio> pool_ratios) -> tl::expected<void, error>;
+  void init(renderer::vk::context ctx, u32 initial_sets, std::span<pool_size_ratio> pool_ratios);
 
-  auto clear_descriptors(renderer::vk::context ctx) -> tl::expected<void, error>;
+  void clear_pools(renderer::vk::context ctx);
 
-  void destroy_pool(renderer::vk::context ctx);
+  void destroy_pools(renderer::vk::context ctx);
 
-  auto allocate(renderer::vk::context ctx, VkDescriptorSetLayout layout)
+  auto allocate(renderer::vk::context ctx, VkDescriptorSetLayout layout, void *pNext = nullptr)
       -> tl::expected<VkDescriptorSet, error>;
 };
 
-class desc_builder {
+class writer {
+private:
+  deque<VkDescriptorBufferInfo> buffer_infos{};
+  deque<VkDescriptorImageInfo> image_infos{};
+  vector<VkWriteDescriptorSet> writes{};
+
+public:
+  void write_buffer(u32 binding, VkBuffer buffer, size_t size, size_t offset,
+                    VkDescriptorType type);
+
+  void write_image(u32 binding, VkImageView image, VkSampler sampler, VkImageLayout layout,
+                   VkDescriptorType type);
+
+  void clear();
+
+  void update_set(renderer::vk::context ctx, VkDescriptorSet set);
+};
+
+class builder {
 private:
   vector<VkDescriptorSetLayoutBinding> bindings;
 
@@ -50,10 +77,6 @@ public:
 
 auto draw_img_desc_info(renderer::vk::context ctx) -> VkDescriptorImageInfo;
 void destroy_desc_layout(renderer::vk::context ctx, VkDescriptorSetLayout layout);
-
-void update_desc_sets(renderer::vk::context ctx, u32 write_count,
-                      const VkWriteDescriptorSet *desc_writes, u32 copy_count,
-                      const VkCopyDescriptorSet *desc_copies);
 
 } // namespace surge::vk_atom::descriptor
 
