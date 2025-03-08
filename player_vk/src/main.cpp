@@ -32,20 +32,21 @@ int main() {
     ZoneScopedN("Main");
 #endif
 
+    /********
+     * Logo *
+     ********/
+    cli::draw_logo();
+
     /*******************
      * Init allocators *
      *******************/
     allocators::mimalloc::init();
+    allocators::program_scope::init();
 
     /**********************
      * Init Task executor *
      **********************/
     tasks::executor::get();
-
-    /********
-     * Logo *
-     ********/
-    cli::draw_logo();
 
     /*********************
      * Parse config file *
@@ -281,6 +282,11 @@ int main() {
     renderer::vk::terminate(*vk_ctx);
 
     window::terminate(*engine_window);
+
+    /***********************
+     * Finalize allocators *
+     ***********************/
+    allocators::program_scope::destroy();
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)

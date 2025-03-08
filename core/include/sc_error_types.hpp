@@ -8,6 +8,11 @@ enum error : int {
   config_file_load = 1,
   config_file_parse,
 
+  // Allocator errors
+  dynamic_arena_init,
+  dynamic_arena_alloc,
+  dynamic_arena_grow,
+
   // File errors
   invalid_path,
   read_error,

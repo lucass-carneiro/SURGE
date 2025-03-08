@@ -1,15 +1,19 @@
 #ifndef SURGE_CORE_ALLOCATORS_HPP
 #define SURGE_CORE_ALLOCATORS_HPP
 
+#include "sc_error_types.hpp"
 #include "sc_integer_types.hpp"
 
 #include <cstddef>
 #include <exception>
 #include <limits>
+#include <tl/expected.hpp>
 #include <type_traits>
 #include <vector>
 
-namespace surge::allocators::mimalloc {
+namespace surge::allocators {
+
+namespace mimalloc {
 
 void init();
 
@@ -43,13 +47,13 @@ template <class T> struct cpp_allocator {
   void deallocate(T *p, std::size_t) noexcept { surge::allocators::mimalloc::free(p); }
 };
 
-template <class T, class U>
-auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
+template <class T, class U> auto operator==(const cpp_allocator<T> &, const cpp_allocator<U> &)
+    -> bool {
   return true;
 }
 
-template <class T, class U>
-auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &) -> bool {
+template <class T, class U> auto operator!=(const cpp_allocator<T> &, const cpp_allocator<U> &)
+    -> bool {
   return false;
 }
 
@@ -91,6 +95,37 @@ public:
   void deallocate(T *, std::size_t) noexcept {}
 };
 
-} // namespace surge::allocators::mimalloc
+} // namespace mimalloc
+
+namespace program_scope {
+
+auto init() -> tl::expected<void, surge::error>;
+void destroy();
+auto malloc(usize size, usize alignment) -> tl::expected<void *, error>;
+
+template <typename T> class cpp_allocator {
+public:
+  using value_type = T;
+
+  cpp_allocator() = default;
+
+  [[nodiscard]] inline auto allocate(std::size_t n) -> T * {
+    if (n > std::numeric_limits<std::size_t>::max() / sizeof(T)) {
+      throw std::bad_array_new_length();
+    }
+
+    if (auto p = static_cast<T *>(program_scope::malloc(n * sizeof(T), alignof(T)))) {
+      return p;
+    }
+
+    throw std::bad_alloc();
+  }
+
+  void deallocate(T *, std::size_t) noexcept {}
+};
+
+} // namespace program_scope
+
+} // namespace surge::allocators
 
 #endif // SURGE_CORE_ALLOCATORS_HPP
