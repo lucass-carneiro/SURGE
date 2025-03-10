@@ -5,13 +5,13 @@
 
 namespace surge::timers {
 
-class generic_timer {
+class GenericTimer {
 public:
   using clock_t = std::chrono::steady_clock;
   using duration_t = std::chrono::duration<double>;
   using time_pt_t = std::chrono::time_point<clock_t>;
 
-  generic_timer() noexcept;
+  GenericTimer() noexcept;
 
   void start() noexcept;
   auto stop() noexcept -> double;

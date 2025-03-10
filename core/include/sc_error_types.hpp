@@ -1,6 +1,8 @@
 #ifndef SURGE_CORE_ERROR_TYPES_HPP
 #define SURGE_CORE_ERROR_TYPES_HPP
 
+#include <tl/expected.hpp>
+
 namespace surge {
 
 enum error : int {
@@ -130,6 +132,10 @@ enum error : int {
   // Count
   count
 };
+
+template <typename T> using Result = tl::expected<T, error>;
+
+template <typename T> inline auto Err(const Result<T> &r) { return tl::unexpected{r.error()}; }
 
 } // namespace surge
 

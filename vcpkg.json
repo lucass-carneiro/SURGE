@@ -46,6 +46,13 @@
     "stb",
     "taskflow",
     "tl-expected",
+    {
+      "name": "tracy",
+      "default-features": false,
+      "features": [
+        "verbose"
+      ]
+    },
     "vulkan",
     "vulkan-memory-allocator",
     "vulkan-validationlayers",

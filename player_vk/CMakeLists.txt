@@ -27,9 +27,9 @@ add_executable(SurgePlayerVK ${SURGE_PLAYER_VK_SOURCE_LIST})
 target_compile_features(SurgePlayerVK PRIVATE cxx_std_20)
 set_target_properties(SurgePlayerVK PROPERTIES OUTPUT_NAME "surge_vk")
 
-target_include_directories(SurgePlayerVK PRIVATE 
-  $<TARGET_PROPERTY:SurgeCore,INTERFACE_INCLUDE_DIRECTORIES>
-)
+#target_include_directories(SurgePlayerVK PRIVATE 
+#  $<TARGET_PROPERTY:SurgeCore,INTERFACE_INCLUDE_DIRECTORIES>
+#)
 
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
@@ -55,7 +55,7 @@ if(SURGE_ENABLE_SANITIZERS)
     target_compile_options(SurgePlayerVK PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgePlayerVK PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    message(WARNING "Sanitizers don't work on MSVC yet.")
+    target_compile_options(SurgePlayerVK PUBLIC /fsanitize=address)
   endif()
 endif()
 
@@ -72,8 +72,6 @@ if(SURGE_ENABLE_TUNING)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgePlayerVK PUBLIC -march=native -mtune=native)
     target_link_options(SurgePlayerVK PUBLIC -march=native -mtune=native)
-  else()
-    message(WARNING "TODO: Unknow tuning flags for msvc")
   endif()
 endif()
 
@@ -82,7 +80,8 @@ if(SURGE_ENABLE_LTO)
     target_compile_options(SurgePlayerVK PUBLIC -flto)
     target_link_options(SurgePlayerVK PUBLIC -flto)
   else()
-    message(WARNING "TODO: Unknow LTO flag for msvc")
+    target_compile_options(SurgePlayerVK PUBLIC /GL)
+    target_link_options(SurgePlayerVK PUBLIC /LTCG)
   endif()
 endif()
 
@@ -146,9 +145,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
   endif()
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")  
-  target_link_libraries(SurgePlayerVK PRIVATE Tracy::TracyClient)
-  
+if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")    
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgePlayerVK PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(SurgePlayerVK PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
@@ -168,3 +165,7 @@ endif()
 # -----------------------------------------
 
 target_link_libraries(SurgePlayerVK PRIVATE SurgeCore)
+
+if(SURGE_ENABLE_TRACY)
+  target_link_libraries(SurgePlayerVK PUBLIC Tracy::TracyClient)
+endif()  

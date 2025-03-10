@@ -25,76 +25,76 @@ configure_file(
 
 set(
   SURGE_CORE_HEADER_LIST
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/gba.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/imgui.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/pv_ubo.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/shaders.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/gba.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/imgui.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/pv_ubo.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/shaders.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
 
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.hpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.hpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_types.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan.hpp"
 
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_error_types.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
-  "${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
+  #"${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
 )
 
 set(
   SURGE_CORE_SOURCE_LIST
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/imgui.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/pv_ubo.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/shaders.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/imgui.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/pv_ubo.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/shaders.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
 
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
-  "${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
+  #"${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
 )
 
 # -----------------------------------------
@@ -137,7 +137,7 @@ if(SURGE_ENABLE_SANITIZERS)
     target_compile_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    message(WARNING "Sanitizers don't work on MSVC yet.")
+    target_compile_options(SurgeCore PUBLIC /fsanitize=address)
   endif()
 endif()
 
@@ -154,8 +154,6 @@ if(SURGE_ENABLE_TUNING)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -march=native -mtune=native)
     target_link_options(SurgeCore PUBLIC -march=native -mtune=native)
-  else()
-    message(WARNING "TODO: Unknow tuning flags for msvc")
   endif()
 endif()
 
@@ -163,8 +161,6 @@ if(SURGE_ENABLE_LTO)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -flto)
     target_link_options(SurgeCore PUBLIC -flto)
-  else()
-    message(WARNING "TODO: Unknow LTO flag for msvc")
   endif()
 endif()
 
@@ -230,9 +226,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
    endif()
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-  target_link_libraries(SurgeCore PUBLIC Tracy::TracyClient)
-  
+if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")  
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
@@ -272,8 +266,12 @@ target_link_libraries(SurgeCore PUBLIC
   xxHash::xxhash
 )
 
+if(SURGE_ENABLE_TRACY)
+  target_link_libraries(SurgeCore PUBLIC Tracy::TracyClient)
+endif()  
+
 # -----------------------------------------
 # Shader compilation
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/shaders)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/shaders)

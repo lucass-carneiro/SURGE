@@ -6,7 +6,7 @@
 
 project(
   Surge
-  VERSION 1.3.0
+  VERSION 1.4.0
   LANGUAGES CXX
 )
 # Generate compile_commands.json for IDEs
@@ -97,7 +97,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" OFF)
   option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" OFF)
   option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" OFF)
-  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
   option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5" ON)
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" OFF)
   option(SURGE_ENABLE_FRAME_STEPPING "Enables frame-by-frame stepping when pressing LCTRL + F6" ON)
@@ -117,30 +117,14 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWith
   option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
   option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
   option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
-  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" OFF)
+  option(SURGE_DEBUG_MEMORY "Enable custom allocators debug facilities" ON)
   option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5" OFF)
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" ON)
   option(SURGE_ENABLE_FRAME_STEPPING "Enables frame-by-frame stepping when pressing LCTRL + F6" OFF)
 endif()
 
 if(SURGE_ENABLE_TRACY)
-  option(TRACY_ENABLE "" ON)
-  option(TRACY_CALLSTACK "" ON)
-  option(TRACY_STATIC "" OFF)
-  option(TRACY_ON_DEMAND "" ON)
-  option(TRACY_DELAYED_INIT "" ON)
-  option(TRACY_MANUAL_LIFETIME "" ON)
-
-  add_definitions(-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME)
-
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    option(TRACY_LIBUNWIND_BACKTRACE "" ON)
-    option(TRACY_LIBBACKTRACE_ELF_DYNLOAD_SUPPORT "" ON)
-    option(TRACY_DEBUGINFOD "" ON)
-    add_definitions(-DTRACY_DEBUGINFOD)
-  endif()
-
-  add_subdirectory(tracy)
+  find_package(Tracy CONFIG REQUIRED)
 endif()
 
 # -----------------------------------------
@@ -164,11 +148,11 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 #  Engine player targets
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_gl)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_gl)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_vk)
 
 # -----------------------------------------
 #  Module targets
 # -----------------------------------------
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)
+#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)

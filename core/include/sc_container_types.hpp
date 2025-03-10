@@ -10,22 +10,36 @@
 #include <unordered_map>
 #include <vector>
 
-namespace surge {
+namespace surge::containers {
 
-// Allocators
-template <typename T> using cpp_mimalloc = surge::allocators::mimalloc::cpp_allocator<T>;
+namespace mimalloc {
+template <typename T> using allocator = surge::allocators::mimalloc::STLAllocator<T>;
 
-// Container Aliases
-template <typename T> using vector = std::vector<T, cpp_mimalloc<T>>;
-template <typename T> using deque = std::deque<T, cpp_mimalloc<T>>;
-template <typename T> using queue = std::queue<T, deque<T>>;
-template <typename T, std::size_t N> using array = std::array<T, N>;
-using string = std::basic_string<char, std::char_traits<char>, cpp_mimalloc<char>>;
+template <typename T> using Vector = std::vector<T, allocator<T>>;
+template <typename T> using Deque = std::deque<T, allocator<T>>;
+template <typename T> using Queue = std::queue<T, Deque<T>>;
+using String = std::basic_string<char, std::char_traits<char>, allocator<char>>;
 
-template <typename Key, typename Value> using hash_map
+template <typename Key, typename Value> using HashMap
     = std::unordered_map<Key, Value, std::hash<Key>, std::equal_to<Key>,
-                         cpp_mimalloc<std::pair<const Key, Value>>>;
+                         allocator<std::pair<const Key, Value>>>;
+} // namespace mimalloc
 
-} // namespace surge
+namespace scoped {
+template <typename T> using allocator = surge::allocators::scoped::STLAllocator<T>;
+
+template <typename T> using Vector = std::vector<T, allocator<T>>;
+template <typename T> using Deque = std::deque<T, allocator<T>>;
+template <typename T> using Queue = std::queue<T, Deque<T>>;
+
+using String = std::basic_string<char, std::char_traits<char>, allocator<char>>;
+
+/*template <typename Key, typename Value, allocators::scoped::Lifetimes lifetime> using HashMap
+    = std::unordered_map < Key,
+    Value, std::hash<Key>, std::equal_to<Key>, allocator<std::pair<const Key, Value, lifetime>>;*/
+
+} // namespace scoped
+
+} // namespace surge::containers
 
 #endif // SURGE_CORE_CONTAINER_TYPES_HPP

@@ -24,10 +24,8 @@ static constexpr const char* LOGO =
 
 void surge::cli::draw_logo() {
 #ifdef SURGE_USE_LOG_COLOR
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   fmt::print("\033[1;38;2;220;20;60m{}\033[m", LOGO);
 #else
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
   fmt::print("{}", LOGO);
 #endif
 }

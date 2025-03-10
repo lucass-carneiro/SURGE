@@ -1,18 +1,18 @@
 #include "sc_allocators.hpp"
 
-#include "sc_error_types.hpp"
 #include "sc_logging.hpp"
-#include "sc_options.hpp"
 
 #include <mimalloc.h>
-#include <tl/expected.hpp>
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
+#ifdef SURGE_ENABLE_TRACY
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto surge::allocators::mimalloc::malloc(usize size) -> void * {
+#include <mutex>
+
+namespace surge::allocators {
+
+auto mimalloc::malloc(usize size) -> void * {
   auto p{mi_malloc(size)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -27,7 +27,7 @@ auto surge::allocators::mimalloc::malloc(usize size) -> void * {
   return p;
 }
 
-auto surge::allocators::mimalloc::realloc(void *p, usize newsize) -> void * {
+auto mimalloc::realloc(void *p, usize newsize) -> void * {
   auto q{mi_realloc(p, newsize)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -43,7 +43,7 @@ auto surge::allocators::mimalloc::realloc(void *p, usize newsize) -> void * {
   return q;
 }
 
-auto surge::allocators::mimalloc::calloc(usize count, usize size) -> void * {
+auto mimalloc::calloc(usize count, usize size) -> void * {
   auto p{mi_calloc(count, size)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -59,7 +59,7 @@ auto surge::allocators::mimalloc::calloc(usize count, usize size) -> void * {
   return p;
 }
 
-void surge::allocators::mimalloc::free(void *p) {
+void mimalloc::free(void *p) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"
@@ -71,7 +71,7 @@ void surge::allocators::mimalloc::free(void *p) {
   mi_free(p);
 }
 
-auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> void * {
+auto mimalloc::aligned_alloc(usize size, usize alignment) -> void * {
   auto p{mi_aligned_alloc(alignment, size)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -87,8 +87,7 @@ auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> 
   return p;
 }
 
-auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize, usize alignment)
-    -> void * {
+auto mimalloc::aligned_realloc(void *p, usize newsize, usize alignment) -> void * {
   auto q{mi_realloc_aligned(p, newsize, alignment)};
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
@@ -105,7 +104,7 @@ auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize, usize 
   return q;
 }
 
-void surge::allocators::mimalloc::aligned_free(void *p, usize alignment) {
+void mimalloc::aligned_free(void *p, usize alignment) {
 #ifdef SURGE_DEBUG_MEMORY
   log_debug("Memory Event\n"
             "---\n"
@@ -117,7 +116,7 @@ void surge::allocators::mimalloc::aligned_free(void *p, usize alignment) {
   mi_free_aligned(p, alignment);
 }
 
-void surge::allocators::mimalloc::init() {
+void mimalloc::init() {
   // see https://microsoft.github.io/mimalloc/group__options.html
 #ifdef SURGE_DEBUG_MEMORY
   mi_option_enable(mi_option_show_errors);
@@ -130,60 +129,12 @@ void surge::allocators::mimalloc::init() {
 #endif
 
   mi_option_enable(mi_option_eager_commit);
+  mi_option_enable(mi_option_disallow_os_alloc);
+  mi_option_enable(mi_option_destroy_on_exit);
 
   mi_option_set(mi_option_reserve_huge_os_pages, 1);
   mi_option_set(mi_option_eager_commit_delay, 100);
 }
-
-surge::allocators::mimalloc::arena::arena(usize cap) : data(cap, std::byte{0}), capacity{cap} {}
-
-void surge::allocators::mimalloc::arena::reset() {
-  log_info("Arena reset");
-  offset = 0;
-}
-
-auto surge::allocators::mimalloc::arena::size() const -> usize { return offset; }
-
-static auto is_pow_2(surge::usize x) { return (x & (x - 1)) == 0; }
-
-auto surge::allocators::mimalloc::arena::allocate(usize size, usize alignment) -> void * {
-  using std::memset;
-
-  if (!is_pow_2(alignment)) {
-    log_error("Alignment {} is not a power of 2", alignment);
-    return nullptr;
-  }
-
-  const auto modulo{size & (alignment - 1)}; // same as size % alignment when a is a power of 2
-  const auto actual_size{size + modulo};
-  const auto new_offset{offset + actual_size};
-
-  if (new_offset >= capacity) {
-    log_warn("Unable to allocate {} B with {} B alignment. Arena is full", size, alignment);
-    return nullptr;
-  }
-
-  auto p{static_cast<void *>(&(data[offset]))};
-  offset = new_offset;
-  memset(p, 0, actual_size);
-
-#ifdef SURGE_DEBUG_MEMORY
-  log_debug("Memory Event\n"
-            "---\n"
-            "type: alloc\n"
-            "allocator: \"mimalloc::arena\"\n"
-            "size: {}\n"
-            "alignment: {}\n"
-            "total aligned size: {}\n",
-            "address: {}\n"
-            "failed: {}",
-            size, alignment, actual_size, p, p ? "false" : "true");
-#endif
-
-  return p;
-}
-
-namespace surge::allocators {
 
 /**
  * This is a CPU memory arena that grows when needed.
@@ -196,7 +147,7 @@ struct dynamic_arena {
 };
 
 static auto dynamic_arena_init(usize initial_size, const char *arena_name)
-    -> tl::expected<dynamic_arena, error> {
+    -> Result<dynamic_arena> {
   using std::memset;
 
   log_info("Allocating initial {} B for arena \"{}\"", initial_size, arena_name);
@@ -223,8 +174,9 @@ static void dynamic_arena_destroy(dynamic_arena &da) {
   mimalloc::free(da.memory_data);
 }
 
-static auto dynamic_arena_malloc(dynamic_arena &da, usize size, usize alignment)
-    -> tl::expected<void *, error> {
+static auto is_pow_2(surge::usize x) { return (x & (x - 1)) == 0; }
+
+static auto dynamic_arena_malloc(dynamic_arena &da, usize size, usize alignment) -> Result<void *> {
   using std::memset;
 
   if (!is_pow_2(alignment)) {
@@ -268,8 +220,9 @@ static auto dynamic_arena_malloc(dynamic_arena &da, usize size, usize alignment)
             "allocator: \"{}\"\n "
             "size: {}\n"
             "alignment: {}\n"
-            "total aligned size: {}\n",
-            "address: {}\n", da.arena_name, size, alignment, actual_size, p);
+            "total aligned size: {}\n"
+            "address: {}\n",
+            da.arena_name, size, alignment, actual_size, p);
 #endif
 
   return p;
@@ -277,28 +230,94 @@ static auto dynamic_arena_malloc(dynamic_arena &da, usize size, usize alignment)
 
 static void dynamic_arena_reset(dynamic_arena &da) { da.current_offset = 0; }
 
+/**
+ *  Dynamic arenas used in scoped allocations
+ */
 static dynamic_arena program_scope_dynamic_arena{};
+static std::mutex program_scope_dynamic_arena_mutex{};
 
-auto program_scope::init() -> tl::expected<void, surge::error> {
-  log_info("Initializing program scope CPU memory arena");
+static dynamic_arena module_scope_dynamic_arena{};
+static std::mutex module_scope_dynamic_arena_mutex{};
 
-  const auto da{dynamic_arena_init(1024, "Program scope arena")};
+static dynamic_arena frame_scope_dynamic_arena{};
+static std::mutex frame_scope_dynamic_arena_mutex{};
 
-  if (!da) {
-    log_error("Unable to initialize program scope CPU memory arena");
-    return tl::unexpected{da.error()};
-  } else {
-    program_scope_dynamic_arena = *da;
+auto scoped::init() -> Result<void> {
+  log_info("Initializing scoped CPU memory arenas");
+
+  const auto ps{dynamic_arena_init(1024, "Program scope arena")};
+  const auto ms{dynamic_arena_init(1024, "Frame scope arena")};
+  const auto fs{dynamic_arena_init(1024, "Module scope arena")};
+
+  if (!ps) {
+    log_error("Unable to initialize program scope CPU memory arenas");
+    return Err(ps);
   }
+
+  if (!ms) {
+    log_error("Unable to initialize frame scope CPU memory arenas");
+    return Err(ps);
+  }
+
+  if (!fs) {
+    log_error("Unable to initialize module scope CPU memory arenas");
+    return Err(ps);
+  }
+
+  program_scope_dynamic_arena = *ps;
+  module_scope_dynamic_arena = *ms;
+  frame_scope_dynamic_arena = *fs;
+
+  return {};
 }
 
-void program_scope::destroy() {
-  log_info("Destroying program scope CPU memory arena");
+void scoped::destroy() {
+  log_info("Destroying scoped CPU memory arenas");
+
+  dynamic_arena_destroy(frame_scope_dynamic_arena);
+  dynamic_arena_destroy(module_scope_dynamic_arena);
   dynamic_arena_destroy(program_scope_dynamic_arena);
 }
 
-auto program_scope::malloc(usize size, usize alignment) -> tl::expected<void *, error> {
-  return dynamic_arena_malloc(program_scope_dynamic_arena, size, alignment);
+auto scoped::malloc(const Lifetimes &lifetime, usize size, usize alignment) -> Result<void *> {
+  switch (lifetime) {
+  case Lifetimes::Program: {
+    const std::lock_guard lock{program_scope_dynamic_arena_mutex};
+    return dynamic_arena_malloc(program_scope_dynamic_arena, size, alignment);
+  }
+
+  case Lifetimes::Module: {
+    const std::lock_guard lock{module_scope_dynamic_arena_mutex};
+    return dynamic_arena_malloc(module_scope_dynamic_arena, size, alignment);
+  }
+
+  case Lifetimes::Frame: {
+    const std::lock_guard lock{frame_scope_dynamic_arena_mutex};
+    return dynamic_arena_malloc(program_scope_dynamic_arena, size, alignment);
+  }
+  }
+}
+
+void scoped::reset(const Lifetimes &lifetime) {
+  switch (lifetime) {
+  case Lifetimes::Program: {
+    const std::lock_guard lock{program_scope_dynamic_arena_mutex};
+    dynamic_arena_reset(program_scope_dynamic_arena);
+    break;
+  }
+
+  case Lifetimes::Module: {
+    const std::lock_guard lock{module_scope_dynamic_arena_mutex};
+    dynamic_arena_reset(module_scope_dynamic_arena);
+    break;
+  }
+
+  case Lifetimes::Frame: {
+    const std::lock_guard lock{frame_scope_dynamic_arena_mutex};
+    dynamic_arena_reset(program_scope_dynamic_arena);
+    break;
+  }
+  }
 }
 
 } // namespace surge::allocators
