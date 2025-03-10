@@ -48,10 +48,10 @@ set(
 
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_error_types.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
@@ -88,8 +88,8 @@ set(
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"

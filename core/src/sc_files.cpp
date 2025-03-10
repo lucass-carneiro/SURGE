@@ -1,48 +1,33 @@
 #include "sc_files.hpp"
 
-#include "sc_allocators.hpp"
 #include "sc_logging.hpp"
-#include "sc_options.hpp"
 
 #include <fcntl.h>
 
 #ifdef SURGE_SYSTEM_Windows
-#  include <array>
 #  include <gsl/gsl-lite.hpp>
 #  include <io.h>
 #endif
 
-// clang-format off
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_MALLOC(sz)           surge::allocators::mimalloc::malloc(sz)
-#define STBI_REALLOC(p,newsz)     surge::allocators::mimalloc::realloc(p,newsz)
-#define STBI_FREE(p)              surge::allocators::mimalloc::free(p)
-#include <stb_image.h>
-
-#include <OpenEXR/ImfRgbaFile.h>
-#include <Imath/ImathVec.h>
-#include <Imath/ImathBox.h>
-// clang-format on
-
-#include <cstring>
+#include <exception>
 #include <filesystem>
-#include <gsl/gsl-lite.hpp>
 
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-#  include <tracy/Tracy.hpp>
+#ifdef SURGE_SYSTEM_Windows
+#  include <array>
 #endif
 
-auto surge::files::validate_path(const char *path) -> bool {
+auto surge::files::is_path_valid(const char *path) -> bool {
+  using namespace std::filesystem;
+
   try {
     const std::filesystem::path fs_opath{path};
 
-    if (!std::filesystem::exists(fs_opath)) {
+    if (!exists(fs_opath)) {
       log_error("The file {} does not exist.", path);
       return false;
     }
 
-    if (!std::filesystem::is_regular_file(fs_opath)) {
+    if (!is_regular_file(fs_opath)) {
       log_error("The path {} does not point to a regular file.", path);
       return false;
     }
@@ -57,7 +42,7 @@ auto surge::files::validate_path(const char *path) -> bool {
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> bool {
+static auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> bool {
   std::array<char, 256> error_msg_buff{};
   error_msg_buff.fill('\0');
 
@@ -82,7 +67,7 @@ auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> boo
 
 #else
 
-auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> bool {
+static auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> bool {
   // NOLINTNEXTLINE
   int fd = open(path, O_RDONLY);
 
@@ -104,129 +89,60 @@ auto os_open_read(const char *path, void *buffer, unsigned int file_size) -> boo
 
 #endif
 
-auto surge::files::load_file(const char *path, bool append_null_byte) -> file {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::files::load_file");
-#endif
-
+auto surge::files::as_bytes(const char *path, bool append_null_byte)
+    -> Result<containers::mimalloc::Vector<std::byte>> {
   try {
     log_info("Loading raw data for file {}. Appending null byte: {}", path,
              append_null_byte ? "true" : "false");
 
-    if (!validate_path(path)) {
-      return tl::unexpected(error::invalid_path);
+    if (!is_path_valid(path)) {
+      return Err{Error::invalid_path};
     }
 
-    auto file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
-    if (append_null_byte) {
-      file_size += 1;
-    }
+    const auto base_file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
+    const auto file_size{append_null_byte ? base_file_size + 1 : base_file_size};
 
-    file_data_t buffer(file_size);
+    containers::mimalloc::Vector<std::byte> buffer(file_size);
     buffer.reserve(file_size);
     std::fill(buffer.begin(), buffer.end(), std::byte{0});
 
     if (os_open_read(path, buffer.data(), file_size)) {
       return buffer;
     } else {
-      return tl::unexpected(error::read_error);
+      return Err{Error::read_error};
     }
 
   } catch (const std::exception &e) {
     log_error("Unable to load file {}: {}", path, e.what());
-    return tl::unexpected(error::unknow_error);
+    return Err{Error::unknow_error};
   }
 }
 
-auto surge::files::load_image(const char *p, bool flip) -> image {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::files::load_image");
-#endif
-
-  log_info("Loading image file {}", p);
-
-  auto file{load_file(p, false)};
-  if (!file) {
-    log_error("Unable to load image file {}", p);
-    return tl::unexpected(surge::error::image_load_error);
-  }
-
-  int iw{0}, ih{0}, channels_in_file{0};
-
-  if (flip) {
-    stbi_set_flip_vertically_on_load(static_cast<int>(true));
-  }
-
-  auto pixels{stbi_load_from_memory(static_cast<stbi_uc *>(static_cast<void *>(file->data())),
-                                    gsl::narrow_cast<int>(file.value().size()), &iw, &ih,
-                                    &channels_in_file, 0)};
-
-  if (flip) {
-    stbi_set_flip_vertically_on_load(static_cast<int>(false));
-  }
-
-  if (pixels == nullptr) {
-    log_error("Unable to load image file {} due to stbi error: {}", p, stbi_failure_reason());
-    return tl::unexpected(surge::error::image_stbi_error);
-  }
-
-  return image_data{iw, ih, channels_in_file, pixels, p};
-}
-
-auto surge::files::load_openEXR(const char *p) -> openEXR_image {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("surge::files::load_openEXR");
-#endif
-
-  log_info("Loading OpenEXR image file {}", p);
-
-  // TODO: Try to use a lower level API for reading these files.
-  // TODO: This image needs to be fliped around the y axis. Figure out how to do that. For now, flip
-  // it in blender See:
-  //
-  // https: //
-  // developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-26-openexr-image-file-format
+auto surge::files::as_bytes(const char *path, const allocators::scoped::Lifetimes &lifetime,
+                            bool append_null_byte)
+    -> Result<containers::scoped::Vector<std::byte>> {
   try {
-    Imf::RgbaInputFile in(p);
+    log_info("Loading raw data for file {}. Appending null byte: {}", path,
+             append_null_byte ? "true" : "false");
 
-    Imath::Box2i win = in.dataWindow();
-    Imath::V2i dim(win.max.x - win.min.x + 1, win.max.y - win.min.y + 1);
+    if (!is_path_valid(path)) {
+      return Err{Error::invalid_path};
+    }
 
-    auto pixel_buffer{allocators::mimalloc::malloc(sizeof(Imf::Rgba) * static_cast<usize>(dim.x)
-                                                   * static_cast<usize>(dim.y))};
+    const auto base_file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
+    const auto file_size{append_null_byte ? base_file_size + 1 : base_file_size};
 
-    int dx = win.min.x;
-    int dy = win.min.y;
+    containers::scoped::Vector<std::byte> buffer{file_size, lifetime};
+    buffer.reserve(file_size);
+    std::fill(buffer.begin(), buffer.end(), std::byte{0});
 
-    // NOLINTNEXTLINE
-    in.setFrameBuffer(static_cast<Imf::Rgba *>(pixel_buffer) - dx - dy * dim.x, 1,
-                      static_cast<usize>(dim.x));
-    in.readPixels(win.min.y, win.max.y);
-
-    return openEXR_image_data{dim.x, dim.y, pixel_buffer, p};
-
-  } catch (std::exception &e) {
-    log_error("Unable to load {}: {}", p, e.what());
-    return tl::unexpected{error::openEXR_exception};
+    if (os_open_read(path, buffer.data(), file_size)) {
+      return buffer;
+    } else {
+      return Err{Error::read_error};
+    }
+  } catch (const std::exception &e) {
+    log_error("Unable to load file {}: {}", path, e.what());
+    return Err{Error::unknow_error};
   }
-}
-
-void surge::files::free_openEXR(openEXR_image_data &data) {
-  allocators::mimalloc::free(data.pixels);
-}
-
-void surge::files::free_image(image_data &image) { stbi_image_free(image.pixels); }
-
-auto surge::files::load_image_task(const char *path, bool flip) -> img_future {
-  // This option has to be set before the parallel tasks because STBI implements it as a global
-  // variable
-  stbi_set_flip_vertically_on_load(static_cast<int>(flip));
-  return tasks::executor::get().async([=]() { return load_image(path, false); });
-}
-
-void surge::files::free_image_task(image_data &image) {
-  tasks::executor::get().silent_async([=]() { stbi_image_free(image.pixels); });
 }

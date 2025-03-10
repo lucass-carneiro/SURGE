@@ -1,5 +1,6 @@
 #include "sc_allocators.hpp"
 #include "sc_cli.hpp"
+#include "sc_config.hpp"
 #include "sc_options.hpp"
 #include "sc_timers.hpp"
 
@@ -30,6 +31,14 @@ int main() {
     allocators::mimalloc::init();
     allocators::scoped::init();
 
+    /*********************
+     * Parse config file *
+     *********************/
+    const auto config_data{config::parse_config(config::RenderBackend::vulkan)};
+    if (!config_data) {
+      return EXIT_FAILURE;
+    }
+
     /***********************
      * Main Loop variables *
      ***********************/
@@ -48,7 +57,7 @@ int main() {
       // Reset frame arena
       allocators::scoped::reset(allocators::scoped::Lifetimes::Frame);
 
-#ifdef SURGE_ENABLE_TRACY)
+#ifdef SURGE_ENABLE_TRACY
       FrameMark;
 #endif
     }

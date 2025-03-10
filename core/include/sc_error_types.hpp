@@ -5,7 +5,7 @@
 
 namespace surge {
 
-enum error : int {
+enum Error : int {
   // Cli errors
   config_file_load = 1,
   config_file_parse,
@@ -133,9 +133,8 @@ enum error : int {
   count
 };
 
-template <typename T> using Result = tl::expected<T, error>;
-
-template <typename T> inline auto Err(const Result<T> &r) { return tl::unexpected{r.error()}; }
+template <typename T> using Result = tl::expected<T, Error>;
+template <typename T> using Err = tl::unexpected<T>;
 
 } // namespace surge
 

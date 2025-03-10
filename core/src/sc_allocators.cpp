@@ -156,7 +156,7 @@ static auto dynamic_arena_init(usize initial_size, const char *arena_name)
 
   if (memory_data == nullptr) {
     log_error("Unable to initially allocate {} B for arena \"{}\"", initial_size, arena_name);
-    return tl::unexpected{error::dynamic_arena_init};
+    return tl::unexpected{Error::dynamic_arena_init};
   }
 
   memset(memory_data, 0, initial_size);
@@ -182,7 +182,7 @@ static auto dynamic_arena_malloc(dynamic_arena &da, usize size, usize alignment)
   if (!is_pow_2(alignment)) {
     log_error("{} B allocation on arena \"{}\" failed: Alignment {} is not a power of 2", size,
               da.arena_name, alignment);
-    return tl::unexpected{error::dynamic_arena_alloc};
+    return tl::unexpected{Error::dynamic_arena_alloc};
   }
 
   const auto modulo{size & (alignment - 1)}; // same as size % alignment when a is a power of 2
@@ -251,17 +251,17 @@ auto scoped::init() -> Result<void> {
 
   if (!ps) {
     log_error("Unable to initialize program scope CPU memory arenas");
-    return Err(ps);
+    return Err{ps.error()};
   }
 
   if (!ms) {
     log_error("Unable to initialize frame scope CPU memory arenas");
-    return Err(ps);
+    return Err{ms.error()};
   }
 
   if (!fs) {
     log_error("Unable to initialize module scope CPU memory arenas");
-    return Err(ps);
+    return Err{fs.error()};
   }
 
   program_scope_dynamic_arena = *ps;
@@ -295,6 +295,9 @@ auto scoped::malloc(const Lifetimes &lifetime, usize size, usize alignment) -> R
     const std::lock_guard lock{frame_scope_dynamic_arena_mutex};
     return dynamic_arena_malloc(program_scope_dynamic_arena, size, alignment);
   }
+  default:
+    log_error("Allocation requested in unrecognized lifetime scope");
+    return nullptr;
   }
 }
 
