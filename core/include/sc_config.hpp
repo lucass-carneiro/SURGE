@@ -26,10 +26,7 @@ struct WindowAttributes {
   bool cursor{true};
 };
 
-enum class RenderBackend { opengl, vulkan };
-
 struct RendererAttributes {
-  RenderBackend backend{RenderBackend::opengl};
   bool vsync{true};
   bool MSAA{true};
   bool fps_cap{true};
@@ -45,7 +42,7 @@ struct ConfigData {
   String module{};
 };
 
-auto parse_config(RenderBackend &&backend) -> Result<ConfigData>;
+auto parse_config() -> Result<ConfigData>;
 
 } // namespace surge::config
 

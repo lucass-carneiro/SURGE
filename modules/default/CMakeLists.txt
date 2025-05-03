@@ -25,7 +25,7 @@ set(
 )
 
 # -----------------------------------------
-# Executable engine target
+# Module target
 # -----------------------------------------
 
 add_library(SurgeDefaultModule MODULE ${SURGE_MODULE_DEFAULT_HEADER_LIST} ${SURGE_MODULE_DEFAULT_SOURCE_LIST})
@@ -39,6 +39,10 @@ target_include_directories(
   SurgeDefaultModule PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
+
+# -----------------------------------------
+# Compilers flags and options
+# -----------------------------------------
 
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
@@ -55,16 +59,13 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeDefaultModule PUBLIC /D NOMINMAX)
 endif()
 
-# -----------------------------------------
-# Compilers flags and options
-# -----------------------------------------
-
 if(SURGE_ENABLE_SANITIZERS)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeDefaultModule PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgeDefaultModule PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    message(WARNING "Sanitizers don't work on MSVC yet.")
+    # Experience reveals that using sanitizes in MSVC is an exercise in pain and futility
+    #target_compile_options(SurgePlayer PUBLIC /fsanitize=address)
   endif()
 endif()
 
@@ -142,6 +143,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   else()
     target_compile_options(SurgeDefaultModule PUBLIC /Wall /MP /MDd)
     target_link_options(SurgeDefaultModule PUBLIC /DEBUG:FULL)
+    target_compile_options(SurgeDefaultModule PRIVATE /wd4820)
   endif()
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

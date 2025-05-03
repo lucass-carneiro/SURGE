@@ -11,21 +11,12 @@
         "error-strings"
       ]
     },
-    {
-      "name": "glad",
-      "features": [
-        "loader",
-        "extensions"
-      ]
-    },
     "glfw3",
     "glm",
-    "gsl-lite",
     {
       "name": "imgui",
       "features": [
         "glfw-binding",
-        "opengl3-binding",
         "vulkan-binding"
       ]
     },
@@ -40,8 +31,6 @@
       "name": "mimalloc",
       "platform": "!windows"
     },
-    "openexr",
-    "opengl",
     "ryml",
     "stb",
     "taskflow",

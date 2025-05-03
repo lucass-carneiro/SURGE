@@ -3,17 +3,17 @@
 #include "sc_logging.hpp"
 
 #include <filesystem>
-#include <gsl/gsl-lite.hpp>
 #include <optional>
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(handle_t module,
-                             std::size_t max_size) noexcept -> tl::expected<string, error> {
+auto surge::module::get_name(Handle module,
+                             usize max_size) noexcept -> Result<containers::mimalloc::String> {
+  using containers::mimalloc::String;
 
-  auto module_name{string(max_size, '\0')};
+  auto module_name{String(max_size, '\0')};
   const auto actual_name_size{
-      GetModuleFileNameA(module, module_name.data(), gsl::narrow_cast<DWORD>(max_size))};
+      GetModuleFileNameA(module, module_name.data(), static_cast<DWORD>(max_size))};
 
   if (actual_name_size == 0) {
     const auto error_code{GetLastError()};
@@ -24,17 +24,17 @@ auto surge::module::get_name(handle_t module,
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to retrieve module {} name: {}", static_cast<void *>(module), error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(error::name_retrival);
+    return Err(Error::name_retrival);
   } else {
     module_name.resize(actual_name_size);
     return module_name;
   }
 }
 
-auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
+auto surge::module::load(const char *path) noexcept -> Result<Handle> {
   log_info("Loading module {}", path);
 
-  handle_t handle{LoadLibraryA(path)};
+  Handle handle{LoadLibraryA(path)};
   if (!handle) {
     const auto error_code{GetLastError()};
     LPSTR error_txt{nullptr};
@@ -44,14 +44,14 @@ auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, er
                    (LPSTR)&error_txt, 0, nullptr);
     log_error("Unable to load module {}: {}", path, error_txt);
     LocalFree(error_txt);
-    return tl::unexpected(error::loading);
+    return Err(Error::loading);
   } else {
     log_info("Loaded module {}, address {}", path, static_cast<void *>(handle));
     return handle;
   }
 }
 
-void surge::module::unload(handle_t module) noexcept {
+void surge::module::unload(Handle module) noexcept {
   if (!module) {
     return;
   }
@@ -72,8 +72,7 @@ void surge::module::unload(handle_t module) noexcept {
   }
 }
 
-auto surge::module::get_func_addr(surge::module::handle_t module,
-                                       const char *func_name) -> std::optional<FARPROC> {
+auto surge::module::get_func_addr(Handle module, const char *func_name) -> std::optional<FARPROC> {
   const auto addr{GetProcAddress(module, func_name)};
   if (!addr) {
     const auto error_code{GetLastError()};
@@ -100,7 +99,7 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-auto surge::module::get_func_addr(surge::module::handle_t module,
+auto surge::module::get_func_addr(surge::module::Handle module,
                                   const char *func_name) -> std::optional<void *> {
   (void)dlerror();
   auto addr{dlsym(module, func_name)};
@@ -113,34 +112,35 @@ auto surge::module::get_func_addr(surge::module::handle_t module,
   }
 }
 
-auto surge::module::get_name(handle_t module, usize) noexcept -> tl::expected<string, error> {
+auto surge::module::get_name(Handle module,
+                             usize) noexcept -> Result<containers::mimalloc::String> {
 
   Dl_info info;
   const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
 
   if (dladdr_stats == 0) {
     log_error("Unable to retrieve module {} name.", module);
-    return tl::unexpected(error::name_retrival);
+    return Err(Error::name_retrival);
   } else {
     return string{info.dli_fname};
   }
 }
 
-auto surge::module::load(const char *path) noexcept -> tl::expected<handle_t, error> {
+auto surge::module::load(const char *path) noexcept -> Result<Handle> {
   log_info("Loading module {}", path);
 
   // Load and get handle
   auto handle{dlopen(path, RTLD_NOW | RTLD_LOCAL)};
   if (!handle) {
     log_error("Unable to load library {}", dlerror());
-    return tl::unexpected(error::loading);
+    return Err(Error::loading);
   } else {
     log_info("Loaded module {}, address {}", path, handle);
     return handle;
   }
 }
 
-void surge::module::unload(handle_t module) noexcept {
+void surge::module::unload(Handle module) noexcept {
   if (!module) {
     return;
   }
@@ -159,137 +159,74 @@ auto surge::module::set_module_path() noexcept -> bool { return true; }
 
 #endif
 
-auto surge::module::get_gl_api(handle_t module) noexcept -> tl::expected<gl_api, error> {
+auto surge::module::get_api(Handle module) noexcept -> Result<Api> {
   // on_load
-  const auto on_load_addr{get_func_addr(module, "gl_on_load")};
+  const auto on_load_addr{get_func_addr(module, "on_load")};
   if (!on_load_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // on_unload
-  const auto on_unload_addr{get_func_addr(module, "gl_on_unload")};
+  const auto on_unload_addr{get_func_addr(module, "on_unload")};
   if (!on_unload_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // draw
-  const auto draw_addr{get_func_addr(module, "gl_draw")};
+  const auto draw_addr{get_func_addr(module, "draw")};
   if (!draw_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // update
-  const auto update_addr{get_func_addr(module, "gl_update")};
+  const auto update_addr{get_func_addr(module, "update")};
   if (!update_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // keyboard_event
-  const auto keyboard_event_addr{get_func_addr(module, "gl_keyboard_event")};
+  const auto keyboard_event_addr{get_func_addr(module, "keyboard_event")};
   if (!keyboard_event_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // mouse_button_event
-  const auto mouse_button_event_addr{get_func_addr(module, "gl_mouse_button_event")};
+  const auto mouse_button_event_addr{get_func_addr(module, "mouse_button_event")};
   if (!mouse_button_event_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // mouse_scroll_event
-  const auto mouse_scroll_event_addr{get_func_addr(module, "gl_mouse_scroll_event")};
+  const auto mouse_scroll_event_addr{get_func_addr(module, "mouse_scroll_event")};
   if (!mouse_scroll_event_addr) {
-    log_error("Incomplete OpenGL module API!");
-    return tl::unexpected{error::symbol_retrival};
+    log_error("Incomplete module API!");
+    return Err{Error::symbol_retrival};
   }
 
   // clang-format off
-  return gl_api{
-    reinterpret_cast<gl_api::on_load_t>(on_load_addr.value()),
-    reinterpret_cast<gl_api::on_unload_t>(on_unload_addr.value()),
-    reinterpret_cast<gl_api::draw_t>(draw_addr.value()),
-    reinterpret_cast<gl_api::update_t>(update_addr.value()),
-    reinterpret_cast<gl_api::keyboard_event_t>(keyboard_event_addr.value()),
-    reinterpret_cast<gl_api::mouse_button_event_t>(mouse_button_event_addr.value()),
-    reinterpret_cast<gl_api::mouse_scroll_event_t>(mouse_scroll_event_addr.value())
+  return Api{
+    reinterpret_cast<Api::on_load_t>(on_load_addr.value()),
+    reinterpret_cast<Api::on_unload_t>(on_unload_addr.value()),
+    reinterpret_cast<Api::draw_t>(draw_addr.value()),
+    reinterpret_cast<Api::update_t>(update_addr.value()),
+    reinterpret_cast<Api::keyboard_event_t>(keyboard_event_addr.value()),
+    reinterpret_cast<Api::mouse_button_event_t>(mouse_button_event_addr.value()),
+    reinterpret_cast<Api::mouse_scroll_event_t>(mouse_scroll_event_addr.value())
   };
   // clang-format on
 }
 
-auto surge::module::get_vk_api(handle_t module) noexcept -> tl::expected<vk_api, error> {
-  // on_load
-  const auto on_load_addr{get_func_addr(module, "vk_on_load")};
-  if (!on_load_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // on_unload
-  const auto on_unload_addr{get_func_addr(module, "vk_on_unload")};
-  if (!on_unload_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // draw
-  const auto draw_addr{get_func_addr(module, "vk_draw")};
-  if (!draw_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // update
-  const auto update_addr{get_func_addr(module, "vk_update")};
-  if (!update_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // keyboard_event
-  const auto keyboard_event_addr{get_func_addr(module, "vk_keyboard_event")};
-  if (!keyboard_event_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // mouse_button_event
-  const auto mouse_button_event_addr{get_func_addr(module, "vk_mouse_button_event")};
-  if (!mouse_button_event_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // mouse_scroll_event
-  const auto mouse_scroll_event_addr{get_func_addr(module, "vk_mouse_scroll_event")};
-  if (!mouse_scroll_event_addr) {
-    log_error("Incomplete Vulkan module API!");
-    return tl::unexpected{error::symbol_retrival};
-  }
-
-  // clang-format off
-  return vk_api{
-    reinterpret_cast<vk_api::on_load_t>(on_load_addr.value()),
-    reinterpret_cast<vk_api::on_unload_t>(on_unload_addr.value()),
-    reinterpret_cast<vk_api::draw_t>(draw_addr.value()),
-    reinterpret_cast<vk_api::update_t>(update_addr.value()),
-    reinterpret_cast<vk_api::keyboard_event_t>(keyboard_event_addr.value()),
-    reinterpret_cast<vk_api::mouse_button_event_t>(mouse_button_event_addr.value()),
-    reinterpret_cast<vk_api::mouse_scroll_event_t>(mouse_scroll_event_addr.value())
-  };
-  // clang-format on
-}
-
-auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, error> {
+auto surge::module::reload(Handle module) noexcept -> Result<Handle> {
   // Get module file name
   const auto module_file_name{get_name(module)};
   if (!module_file_name) {
-    return tl::unexpected(module_file_name.error());
+    return Err(module_file_name.error());
   }
 
   log_info("Reloading {}", module_file_name->c_str());
@@ -317,61 +254,40 @@ auto surge::module::reload(handle_t module) noexcept -> tl::expected<handle_t, e
   // Load
   auto new_handle = load(module_file_name->c_str());
   if (!new_handle) {
-    return tl::unexpected(new_handle.error());
+    return Err(new_handle.error());
   }
 
   return new_handle;
 }
 
-void surge::module::bind_input_callbacks(surge::window::window_t window, handle_t handle,
-                                         const gl_api &api) {
-  log_info("Binding module {} interaction callbacks", static_cast<void *>(handle));
+void surge::module::bind_input_callbacks(Context ctx, Handle hdl, const Api &api) {
+  log_info("Binding module {} interaction callbacks", static_cast<void *>(hdl));
 
-  glfwSetKeyCallback(window, api.keyboard_event);
+  glfwSetKeyCallback(ctx->window, api.keyboard_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(handle));
+    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(hdl));
   }
 
-  glfwSetMouseButtonCallback(window, api.mouse_button_event);
+  glfwSetMouseButtonCallback(ctx->window, api.mouse_button_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(handle));
+    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(hdl));
   }
 
-  glfwSetScrollCallback(window, api.mouse_scroll_event);
+  glfwSetScrollCallback(ctx->window, api.mouse_scroll_event);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(handle));
-  }
-}
-
-void surge::module::bind_input_callbacks(surge::window::window_t window, handle_t handle,
-                                         const vk_api &api) {
-  log_info("Binding module {} interaction callbacks", static_cast<void *>(handle));
-
-  glfwSetKeyCallback(window, api.keyboard_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind keyboard event callback from module {}", static_cast<void *>(handle));
-  }
-
-  glfwSetMouseButtonCallback(window, api.mouse_button_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse button callback from module {}", static_cast<void *>(handle));
-  }
-
-  glfwSetScrollCallback(window, api.mouse_scroll_event);
-  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(handle));
+    log_warn("Unable to bind mouse scroll callback from module {}", static_cast<void *>(hdl));
   }
 }
 
-void surge::module::unbind_input_callbacks(surge::window::window_t window) {
-  log_info("Unbinding all interaction callbacks for window {}", static_cast<void *>(window));
+void surge::module::unbind_input_callbacks(Context ctx) {
+  log_info("Unbinding all interaction callbacks for window {}", static_cast<void *>(ctx->window));
 
   // Set Keyboard callback
-  glfwSetKeyCallback(window, nullptr);
+  glfwSetKeyCallback(ctx->window, nullptr);
 
   // Set Mouse button callback
-  glfwSetMouseButtonCallback(window, nullptr);
+  glfwSetMouseButtonCallback(ctx->window, nullptr);
 
   // Set mouse scroll callback
-  glfwSetScrollCallback(window, nullptr);
+  glfwSetScrollCallback(ctx->window, nullptr);
 }

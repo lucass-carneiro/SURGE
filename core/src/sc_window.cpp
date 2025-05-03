@@ -3,14 +3,12 @@
 #include "sc_error_types.hpp"
 #include "sc_logging.hpp"
 
-#include <gsl/gsl-lite.hpp>
-
-static void glfw_error_callback(int code, const char *description) {
+static void glfw_error_callback(int code, const char *description) noexcept {
   log_error("GLFW error code {}: {}", code, description);
 }
 
-auto surge::window::init(const config::window_resolution &wres, const config::window_attrs &w_attrs,
-                         const config::renderer_attrs &r_attrs) -> tl::expected<window_t, error> {
+auto surge::window::init(const config::WindowResolution &wres,
+                         const config::WindowAttributes &w_attrs) -> Result<Window> {
   /*************
    * GLFW init *
    *************/
@@ -19,7 +17,7 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
   glfwSetErrorCallback(glfw_error_callback);
 
   if (glfwInit() != GLFW_TRUE) {
-    return tl::unexpected{error::glfw_init};
+    return Err{Error::glfw_init};
   }
 
   /*****************
@@ -32,7 +30,7 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
 
   if (monitors == nullptr) {
     glfwTerminate();
-    return tl::unexpected{error::glfw_monitor};
+    return Err{Error::glfw_monitor};
   }
 
   log_info("Monitors detected: {}", mc);
@@ -47,35 +45,35 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
     glfwGetMonitorPhysicalSize(monitors[i], &width, &height);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return tl::unexpected{error::glfw_monitor_size};
+      return Err{Error::glfw_monitor_size};
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorContentScale(monitors[i], &xscale, &yscale);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return tl::unexpected{error::glfw_monitor_scale};
+      return Err{Error::glfw_monitor_scale};
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorPos(monitors[i], &xpos, &ypos);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return tl::unexpected{error::glfw_monitor_bounds};
+      return Err{Error::glfw_monitor_bounds};
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     glfwGetMonitorWorkarea(monitors[i], &w_xpos, &w_ypos, &w_width, &w_height);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return tl::unexpected{error::glfw_monitor_area};
+      return Err{Error::glfw_monitor_area};
     }
 
     // NOLINTNEXTLINE (cppcoreguidelines-pro-bounds-pointer-arithmetic)
     const char *name = glfwGetMonitorName(monitors[i]);
     if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
       glfwTerminate();
-      return tl::unexpected{error::glfw_monitor_name};
+      return Err{Error::glfw_monitor_name};
     }
 
     log_info("Properties of monitor {}:\n"
@@ -92,49 +90,19 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
    ***************/
   log_info("Initializing engine window");
 
-  if (r_attrs.backend == config::renderer_backend::opengl) {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-      glfwTerminate();
-      return tl::unexpected{error::glfw_window_hint_major};
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-      glfwTerminate();
-      return tl::unexpected{error::glfw_window_hint_minor};
-    }
-
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-      glfwTerminate();
-      return tl::unexpected{error::glfw_window_hint_profile};
-    }
-
-    if (r_attrs.MSAA) {
-      glfwWindowHint(GLFW_SAMPLES, 4);
-
-      if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-        glfwTerminate();
-        return tl::unexpected{error::glfw_window_hint_msaa};
-      }
-    }
-
-  } else {
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
-      glfwTerminate();
-      return tl::unexpected{error::glfw_window_hint_api};
-    }
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
+    glfwTerminate();
+    return Err{Error::glfw_window_hint_api};
   }
 
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return tl::unexpected{error::glfw_window_hint_resize};
+    return Err{Error::glfw_window_hint_resize};
   }
 
-  window_t engine_window{nullptr};
+  Window engine_window{nullptr};
 
   if (w_attrs.windowed) {
     engine_window
@@ -148,7 +116,7 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
 
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return tl::unexpected{error::glfw_window_creation};
+    return Err{Error::glfw_window_creation};
   }
 
   log_info("Engine window created, handle {}", static_cast<void *>(engine_window));
@@ -162,13 +130,13 @@ auto surge::window::init(const config::window_resolution &wres, const config::wi
                    w_attrs.cursor ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
-    return tl::unexpected{error::glfw_window_input_mode};
+    return Err{Error::glfw_window_input_mode};
   }
 
   return engine_window;
 }
 
-void surge::window::terminate(window_t window) {
+void surge::window::terminate(Window window) {
   log_info("Terminating window {}", static_cast<void *>(window));
   glfwDestroyWindow(window);
   glfwTerminate();
@@ -176,18 +144,18 @@ void surge::window::terminate(window_t window) {
 
 void surge::window::poll_events() { glfwPollEvents(); }
 
-auto surge::window::get_dims(window_t window) -> glm::vec2 {
+auto surge::window::get_dims(Window window) -> glm::vec2 {
   int ww{0}, wh{0};
   glfwGetWindowSize(window, &ww, &wh);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     log_warn("Unable to determine window dimentions");
     return glm::vec2{0.0f};
   } else {
-    return glm::vec2{gsl::narrow_cast<float>(ww), gsl::narrow_cast<float>(wh)};
+    return glm::vec2{static_cast<float>(ww), static_cast<float>(wh)};
   }
 }
 
-auto surge::window::get_cursor_pos(window_t window) -> glm::vec2 {
+auto surge::window::get_cursor_pos(Window window) -> glm::vec2 {
   double x{0}, y{0};
   glfwGetCursorPos(window, &x, &y);
 
@@ -199,18 +167,16 @@ auto surge::window::get_cursor_pos(window_t window) -> glm::vec2 {
   }
 }
 
-auto surge::window::get_key(window_t window, int key) -> int { return glfwGetKey(window, key); }
+auto surge::window::get_key(Window window, int key) -> int { return glfwGetKey(window, key); }
 
-auto surge::window::get_mouse_button(window_t window, int button) -> int {
+auto surge::window::get_mouse_button(Window window, int button) -> int {
   return glfwGetMouseButton(window, button);
 }
 
-auto surge::window::should_close(window_t window) -> bool {
+auto surge::window::should_close(Window window) -> bool {
   return static_cast<bool>(glfwWindowShouldClose(window));
 }
 
-void surge::window::set_should_close(window_t window, bool value) {
+void surge::window::set_should_close(Window window, bool value) {
   glfwSetWindowShouldClose(window, value ? GLFW_TRUE : GLFW_FALSE);
 }
-
-void surge::window::swap_buffers(window_t window) { glfwSwapBuffers(window); }

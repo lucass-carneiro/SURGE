@@ -21,7 +21,7 @@ static auto ryml_alloc(size_t len, void *, void *) -> void * {
 
 static void ryml_free(void *mem, size_t, void *) { surge::allocators::mimalloc::free(mem); }
 
-auto surge::config::parse_config(RenderBackend &&backend) -> Result<ConfigData> {
+auto surge::config::parse_config() -> Result<ConfigData> {
   using std::atof;
   using std::atoi;
 
@@ -54,7 +54,6 @@ auto surge::config::parse_config(RenderBackend &&backend) -> Result<ConfigData> 
     cd.wattrs.windowed = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
     cd.wattrs.cursor = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
 
-    cd.rattrs.backend = backend;
     cd.rattrs.vsync = static_cast<bool>(atoi(tree["renderer"]["VSync"].val().data()));
     cd.rattrs.MSAA = static_cast<bool>(atoi(tree["renderer"]["MSAA"].val().data()));
     cd.rattrs.fps_cap = static_cast<bool>(atoi(tree["renderer"]["fps_cap"].val().data()));

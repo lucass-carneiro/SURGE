@@ -30,13 +30,9 @@ endif()
 find_package(EnTT CONFIG REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(fmt CONFIG REQUIRED)
-find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
-find_package(gsl-lite CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
-find_package(OpenEXR CONFIG REQUIRED)
-find_package(OpenGL REQUIRED)
 find_package(ryml CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
@@ -83,8 +79,6 @@ endif()
 
 option(SURGE_USE_LOG "Enable log messages" ON)
 option(SURGE_USE_LOG_COLOR "Use colors on log outputs" ON)
-option(SURGE_GL_LOG "Log OpenGL events" ON)
-option(SURGE_LOG_GL_NOTIFICATIONS "Produce log outputs on GL_DEBUG_SEVERITY_NOTIFICATION events" ON)
 option(SURGE_USE_VK_VALIDATION_LAYERS "Use Vulkan Validation layers" ON)
 
 # -----------------------------------------
@@ -128,31 +122,19 @@ if(SURGE_ENABLE_TRACY)
 endif()
 
 # -----------------------------------------
-# Buffer sizes
-# -----------------------------------------
-
-if(NOT DEFINED SURGE_OPENGL_ERROR_BUFFER_SIZE)
-  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
-elseif(SURGE_OPENGL_ERROR_BUFFER_SIZE LESS 1024)
-  message(WARNING "The variable SURGE_OPENGL_ERROR_BUFFER_SIZE should be set to at least 1024. It will be automatically set to this value.")
-  set(SURGE_OPENGL_ERROR_BUFFER_SIZE 1024)
-endif()
-
-# -----------------------------------------
 #  Engine core target
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 
 # -----------------------------------------
-#  Engine player targets
+#  Engine player target
 # -----------------------------------------
 
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_gl)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player_vk)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
 
 # -----------------------------------------
 #  Module targets
 # -----------------------------------------
 
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)

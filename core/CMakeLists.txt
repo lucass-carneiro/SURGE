@@ -25,15 +25,6 @@ configure_file(
 
 set(
   SURGE_CORE_HEADER_LIST
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/sc_opengl.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/gba.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/imgui.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/pv_ubo.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/shaders.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/sprite_database.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/text.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_opengl/atoms/texture.hpp"
-
   #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
@@ -52,27 +43,19 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_container_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_error_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_files.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_glfw_includes.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_glm_includes.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_glm.hpp"
   #"${PROJECT_SOURCE_DIR}/include/sc_imgui.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_integer_types.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_logging.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_module_context.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_window.hpp"
 )
 
 set(
   SURGE_CORE_SOURCE_LIST
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/sc_opengl.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/imgui.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/pv_ubo.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/shaders.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/sprite_database.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/text.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_opengl/atoms/texture.cpp"
-
   #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
@@ -91,10 +74,10 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_config.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_files.cpp"
   #"${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_window.cpp"
 )
 
 # -----------------------------------------
@@ -113,6 +96,10 @@ target_include_directories(SurgeCore PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}-${PROJECT_VERSION}>
 )
 
+# -----------------------------------------
+# Compilers flags and options
+# -----------------------------------------
+
 # Enables __VA_OPT__ on msvc
 if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /Zc:preprocessor)
@@ -128,16 +115,20 @@ if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /D NOMINMAX)
 endif()
 
-# -----------------------------------------
-# Compilers flags and options
-# -----------------------------------------
+# This warning alerts us on the unsafeness of casting a void* to a function and calling it.
+# It is impossible to have dynamically loaded modules without these casts, and we acknowledge
+# that this is unsafe. Given that, we disable that warning here
+if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+  target_compile_options(SurgeCore PRIVATE /wd4191)
+endif()
 
 if(SURGE_ENABLE_SANITIZERS)
   if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
   else()
-    target_compile_options(SurgeCore PUBLIC /fsanitize=address)
+    # Experience reveals that using sanitizes in MSVC is an exercise in pain and futility
+    #target_compile_options(SurgeCore PUBLIC /fsanitize=address)
   endif()
 endif()
 
@@ -210,8 +201,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
       )
       target_link_options(SurgeCore PUBLIC -Og -g3 -ggdb3 -rdynamic)
   else()
-    target_compile_options(SurgeCore PUBLIC /Wall /MP /MDd)
-    target_link_options(SurgeCore PUBLIC /DEBUG:FULL)
+    target_compile_options(SurgeCore PRIVATE /Wall /MP /MDd)
+    target_link_options(SurgeCore PRIVATE /DEBUG:FULL)
+    target_compile_options(SurgeCore PRIVATE /wd4820)
+    target_compile_options(SurgeCore PRIVATE /wd4866)
+    target_compile_options(SurgeCore PRIVATE /wd5045)
   endif()
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -251,12 +245,8 @@ target_link_libraries(SurgeCore PUBLIC
   mimalloc
   fmt::fmt
   Freetype::Freetype
-  glad::glad
   glfw
-  gsl::gsl-lite
   imgui::imgui
-  OpenEXR::OpenEXR
-  OpenGL::GL
   ryml::ryml
   Taskflow::Taskflow
   tl::expected
