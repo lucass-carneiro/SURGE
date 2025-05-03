@@ -7,8 +7,8 @@
 
 #ifdef SURGE_SYSTEM_Windows
 
-auto surge::module::get_name(Handle module,
-                             usize max_size) noexcept -> Result<containers::mimalloc::String> {
+auto surge::module::get_name(Handle module, usize max_size) noexcept
+    -> Result<containers::mimalloc::String> {
   using containers::mimalloc::String;
 
   auto module_name{String(max_size, '\0')};
@@ -99,8 +99,8 @@ auto surge::module::set_module_path() noexcept -> bool {
 
 #else
 
-auto surge::module::get_func_addr(surge::module::Handle module,
-                                  const char *func_name) -> std::optional<void *> {
+auto surge::module::get_func_addr(surge::module::Handle module, const char *func_name)
+    -> std::optional<void *> {
   (void)dlerror();
   auto addr{dlsym(module, func_name)};
   if (!addr) {
@@ -112,8 +112,8 @@ auto surge::module::get_func_addr(surge::module::Handle module,
   }
 }
 
-auto surge::module::get_name(Handle module,
-                             usize) noexcept -> Result<containers::mimalloc::String> {
+auto surge::module::get_name(Handle module, usize) noexcept
+    -> Result<containers::mimalloc::String> {
 
   Dl_info info;
   const auto dladdr_stats{dladdr(dlsym(module, "on_load"), &info)};
@@ -122,7 +122,7 @@ auto surge::module::get_name(Handle module,
     log_error("Unable to retrieve module {} name.", module);
     return Err(Error::name_retrival);
   } else {
-    return string{info.dli_fname};
+    return containers::mimalloc::String{info.dli_fname};
   }
 }
 

@@ -23,7 +23,7 @@ int main() {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScopedN("surge::main");
 #endif
-  
+
   try {
     /********
      * Logo *
@@ -165,10 +165,16 @@ int main() {
 #endif
 
       // Acquire swapchain image
-      const auto img_result{renderer::vk::request_swpc_img(*vk_ctx)};
-      if (!img_result) {
-        log_error("Vulkan error while acquiring swapchain images");
-        break;
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("Swapchain Image Acquire");
+#endif
+
+        if (!renderer::vk::request_swpc_img(*vk_ctx)) {
+          log_error("Vulkan error while acquiring swapchain images");
+          break;
+        }
       }
 
       // Begin command recording
@@ -229,7 +235,7 @@ int main() {
         ZoneScopedN("SWPC Present");
 #endif
         const auto present_result{renderer::vk::present_swpc(*vk_ctx, r_attrs, w_res)};
-        if (present_result.has_value()) {
+        if (!present_result) {
           log_error("Vulkan error while presenting swapchain images");
           break;
         }

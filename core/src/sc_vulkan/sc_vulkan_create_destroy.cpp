@@ -16,13 +16,13 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
   log_info("Initializing Vulkan");
 
   // Alloc context
-  auto ctx = static_cast<Context>(allocators::mimalloc::malloc(sizeof(Context)));
+  auto ctx = static_cast<Context>(allocators::mimalloc::malloc(sizeof(ContextData)));
   if (!ctx) {
     log_error("Unable to allocate memory for Vulkan context");
     return Err{Error::vk_ctx_alloc};
   }
 
-  new (ctx)(Context)();
+  new (ctx)(ContextData)();
 
   // API version
   const auto api_version{get_api_version()};
@@ -108,28 +108,28 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
                                         static_cast<u32>(w_res.width),
                                         static_cast<u32>(w_res.height))};
   if (!swpc_data) {
-    return Err{q_handles.error()};
+    return Err{swpc_data.error()};
   } else {
     ctx->swpc_data = *swpc_data;
   }
 
   const auto frm_data{create_frame_data(*device, q_handles->graphics_idx)};
   if (!frm_data) {
-    return Err{q_handles.error()};
+    return Err{frm_data.error()};
   } else {
     ctx->frm_data = *frm_data;
   }
 
   const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
   if (!allocator) {
-    return Err{q_handles.error()};
+    return Err{allocator.error()};
   } else {
     ctx->allocator = *allocator;
   }
 
   const auto draw_image{create_draw_img(w_res, *device, *allocator)};
   if (!draw_image) {
-    return Err{q_handles.error()};
+    return Err{draw_image.error()};
   } else {
     ctx->draw_image = *draw_image;
   }

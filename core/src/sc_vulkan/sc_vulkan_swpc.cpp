@@ -77,7 +77,7 @@ auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttrib
 
   const auto result{vkQueuePresentKHR(graphics_queue, &present_info)};
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
     log_info("Swapchain out of date. Recreating");
     vkDeviceWaitIdle(ctx->device);
 

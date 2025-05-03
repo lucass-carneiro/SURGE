@@ -43,8 +43,8 @@
       ]
     },
     "vulkan",
+    "vulkan-utility-libraries",
     "vulkan-memory-allocator",
-    "vulkan-validationlayers",
     "xxhash"
   ]
 }
