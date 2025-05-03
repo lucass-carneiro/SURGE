@@ -1,9 +1,8 @@
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan_images.hpp"
+#include "sc_vulkan/sc_vulkan_images.hpp"
 
-void surge::renderer::vk::clear_swpc(context ctx, const config::clear_color &w_ccl) {
+void surge::renderer::vk::clear_swpc(Context ctx, const config::ClearColor &w_ccl) {
   auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
-  // auto vk_img{static_cast<VkImage>(img)};
 
   // transition our main draw image into general layout so we can write into it we will overwrite it
   // all so we dont care about what was the older layout

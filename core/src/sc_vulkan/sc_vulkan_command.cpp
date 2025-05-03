@@ -1,9 +1,9 @@
-#include "sc_vulkan_command.hpp"
+#include "sc_vulkan/sc_vulkan_command.hpp"
 
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan_sync.hpp"
-#include "sc_vulkan_types.hpp"
+#include "sc_vulkan/sc_vulkan_sync.hpp"
+#include "sc_vulkan/sc_vulkan_types.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -53,10 +53,10 @@ auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
   si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
   si.pNext = nullptr;
 
-  si.waitSemaphoreInfoCount = wai_sem_info == nullptr ? 0 : 1;
+  si.waitSemaphoreInfoCount = wai_sem_info == nullptr ? u32{0} : u32{1};
   si.pWaitSemaphoreInfos = wai_sem_info;
 
-  si.signalSemaphoreInfoCount = signam_sem_info == nullptr ? 0 : 1;
+  si.signalSemaphoreInfoCount = signam_sem_info == nullptr ? u32{0} : u32{1};
   si.pSignalSemaphoreInfos = signam_sem_info;
 
   si.commandBufferInfoCount = 1;
@@ -65,7 +65,7 @@ auto surge::renderer::vk::submit_info(VkCommandBufferSubmitInfo *cmd,
   return si;
 }
 
-auto surge::renderer::vk::cmd_begin(context ctx) -> std::optional<error> {
+auto surge::renderer::vk::cmd_begin(Context ctx) -> Result<void> {
   auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
 
   // Now that we are sure that the commands finished executing, we can safely reset the command
@@ -74,7 +74,7 @@ auto surge::renderer::vk::cmd_begin(context ctx) -> std::optional<error> {
 
   if (result != VK_SUCCESS) {
     log_error("Unable to reset command buffer: {}", string_VkResult(result));
-    return error::vk_cmd_buff_reset;
+    return Err{Error::vk_cmd_buff_reset};
   }
 
   // Begin the command buffer recording. We will use this command buffer exactly once, so we want to
@@ -86,13 +86,13 @@ auto surge::renderer::vk::cmd_begin(context ctx) -> std::optional<error> {
 
   if (result != VK_SUCCESS) {
     log_error("Unable to start command buffer recording: {}", string_VkResult(result));
-    return error::vk_cmd_buff_rec_start;
+    return Err{Error::vk_cmd_buff_rec_start};
   }
 
   return {};
 }
 
-auto surge::renderer::vk::cmd_end(context ctx) -> std::optional<error> {
+auto surge::renderer::vk::cmd_end(Context ctx) -> Result<void> {
   auto &cmd_buff{ctx->frm_data.command_buffers[ctx->frm_data.frame_idx]};
 
   // Finalize the command buffer
@@ -100,13 +100,13 @@ auto surge::renderer::vk::cmd_end(context ctx) -> std::optional<error> {
 
   if (result != VK_SUCCESS) {
     log_error("Unable to end command buffer recording: {}", string_VkResult(result));
-    return error::vk_cmd_buff_rec_end;
+    return Err{Error::vk_cmd_buff_rec_end};
   }
 
   return {};
 }
 
-auto surge::renderer::vk::cmd_submit(context ctx) -> std::optional<error> {
+auto surge::renderer::vk::cmd_submit(Context ctx) -> Result<void> {
   auto &graphics_queue{ctx->q_handles.graphics};
   auto &render_fence{ctx->frm_data.render_fences[ctx->frm_data.frame_idx]};
   auto &swpc_semaphore{ctx->frm_data.swpc_semaphores[ctx->frm_data.frame_idx]};
@@ -130,7 +130,7 @@ auto surge::renderer::vk::cmd_submit(context ctx) -> std::optional<error> {
 
   if (result != VK_SUCCESS) {
     log_error("Unable to sumbit command buffer to graphics queue: {}", string_VkResult(result));
-    return error::vk_cmd_buff_submit;
+    return Err{Error::vk_cmd_buff_submit};
   }
 
   return {};

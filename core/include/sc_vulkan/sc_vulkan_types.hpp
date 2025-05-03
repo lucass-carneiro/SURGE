@@ -5,6 +5,7 @@
 #include "sc_integer_types.hpp"
 #include "sc_options.hpp"
 
+#include <array>
 #include <optional>
 
 // clang-format off
@@ -14,14 +15,14 @@
 
 namespace surge::renderer::vk {
 
-struct queue_family_indices {
+struct QueueFamilyIndices {
   std::optional<u32> graphics_family{};
   std::optional<u32> present_family{};
   std::optional<u32> transfer_family{};
   std::optional<u32> compute_family{};
 };
 
-struct queue_handles {
+struct QueueHandles {
   u32 graphics_idx{};
   u32 transfer_idx{};
   u32 compute_idx{};
@@ -31,25 +32,25 @@ struct queue_handles {
   VkQueue compute{};
 };
 
-struct swapchain_data {
+struct SwapchainData {
   VkSwapchainKHR swapchain{};
   VkExtent2D extent{};
-  vector<VkImage> imgs{};
-  vector<VkImageView> imgs_views{};
+  containers::mimalloc::Vector<VkImage> imgs{};
+  containers::mimalloc::Vector<VkImageView> imgs_views{};
 };
 
-struct frame_cmd_data {
+struct FrameCmdData {
   VkCommandPool pool{};
   VkCommandBuffer buffer{};
 };
 
-struct frame_sync_data {
+struct FrameSyncData {
   VkSemaphore swpc_semaphore{nullptr};
   VkSemaphore render_semaphore{nullptr};
   VkFence render_fence{nullptr};
 };
 
-struct frame_data {
+struct FrameData {
   static constexpr usize frame_overlap{2};
   usize frame_idx{0};
 
@@ -65,7 +66,7 @@ struct frame_data {
   }
 };
 
-struct allocated_image {
+struct AllocatedImage {
   VkImage image{nullptr};
   VkImageView image_view{nullptr};
   VmaAllocation allocation{nullptr};
@@ -73,12 +74,12 @@ struct allocated_image {
   VkFormat image_format{};
 };
 
-struct swpc_image {
+struct SwapchainImage {
   VkImage image{};
   u32 index{};
 };
 
-struct context_t {
+struct ContextData {
   VkInstance instance{};
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
@@ -89,17 +90,19 @@ struct context_t {
   VkDevice device{};
 
   VkSurfaceKHR surface{};
-  queue_handles q_handles{};
-  swapchain_data swpc_data{};
+  QueueHandles q_handles{};
+  SwapchainData swpc_data{};
 
-  frame_data frm_data{};
+  FrameData frm_data{};
 
   VmaAllocator allocator{};
 
-  allocated_image draw_image{};
+  AllocatedImage draw_image{};
 
-  swpc_image swpc_requested_img{};
+  SwapchainImage swpc_requested_img{};
 };
+
+using Context = ContextData *;
 
 } // namespace surge::renderer::vk
 

@@ -1,7 +1,7 @@
-#include "sc_vulkan_debug.hpp"
+#include "sc_vulkan/sc_vulkan_debug.hpp"
 
 #include "sc_logging.hpp"
-#include "sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -85,8 +85,7 @@ auto surge::renderer::vk::dbg_msg_create_info() -> VkDebugUtilsMessengerCreateIn
   return create_info;
 }
 
-auto surge::renderer::vk::create_dbg_msg(VkInstance instance)
-    -> tl::expected<VkDebugUtilsMessengerEXT, error> {
+auto surge::renderer::vk::create_dbg_msg(VkInstance instance) -> Result<VkDebugUtilsMessengerEXT> {
   log_info("Creating debug messenger");
 
   auto func{reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
@@ -94,7 +93,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance)
 
   if (func == nullptr) {
     log_error("Unable to find extension function vkCreateDebugUtilsMessengerEXT");
-    return tl::unexpected{error::vk_dbg_msg_ext_func_ptr};
+    return Err{Error::vk_dbg_msg_ext_func_ptr};
   }
 
   auto create_info{dbg_msg_create_info()};
@@ -104,7 +103,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance)
 
   if (result != VK_SUCCESS) {
     log_error("Unable create debug messenger: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_dbg_msg_create};
+    return Err{Error::vk_dbg_msg_create};
   } else {
     return dbg_msg;
   }
@@ -112,7 +111,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance)
 
 auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
                                          VkDebugUtilsMessengerCreateInfoEXT create_info)
-    -> tl::expected<VkDebugUtilsMessengerEXT, error> {
+    -> Result<VkDebugUtilsMessengerEXT> {
   log_info("Creating debug messenger");
 
   auto func{reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
@@ -120,7 +119,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
 
   if (func == nullptr) {
     log_error("Unable to find extension function vkCreateDebugUtilsMessengerEXT");
-    return tl::unexpected{error::vk_dbg_msg_ext_func_ptr};
+    return Err{Error::vk_dbg_msg_ext_func_ptr};
   }
 
   VkDebugUtilsMessengerEXT dbg_msg{};
@@ -128,15 +127,15 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
 
   if (result != VK_SUCCESS) {
     log_error("Unable create debug messenger: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_dbg_msg_create};
+    return Err{Error::vk_dbg_msg_create};
   } else {
     log_info("Debug messenger created");
     return dbg_msg;
   }
 }
 
-auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg)
-    -> tl::expected<void, error> {
+auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance,
+                                          VkDebugUtilsMessengerEXT dbg_msg) -> Result<void> {
   log_info("Destroying debug messenger");
 
   auto func{reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
@@ -144,7 +143,7 @@ auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMesse
 
   if (func == nullptr) {
     log_error("Unable to find extension function vkDestroyDebugUtilsMessengerEXT");
-    return tl::unexpected{error::vk_dbg_msg_ext_func_ptr};
+    return Err{Error::vk_dbg_msg_ext_func_ptr};
   }
 
   func(instance, dbg_msg, get_alloc_callbacks());

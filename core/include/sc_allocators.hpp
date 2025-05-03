@@ -15,6 +15,9 @@ void init();
 auto malloc(usize size) -> void *;
 void free(void *p);
 
+auto aligned_alloc(usize size, usize alignment) -> void *;
+auto aligned_realloc(void *p, usize newsize, usize alignment) -> void *;
+
 template <typename T> class STLAllocator {
 public:
   using value_type = T;

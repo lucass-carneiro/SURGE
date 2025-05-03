@@ -37,6 +37,40 @@ void mimalloc::free(void *p) {
   mi_free(p);
 }
 
+auto surge::allocators::mimalloc::aligned_alloc(usize size, usize alignment) -> void * {
+  auto p{mi_aligned_alloc(alignment, size)};
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: alloc\n"
+            "allocator: \"mimalloc::mi_aligned_alloc\"\n"
+            "size: {}\n"
+            "alignment: {}\n"
+            "address: {}\n"
+            "failed: {}",
+            size, alignment, p, p ? "false" : "true");
+#endif
+  return p;
+}
+
+auto surge::allocators::mimalloc::aligned_realloc(void *p, usize newsize,
+                                                  usize alignment) -> void * {
+  auto q{mi_realloc_aligned(p, newsize, alignment)};
+#ifdef SURGE_DEBUG_MEMORY
+  log_debug("Memory Event\n"
+            "---\n"
+            "type: realloc\n"
+            "allocator: \"mimalloc::mi_realloc_aligned\"\n"
+            "new size: {}\n"
+            "alignent: {}\n",
+            "old address: {}\n"
+            "new address: {}\n"
+            "failed: {}",
+            newsize, alignment, p, q, q ? "false" : "true");
+#endif
+  return q;
+}
+
 void mimalloc::init() {
   // see https://microsoft.github.io/mimalloc/group__options.html
 #ifdef SURGE_DEBUG_MEMORY

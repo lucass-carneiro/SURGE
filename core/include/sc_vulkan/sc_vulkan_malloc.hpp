@@ -8,14 +8,12 @@
 #include <vk_mem_alloc.h>
 // clang-format on
 
-#include <tl/expected.hpp>
-
 namespace surge::renderer::vk {
 
 auto get_alloc_callbacks() -> const VkAllocationCallbacks *;
 
 auto create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
-                             VkDevice logi_dev) -> tl::expected<VmaAllocator, error>;
+                             VkDevice logi_dev) -> Result<VmaAllocator>;
 
 } // namespace surge::renderer::vk
 

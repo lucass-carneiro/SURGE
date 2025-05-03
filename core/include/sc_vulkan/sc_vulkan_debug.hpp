@@ -8,20 +8,17 @@
 #include <vulkan/vulkan.h>
 // clang-format on
 
-#include <tl/expected.hpp>
-
 namespace surge::renderer::vk {
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
 auto dbg_msg_create_info() -> VkDebugUtilsMessengerCreateInfoEXT;
 
-auto create_dbg_msg(VkInstance instance) -> tl::expected<VkDebugUtilsMessengerEXT, error>;
+auto create_dbg_msg(VkInstance instance) -> Result<VkDebugUtilsMessengerEXT>;
 
 auto create_dbg_msg(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT create_info)
-    -> tl::expected<VkDebugUtilsMessengerEXT, error>;
+    -> Result<VkDebugUtilsMessengerEXT>;
 
-auto destroy_dbg_msg(VkInstance instance,
-                     VkDebugUtilsMessengerEXT dbg_msg) -> tl::expected<void, error>;
+auto destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg) -> Result<void>;
 #endif
 
 } // namespace surge::renderer::vk

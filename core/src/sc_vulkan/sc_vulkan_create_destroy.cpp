@@ -2,46 +2,45 @@
 #include "sc_logging.hpp"
 #include "sc_options.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan_debug.hpp"
-#include "sc_vulkan_images.hpp"
-#include "sc_vulkan_init.hpp"
-#include "sc_vulkan_malloc.hpp"
-#include "sc_vulkan_types.hpp"
+#include "sc_vulkan/sc_vulkan_debug.hpp"
+#include "sc_vulkan/sc_vulkan_images.hpp"
+#include "sc_vulkan/sc_vulkan_init.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_types.hpp"
 
 namespace surge::renderer::vk {
 
-auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
-                const config::window_resolution &w_res,
-                const config::window_attrs &) -> tl::expected<context, error> {
+auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
+                const config::WindowResolution &w_res) -> Result<Context> {
 
   log_info("Initializing Vulkan");
 
   // Alloc context
-  auto ctx = static_cast<context>(allocators::mimalloc::malloc(sizeof(context_t)));
+  auto ctx = static_cast<Context>(allocators::mimalloc::malloc(sizeof(Context)));
   if (!ctx) {
     log_error("Unable to allocate memory for Vulkan context");
-    return tl::unexpected{error::vk_ctx_alloc};
+    return Err{Error::vk_ctx_alloc};
   }
 
-  new (ctx)(context_t)();
+  new (ctx)(Context)();
 
   // API version
   const auto api_version{get_api_version()};
   if (!api_version) {
-    return tl::unexpected{api_version.error()};
+    return Err{api_version.error()};
   }
 
   // Extensions
   const auto instance_extensions{get_required_extensions()};
   if (!instance_extensions) {
-    return tl::unexpected{instance_extensions.error()};
+    return Err{instance_extensions.error()};
   }
 
   // Validation layers
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
   const auto validation_layers{get_required_validation_layers()};
   if (!validation_layers) {
-    return tl::unexpected{validation_layers.error()};
+    return Err{validation_layers.error()};
   }
 
   auto dbg_msg_ci{dbg_msg_create_info()};
@@ -51,14 +50,14 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
   const auto instance{build_instance(*instance_extensions, *validation_layers, dbg_msg_ci)};
   if (!instance) {
-    return tl::unexpected{instance.error()};
+    return Err{instance.error()};
   } else {
     ctx->instance = *instance;
   }
 #else
   const auto instance{build_instance(*instance_extensions)};
   if (!instance) {
-    return tl::unexpected{instance.error()};
+    return Err{instance.error()};
   } else {
     ctx->instance = *instance;
   }
@@ -68,7 +67,7 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
   const auto dbg_msg{create_dbg_msg(*instance, dbg_msg_ci)};
   if (!dbg_msg) {
-    return tl::unexpected{dbg_msg.error()};
+    return Err{dbg_msg.error()};
   } else {
     ctx->dbg_msg = *dbg_msg;
   }
@@ -77,7 +76,7 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
   // Physical device selection
   const auto phys_dev{select_physical_device(*instance)};
   if (!phys_dev) {
-    return tl::unexpected{phys_dev.error()};
+    return Err{phys_dev.error()};
   } else {
     ctx->phys_dev = *phys_dev;
   }
@@ -85,7 +84,7 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
   // Logical device creation
   const auto device{create_logical_device(*phys_dev)};
   if (!device) {
-    return tl::unexpected{device.error()};
+    return Err{device.error()};
   } else {
     ctx->device = *device;
   }
@@ -93,14 +92,14 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
   // Window surface
   const auto surface{create_window_surface(w, *instance)};
   if (!surface) {
-    return tl::unexpected{surface.error()};
+    return Err{surface.error()};
   } else {
     ctx->surface = *surface;
   }
 
   const auto q_handles{get_queue_handles(*phys_dev, *device, *surface)};
   if (!q_handles) {
-    return tl::unexpected{q_handles.error()};
+    return Err{q_handles.error()};
   } else {
     ctx->q_handles = *q_handles;
   }
@@ -109,28 +108,28 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
                                         static_cast<u32>(w_res.width),
                                         static_cast<u32>(w_res.height))};
   if (!swpc_data) {
-    return tl::unexpected{q_handles.error()};
+    return Err{q_handles.error()};
   } else {
     ctx->swpc_data = *swpc_data;
   }
 
   const auto frm_data{create_frame_data(*device, q_handles->graphics_idx)};
   if (!frm_data) {
-    return tl::unexpected{q_handles.error()};
+    return Err{q_handles.error()};
   } else {
     ctx->frm_data = *frm_data;
   }
 
   const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
   if (!allocator) {
-    return tl::unexpected{q_handles.error()};
+    return Err{q_handles.error()};
   } else {
     ctx->allocator = *allocator;
   }
 
   const auto draw_image{create_draw_img(w_res, *device, *allocator)};
   if (!draw_image) {
-    return tl::unexpected{q_handles.error()};
+    return Err{q_handles.error()};
   } else {
     ctx->draw_image = *draw_image;
   }
@@ -141,7 +140,7 @@ auto initialize(window::window_t w, const config::renderer_attrs &r_attrs,
   return ctx;
 }
 
-void terminate(context ctx) {
+void terminate(Context ctx) {
   log_info("Destroying Vulkan context handle {}", static_cast<void *>(ctx));
 
   log_info("Terminating Vulkan");
@@ -181,7 +180,7 @@ void terminate(context ctx) {
   vkDestroyInstance(ctx->instance, alloc_callbacks);
 
   // Free context
-  ctx->~context_t();
+  ctx->~ContextData();
   allocators::mimalloc::free(ctx);
 
   log_info("Vulkan context {} terminated", static_cast<void *>(ctx));

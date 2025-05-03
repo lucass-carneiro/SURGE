@@ -6,6 +6,7 @@
 #include "sc_options.hpp"
 #include "sc_tasks.hpp"
 #include "sc_timers.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_window.hpp"
 
 #ifdef SURGE_ENABLE_TRACY
@@ -22,7 +23,7 @@ int main() {
 #ifdef SURGE_ENABLE_TRACY
   ZoneScopedN("surge::main");
 #endif
-
+  
   try {
     /********
      * Logo *
@@ -60,6 +61,11 @@ int main() {
     /***********************
      * Init render backend *
      ***********************/
+    auto vk_ctx{renderer::vk::initialize(*engine_window, r_attrs, w_res)};
+    if (!vk_ctx) {
+      window::terminate(*engine_window);
+      return EXIT_FAILURE;
+    }
 
     /*********************
      * Load First module *
@@ -158,6 +164,25 @@ int main() {
       }
 #endif
 
+      // Acquire swapchain image
+      const auto img_result{renderer::vk::request_swpc_img(*vk_ctx)};
+      if (!img_result) {
+        log_error("Vulkan error while acquiring swapchain images");
+        break;
+      }
+
+      // Begin command recording
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("Cmd Begin");
+#endif
+        renderer::vk::cmd_begin(*vk_ctx);
+      }
+
+      // Clear screen
+      renderer::vk::clear_swpc(*vk_ctx, w_ccl);
+
       // Call module update
       {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
@@ -177,6 +202,37 @@ int main() {
         ZoneScopedN("Draw");
 #endif
         mod_api->draw(module_context);
+      }
+
+      // End command recording
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("Cmd End");
+#endif
+        renderer::vk::cmd_end(*vk_ctx);
+      }
+
+      // Submit command buffer
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("Cmd Submit");
+#endif
+        renderer::vk::cmd_submit(*vk_ctx);
+      }
+
+      // Present
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("SWPC Present");
+#endif
+        const auto present_result{renderer::vk::present_swpc(*vk_ctx, r_attrs, w_res)};
+        if (present_result.has_value()) {
+          log_error("Vulkan error while presenting swapchain images");
+          break;
+        }
       }
 
       // Refresh HR key state
@@ -210,6 +266,7 @@ int main() {
     /********************************
      * Finalize window and renderer *
      ********************************/
+    renderer::vk::terminate(*vk_ctx);
     window::terminate(*engine_window);
 
   } catch (const std::exception &e) {

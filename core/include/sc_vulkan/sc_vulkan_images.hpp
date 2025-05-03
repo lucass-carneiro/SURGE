@@ -9,8 +9,6 @@
 #include <vk_mem_alloc.h>
 // clang-format on
 
-#include <tl/expected.hpp>
-
 namespace surge::renderer::vk {
 
 auto imageview_create_info(VkFormat format, VkImage image,
@@ -25,8 +23,8 @@ void image_blit(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExte
                 VkExtent2D dst_size);
 auto image_subresource_range(VkImageAspectFlags aspect_mask) -> VkImageSubresourceRange;
 
-auto create_draw_img(const config::window_resolution &w_res, VkDevice logi_dev,
-                     VmaAllocator allocator) -> tl::expected<allocated_image, error>;
+auto create_draw_img(const config::WindowResolution &w_res, VkDevice logi_dev,
+                     VmaAllocator allocator) -> Result<AllocatedImage>;
 
 } // namespace surge::renderer::vk
 

@@ -1,9 +1,9 @@
 #include "sc_config.hpp"
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
-#include "sc_vulkan_init.hpp"
-#include "sc_vulkan_malloc.hpp"
-#include "sc_vulkan_types.hpp"
+#include "sc_vulkan/sc_vulkan_init.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_types.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -12,7 +12,7 @@
 #  include <tracy/Tracy.hpp>
 #endif
 
-auto surge::renderer::vk::request_swpc_img(context ctx) -> tl::expected<void, error> {
+auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
 
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
@@ -29,14 +29,14 @@ auto surge::renderer::vk::request_swpc_img(context ctx) -> tl::expected<void, er
 
   if (result != VK_SUCCESS) {
     log_error("Unable to wait render fence: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_surface_init};
+    return Err{Error::vk_surface_init};
   }
 
   result = vkResetFences(dev, 1, &render_fence);
 
   if (result != VK_SUCCESS) {
     log_error("Unable to reset render fence: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_surface_init};
+    return Err{Error::vk_surface_init};
   }
 
   // Request new image from the swapchain
@@ -45,17 +45,16 @@ auto surge::renderer::vk::request_swpc_img(context ctx) -> tl::expected<void, er
 
   if (result != VK_SUCCESS) {
     log_error("Unable to acquire swapchain image: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_get_swpc_img};
+    return Err{Error::vk_get_swpc_img};
   }
 
-  ctx->swpc_requested_img = swpc_image{ctx->swpc_data.imgs[swpc_img_idx], swpc_img_idx};
+  ctx->swpc_requested_img = SwapchainImage{ctx->swpc_data.imgs[swpc_img_idx], swpc_img_idx};
 
   return {};
 }
 
-auto surge::renderer::vk::present_swpc(context ctx, const config::renderer_attrs &r_attrs,
-                                       const config::window_resolution &w_res)
-    -> std::optional<error> {
+auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttributes &r_attrs,
+                                       const config::WindowResolution &w_res) -> Result<void> {
   // Prepare present. This will put the image we just rendered to into the visible window. we want
   // to wait on the render_semaphore for that, as its necessary that drawing commands have finished
   // before the image is displayed to the user
@@ -95,13 +94,13 @@ auto surge::renderer::vk::present_swpc(context ctx, const config::renderer_attrs
                                           static_cast<u32>(w_res.height))};
     if (!swpc_data) {
       log_error("Unable to recreate swapchain");
-      return error::vk_present;
+      return Err{Error::vk_present};
     } else {
       ctx->swpc_data = *swpc_data;
     }
   } else if (result != VK_SUCCESS) {
     log_error("Unable to present rendering: {}", string_VkResult(result));
-    return error::vk_present;
+    return Err{Error::vk_present};
   }
 
   // increase the number of frames drawn

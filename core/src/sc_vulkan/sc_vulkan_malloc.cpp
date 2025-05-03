@@ -1,6 +1,6 @@
 #define VMA_IMPLEMENTATION
 
-#include "sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include "sc_allocators.hpp"
 #include "sc_logging.hpp"
@@ -67,8 +67,7 @@ auto surge::renderer::vk::get_alloc_callbacks() -> const VkAllocationCallbacks *
 }
 
 auto surge::renderer::vk::create_memory_allocator(VkInstance instance, VkPhysicalDevice phys_dev,
-                                                  VkDevice logi_dev)
-    -> tl::expected<VmaAllocator, error> {
+                                                  VkDevice logi_dev) -> Result<VmaAllocator> {
   log_info("Creating memory allocator");
 
   VmaAllocatorCreateInfo alloc_info{};
@@ -82,7 +81,7 @@ auto surge::renderer::vk::create_memory_allocator(VkInstance instance, VkPhysica
 
   if (result != VK_SUCCESS) {
     log_error("Unable create memory allocator: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_allocator_creation};
+    return Err{Error::vk_allocator_creation};
   }
 
   log_info("Memory allocator created");

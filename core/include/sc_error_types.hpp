@@ -70,15 +70,6 @@ enum Error : int {
   glfw_resize_callback,
   glfw_vk_ext_retrive,
 
-  // OpenGL errors
-  glad_loading,
-  opengl_feature_missing,
-  sdb_instance_alloc,
-  sdb_fenc_alloc,
-  sdb_bad_capacity,
-  gc_inconsistent_creation_size,
-  gc_instance_alloc,
-
   // Vulkan errors
   vk_ctx_alloc,
   vk_api_version_query,

@@ -1,8 +1,8 @@
-#include "sc_vulkan_images.hpp"
+#include "sc_vulkan/sc_vulkan_images.hpp"
 
 #include "sc_integer_types.hpp"
 #include "sc_logging.hpp"
-#include "sc_vulkan_malloc.hpp"
+#include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -128,12 +128,11 @@ auto surge::renderer::vk::image_subresource_range(VkImageAspectFlags aspect_mask
   return sum_img;
 }
 
-auto surge::renderer::vk::create_draw_img(const config::window_resolution &w_res, VkDevice logi_dev,
-                                          VmaAllocator allocator)
-    -> tl::expected<allocated_image, error> {
+auto surge::renderer::vk::create_draw_img(const config::WindowResolution &w_res, VkDevice logi_dev,
+                                          VmaAllocator allocator) -> Result<AllocatedImage> {
   log_info("Creating draw image target");
 
-  allocated_image draw_image{};
+  AllocatedImage draw_image{};
 
   VkExtent3D draw_image_extent{static_cast<u32>(w_res.width), static_cast<u32>(w_res.height), 1};
   draw_image.image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -157,7 +156,7 @@ auto surge::renderer::vk::create_draw_img(const config::window_resolution &w_res
                              &draw_image.allocation, nullptr)};
   if (result != VK_SUCCESS) {
     log_error("Unable to create draw image: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_init_draw_img};
+    return Err{Error::vk_init_draw_img};
   }
 
   // Build a image-view for the draw image to use for rendering
@@ -168,7 +167,7 @@ auto surge::renderer::vk::create_draw_img(const config::window_resolution &w_res
 
   if (result != VK_SUCCESS) {
     log_error("Unable to create draw image view: {}", string_VkResult(result));
-    return tl::unexpected{error::vk_init_draw_img};
+    return Err{Error::vk_init_draw_img};
   }
 
   log_info("Draw image created");
