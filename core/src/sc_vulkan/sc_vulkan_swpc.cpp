@@ -13,12 +13,6 @@
 #endif
 
 auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
-
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-  ZoneScopedN("SWPC Acquire");
-#endif
-
   auto &dev{ctx->device};
   auto &swpc{ctx->swpc_data.swapchain};
   auto &render_fence{ctx->frm_data.render_fences[ctx->frm_data.frame_idx]};
@@ -107,4 +101,8 @@ auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttrib
   ctx->frm_data.advance_idx();
 
   return {};
+}
+
+void surge::renderer::vk::FrameData::advance_idx() noexcept {
+  frame_idx = frame_idx + 1 < frame_overlap ? frame_idx + 1 : 0;
 }

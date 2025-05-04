@@ -61,9 +61,7 @@ struct FrameData {
   std::array<VkSemaphore, frame_overlap> render_semaphores{};
   std::array<VkFence, frame_overlap> render_fences{};
 
-  inline void advance_idx() noexcept {
-    frame_idx = frame_idx + 1 < frame_overlap ? frame_idx + 1 : 0;
-  }
+  void advance_idx() noexcept;
 };
 
 struct AllocatedImage {

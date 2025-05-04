@@ -164,6 +164,18 @@ int main() {
       }
 #endif
 
+      // Call module update
+      {
+#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
+    && defined(SURGE_ENABLE_TRACY)
+        ZoneScopedN("Update");
+#endif
+        if (mod_api->update(module_context, update_timer.stop()) != 0) {
+          window::set_should_close(*engine_window, true);
+        }
+      }
+      update_timer.start();
+
       // Acquire swapchain image
       {
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
@@ -188,18 +200,6 @@ int main() {
 
       // Clear screen
       renderer::vk::clear_swpc(*vk_ctx, w_ccl);
-
-      // Call module update
-      {
-#if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
-    && defined(SURGE_ENABLE_TRACY)
-        ZoneScopedN("Update");
-#endif
-        if (mod_api->update(module_context, update_timer.stop()) != 0) {
-          window::set_should_close(*engine_window, true);
-        }
-      }
-      update_timer.start();
 
       // Call module draw
       {
