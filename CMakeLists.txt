@@ -51,6 +51,8 @@ find_program(
   $ENV{VULKAN_SDK}/Bin32/
 )
 
+message(STATUS "GLSL Validator: ${GLSL_VALIDATOR}")
+
 # -----------------------------------------
 # Operating system and compiler detection
 # -----------------------------------------

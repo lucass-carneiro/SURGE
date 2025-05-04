@@ -109,8 +109,8 @@ enum Error : int {
   vk_descriptor_pool_reset,
   vk_descriptor_set_alloc,
   vk_shader_module_create,
-  vk_shader_obj_ext_func_ptr,
-  vk_shader_object_create,
+  vk_pipeline_layout_create,
+  vk_compute_pipeline_create,
 
   // Module callback binding
   keyboard_event_binding,

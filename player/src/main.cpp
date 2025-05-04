@@ -70,7 +70,7 @@ int main() {
     /*********************
      * Load First module *
      *********************/
-    module::ContextData module_context_data{*engine_window};
+    module::ContextData module_context_data{*engine_window, *vk_ctx};
     module::Context module_context{&module_context_data};
 
     const auto &first_mod_name{first_mod.c_str()};

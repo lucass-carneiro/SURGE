@@ -25,16 +25,14 @@ configure_file(
 
 set(
   SURGE_CORE_HEADER_LIST
-  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/compute_pipeline.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/descriptor.hpp"
-  #"${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/shader.hpp"
-  
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_command.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_debug.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_descriptor.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_images.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_init.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_malloc.hpp"
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_pipelines.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_sync.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_types.hpp"
 
@@ -57,17 +55,15 @@ set(
 
 set(
   SURGE_CORE_SOURCE_LIST
-  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/compute_pipeline.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/descriptor.cpp"
-  #"${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/shader.cpp"
-  
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_debug.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_descriptor.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_images.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_init.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_malloc.cpp"
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_pipelines.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
 
