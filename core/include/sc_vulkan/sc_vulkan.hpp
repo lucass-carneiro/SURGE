@@ -6,8 +6,6 @@
 #include "sc_vulkan_types.hpp"
 #include "sc_window.hpp"
 
-#include <optional>
-
 namespace surge::renderer::vk {
 
 auto initialize(window::Window w, const config::RendererAttributes &r_attrs,

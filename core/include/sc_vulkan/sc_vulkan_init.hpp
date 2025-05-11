@@ -40,16 +40,21 @@ auto create_logical_device(VkPhysicalDevice phys_dev) -> Result<VkDevice>;
 
 auto create_window_surface(window::Window w, VkInstance instance) -> Result<VkSurfaceKHR>;
 
-auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev,
-                       VkSurfaceKHR surface) -> Result<QueueHandles>;
+auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface)
+    -> Result<QueueHandles>;
 
 auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
-                      const config::RendererAttributes &r_attrs, u32 width,
-                      u32 height) -> Result<SwapchainData>;
+                      const config::RendererAttributes &r_attrs, u32 width, u32 height)
+    -> Result<SwapchainData>;
 
 auto create_frame_data(VkDevice device, u32 graphics_queue_idx) -> Result<FrameData>;
 
 void destroy_frame_data(VkDevice device, FrameData &frm_data);
+
+auto create_immediate_mode_data(VkDevice device, u32 graphics_queue_idx)
+    -> Result<ImmediateModeData>;
+
+void destroy_immediate_mode_data(VkDevice device, ImmediateModeData &data);
 
 } // namespace surge::renderer::vk
 

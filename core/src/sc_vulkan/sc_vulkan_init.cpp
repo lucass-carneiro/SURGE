@@ -459,8 +459,8 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Re
   }
 }
 
-auto surge::renderer::vk::create_window_surface(window::Window w,
-                                                VkInstance instance) -> Result<VkSurfaceKHR> {
+auto surge::renderer::vk::create_window_surface(window::Window w, VkInstance instance)
+    -> Result<VkSurfaceKHR> {
   log_info("Creating window surface");
 
   VkSurfaceKHR surface{};
@@ -637,8 +637,8 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
   return swpc_data;
 }
 
-auto surge::renderer::vk::create_frame_data(VkDevice device,
-                                            u32 graphics_queue_idx) -> Result<FrameData> {
+auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_idx)
+    -> Result<FrameData> {
   log_info("Creating frame data");
 
   FrameData frm_data{};
@@ -724,4 +724,47 @@ void surge::renderer::vk::destroy_frame_data(VkDevice device, FrameData &frm_dat
   }
 
   log_info("Frame data destroyied");
+}
+
+auto surge::renderer::vk::create_immediate_mode_data(VkDevice device, u32 graphics_queue_idx)
+    -> Result<ImmediateModeData> {
+  log_info("Creating immediate mode command data");
+
+  ImmediateModeData data{};
+
+  // Cmd pool
+  auto cmd_pool_create_info{command_pool_create_info(
+      graphics_queue_idx, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)};
+  auto result{
+      vkCreateCommandPool(device, &cmd_pool_create_info, get_alloc_callbacks(), &data.cmd_pool)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to allocate immediate mode command pool: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_pool_creation};
+  }
+
+  // Cmd buffer
+  const auto cmd_buffer_info{command_buffer_alloc_info(data.cmd_pool, 1)};
+  result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &data.cmd_buff);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to allocate immediate mode command buffer: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_buffer_creation};
+  }
+
+  // Sync Structures
+  auto fence_ci{fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT)};
+  result = vkCreateFence(device, &fence_ci, get_alloc_callbacks(), &data.fence);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create immediate mode fence: {}", string_VkResult(result));
+    return Err{Error::vk_fence_creation};
+  }
+
+  return data;
+}
+
+void surge::renderer::vk::destroy_immediate_mode_data(VkDevice device, ImmediateModeData &data) {
+  vkDestroyFence(device, data.fence, get_alloc_callbacks());
+  vkDestroyCommandPool(device, data.cmd_pool, get_alloc_callbacks());
 }

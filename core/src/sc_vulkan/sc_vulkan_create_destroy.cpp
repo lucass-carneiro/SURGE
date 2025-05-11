@@ -97,6 +97,7 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->surface = *surface;
   }
 
+  // Queue handles
   const auto q_handles{get_queue_handles(*phys_dev, *device, *surface)};
   if (!q_handles) {
     return Err{q_handles.error()};
@@ -104,6 +105,7 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->q_handles = *q_handles;
   }
 
+  // Swapchain
   const auto swpc_data{create_swapchain(*phys_dev, *device, *surface, r_attrs,
                                         static_cast<u32>(w_res.width),
                                         static_cast<u32>(w_res.height))};
@@ -113,6 +115,7 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->swpc_data = *swpc_data;
   }
 
+  // Frame data
   const auto frm_data{create_frame_data(*device, q_handles->graphics_idx)};
   if (!frm_data) {
     return Err{frm_data.error()};
@@ -120,6 +123,15 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->frm_data = *frm_data;
   }
 
+  // Imediate mode data
+  // const auto immediate_data{create_immediate_mode_data(*device, q_handles->graphics_idx)};
+  // if (!immediate_data) {
+  //   return Err{immediate_data.error()};
+  // } else {
+  //   ctx->immediate_data = *immediate_data;
+  // }
+
+  // Allocators
   const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
   if (!allocator) {
     return Err{allocator.error()};
@@ -127,6 +139,7 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->allocator = *allocator;
   }
 
+  // Render target image
   const auto draw_image{create_draw_img(w_res, *device, *allocator)};
   if (!draw_image) {
     return Err{draw_image.error()};
@@ -156,6 +169,10 @@ void terminate(Context ctx) {
   log_info("Destroying memory allocator");
   vmaDestroyAllocator(ctx->allocator);
 
+  log_info("Destroying immediate mode data");
+  // destroy_immediate_mode_data(ctx->device, ctx->immediate_data);
+
+  log_info("Destroying framme data");
   destroy_frame_data(ctx->device, ctx->frm_data);
 
   log_info("Destroying image views");

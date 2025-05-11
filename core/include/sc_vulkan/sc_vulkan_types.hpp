@@ -39,15 +39,10 @@ struct SwapchainData {
   containers::mimalloc::Vector<VkImageView> imgs_views{};
 };
 
-struct FrameCmdData {
-  VkCommandPool pool{};
-  VkCommandBuffer buffer{};
-};
-
-struct FrameSyncData {
-  VkSemaphore swpc_semaphore{nullptr};
-  VkSemaphore render_semaphore{nullptr};
-  VkFence render_fence{nullptr};
+struct ImmediateModeData {
+  VkFence fence{};
+  VkCommandBuffer cmd_buff{};
+  VkCommandPool cmd_pool{};
 };
 
 struct FrameData {
@@ -92,6 +87,8 @@ struct ContextData {
   SwapchainData swpc_data{};
 
   FrameData frm_data{};
+
+  // ImmediateModeData immediate_data{};
 
   VmaAllocator allocator{};
 
