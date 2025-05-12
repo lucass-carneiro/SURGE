@@ -95,6 +95,8 @@ struct ContextData {
   AllocatedImage draw_image{};
 
   SwapchainImage swpc_requested_img{};
+
+  bool rebuild_swapchain{false};
 };
 
 using Context = ContextData *;

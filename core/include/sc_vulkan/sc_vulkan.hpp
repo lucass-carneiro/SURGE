@@ -14,7 +14,8 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
 void terminate(Context ctx);
 
 auto request_swpc_img(Context ctx) -> Result<void>;
-auto present_swpc(Context ctx, const config::RendererAttributes &r_attrs,
+auto present_swpc(Context ctx) -> Result<void>;
+auto rebuild_swpc(Context ctx, const config::RendererAttributes &r_attrs,
                   const config::WindowResolution &w_res) -> Result<void>;
 
 auto cmd_begin(Context ctx) -> Result<void>;

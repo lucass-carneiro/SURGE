@@ -44,8 +44,8 @@ auto get_queue_handles(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR
     -> Result<QueueHandles>;
 
 auto create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev, VkSurfaceKHR surface,
-                      const config::RendererAttributes &r_attrs, u32 width, u32 height)
-    -> Result<SwapchainData>;
+                      const config::RendererAttributes &r_attrs, u32 width, u32 height,
+                      VkSwapchainKHR old_swapchain = VK_NULL_HANDLE) -> Result<SwapchainData>;
 
 auto create_frame_data(VkDevice device, u32 graphics_queue_idx) -> Result<FrameData>;
 

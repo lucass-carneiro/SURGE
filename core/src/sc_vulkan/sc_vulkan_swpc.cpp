@@ -37,7 +37,15 @@ auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
   u32 swpc_img_idx{0};
   result = vkAcquireNextImageKHR(dev, swpc, 1000000000, swpc_semaphore, nullptr, &swpc_img_idx);
 
-  if (result != VK_SUCCESS) {
+  const auto success{result == VK_SUCCESS || result == VK_TIMEOUT || result == VK_NOT_READY};
+
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    ctx->rebuild_swapchain = true;
+    return {};
+  } else if (result == VK_SUBOPTIMAL_KHR) {
+    log_warn("Acquired a suboptimal image from the swapchain");
+    ctx->rebuild_swapchain = true;
+  } else if (!success) {
     log_error("Unable to acquire swapchain image: {}", string_VkResult(result));
     return Err{Error::vk_get_swpc_img};
   }
@@ -47,8 +55,7 @@ auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
   return {};
 }
 
-auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttributes &r_attrs,
-                                       const config::WindowResolution &w_res) -> Result<void> {
+auto surge::renderer::vk::present_swpc(Context ctx) -> Result<void> {
   // Prepare present. This will put the image we just rendered to into the visible window. we want
   // to wait on the render_semaphore for that, as its necessary that drawing commands have finished
   // before the image is displayed to the user
@@ -71,27 +78,12 @@ auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttrib
 
   const auto result{vkQueuePresentKHR(graphics_queue, &present_info)};
 
-  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-    log_info("Swapchain out of date. Recreating");
-    vkDeviceWaitIdle(ctx->device);
-
-    const auto alloc_callbacks{get_alloc_callbacks()};
-
-    for (const auto &img_view : ctx->swpc_data.imgs_views) {
-      vkDestroyImageView(ctx->device, img_view, alloc_callbacks);
-    }
-
-    vkDestroySwapchainKHR(ctx->device, ctx->swpc_data.swapchain, alloc_callbacks);
-
-    const auto swpc_data{create_swapchain(ctx->phys_dev, ctx->device, ctx->surface, r_attrs,
-                                          static_cast<u32>(w_res.width),
-                                          static_cast<u32>(w_res.height))};
-    if (!swpc_data) {
-      log_error("Unable to recreate swapchain");
-      return Err{Error::vk_present};
-    } else {
-      ctx->swpc_data = *swpc_data;
-    }
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    ctx->rebuild_swapchain = true;
+    return {};
+  } else if (result == VK_SUBOPTIMAL_KHR) {
+    log_warn("Presented a suboptimal image", ctx->frm_data.frame_idx);
+    ctx->rebuild_swapchain = true;
   } else if (result != VK_SUCCESS) {
     log_error("Unable to present rendering: {}", string_VkResult(result));
     return Err{Error::vk_present};
@@ -99,6 +91,35 @@ auto surge::renderer::vk::present_swpc(Context ctx, const config::RendererAttrib
 
   // increase the number of frames drawn
   ctx->frm_data.advance_idx();
+
+  return {};
+}
+
+auto surge::renderer::vk::rebuild_swpc(Context ctx, const config::RendererAttributes &r_attrs,
+                                       const config::WindowResolution &w_res) -> Result<void> {
+  if (ctx->rebuild_swapchain) {
+    log_info("Recreating swapchain");
+    vkDeviceWaitIdle(ctx->device);
+
+    const auto new_swpc_data{create_swapchain(
+        ctx->phys_dev, ctx->device, ctx->surface, r_attrs, static_cast<u32>(w_res.width),
+        static_cast<u32>(w_res.height), ctx->swpc_data.swapchain)};
+
+    if (!new_swpc_data) {
+      log_error("Unable to recreate swapchain");
+      return Err{Error::vk_present};
+    } else {
+
+      for (const auto &img_view : ctx->swpc_data.imgs_views) {
+        vkDestroyImageView(ctx->device, img_view, get_alloc_callbacks());
+      }
+
+      vkDestroySwapchainKHR(ctx->device, ctx->swpc_data.swapchain, get_alloc_callbacks());
+
+      ctx->rebuild_swapchain = false;
+      ctx->swpc_data = *new_swpc_data;
+    }
+  }
 
   return {};
 }

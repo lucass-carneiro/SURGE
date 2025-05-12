@@ -126,6 +126,9 @@ int main() {
       // Event handling
       window::poll_events();
 
+      // Rebuild swapchain if necessary
+      renderer::vk::rebuild_swpc(*vk_ctx, r_attrs, w_res);
+
       // Handle hot reloading
 #ifdef SURGE_ENABLE_HR
       {
@@ -234,7 +237,7 @@ int main() {
     && defined(SURGE_ENABLE_TRACY)
         ZoneScopedN("SWPC Present");
 #endif
-        const auto present_result{renderer::vk::present_swpc(*vk_ctx, r_attrs, w_res)};
+        const auto present_result{renderer::vk::present_swpc(*vk_ctx)};
         if (!present_result) {
           log_error("Vulkan error while presenting swapchain images");
           break;

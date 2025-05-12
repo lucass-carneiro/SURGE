@@ -515,7 +515,8 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
 auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice log_dev,
                                            VkSurfaceKHR surface,
                                            const config::RendererAttributes &r_attrs, u32 width,
-                                           u32 height) -> Result<SwapchainData> {
+                                           u32 height, VkSwapchainKHR old_swapchain)
+    -> Result<SwapchainData> {
 
   log_info("Creating swapchain");
 
@@ -579,7 +580,7 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
   swpc_ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   swpc_ci.presentMode = present_mode;
   swpc_ci.clipped = VK_TRUE;
-  swpc_ci.oldSwapchain = VK_NULL_HANDLE;
+  swpc_ci.oldSwapchain = old_swapchain;
 
   result = vkCreateSwapchainKHR(log_dev, &swpc_ci, get_alloc_callbacks(), &swpc_data.swapchain);
   if (result != VK_SUCCESS) {
