@@ -45,6 +45,8 @@ struct ImmediateModeData {
   VkCommandPool cmd_pool{};
 };
 
+using immediate_command = void (*)(VkCommandBuffer cmd_buff);
+
 struct FrameData {
   static constexpr usize frame_overlap{2};
   usize frame_idx{0};
@@ -88,7 +90,7 @@ struct ContextData {
 
   FrameData frm_data{};
 
-  // ImmediateModeData immediate_data{};
+  ImmediateModeData immediate_data{};
 
   VmaAllocator allocator{};
 

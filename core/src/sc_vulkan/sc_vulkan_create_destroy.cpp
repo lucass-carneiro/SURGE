@@ -124,12 +124,12 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
   }
 
   // Imediate mode data
-  // const auto immediate_data{create_immediate_mode_data(*device, q_handles->graphics_idx)};
-  // if (!immediate_data) {
-  //   return Err{immediate_data.error()};
-  // } else {
-  //   ctx->immediate_data = *immediate_data;
-  // }
+  const auto immediate_data{create_immediate_mode_data(*device, q_handles->graphics_idx)};
+  if (!immediate_data) {
+    return Err{immediate_data.error()};
+  } else {
+    ctx->immediate_data = *immediate_data;
+  }
 
   // Allocators
   const auto allocator{create_memory_allocator(*instance, *phys_dev, *device)};
@@ -170,7 +170,7 @@ void terminate(Context ctx) {
   vmaDestroyAllocator(ctx->allocator);
 
   log_info("Destroying immediate mode data");
-  // destroy_immediate_mode_data(ctx->device, ctx->immediate_data);
+  destroy_immediate_mode_data(ctx->device, ctx->immediate_data);
 
   log_info("Destroying framme data");
   destroy_frame_data(ctx->device, ctx->frm_data);

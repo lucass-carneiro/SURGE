@@ -8,8 +8,9 @@
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::command_pool_create_info(
-    u32 queue_family_idx, VkCommandPoolCreateFlags flags) -> VkCommandPoolCreateInfo {
+auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
+                                                   VkCommandPoolCreateFlags flags)
+    -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                              .pNext = nullptr,
                              .flags = flags,
@@ -17,8 +18,8 @@ auto surge::renderer::vk::command_pool_create_info(
   return ci;
 }
 
-auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool,
-                                                    u32 count) -> VkCommandBufferAllocateInfo {
+auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 count)
+    -> VkCommandBufferAllocateInfo {
   VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
                                  .pNext = nullptr,
                                  .commandPool = pool,
@@ -153,6 +154,63 @@ auto surge::renderer::vk::cmd_submit(Context ctx) -> Result<void> {
   if (result != VK_SUCCESS) {
     log_error("Unable to sumbit command buffer to graphics queue: {}", string_VkResult(result));
     return Err{Error::vk_cmd_buff_submit};
+  }
+
+  return {};
+}
+
+auto surge::renderer::vk::immediate_submit(Context ctx, immediate_command command) -> Result<void> {
+  auto result{vkResetFences(ctx->device, 1, &(ctx->immediate_data.fence))};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to reset immediate mode fence: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_fence_reset};
+  }
+
+  result = vkResetCommandBuffer(ctx->immediate_data.cmd_buff, 0);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to reset immediate mode command buffer: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_cmd_buff_reset};
+  }
+
+  auto cmd{ctx->immediate_data.cmd_buff};
+  auto cmd_buff_beg_info{command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)};
+
+  result = vkBeginCommandBuffer(cmd, &cmd_buff_beg_info);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to begin immediate mode command reccording: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_cmd_buff_begin};
+  }
+
+  command(cmd);
+
+  result = vkEndCommandBuffer(cmd);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to end immediate mode command reccording: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_cmd_buff_end};
+  }
+
+  auto buffer_submit_info{command_buffer_submit_info(cmd)};
+  auto sub_info{submit_info(&buffer_submit_info, nullptr, nullptr)};
+
+  // submit command buffer to the queue and execute it.
+  // The fence will now block until the graphic commands finish execution
+  // TODO: This should probably use a different queue
+  result = vkQueueSubmit2(ctx->q_handles.graphics, 1, &sub_info, ctx->immediate_data.fence);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to submit immediate mode commands: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_cmd_buff_submit};
+  }
+
+  result = vkWaitForFences(ctx->device, 1, &(ctx->immediate_data.fence), true, 10000000000);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to synchronize immediate mode commands: {}", string_VkResult(result));
+    return Err{Error::vk_cmd_immediate_cmd_buff_sync};
   }
 
   return {};

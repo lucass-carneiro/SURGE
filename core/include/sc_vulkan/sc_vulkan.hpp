@@ -22,6 +22,8 @@ auto cmd_begin(Context ctx) -> Result<void>;
 auto cmd_end(Context ctx) -> Result<void>;
 auto cmd_submit(Context ctx) -> Result<void>;
 
+auto immediate_submit(Context ctx, immediate_command command) -> Result<void>;
+
 void clear_swpc(Context ctx, const config::ClearColor &w_ccl);
 
 } // namespace surge::renderer::vk
