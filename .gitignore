@@ -23,4 +23,4 @@ modules/*
 !modules/sprite_demo
 !modules/text_demo
 
-core/shaders/vk/*spv
+*.spv

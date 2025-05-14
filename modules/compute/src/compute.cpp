@@ -12,6 +12,12 @@
 // clang-format on
 
 #include <array>
+#include <random>
+
+struct ShaderColors {
+  glm::vec4 color_top{};
+  glm::vec4 color_bottom{};
+};
 
 namespace globals {
 
@@ -23,7 +29,22 @@ static VkDescriptorSet draw_img_desc_set{};
 static VkPipeline compute_pipeline{};
 static VkPipelineLayout compute_pipeline_layout{};
 
+static std::random_device random_device{};
+static std::mt19937 random_gen{random_device()};
+static std::uniform_real_distribution<float> random_distrib(0.0, 1.0);
+static ShaderColors shader_colors{};
+
 } // namespace globals
+
+static void randomize_colors() {
+  globals::shader_colors.color_top = glm::vec4{globals::random_distrib(globals::random_gen),
+                                               globals::random_distrib(globals::random_gen),
+                                               globals::random_distrib(globals::random_gen), 1.0};
+
+  globals::shader_colors.color_bottom = glm::vec4{
+      globals::random_distrib(globals::random_gen), globals::random_distrib(globals::random_gen),
+      globals::random_distrib(globals::random_gen), 1.0};
+}
 
 static auto init_descriptor_data(surge::renderer::vk::Context ctx) -> surge::Result<void> {
   using namespace surge;
@@ -85,11 +106,19 @@ static auto create_compute_pipeline(surge::renderer::vk::Context ctx) -> surge::
   using namespace surge::renderer::vk;
 
   // Create compute pipeline layout
+  VkPushConstantRange push_constants{};
+  push_constants.offset = 0;
+  push_constants.size = sizeof(ShaderColors);
+  push_constants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
   VkPipelineLayoutCreateInfo pipeline_layout{};
   pipeline_layout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout.pNext = nullptr;
   pipeline_layout.pSetLayouts = &globals::draw_img_desc_layout;
   pipeline_layout.setLayoutCount = 1;
+
+  pipeline_layout.pPushConstantRanges = &push_constants;
+  pipeline_layout.pushConstantRangeCount = 1;
 
   auto result{vkCreatePipelineLayout(ctx->device, &pipeline_layout, get_alloc_callbacks(),
                                      &globals::compute_pipeline_layout)};
@@ -100,7 +129,7 @@ static auto create_compute_pipeline(surge::renderer::vk::Context ctx) -> surge::
   }
 
   // Load shader module
-  const auto compute_shader{load_shader_module(ctx, "shaders/compute.comp.spv")};
+  const auto compute_shader{load_shader_module(ctx, "shaders/gradient.comp.spv")};
   if (!compute_shader) {
     log_error("Unable to load compute shader");
     return Err{compute_shader.error()};
@@ -150,6 +179,9 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::module::Context mod_ctx) noex
     return static_cast<int>(result.error());
   }
 
+  log_info("Randomizing initial shader colors");
+  randomize_colors();
+
   return 0;
 }
 
@@ -191,6 +223,10 @@ extern "C" SURGE_MODULE_EXPORT auto draw(surge::module::Context ctx) noexcept ->
                           globals::compute_pipeline_layout, 0, 1, &globals::draw_img_desc_set, 0,
                           nullptr);
 
+  // Update push constants
+  vkCmdPushConstants(cmd_buff, globals::compute_pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                     sizeof(ShaderColors), &globals::shader_colors);
+
   // Execute the compute pipeline dispatch
   const auto dims{surge::window::get_dims(ctx->window)};
   const auto x{ceil(dims[0] / 16.0)};
@@ -204,8 +240,12 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context, double) noexc
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::Window, int, int, int,
-                                                   int) noexcept {}
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::Window w, int key, int scancode,
+                                                   int action, int mods) noexcept {
+  if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
+    randomize_colors();
+  }
+}
 
 extern "C" SURGE_MODULE_EXPORT void mouse_button_event(surge::window::Window, int, int,
                                                        int) noexcept {}

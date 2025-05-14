@@ -185,7 +185,7 @@ target_link_libraries(SurgeComputeDemoModule PRIVATE SurgeCore)
 
 set(
   SURGE_MODULE_COMPUTE_SHADER_LIST
-  "${PROJECT_SOURCE_DIR}/shaders/compute.comp"
+  "${PROJECT_SOURCE_DIR}/shaders/gradient.comp"
 )
 
 foreach(GLSL ${SURGE_MODULE_COMPUTE_SHADER_LIST})
