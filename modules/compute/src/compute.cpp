@@ -240,8 +240,8 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context, double) noexc
   return 0;
 }
 
-extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::Window w, int key, int scancode,
-                                                   int action, int mods) noexcept {
+extern "C" SURGE_MODULE_EXPORT void keyboard_event(surge::window::Window, int key, int, int action,
+                                                   int) noexcept {
   if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
     randomize_colors();
   }

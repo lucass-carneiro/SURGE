@@ -117,6 +117,7 @@ enum Error : int {
   vk_shader_module_create,
   vk_pipeline_layout_create,
   vk_compute_pipeline_create,
+  vk_graphics_pipeline_create,
 
   // Module callback binding
   keyboard_event_binding,
