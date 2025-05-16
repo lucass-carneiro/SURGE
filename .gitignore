@@ -19,8 +19,6 @@ modules/*
 !modules/CMakeLists.txt
 !modules/compute
 !modules/default
-!modules/imgui_demo
-!modules/sprite_demo
-!modules/text_demo
+!modules/triangle
 
 *.spv
