@@ -7,8 +7,8 @@
 #include <array>
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::load_shader_module(Context ctx,
-                                             const char *spirv_path) -> Result<VkShaderModule> {
+auto surge::renderer::vk::load_shader_module(Context ctx, const char *spirv_path)
+    -> Result<VkShaderModule> {
 
   log_info("Loading {} as SPIRV shader module", spirv_path);
 
@@ -48,8 +48,9 @@ void surge::renderer::vk::destroy_shader_module(Context ctx, VkShaderModule shad
   vkDestroyShaderModule(ctx->device, shader_module, get_alloc_callbacks());
 }
 
-auto surge::renderer::vk::rendering_attachment_info(
-    VkImageView view, VkClearValue *clear, VkImageLayout layout) -> VkRenderingAttachmentInfo {
+auto surge::renderer::vk::rendering_attachment_info(VkImageView view, VkClearValue *clear,
+                                                    VkImageLayout layout)
+    -> VkRenderingAttachmentInfo {
   VkRenderingAttachmentInfo rai{};
   rai.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
   rai.pNext = nullptr;
@@ -66,9 +67,10 @@ auto surge::renderer::vk::rendering_attachment_info(
   return rai;
 }
 
-auto surge::renderer::vk::rendering_info(
-    VkExtent2D extent, VkRenderingAttachmentInfo *color_attachment,
-    VkRenderingAttachmentInfo *depth_attachment) -> VkRenderingInfo {
+auto surge::renderer::vk::rendering_info(VkExtent2D extent,
+                                         VkRenderingAttachmentInfo *color_attachment,
+                                         VkRenderingAttachmentInfo *depth_attachment)
+    -> VkRenderingInfo {
   VkRenderingInfo ri{};
   ri.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
   ri.pNext = nullptr;
@@ -86,15 +88,20 @@ auto surge::renderer::vk::rendering_info(
 surge::renderer::vk::GraphicsPipelineBuilder::GraphicsPipelineBuilder() { clear(); }
 
 void surge::renderer::vk::GraphicsPipelineBuilder::clear() {
-  input_assembly_info = {.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+  input_assembly_info = VkPipelineInputAssemblyStateCreateInfo{};
+  input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 
-  rasterizer_info = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+  rasterizer_info = VkPipelineRasterizationStateCreateInfo{};
+  rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 
-  multisampling_info = {.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+  multisampling_info = VkPipelineMultisampleStateCreateInfo{};
+  multisampling_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
-  depth_info = {.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+  depth_info = VkPipelineDepthStencilStateCreateInfo{};
+  depth_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
-  render_info = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+  render_info = VkPipelineRenderingCreateInfo{};
+  render_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
   shader_stage_infos.clear();
 }
