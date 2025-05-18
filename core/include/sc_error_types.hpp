@@ -118,6 +118,7 @@ enum Error : int {
   vk_pipeline_layout_create,
   vk_compute_pipeline_create,
   vk_graphics_pipeline_create,
+  vk_buffer_allocation,
 
   // Module callback binding
   keyboard_event_binding,

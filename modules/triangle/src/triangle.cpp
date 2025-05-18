@@ -131,8 +131,8 @@ extern "C" SURGE_MODULE_EXPORT auto draw(surge::module::Context mod_ctx) noexcep
   VkViewport viewport = {};
   viewport.x = 0;
   viewport.y = 0;
-  viewport.width = draw_extent.width;
-  viewport.height = draw_extent.height;
+  viewport.width = static_cast<float>(draw_extent.width);
+  viewport.height = static_cast<float>(draw_extent.height);
   viewport.minDepth = 0.f;
   viewport.maxDepth = 1.f;
 

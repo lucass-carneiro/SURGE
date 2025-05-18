@@ -74,6 +74,12 @@ struct SwapchainImage {
   u32 index{};
 };
 
+struct Buffer {
+  VkBuffer buffer;
+  VmaAllocation allocation;
+  VmaAllocationInfo info;
+};
+
 struct ContextData {
   VkInstance instance{};
 

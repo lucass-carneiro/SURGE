@@ -55,6 +55,7 @@ set(
 
 set(
   SURGE_CORE_SOURCE_LIST
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_buffer.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_clear.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_command.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_create_destroy.cpp"
