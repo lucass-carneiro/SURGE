@@ -24,6 +24,7 @@ struct WindowAttributes {
   int monitor_index{0};
   bool windowed{true};
   bool cursor{true};
+  bool allow_resizes{false};
 };
 
 struct RendererAttributes {

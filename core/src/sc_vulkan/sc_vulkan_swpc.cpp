@@ -96,29 +96,27 @@ auto surge::renderer::vk::present_swpc(Context ctx) -> Result<void> {
 }
 
 auto surge::renderer::vk::rebuild_swpc(Context ctx, const config::RendererAttributes &r_attrs,
-                                       const config::WindowResolution &w_res) -> Result<void> {
-  if (ctx->rebuild_swapchain) {
-    log_info("Recreating swapchain");
-    vkDeviceWaitIdle(ctx->device);
+                                       const glm::vec2 &new_dims) -> Result<void> {
+  log_info("Recreating swapchain");
+  vkDeviceWaitIdle(ctx->device);
 
-    const auto new_swpc_data{create_swapchain(
-        ctx->phys_dev, ctx->device, ctx->surface, r_attrs, static_cast<u32>(w_res.width),
-        static_cast<u32>(w_res.height), ctx->swpc_data.swapchain)};
+  const auto new_swpc_data{create_swapchain(
+      ctx->phys_dev, ctx->device, ctx->surface, r_attrs, static_cast<u32>(new_dims[0]),
+      static_cast<u32>(new_dims[1]), ctx->swpc_data.swapchain)};
 
-    if (!new_swpc_data) {
-      log_error("Unable to recreate swapchain");
-      return Err{Error::vk_present};
-    } else {
+  if (!new_swpc_data) {
+    log_error("Unable to recreate swapchain");
+    return Err{Error::vk_present};
+  } else {
 
-      for (const auto &img_view : ctx->swpc_data.imgs_views) {
-        vkDestroyImageView(ctx->device, img_view, get_alloc_callbacks());
-      }
-
-      vkDestroySwapchainKHR(ctx->device, ctx->swpc_data.swapchain, get_alloc_callbacks());
-
-      ctx->rebuild_swapchain = false;
-      ctx->swpc_data = *new_swpc_data;
+    for (const auto &img_view : ctx->swpc_data.imgs_views) {
+      vkDestroyImageView(ctx->device, img_view, get_alloc_callbacks());
     }
+
+    vkDestroySwapchainKHR(ctx->device, ctx->swpc_data.swapchain, get_alloc_callbacks());
+
+    ctx->rebuild_swapchain = false;
+    ctx->swpc_data = *new_swpc_data;
   }
 
   return {};

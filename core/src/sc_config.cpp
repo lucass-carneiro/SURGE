@@ -22,8 +22,8 @@ static auto ryml_alloc(size_t len, void *, void *) -> void * {
 static void ryml_free(void *mem, size_t, void *) { surge::allocators::mimalloc::free(mem); }
 
 auto surge::config::parse_config() -> Result<ConfigData> {
-  using std::atof;
   using std::atoi;
+  using std::strtof;
 
   auto config_file{files::as_bytes("config.yaml", true)};
 
@@ -51,12 +51,15 @@ auto surge::config::parse_config() -> Result<ConfigData> {
     cd.wattrs.name = ConfigData::String(tree["window"]["name"].val().data(),
                                         tree["window"]["name"].val().size());
     cd.wattrs.monitor_index = atoi(tree["window"]["monitor_index"].val().data());
-    cd.wattrs.windowed = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
-    cd.wattrs.cursor = static_cast<bool>(atoi(tree["window"]["windowed"].val().data()));
 
-    cd.rattrs.vsync = static_cast<bool>(atoi(tree["renderer"]["VSync"].val().data()));
-    cd.rattrs.MSAA = static_cast<bool>(atoi(tree["renderer"]["MSAA"].val().data()));
-    cd.rattrs.fps_cap = static_cast<bool>(atoi(tree["renderer"]["fps_cap"].val().data()));
+    cd.wattrs.windowed = tree["window"]["windowed"].val() == "true";
+    cd.wattrs.cursor = tree["window"]["cursor"].val() == "true";
+    cd.wattrs.allow_resizes = tree["window"]["allow_resizes"].val() == "true";
+
+    cd.rattrs.vsync = tree["renderer"]["VSync"].val() == "true";
+    cd.rattrs.MSAA = tree["renderer"]["MSAA"].val() == "true";
+    cd.rattrs.fps_cap = tree["renderer"]["fps_cap"].val() == "true";
+
     cd.rattrs.fps_cap_value = atoi(tree["renderer"]["fps_cap_value"].val().data());
 
     cd.module = ConfigData::String(tree["modules"]["first_module"].val().data(),

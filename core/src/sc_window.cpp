@@ -96,7 +96,7 @@ auto surge::window::init(const config::WindowResolution &wres,
     return Err{Error::glfw_window_hint_api};
   }
 
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, w_attrs.allow_resizes ? GLFW_TRUE : GLFW_FALSE);
   if (glfwGetError(nullptr) != GLFW_NO_ERROR) {
     glfwTerminate();
     return Err{Error::glfw_window_hint_resize};

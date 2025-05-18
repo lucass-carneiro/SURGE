@@ -126,8 +126,21 @@ int main() {
       // Event handling
       window::poll_events();
 
+      // Stop rendering if minimized
+      const auto stop_rendering{glfwGetWindowAttrib(*engine_window, GLFW_VISIBLE) == GLFW_FALSE
+                                || glfwGetWindowAttrib(*engine_window, GLFW_ICONIFIED)
+                                       == GLFW_TRUE};
+      if (stop_rendering) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        continue;
+      }
+
       // Rebuild swapchain if necessary
-      renderer::vk::rebuild_swpc(*vk_ctx, r_attrs, w_res);
+      if (vk_ctx.value()->rebuild_swapchain) {
+        if (!renderer::vk::rebuild_swpc(*vk_ctx, r_attrs, window::get_dims(*engine_window))) {
+          break;
+        }
+      }
 
       // Handle hot reloading
 #ifdef SURGE_ENABLE_HR
