@@ -173,3 +173,44 @@ auto surge::renderer::vk::create_draw_img(const config::WindowResolution &w_res,
   log_info("Draw image created");
   return draw_image;
 }
+
+auto surge::renderer::vk::create_depth_image(const config::WindowResolution &w_res,
+                                             VkDevice logi_dev,
+                                             VmaAllocator allocator) -> Result<AllocatedImage> {
+  log_info("Creating depth buffer image");
+
+  AllocatedImage image{};
+
+  VkExtent3D extent{static_cast<u32>(w_res.width), static_cast<u32>(w_res.height), 1};
+  image.image_format = VK_FORMAT_D32_SFLOAT;
+  image.image_extent = extent;
+
+  VkImageUsageFlags usage_flags{};
+  usage_flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+  auto img_info{image_create_info(image.image_format, usage_flags, extent)};
+
+  VmaAllocationCreateInfo img_alloc_info{};
+  img_alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  img_alloc_info.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+  // Allocate and create the image
+  auto result{vmaCreateImage(allocator, &img_info, &img_alloc_info, &image.image, &image.allocation,
+                             nullptr)};
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image: {}", string_VkResult(result));
+    return Err{Error::vk_init_draw_img};
+  }
+
+  auto view_info{imageview_create_info(image.image_format, image.image, VK_IMAGE_ASPECT_DEPTH_BIT)};
+
+  result = vkCreateImageView(logi_dev, &view_info, get_alloc_callbacks(), &image.image_view);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create draw image view: {}", string_VkResult(result));
+    return Err{Error::vk_init_draw_img};
+  }
+
+  log_info("Depth bufffer image created");
+  return image;
+}

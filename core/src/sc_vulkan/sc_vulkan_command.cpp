@@ -8,9 +8,8 @@
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
-                                                   VkCommandPoolCreateFlags flags)
-    -> VkCommandPoolCreateInfo {
+auto surge::renderer::vk::command_pool_create_info(
+    u32 queue_family_idx, VkCommandPoolCreateFlags flags) -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                              .pNext = nullptr,
                              .flags = flags,
@@ -18,8 +17,8 @@ auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
   return ci;
 }
 
-auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 count)
-    -> VkCommandBufferAllocateInfo {
+auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool,
+                                                    u32 count) -> VkCommandBufferAllocateInfo {
   VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
                                  .pNext = nullptr,
                                  .commandPool = pool,
@@ -95,6 +94,10 @@ auto surge::renderer::vk::cmd_begin(Context ctx) -> Result<void> {
   // all so we dont care about what was the older layout
   transition_image(cmd_buff, ctx->draw_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
                    VK_IMAGE_LAYOUT_GENERAL);
+
+  // Transition depth buffer image
+  transition_image(cmd_buff, ctx->depth_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                   VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
   return {};
 }

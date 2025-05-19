@@ -16,6 +16,10 @@ auto rendering_attachment_info(VkImageView view, VkClearValue *clear,
                                VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
     -> VkRenderingAttachmentInfo;
 
+auto depth_attachment_info(VkImageView view,
+                           VkImageLayout layout
+                           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) -> VkRenderingAttachmentInfo;
+
 auto rendering_info(VkExtent2D extent, VkRenderingAttachmentInfo *color_attachment,
                     VkRenderingAttachmentInfo *depth_attachment) -> VkRenderingInfo;
 
@@ -57,6 +61,7 @@ public:
 
   void set_depth_format(VkFormat format);
 
+  void set_depth_test_enabled(bool enable_write, VkCompareOp op);
   void set_depth_test_disabled();
 };
 

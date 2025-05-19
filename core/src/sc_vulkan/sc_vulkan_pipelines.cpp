@@ -7,8 +7,8 @@
 #include <array>
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::load_shader_module(Context ctx, const char *spirv_path)
-    -> Result<VkShaderModule> {
+auto surge::renderer::vk::load_shader_module(Context ctx,
+                                             const char *spirv_path) -> Result<VkShaderModule> {
 
   log_info("Loading {} as SPIRV shader module", spirv_path);
 
@@ -48,9 +48,8 @@ void surge::renderer::vk::destroy_shader_module(Context ctx, VkShaderModule shad
   vkDestroyShaderModule(ctx->device, shader_module, get_alloc_callbacks());
 }
 
-auto surge::renderer::vk::rendering_attachment_info(VkImageView view, VkClearValue *clear,
-                                                    VkImageLayout layout)
-    -> VkRenderingAttachmentInfo {
+auto surge::renderer::vk::rendering_attachment_info(
+    VkImageView view, VkClearValue *clear, VkImageLayout layout) -> VkRenderingAttachmentInfo {
   VkRenderingAttachmentInfo rai{};
   rai.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
   rai.pNext = nullptr;
@@ -67,10 +66,24 @@ auto surge::renderer::vk::rendering_attachment_info(VkImageView view, VkClearVal
   return rai;
 }
 
-auto surge::renderer::vk::rendering_info(VkExtent2D extent,
-                                         VkRenderingAttachmentInfo *color_attachment,
-                                         VkRenderingAttachmentInfo *depth_attachment)
-    -> VkRenderingInfo {
+auto surge::renderer::vk::depth_attachment_info(VkImageView view,
+                                                VkImageLayout layout) -> VkRenderingAttachmentInfo {
+  VkRenderingAttachmentInfo dai{};
+  dai.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+  dai.pNext = nullptr;
+
+  dai.imageView = view;
+  dai.imageLayout = layout;
+  dai.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  dai.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  dai.clearValue.depthStencil.depth = 0.0f;
+
+  return dai;
+}
+
+auto surge::renderer::vk::rendering_info(
+    VkExtent2D extent, VkRenderingAttachmentInfo *color_attachment,
+    VkRenderingAttachmentInfo *depth_attachment) -> VkRenderingInfo {
   VkRenderingInfo ri{};
   ri.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
   ri.pNext = nullptr;
@@ -247,6 +260,19 @@ void surge::renderer::vk::GraphicsPipelineBuilder::set_color_attachment_format(V
 
 void surge::renderer::vk::GraphicsPipelineBuilder::set_depth_format(VkFormat format) {
   render_info.depthAttachmentFormat = format;
+}
+
+void surge::renderer::vk::GraphicsPipelineBuilder::set_depth_test_enabled(bool enable_write,
+                                                                          VkCompareOp op) {
+  depth_info.depthTestEnable = VK_TRUE;
+  depth_info.depthWriteEnable = enable_write;
+  depth_info.depthCompareOp = op;
+  depth_info.depthBoundsTestEnable = VK_FALSE;
+  depth_info.stencilTestEnable = VK_FALSE;
+  depth_info.front = {};
+  depth_info.back = {};
+  depth_info.minDepthBounds = 0.f;
+  depth_info.maxDepthBounds = 1.f;
 }
 
 void surge::renderer::vk::GraphicsPipelineBuilder::set_depth_test_disabled() {

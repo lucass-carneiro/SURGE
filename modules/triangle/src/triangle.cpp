@@ -59,11 +59,11 @@ static auto create_pipeline(surge::renderer::vk::Context vk_ctx) -> surge::Resul
   gpl_builder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
   gpl_builder.set_multisampling_none();
   gpl_builder.set_blending_none();
-  gpl_builder.set_depth_test_disabled();
+  gpl_builder.set_depth_test_enabled(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
   // connect the image format we will draw into, from draw image
   gpl_builder.set_color_attachment_format(vk_ctx->draw_image.image_format);
-  gpl_builder.set_depth_format(VK_FORMAT_UNDEFINED);
+  gpl_builder.set_depth_format(vk_ctx->depth_image.image_format);
 
   // finally build the pipeline
   const auto pipeline{gpl_builder.build(vk_ctx->device)};
@@ -117,11 +117,13 @@ extern "C" SURGE_MODULE_EXPORT auto draw(surge::module::Context mod_ctx) noexcep
   // begin a render pass  connected to our draw image
   auto color_attachment{rendering_attachment_info(mod_ctx->vk_ctx->draw_image.image_view, nullptr,
                                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)};
+  auto depth_attachment{depth_attachment_info(mod_ctx->vk_ctx->depth_image.image_view,
+                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)};
 
   VkExtent2D draw_extent{.width = mod_ctx->vk_ctx->draw_image.image_extent.width,
                          .height = mod_ctx->vk_ctx->draw_image.image_extent.height};
 
-  auto ri{rendering_info(draw_extent, &color_attachment, nullptr)};
+  auto ri{rendering_info(draw_extent, &color_attachment, &depth_attachment)};
 
   vkCmdBeginRendering(cmd_buff, &ri);
 

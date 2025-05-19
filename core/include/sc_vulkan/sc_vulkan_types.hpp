@@ -101,6 +101,7 @@ struct ContextData {
   VmaAllocator allocator{};
 
   AllocatedImage draw_image{};
+  AllocatedImage depth_image{};
 
   SwapchainImage swpc_requested_img{};
 

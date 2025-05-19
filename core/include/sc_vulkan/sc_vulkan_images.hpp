@@ -26,6 +26,9 @@ auto image_subresource_range(VkImageAspectFlags aspect_mask) -> VkImageSubresour
 auto create_draw_img(const config::WindowResolution &w_res, VkDevice logi_dev,
                      VmaAllocator allocator) -> Result<AllocatedImage>;
 
+auto create_depth_image(const config::WindowResolution &w_res, VkDevice logi_dev,
+                     VmaAllocator allocator) -> Result<AllocatedImage>;
+
 } // namespace surge::renderer::vk
 
 #endif // SURGE_CORE_RENDERER_VULKAN_IMAGES_HPP

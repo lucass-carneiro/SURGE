@@ -147,6 +147,14 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
     ctx->draw_image = *draw_image;
   }
 
+  // Depth buffer image
+  const auto depth_image{create_depth_image(w_res, *device, *allocator)};
+  if (!depth_image) {
+    return Err{depth_image.error()};
+  } else {
+    ctx->depth_image = *depth_image;
+  }
+
   // Initialization done
   log_info("Initialized Vulkan context, handle {}", static_cast<void *>(ctx));
 
@@ -161,6 +169,10 @@ void terminate(Context ctx) {
 
   log_info("Waiting for GPU idle");
   vkDeviceWaitIdle(ctx->device);
+
+  log_info("Destroying depth image");
+  vkDestroyImageView(ctx->device, ctx->depth_image.image_view, get_alloc_callbacks());
+  vmaDestroyImage(ctx->allocator, ctx->depth_image.image, ctx->depth_image.allocation);
 
   log_info("Destroying draw image");
   vkDestroyImageView(ctx->device, ctx->draw_image.image_view, get_alloc_callbacks());

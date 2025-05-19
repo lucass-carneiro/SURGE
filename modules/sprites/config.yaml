@@ -1,5 +1,5 @@
 window:
-  name: "SURGE: Demo Triangle Module"
+  name: "SURGE: Sprites Demo Module"
   monitor_index: 1
   windowed: true
   cursor: true
@@ -23,4 +23,4 @@ clear_color:
   a: 1.0
 
 modules:
-  first_module: "triangle"
+  first_module: "sprites"

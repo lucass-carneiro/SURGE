@@ -20,5 +20,6 @@ modules/*
 !modules/compute
 !modules/default
 !modules/triangle
+!modules/sprites
 
 *.spv

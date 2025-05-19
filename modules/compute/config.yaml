@@ -3,6 +3,7 @@ window:
   monitor_index: 1
   windowed: true
   cursor: true
+  allow_resizes: false
 
 resolution:
   width: 800
