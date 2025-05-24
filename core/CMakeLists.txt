@@ -36,6 +36,8 @@ set(
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_sync.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_vulkan/sc_vulkan_types.hpp"
 
+  "${PROJECT_SOURCE_DIR}/include/sc_vulkan/atoms/sprite_database.hpp"
+
   "${PROJECT_SOURCE_DIR}/include/sc_allocators.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_cli.hpp"
   "${PROJECT_SOURCE_DIR}/include/sc_config.hpp"
@@ -67,6 +69,8 @@ set(
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_pipelines.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_swpc.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_vulkan/sc_vulkan_sync.cpp"
+
+  "${PROJECT_SOURCE_DIR}/src/sc_vulkan/atoms/sprite_database.cpp"
 
   "${PROJECT_SOURCE_DIR}/src/sc_allocators.cpp"
   "${PROJECT_SOURCE_DIR}/src/sc_cli.cpp"
@@ -100,139 +104,139 @@ target_include_directories(SurgeCore PUBLIC
 # -----------------------------------------
 
 # Enables __VA_OPT__ on msvc
-if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
-    target_compile_options(SurgeCore PUBLIC /Zc:preprocessor)
-endif()
+if (SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+  target_compile_options(SurgeCore PUBLIC /Zc:preprocessor)
+endif ()
 
 # Use UTF-8 on MSVC
-if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
-    target_compile_options(SurgeCore PUBLIC /utf-8)
-endif()
+if (SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+  target_compile_options(SurgeCore PUBLIC /utf-8)
+endif ()
 
 # Disable min/max macros on msvc
-if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
-    target_compile_options(SurgeCore PUBLIC /D NOMINMAX)
-endif()
+if (SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+  target_compile_options(SurgeCore PUBLIC /D NOMINMAX)
+endif ()
 
 # This warning alerts us on the unsafeness of casting a void* to a function and calling it.
 # It is impossible to have dynamically loaded modules without these casts, and we acknowledge
 # that this is unsafe. Given that, we disable that warning here
-if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+if (SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
   target_compile_options(SurgeCore PRIVATE /wd4191)
-endif()
+endif ()
 
-if(SURGE_ENABLE_SANITIZERS)
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (SURGE_ENABLE_SANITIZERS)
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
     target_link_options(SurgeCore PUBLIC -fsanitize=address,null,unreachable,undefined)
-  else()
+  else ()
     # Experience reveals that using sanitizes in MSVC is an exercise in pain and futility
     #target_compile_options(SurgeCore PUBLIC /fsanitize=address)
-  endif()
-endif()
+  endif ()
+endif ()
 
-if(SURGE_ENABLE_OPTIMIZATIONS)
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (SURGE_ENABLE_OPTIMIZATIONS)
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -O3)
     target_link_options(SurgeCore PUBLIC -O3)
-  else()
+  else ()
     target_compile_options(SurgeCore PUBLIC /O2)
-  endif()
-endif()
+  endif ()
+endif ()
 
-if(SURGE_ENABLE_TUNING)
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (SURGE_ENABLE_TUNING)
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -march=native -mtune=native)
     target_link_options(SurgeCore PUBLIC -march=native -mtune=native)
-  endif()
-endif()
+  endif ()
+endif ()
 
-if(SURGE_ENABLE_LTO)
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (SURGE_ENABLE_LTO)
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -flto)
     target_link_options(SurgeCore PUBLIC -flto)
-  endif()
-endif()
+  endif ()
+endif ()
 
-if(SURGE_ENABLE_FAST_MATH)
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (SURGE_ENABLE_FAST_MATH)
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -ffast-math)
     target_link_options(SurgeCore PUBLIC -ffast-math)
-  else()
+  else ()
     target_compile_options(SurgeCore PUBLIC /fp:fast)
-  endif()
-endif()
+  endif ()
+endif ()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
-      target_compile_options(
-          SurgeCore
-          PUBLIC
-          -Og
-          -g3
-          -ggdb3
-          -fno-omit-frame-pointer
-          -Werror
-          -Wall
-          -Wextra
-          -Wpedantic
-          -Walloca
-          -Wcast-qual
-          -Wformat=2
-          -Wformat-security
-          -Wnull-dereference
-          -Wstack-protector
-          -Wvla
-          -Wconversion
-          -Warray-bounds
-          -Warray-bounds-pointer-arithmetic
-          -Wconditional-uninitialized
-          -Wimplicit-fallthrough
-          -Wpointer-arith
-          -Wformat-type-confusion
-          -Wfloat-equal
-          -Wassign-enum
-          -Wtautological-constant-in-range-compare
-          -Wswitch-enum
-          -Wshift-sign-overflow
-          -Wloop-analysis
-          -Wno-switch-enum
-      )
-      target_link_options(SurgeCore PUBLIC -Og -g3 -ggdb3 -rdynamic)
-  else()
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+    target_compile_options(
+      SurgeCore
+      PUBLIC
+      -Og
+      -g3
+      -ggdb3
+      -fno-omit-frame-pointer
+      -Werror
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Walloca
+      -Wcast-qual
+      -Wformat=2
+      -Wformat-security
+      -Wnull-dereference
+      -Wstack-protector
+      -Wvla
+      -Wconversion
+      -Warray-bounds
+      -Warray-bounds-pointer-arithmetic
+      -Wconditional-uninitialized
+      -Wimplicit-fallthrough
+      -Wpointer-arith
+      -Wformat-type-confusion
+      -Wfloat-equal
+      -Wassign-enum
+      -Wtautological-constant-in-range-compare
+      -Wswitch-enum
+      -Wshift-sign-overflow
+      -Wloop-analysis
+      -Wno-switch-enum
+    )
+    target_link_options(SurgeCore PUBLIC -Og -g3 -ggdb3 -rdynamic)
+  else ()
     target_compile_options(SurgeCore PRIVATE /Wall /MP /MDd)
     target_link_options(SurgeCore PRIVATE /DEBUG:FULL)
     target_compile_options(SurgeCore PRIVATE /wd4820)
     target_compile_options(SurgeCore PRIVATE /wd4866)
     target_compile_options(SurgeCore PRIVATE /wd5045)
-  endif()
+  endif ()
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(SurgeCore PUBLIC debuginfod)
-  endif()
+  endif ()
 
-endif()
+endif ()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "msvc")
     target_compile_options(SurgeCore PUBLIC /MP /MD)
-   endif()
-endif()
+  endif ()
+endif ()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")  
-  if(SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
+if (CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  if (SURGE_COMPILER_FLAG_STYLE MATCHES "gcc")
     target_compile_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer)
     target_link_options(SurgeCore PUBLIC -g3 -ggdb3 -fno-omit-frame-pointer -rdynamic)
-  else()
+  else ()
     target_compile_options(SurgeCore PUBLIC /MP /MD)
     target_link_options(SurgeCore PUBLIC /DEBUG:FULL)
-  endif()
+  endif ()
 
-  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(SurgeCore PUBLIC debuginfod)
     target_link_libraries(SurgeCore PUBLIC unwind)
-  endif()
-endif()
+  endif ()
+endif ()
 
 # -----------------------------------------
 # Link and build order dependencies
@@ -255,12 +259,32 @@ target_link_libraries(SurgeCore PUBLIC
   xxHash::xxhash
 )
 
-if(SURGE_ENABLE_TRACY)
+if (SURGE_ENABLE_TRACY)
   target_link_libraries(SurgeCore PUBLIC Tracy::TracyClient)
-endif()  
+endif ()
 
 # -----------------------------------------
 # Shader compilation
 # -----------------------------------------
 
-#add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/shaders)
+set(
+  SURGE_CORE_SHADER_LIST
+  "${PROJECT_SOURCE_DIR}/shaders/sprite_database.vert"
+  "${PROJECT_SOURCE_DIR}/shaders/sprite_database.frag"
+)
+
+foreach (GLSL ${SURGE_CORE_SHADER_LIST})
+  message(STATUS "Building shader ${GLSL}")
+  get_filename_component(FILE_NAME ${GLSL} NAME)
+  get_filename_component(FILE_DIR ${GLSL} DIRECTORY)
+  set(SPIRV "${FILE_DIR}/${FILE_NAME}.spv")
+  message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
+  add_custom_command(
+    OUTPUT ${SPIRV}
+    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+    DEPENDS ${GLSL}
+  )
+  list(APPEND CORE_SPIRV_BINARY_FILES ${SPIRV})
+endforeach (GLSL)
+
+add_custom_target(SurgeCoreShaders ALL DEPENDS ${CORE_SPIRV_BINARY_FILES})

@@ -120,6 +120,9 @@ enum Error : int {
   vk_graphics_pipeline_create,
   vk_buffer_allocation,
 
+  // Vulkan atom errors
+  vk_atom_sprite_database_init,
+
   // Module callback binding
   keyboard_event_binding,
   keyboard_event_unbinding,
