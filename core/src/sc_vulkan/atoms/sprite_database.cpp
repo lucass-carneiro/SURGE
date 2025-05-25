@@ -278,7 +278,7 @@ auto surge::renderer::vk::atom::sprite_database::sync(SpriteDatabase database, C
   }
 
   // Begin transfer commands
-  VkBufferCopy staging_buffer_copy{0};
+  VkBufferCopy staging_buffer_copy{};
   staging_buffer_copy.dstOffset = 0;
   staging_buffer_copy.srcOffset = 0;
   staging_buffer_copy.size = database->curr_num_sprites * sizeof(SpriteData);
