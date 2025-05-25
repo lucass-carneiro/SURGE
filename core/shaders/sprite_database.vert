@@ -1,10 +1,19 @@
 #version 450
+#extension GL_EXT_buffer_reference: require
+
+struct SpriteData {
+    mat4 model_matrix;
+};
+
+layout (buffer_reference, std430) readonly buffer SpriteDataBuffer {
+    SpriteData sprite_data[];
+};
 
 layout (push_constant) uniform constants {
     mat4 projection;
     mat4 view;
-    mat4 model;
-} WorldMatrices;
+    SpriteDataBuffer sprite_data_buffer;
+} PushConstants;
 
 void main() {
     // Base quad vertices
@@ -18,5 +27,8 @@ void main() {
     vec3(0.0f, 0.0f, 0.0f)  // UL
     );
 
-    gl_Position = WorldMatrices.projection * WorldMatrices.view * WorldMatrices.model * vec4(positions[gl_VertexIndex], 1.0f);
+    const SpriteData sprite_data = PushConstants.sprite_data_buffer.sprite_data[gl_InstanceIndex];
+    const mat4 model = sprite_data.model_matrix;
+
+    gl_Position = PushConstants.projection * PushConstants.view * model * vec4(positions[gl_VertexIndex], 1.0f);
 }

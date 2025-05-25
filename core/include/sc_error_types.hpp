@@ -122,6 +122,12 @@ enum Error : int {
 
   // Vulkan atom errors
   vk_atom_sprite_database_init,
+  vk_atom_sprite_database_fence_reset,
+  vk_atom_sprite_database_command_buffer_reset,
+  vk_atom_sprite_database_command_buffer_begin,
+  vk_atom_sprite_database_command_buffer_end,
+  vk_atom_sprite_database_command_buffer_submit,
+  vk_atom_sprite_database_command_buffer_sync,
 
   // Module callback binding
   keyboard_event_binding,
