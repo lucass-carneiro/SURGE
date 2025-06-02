@@ -226,6 +226,7 @@ auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool 
 
   VkPhysicalDeviceVulkan13Features features_13{};
   features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  features_13.pNext = nullptr;
 
   VkPhysicalDeviceVulkan12Features features_12{};
   features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -237,8 +238,12 @@ auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool 
 
   vkGetPhysicalDeviceFeatures2(phys_dev, &features);
 
-  const auto has_required_features{features_12.bufferDeviceAddress && features_12.descriptorIndexing
-                                   && features_13.dynamicRendering && features_13.synchronization2};
+  const auto has_required_features{
+      features_12.bufferDeviceAddress && features_12.descriptorIndexing
+      && features_12.descriptorIndexing && features_12.shaderSampledImageArrayNonUniformIndexing
+      && features_12.runtimeDescriptorArray && features_12.descriptorBindingVariableDescriptorCount
+      && features_12.descriptorBindingPartiallyBound && features_13.dynamicRendering
+      && features_13.synchronization2};
 
   const auto idxs{find_queue_families(phys_dev)};
   const auto has_all_queues{idxs.graphics_family.has_value() && idxs.transfer_family.has_value()
@@ -395,6 +400,10 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Re
   features_12.pNext = &features_13;
   features_12.bufferDeviceAddress = true;
   features_12.descriptorIndexing = true;
+  features_12.shaderSampledImageArrayNonUniformIndexing = true;
+  features_12.runtimeDescriptorArray = true;
+  features_12.descriptorBindingVariableDescriptorCount = true;
+  features_12.descriptorBindingPartiallyBound = true;
 
   // Shader Objects EXT feature
   VkPhysicalDeviceShaderObjectFeaturesEXT shader_objects_ext{};

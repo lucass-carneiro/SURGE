@@ -119,6 +119,8 @@ enum Error : int {
   vk_compute_pipeline_create,
   vk_graphics_pipeline_create,
   vk_buffer_allocation,
+  vk_image_allocation,
+  vk_sampler_creation,
 
   // Vulkan atom errors
   vk_atom_sprite_database_init,
@@ -128,6 +130,7 @@ enum Error : int {
   vk_atom_sprite_database_command_buffer_end,
   vk_atom_sprite_database_command_buffer_submit,
   vk_atom_sprite_database_command_buffer_sync,
+  vk_atom_sprite_database_full,
 
   // Module callback binding
   keyboard_event_binding,

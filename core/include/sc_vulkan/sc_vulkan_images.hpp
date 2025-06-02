@@ -11,11 +11,11 @@
 
 namespace surge::renderer::vk {
 
-auto imageview_create_info(VkFormat format, VkImage image,
-                           VkImageAspectFlags aspect_flags) -> VkImageViewCreateInfo;
+auto imageview_create_info(VkFormat format, VkImage image, VkImageAspectFlags aspect_flags)
+    -> VkImageViewCreateInfo;
 
-auto image_create_info(VkFormat format, VkImageUsageFlags usage_flags,
-                       VkExtent3D extent) -> VkImageCreateInfo;
+auto image_create_info(VkFormat format, VkImageUsageFlags usage_flags, VkExtent3D extent)
+    -> VkImageCreateInfo;
 
 void transition_image(VkCommandBuffer cmd, VkImage image, VkImageLayout curr_layout,
                       VkImageLayout new_layout);
@@ -27,7 +27,15 @@ auto create_draw_img(const config::WindowResolution &w_res, VkDevice logi_dev,
                      VmaAllocator allocator) -> Result<AllocatedImage>;
 
 auto create_depth_image(const config::WindowResolution &w_res, VkDevice logi_dev,
-                     VmaAllocator allocator) -> Result<AllocatedImage>;
+                        VmaAllocator allocator) -> Result<AllocatedImage>;
+
+auto create_image(Context ctx, VkExtent3D size, VkFormat format, VkImageUsageFlags usage,
+                  bool mipmapped = false) -> Result<AllocatedImage>;
+
+auto create_image(Context ctx, void *data, VkExtent3D size, VkFormat format,
+                  VkImageUsageFlags usage, bool mipmapped = false) -> Result<AllocatedImage>;
+
+void destroy_image(Context ctx, const AllocatedImage &img);
 
 } // namespace surge::renderer::vk
 

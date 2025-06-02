@@ -17,8 +17,8 @@ auto rendering_attachment_info(VkImageView view, VkClearValue *clear,
     -> VkRenderingAttachmentInfo;
 
 auto depth_attachment_info(VkImageView view,
-                           VkImageLayout layout
-                           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) -> VkRenderingAttachmentInfo;
+                           VkImageLayout layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+    -> VkRenderingAttachmentInfo;
 
 auto rendering_info(VkExtent2D extent, VkRenderingAttachmentInfo *color_attachment,
                     VkRenderingAttachmentInfo *depth_attachment) -> VkRenderingInfo;
@@ -56,6 +56,8 @@ public:
   void set_multisampling_none();
 
   void set_blending_none();
+  void set_blending_additive();
+  void set_blending_alpha();
 
   void set_color_attachment_format(VkFormat format);
 

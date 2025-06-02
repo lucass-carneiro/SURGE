@@ -7,8 +7,8 @@
 #include <array>
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::load_shader_module(Context ctx,
-                                             const char *spirv_path) -> Result<VkShaderModule> {
+auto surge::renderer::vk::load_shader_module(Context ctx, const char *spirv_path)
+    -> Result<VkShaderModule> {
 
   log_info("Loading {} as SPIRV shader module", spirv_path);
 
@@ -48,8 +48,9 @@ void surge::renderer::vk::destroy_shader_module(Context ctx, VkShaderModule shad
   vkDestroyShaderModule(ctx->device, shader_module, get_alloc_callbacks());
 }
 
-auto surge::renderer::vk::rendering_attachment_info(
-    VkImageView view, VkClearValue *clear, VkImageLayout layout) -> VkRenderingAttachmentInfo {
+auto surge::renderer::vk::rendering_attachment_info(VkImageView view, VkClearValue *clear,
+                                                    VkImageLayout layout)
+    -> VkRenderingAttachmentInfo {
   VkRenderingAttachmentInfo rai{};
   rai.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
   rai.pNext = nullptr;
@@ -66,8 +67,8 @@ auto surge::renderer::vk::rendering_attachment_info(
   return rai;
 }
 
-auto surge::renderer::vk::depth_attachment_info(VkImageView view,
-                                                VkImageLayout layout) -> VkRenderingAttachmentInfo {
+auto surge::renderer::vk::depth_attachment_info(VkImageView view, VkImageLayout layout)
+    -> VkRenderingAttachmentInfo {
   VkRenderingAttachmentInfo dai{};
   dai.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
   dai.pNext = nullptr;
@@ -81,9 +82,10 @@ auto surge::renderer::vk::depth_attachment_info(VkImageView view,
   return dai;
 }
 
-auto surge::renderer::vk::rendering_info(
-    VkExtent2D extent, VkRenderingAttachmentInfo *color_attachment,
-    VkRenderingAttachmentInfo *depth_attachment) -> VkRenderingInfo {
+auto surge::renderer::vk::rendering_info(VkExtent2D extent,
+                                         VkRenderingAttachmentInfo *color_attachment,
+                                         VkRenderingAttachmentInfo *depth_attachment)
+    -> VkRenderingInfo {
   VkRenderingInfo ri{};
   ri.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
   ri.pNext = nullptr;
@@ -249,6 +251,30 @@ void surge::renderer::vk::GraphicsPipelineBuilder::set_blending_none() {
                                     | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
   // No blending
   blend_attachment.blendEnable = VK_FALSE;
+}
+
+void surge::renderer::vk::GraphicsPipelineBuilder::set_blending_additive() {
+  blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                                    | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  blend_attachment.blendEnable = VK_TRUE;
+  blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+  blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+  blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+}
+
+void surge::renderer::vk::GraphicsPipelineBuilder::set_blending_alpha() {
+  blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                                    | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+  blend_attachment.blendEnable = VK_TRUE;
+  blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+  blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+  blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+  blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+  blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+  blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 }
 
 void surge::renderer::vk::GraphicsPipelineBuilder::set_color_attachment_format(VkFormat format) {

@@ -2,12 +2,14 @@
 
 #include "sc_integer_types.hpp"
 #include "sc_logging.hpp"
+#include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
 
-auto surge::renderer::vk::imageview_create_info(
-    VkFormat format, VkImage image, VkImageAspectFlags aspect_flags) -> VkImageViewCreateInfo {
+auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
+                                                VkImageAspectFlags aspect_flags)
+    -> VkImageViewCreateInfo {
   VkImageViewCreateInfo ci{};
   ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   ci.pNext = nullptr;
@@ -175,8 +177,8 @@ auto surge::renderer::vk::create_draw_img(const config::WindowResolution &w_res,
 }
 
 auto surge::renderer::vk::create_depth_image(const config::WindowResolution &w_res,
-                                             VkDevice logi_dev,
-                                             VmaAllocator allocator) -> Result<AllocatedImage> {
+                                             VkDevice logi_dev, VmaAllocator allocator)
+    -> Result<AllocatedImage> {
   log_info("Creating depth buffer image");
 
   AllocatedImage image{};
@@ -213,4 +215,101 @@ auto surge::renderer::vk::create_depth_image(const config::WindowResolution &w_r
 
   log_info("Depth bufffer image created");
   return image;
+}
+
+auto surge::renderer::vk::create_image(Context ctx, VkExtent3D size, VkFormat format,
+                                       VkImageUsageFlags usage, bool mipmapped)
+    -> Result<AllocatedImage> {
+  AllocatedImage new_image;
+  new_image.image_format = format;
+  new_image.image_extent = size;
+
+  auto img_info{image_create_info(format, usage, size)};
+  if (mipmapped) {
+    img_info.mipLevels
+        = static_cast<u32>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
+  }
+
+  VmaAllocationCreateInfo alloc_info{};
+  alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+  alloc_info.requiredFlags = VkMemoryPropertyFlags{VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+
+  // allocate and create the image
+  auto result{vmaCreateImage(ctx->allocator, &img_info, &alloc_info, &new_image.image,
+                             &new_image.allocation, nullptr)};
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to allocate memory for new image: {}", string_VkResult(result));
+    return Err{vk_image_allocation};
+  }
+
+  // If the format is a depth format, use the correct aspect flag
+  VkImageAspectFlags aspct_flag{VK_IMAGE_ASPECT_COLOR_BIT};
+  if (format == VK_FORMAT_D32_SFLOAT) {
+    aspct_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
+  }
+
+  auto view_info{imageview_create_info(format, new_image.image, aspct_flag)};
+  view_info.subresourceRange.levelCount = img_info.mipLevels;
+
+  result = vkCreateImageView(ctx->device, &view_info, get_alloc_callbacks(), &new_image.image_view);
+
+  if (result != VK_SUCCESS) {
+    log_error("Unable to create image view for new image: {}", string_VkResult(result));
+    return Err{vk_image_allocation};
+  }
+
+  return new_image;
+}
+
+auto surge::renderer::vk::create_image(Context ctx, void *data, VkExtent3D size, VkFormat format,
+                                       VkImageUsageFlags usage, bool mipmapped)
+    -> Result<AllocatedImage> {
+  using std::memcpy;
+
+  const auto data_size{size.depth * size.width * size.height * 4};
+  auto upload_buffer{
+      create_buffer(ctx, data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU)};
+
+  if (!upload_buffer) {
+    log_error("Unable to create image upload buffer");
+    return Err{upload_buffer.error()};
+  }
+
+  memcpy(upload_buffer->info.pMappedData, data, data_size);
+
+  auto new_image{create_image(
+      ctx, size, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+      mipmapped)};
+
+  immediate_submit(ctx, [&](VkCommandBuffer cmd) {
+    transition_image(cmd, new_image->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
+
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.imageSubresource.mipLevel = 0;
+    copyRegion.imageSubresource.baseArrayLayer = 0;
+    copyRegion.imageSubresource.layerCount = 1;
+    copyRegion.imageExtent = size;
+
+    vkCmdCopyBufferToImage(cmd, upload_buffer->buffer, new_image->image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    transition_image(cmd, new_image->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  });
+
+  destroy_buffer(ctx, *upload_buffer);
+
+  return new_image;
+}
+
+void surge::renderer::vk::destroy_image(Context ctx, const AllocatedImage &img) {
+  vkDestroyImageView(ctx->device, img.image_view, get_alloc_callbacks());
+  vmaDestroyImage(ctx->allocator, img.image, img.allocation);
 }

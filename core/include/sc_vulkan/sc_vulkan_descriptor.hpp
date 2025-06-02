@@ -12,7 +12,7 @@ namespace surge::renderer::vk {
 
 class DescriptorLayoutBuilder {
 private:
-  containers::mimalloc::Vector<VkDescriptorSetLayoutBinding> bindings;
+  containers::mimalloc::Vector<VkDescriptorSetLayoutBinding> bindings{};
 
 public:
   void add_binding(u32 binding, VkDescriptorType type);
@@ -24,21 +24,41 @@ public:
 void destroy_descriptor_set_layout(Context ctx, VkDescriptorSetLayout layout);
 
 struct DescriptorPoolSizeRatio {
-  VkDescriptorType type;
-  float ratio;
+  VkDescriptorType type{};
+  float ratio{};
 };
 
 class DescriptorPoolAllocator {
 private:
-  VkDescriptorPool pool;
+  VkDescriptorPool pool{VK_NULL_HANDLE};
 
 public:
-  auto init_pool(Context ctx, uint32_t max_sets,
-                 std::span<DescriptorPoolSizeRatio> pool_ratios) -> Result<void>;
+  auto init_pool(Context ctx, uint32_t max_sets, std::span<DescriptorPoolSizeRatio> pool_ratios)
+      -> Result<void>;
   auto clear_descriptors(Context ctx) -> Result<void>;
   void destroy_pool(Context ctx);
 
   auto allocate(Context ctx, VkDescriptorSetLayout layout) -> Result<VkDescriptorSet>;
+};
+
+class GrowableDescriptorAllocator {
+private:
+  auto get_pool(Context ctx) -> VkDescriptorPool;
+  auto create_pool(Context ctx, u32 num_sets, std::span<DescriptorPoolSizeRatio> pool_ratios)
+      -> VkDescriptorPool;
+
+  containers::mimalloc::Vector<DescriptorPoolSizeRatio> ratios{};
+  containers::mimalloc::Vector<VkDescriptorPool> full_pools{};
+  containers::mimalloc::Vector<VkDescriptorPool> ready_pools{};
+  u32 sets_per_pool{0};
+
+public:
+  void init(Context ctx, u32 initial_sets, std::span<DescriptorPoolSizeRatio> pool_ratios);
+  void clear_pools(Context ctx);
+  void destroy_pools(Context ctx);
+
+  auto allocate(Context ctx, VkDescriptorSetLayout layout, void *pNext = nullptr)
+      -> Result<VkDescriptorSet>;
 };
 
 } // namespace surge::renderer::vk

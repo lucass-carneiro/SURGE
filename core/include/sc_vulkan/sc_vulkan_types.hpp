@@ -6,6 +6,7 @@
 #include "sc_options.hpp"
 
 #include <array>
+#include <functional>
 #include <optional>
 
 // clang-format off
@@ -45,7 +46,7 @@ struct ImmediateModeData {
   VkCommandPool cmd_pool{};
 };
 
-using immediate_command = void (*)(VkCommandBuffer cmd_buff);
+using immediate_command = std::function<void(VkCommandBuffer)>;
 
 struct FrameData {
   static constexpr usize frame_overlap{2};
