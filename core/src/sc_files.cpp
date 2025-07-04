@@ -116,3 +116,34 @@ auto surge::files::as_bytes(const char *path, bool append_null_byte)
     return Err{Error::unknow_error};
   }
 }
+
+auto surge::files::into_buffer(const char *path, void *output_buffer, usize output_buffer_size,
+                               bool append_null_byte) -> Result<void> {
+  try {
+    log_info("Loading raw data for file {} into buffer {}. Appending null byte: {}", path,
+             output_buffer, append_null_byte ? "true" : "false");
+
+    if (!is_path_valid(path)) {
+      return Err{Error::invalid_path};
+    }
+
+    const auto base_file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
+    const auto file_size{append_null_byte ? base_file_size + 1 : base_file_size};
+
+    if (output_buffer_size < file_size) {
+      log_error("The target buffer {} is too small ({} B) to contain {} ({} B)", output_buffer,
+                output_buffer_size, path, file_size);
+      return Err{short_dest_buffer};
+    }
+
+    if (!os_open_read(path, output_buffer, file_size)) {
+      return Err{Error::read_error};
+    }
+
+    return {};
+
+  } catch (const std::exception &e) {
+    log_error("Unable to load file {}: {}", path, e.what());
+    return Err{Error::unknow_error};
+  }
+}

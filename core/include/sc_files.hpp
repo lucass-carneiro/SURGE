@@ -9,10 +9,11 @@ namespace surge::files {
 
 auto is_path_valid(const char *path) -> bool;
 
-auto as_bytes(const char *path,
-              bool append_null_byte = false) -> Result<containers::mimalloc::Vector<std::byte>>;
+auto as_bytes(const char *path, bool append_null_byte = false)
+    -> Result<containers::mimalloc::Vector<std::byte>>;
 
-// auto load_file(const char *path, bool append_null_byte) -> file;
+auto into_buffer(const char *path, void *output_buffer, usize output_buffer_size,
+                 bool append_null_byte = false) -> Result<void>;
 
 } // namespace surge::files
 

@@ -11,7 +11,7 @@
 namespace surge::renderer::vk::atom::sprite_database {
 
 // Sprite database data
-struct SpriteDatabaseT;
+struct SpriteDatabaseImpl;
 
 /**
  * Handle to a sprite database
@@ -19,43 +19,44 @@ struct SpriteDatabaseT;
  * Sprites are textured quads that have a size and a position. Sprites in the database can also be
  * animated, i.e., have textures that change with time.
  */
-using SpriteDatabase = SpriteDatabaseT *;
+using SpriteDatabase = SpriteDatabaseImpl *;
 
 /**
  * Controls the blending mode of the sprite database
  */
-enum class SpriteDatabaseBlendingMode { none, additive, alpha };
+enum class BlendingMode { none, additive, alpha };
 
 /**
  * Controls the creation of a sprite database
  */
-struct SpriteDatabaseCreateInfo {
-  Context ctx{nullptr};                                                       // Vulkan context
-  SpriteDatabaseBlendingMode blending_mode{SpriteDatabaseBlendingMode::none}; // Blending mode
-  usize max_sprites{0}; // Max. number of sprites that can be contained in the database
+struct CreateInfo {
+  BlendingMode blending_mode{BlendingMode::none}; // Blending mode
+  usize max_sprites{0};                           // Max. number of sprites in the database
 };
 
 /**
- * Specifies the sprite data to be added to the database
+ * Creates an orthographic projection for 2D rendering
+ * @param dims Screen dimensions.
+ * @return The 2D projection matrix.
  */
-struct SpriteDatabasePushInfo {
-  glm::vec2 position{0.0f};         // Sprite position
-  glm::vec2 scale{0.0f};            // Sprite size
-  float z{0.0f};                    // Sprite z position
-  glm::vec4 color_multiplier{1.0f}; // Sprite color modifier.
-};
+auto make_ortho_projection(const glm::vec2 &dims) -> glm::mat4;
 
 /**
- * Specifies the sprite data to add it to the database
+ * Creates a vire matrix for 2D rendering
+ * @param eye Position of the camera in 2D coordinates.
+ * @return The 2D view matrix.
  */
-struct SpriteDatabaseAddInfo {
-  Context ctx{nullptr};              // Vulkan context
-  const char *texture_path{nullptr}; // Path to sprite texture
-  glm::vec2 position{0.0f};          // Initial sprite position.
-  glm::vec2 scale{0.0f};             // Initial sprite size.
-  float z{0.0f};                     // Initial sprite z position.
-  glm::vec4 color_multiplier{1.0f};  // Initial sprite color modifier.
-};
+auto make_view(const glm::vec2 &eye) -> glm::mat4;
+
+/**
+ *
+ * @param position Sprite position.
+ * @param scale Sprite scale
+ * @param z Sprite depth (1.0 = near, 0.0 = far)
+ * @return The model matrix for the sprite
+ */
+auto make_model_matrix(const glm::vec2 &position, const glm::vec2 &scale, float z = 1.0f)
+    -> glm::mat4;
 
 /**
  * Creates a new sprite database
@@ -63,7 +64,7 @@ struct SpriteDatabaseAddInfo {
  * @param desc_alloc A descriptor allocator that can support at least one combined image sampler
  * @return A sprite database or an error code.
  */
-auto create(const SpriteDatabaseCreateInfo &ci, GrowableDescriptorAllocator &desc_alloc)
+auto create(Context ctx, const CreateInfo &ci, GrowableDescriptorAllocator &desc_alloc)
     -> Result<SpriteDatabase>;
 
 /**
@@ -71,25 +72,17 @@ auto create(const SpriteDatabaseCreateInfo &ci, GrowableDescriptorAllocator &des
  * @param database Sprite database to destroy
  * @param ctx Vulkan context
  */
-void destroy(SpriteDatabase database, Context ctx);
+void destroy(Context ctx, SpriteDatabase database);
 
 /**
- * Add a new sprite to the database
- * @param database Sprite database to add sprite to.
- * @param add_info Data related to the new sprite to be added.
- * @return Nothing in case of success or error code in case of failure.
+ *
+ * @param ctx Vulkan context
+ * @param database Sprite database
+ * @param paths Paths to images to upload
+ * @return Nothing if success, error otherwise.
  */
-auto add(SpriteDatabase database, SpriteDatabaseAddInfo add_info) -> Result<void>;
-
-void push(SpriteDatabase database, const SpriteDatabasePushInfo &push_info);
-auto sync(SpriteDatabase database, Context ctx) -> Result<void>;
-void draw(SpriteDatabase database, Context ctx, const glm::mat4 &projection_matrix,
-          const glm::mat4 &view_matrix);
-
-auto make_ortho_projection(const glm::vec2 &dims) -> glm::mat4;
-auto make_view(const glm::vec2 &eye) -> glm::mat4;
-auto make_model_matrix(const glm::vec2 &position, const glm::vec2 &scale, float z = 1.0f)
-    -> glm::mat4;
+auto upload_images(Context ctx, SpriteDatabase database, std::span<const char *> paths)
+    -> Result<void>;
 
 } // namespace surge::renderer::vk::atom::sprite_database
 

@@ -30,61 +30,59 @@ extern "C" SURGE_MODULE_EXPORT auto on_load(surge::module::Context mod_ctx) noex
   globals::desc_alloc.init(mod_ctx->vk_ctx, 8, pool_ratios);
 
   // Sprite database
-  sprite_database::SpriteDatabaseCreateInfo sdb_ci{
-      .ctx = mod_ctx->vk_ctx,
-      .blending_mode = sprite_database::SpriteDatabaseBlendingMode::alpha,
-      .max_sprites = 3};
+  sprite_database::CreateInfo sdb_ci{.blending_mode = sprite_database::BlendingMode::alpha,
+                                     .max_sprites = 3};
 
-  const auto sdb{sprite_database::create(sdb_ci, globals::desc_alloc)};
+  const auto sdb{sprite_database::create(mod_ctx->vk_ctx, sdb_ci, globals::desc_alloc)};
   if (!sdb) {
     return sdb.error();
   }
   globals::sdb = *sdb;
 
-  sprite_database::SpriteDatabaseAddInfo ai{.ctx = mod_ctx->vk_ctx,
-                                            .texture_path = nullptr,
-                                            .position = glm::vec2{0.0f},
-                                            .scale = glm::vec2{100.0f},
-                                            .z = 1.0f,
-                                            .color_multiplier = glm::vec4{1.0f}};
-  sprite_database::add(globals::sdb, ai);
+  // sprite_database::SpriteDatabaseAddInfo ai{.ctx = mod_ctx->vk_ctx,
+  //                                           .texture_path = nullptr,
+  //                                           .position = glm::vec2{0.0f},
+  //                                           .scale = glm::vec2{100.0f},
+  //                                           .z = 1.0f,
+  //                                           .color_multiplier = glm::vec4{1.0f}};
+  // sprite_database::add(globals::sdb, ai);
 
-  ai.position = glm::vec2{200.0f};
-  sprite_database::add(globals::sdb, ai);
+  // ai.position = glm::vec2{200.0f};
+  // sprite_database::add(globals::sdb, ai);
 
   return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto on_unload(surge::module::Context mod_ctx) noexcept -> int {
   using namespace surge::renderer::vk::atom;
-  sprite_database::destroy(globals::sdb, mod_ctx->vk_ctx);
+  sprite_database::destroy(mod_ctx->vk_ctx, globals::sdb);
   globals::desc_alloc.destroy_pools(mod_ctx->vk_ctx);
   return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto draw(surge::module::Context mod_ctx) noexcept -> int {
-  using namespace surge::renderer::vk::atom;
-  sprite_database::draw(globals::sdb, mod_ctx->vk_ctx, globals::projection_matrix,
-                        globals::view_matrix);
+  // using namespace surge::renderer::vk::atom;
+  //  sprite_database::draw(globals::sdb, mod_ctx->vk_ctx, globals::projection_matrix,
+  //                        globals::view_matrix);
   return 0;
 }
 
 extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context mod_ctx, double) noexcept -> int {
-  using namespace surge::renderer::vk::atom;
+  // using namespace surge::renderer::vk::atom;
 
   // Add sprites
-  sprite_database::SpriteDatabasePushInfo pi{.position = glm::vec2{0.0f},
-                                             .scale = glm::vec2{100.0f},
-                                             .z = 1.0f,
-                                             .color_multiplier = glm::vec4{1.0f}};
+  // sprite_database::SpriteDatabasePushInfo pi{.position = glm::vec2{0.0f},
+  //                                            .scale = glm::vec2{100.0f},
+  //                                            .z = 1.0f,
+  //                                            .color_multiplier = glm::vec4{1.0f}};
 
-  sprite_database::push(globals::sdb, pi);
+  // sprite_database::push(globals::sdb, pi);
 
-  pi.position = glm::vec2{200.0f};
-  sprite_database::push(globals::sdb, pi);
+  // pi.position = glm::vec2{200.0f};
+  // sprite_database::push(globals::sdb, pi);
 
   // Send them to the GPU
-  sprite_database::sync(globals::sdb, mod_ctx->vk_ctx);
+  // sprite_database::sync(globals::sdb, mod_ctx->vk_ctx);
 
   return 0;
 }
