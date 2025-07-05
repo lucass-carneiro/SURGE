@@ -1,5 +1,6 @@
 .vs/*
 .cache/*
+.idea/*
 
 tracy/*
 
