@@ -71,7 +71,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context mod_ctx, doubl
   const float z{0.5f};
 
   const auto dx{1.0f};
-  const auto dy{-1.0};
+  const auto dy{-1.0f};
 
   // Sprite positions
   static std::array<glm::vec2, 3> positions{
@@ -81,7 +81,7 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context mod_ctx, doubl
   };
 
   // Add sprites
-  for (usize i = 0; auto &pos : positions) {
+  for (auto &pos : positions) {
     pos[0] += dx;
     pos[1] += dy;
 
@@ -105,8 +105,6 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context mod_ctx, doubl
         .position = pos, .scale = scale, .z = z, .texture_id = 0};
 
     sprite_database::update_draw_data(globals::sdb, update_info);
-
-    i++;
   }
 
   // Send them to the GPU
