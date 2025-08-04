@@ -17,6 +17,7 @@ enum Error : int {
 
   // File errors
   invalid_path,
+  invalid_output_buffer_size,
   short_dest_buffer,
   read_error,
   invalid_format,

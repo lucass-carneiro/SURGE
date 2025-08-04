@@ -1,6 +1,7 @@
 #include "sc_vulkan/atoms/sprite_database.hpp"
 
 #include "sc_logging.hpp"
+#include "sc_random.hpp"
 #include "sc_vulkan/sc_vulkan_command.hpp"
 #include "sc_vulkan/sc_vulkan_images.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
@@ -57,6 +58,36 @@ struct surge::renderer::vk::atom::sprite_database::SpriteDatabaseImpl {
   VkPipelineLayout pipeline_layout{VK_NULL_HANDLE}; // Vulkan pipeline layout for the database.
   VkPipeline pipeline{VK_NULL_HANDLE};              // Vulkan pipeline for the database.
 };
+
+template <surge::usize dim> struct RandomImageData {
+  std::array<surge::u32, dim * dim> colors{};
+  VkExtent3D img_extent{dim, dim, 1};
+  surge::usize total_image_size{4 * img_extent.width * img_extent.height * img_extent.depth};
+};
+
+template <surge::usize dim> static inline auto gen_random_img() -> RandomImageData<dim> {
+  using namespace surge;
+
+  RandomImageData<dim> image{};
+
+  static random::Xoshiro128 rng{random::Xoshiro128::State{{31, 47, 79, 113}}};
+
+  for (usize x = 0; x < dim; x++) {
+    for (usize y = 0; y < dim; y++) {
+      const auto color_1{glm::packUnorm4x8(glm::vec4{rng.next_float_in_range_inc(0.0, 1.0),
+                                                     rng.next_float_in_range_inc(0.0, 1.0),
+                                                     rng.next_float_in_range_inc(0.0, 1.0), 1.0f})};
+
+      const auto color_2{glm::packUnorm4x8(glm::vec4{rng.next_float_in_range_inc(0.0, 1.0),
+                                                     rng.next_float_in_range_inc(0.0, 1.0),
+                                                     rng.next_float_in_range_inc(0.0, 1.0), 1.0f})};
+
+      image.colors[y * dim + x] = ((x % 2) ^ (y % 2)) ? color_1 : color_2;
+    }
+  }
+
+  return image;
+}
 
 auto surge::renderer::vk::atom::sprite_database::make_ortho_projection(const glm::vec2 &dims)
     -> glm::mat4 {
@@ -462,23 +493,14 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
   // 1. Load image data into host buffers and add it to the src buffer vector
 
   // TODO: Read data from actual image
-  constexpr VkExtent3D img_extent{16, 16, 1};
-  constexpr auto total_image_size{img_extent.depth * img_extent.width * img_extent.height * 4};
-
-  const auto black{glm::packUnorm4x8(glm::vec4(0, 0, 0, 1))};
-  const auto white{glm::packUnorm4x8(glm::vec4(1, 1, 1, 1))};
-
-  std::array<u32, 16 * 16> img_data{};
-  for (usize x = 0; x < 16; x++) {
-    for (usize y = 0; y < 16; y++) {
-      img_data[y * 16 + x] = ((x % 2) ^ (y % 2)) ? white : black;
-    }
-  }
-
   {
     for (const auto &path : paths) {
+      // TODO: Get image data
+      const auto image_data{gen_random_img<8>()};
+
       // Create source buffer
-      auto img_src_buffer{create_buffer(ctx, total_image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      auto img_src_buffer{create_buffer(ctx, image_data.total_image_size,
+                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                         VMA_MEMORY_USAGE_CPU_TO_GPU)};
 
       if (!img_src_buffer) {
@@ -487,7 +509,8 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
       }
 
       // Transfer image data to source buffer
-      memcpy(img_src_buffer->info.pMappedData, img_data.data(), total_image_size);
+      memcpy(img_src_buffer->info.pMappedData, image_data.colors.data(),
+             image_data.total_image_size);
 
       // Save the buffer to source vector
       database->img_src_buffers.push_back(*img_src_buffer);
@@ -498,7 +521,9 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
   {
     for (usize i = 0; i < database->img_src_buffers.size(); i++) {
       // Create destination buffer
-      auto img_dest_image{create_image(ctx, img_extent, VK_FORMAT_R8G8B8A8_UNORM,
+      // TODO: Need to find a way to get the extent from the image data
+      VkExtent3D tmp_extent{8, 8, 1};
+      auto img_dest_image{create_image(ctx, tmp_extent, VK_FORMAT_R8G8B8A8_UNORM,
                                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                        false)};

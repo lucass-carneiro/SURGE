@@ -81,30 +81,32 @@ extern "C" SURGE_MODULE_EXPORT auto update(surge::module::Context mod_ctx, doubl
   };
 
   // Add sprites
-  for (auto &pos : positions) {
-    pos[0] += dx;
-    pos[1] += dy;
-
-    if (pos[0] > window_dims[0]) {
-      pos[0] = -scale[0];
-    }
-
-    if ((pos[0] + scale[0]) < 0.0f) {
-      pos[0] = window_dims[0];
-    }
-
-    if (pos[1] > window_dims[1]) {
-      pos[1] = -scale[1];
-    }
-
-    if ((pos[1] + scale[1]) < 0.0f) {
-      pos[1] = window_dims[1];
-    }
+  for (usize i = 0; auto &pos : positions) {
+    // pos[0] += dx;
+    // pos[1] += dy;
+    //
+    // if (pos[0] > window_dims[0]) {
+    //   pos[0] = -scale[0];
+    // }
+    //
+    // if ((pos[0] + scale[0]) < 0.0f) {
+    //   pos[0] = window_dims[0];
+    // }
+    //
+    // if (pos[1] > window_dims[1]) {
+    //   pos[1] = -scale[1];
+    // }
+    //
+    // if ((pos[1] + scale[1]) < 0.0f) {
+    //   pos[1] = window_dims[1];
+    // }
 
     const sprite_database::UpdateInfo update_info{
-        .position = pos, .scale = scale, .z = z, .texture_id = 0};
+        .position = pos, .scale = scale, .z = z, .texture_id = i};
 
     sprite_database::update_draw_data(globals::sdb, update_info);
+
+    i++;
   }
 
   // Send them to the GPU

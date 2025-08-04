@@ -117,22 +117,32 @@ auto surge::files::as_bytes(const char *path, bool append_null_byte)
   }
 }
 
-auto surge::files::into_buffer(const char *path, void *output_buffer, usize output_buffer_size,
+auto surge::files::into_buffer(const char *path, void *output_buffer, usize *output_buffer_size,
                                bool append_null_byte) -> Result<void> {
   try {
     log_info("Loading raw data for file {} into buffer {}. Appending null byte: {}", path,
              output_buffer, append_null_byte ? "true" : "false");
 
+    if (output_buffer_size == nullptr) {
+      log_error("No output buffer size provided");
+      return Err{Error::invalid_output_buffer_size};
+    }
+
     if (!is_path_valid(path)) {
       return Err{Error::invalid_path};
     }
 
-    const auto base_file_size{static_cast<unsigned int>(std::filesystem::file_size(path))};
+    const auto base_file_size{static_cast<usize>(std::filesystem::file_size(path))};
     const auto file_size{append_null_byte ? base_file_size + 1 : base_file_size};
 
-    if (output_buffer_size < file_size) {
+    if (output_buffer == nullptr) {
+      *output_buffer_size = file_size;
+      return {};
+    }
+
+    if (*output_buffer_size < file_size) {
       log_error("The target buffer {} is too small ({} B) to contain {} ({} B)", output_buffer,
-                output_buffer_size, path, file_size);
+                *output_buffer_size, path, file_size);
       return Err{short_dest_buffer};
     }
 

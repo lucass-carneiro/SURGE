@@ -1,3 +1,4 @@
+#include "sc_files.hpp"
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
@@ -25,6 +26,39 @@ auto surge::renderer::vk::create_buffer(Context ctx, size_t size, VkBufferUsageF
   if (result != VK_SUCCESS) {
     log_error("Unable to allocate buffer: {}", string_VkResult(result));
     return Err{Error::vk_buffer_allocation};
+  }
+
+  return buffer;
+}
+
+auto surge::renderer::vk::file_to_buffer(Context ctx, const char *path,
+                                         VkBufferUsageFlags usage_flags,
+                                         VmaMemoryUsage memory_usage) -> Result<Buffer> {
+  log_info("Reading file {} into VMA CPU buffer", path);
+
+  // Query size
+  usize buffer_size{0};
+  auto result{files::into_buffer(path, nullptr, &buffer_size)};
+
+  if (!result) {
+    log_error("Unable to determine file size");
+    return Err{result.error()};
+  }
+
+  // Use VMA to allocate buffer
+  auto buffer{create_buffer(ctx, buffer_size, usage_flags, memory_usage)};
+
+  if (!buffer) {
+    log_error("Unable to create buffer for storing file");
+    return Err{buffer.error()};
+  }
+
+  // Read data into VMA buffer
+  result = files::into_buffer(path, buffer->info.pMappedData, &buffer_size);
+
+  if (!result) {
+    log_error("Unable to read file {} into buffer", path);
+    return Err{result.error()};
   }
 
   return buffer;
