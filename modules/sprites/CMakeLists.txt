@@ -31,7 +31,7 @@ set_target_properties(
 set_target_properties(SurgeSpriteDemoModule PROPERTIES CXX_VISIBILITY_PRESET
                                                        hidden)
 target_compile_definitions(SurgeSpriteDemoModule
-                           PUBLIC COMPILING_SURGE_MODULE_SPRITES)
+                           PUBLIC COMPILING_SURGE_MODULE_SPRITES=1)
 
 target_include_directories(
   SurgeSpriteDemoModule

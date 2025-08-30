@@ -4,7 +4,7 @@
 #include "sc_module_context.hpp"
 #include "sc_options.hpp"
 
-#if defined(SURGE_COMPILER_Clang) || defined(SURGE_COMPILER_GCC) && COMPILING_SURGE_MODULE_DEFAULT
+#if defined(SURGE_COMPILER_GNU) && COMPILING_SURGE_MODULE_DEFAULT
 #  define SURGE_MODULE_EXPORT __attribute__((__visibility__("default")))
 #elif defined(SURGE_COMPILER_MSVC) && COMPILING_SURGE_MODULE_COMPUTE
 #  define SURGE_MODULE_EXPORT __declspec(dllexport)

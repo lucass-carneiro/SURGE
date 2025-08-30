@@ -31,7 +31,7 @@ set_target_properties(SurgeDefaultModule PROPERTIES PREFIX "") # removes the lib
 set_target_properties(SurgeDefaultModule PROPERTIES CXX_VISIBILITY_PRESET
                                                     hidden)
 target_compile_definitions(SurgeDefaultModule
-                           PUBLIC COMPILING_SURGE_MODULE_DEFAULT)
+                           PUBLIC COMPILING_SURGE_MODULE_DEFAULT=1)
 
 target_include_directories(
   SurgeDefaultModule
