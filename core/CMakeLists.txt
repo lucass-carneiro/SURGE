@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 
 # -----------------------------------------
 # Project
@@ -227,8 +227,8 @@ target_link_libraries(
          ryml::ryml
          Taskflow::Taskflow
          tl::expected
-         Vulkan::Headers
          Vulkan::Vulkan
+         Vulkan::Headers
          GPUOpen::VulkanMemoryAllocator
          xxHash::xxhash)
 
@@ -251,7 +251,7 @@ foreach(GLSL ${SURGE_CORE_SHADER_LIST})
   message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
   add_custom_command(
     OUTPUT ${SPIRV}
-    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} -V ${GLSL} -o ${SPIRV}
     DEPENDS ${GLSL})
   list(APPEND CORE_SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)

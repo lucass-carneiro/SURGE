@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+﻿cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 
 # -----------------------------------------
 # Project
@@ -39,16 +39,9 @@ find_package(ryml CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
 find_package(Taskflow CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(VulkanHeaders CONFIG)
+find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
-
-find_program(
-  GLSL_VALIDATOR glslangValidator
-  HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
-
-message(STATUS "GLSL Validator: ${GLSL_VALIDATOR}")
 
 # -----------------------------------------
 # Operating system and compiler detection
