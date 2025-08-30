@@ -7,10 +7,9 @@
   },
   "configurePresets": [
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-debug",
+      "name": "x64-debug-vcpkg",
+      "displayName": "x64 Debug with Vcpkg dependencies",
+      "binaryDir": "${sourceDir}/build-x64-debug-vcpkg",
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -18,40 +17,6 @@
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_BUILD_TYPE": "Debug"
-      },
-      "environment": {
-        "VCPKG_ROOT": "$penv{VCPKG_ROOT}"
-      }
-    },
-    {
-      "name": "x64-release",
-      "displayName": "x64 Release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-release",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_BUILD_TYPE": "Release"
-      },
-      "environment": {
-        "VCPKG_ROOT": "$penv{VCPKG_ROOT}"
-      }
-    },
-    {
-      "name": "x64-profile",
-      "displayName": "x64 Profile",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build-profile",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       },
       "environment": {
         "VCPKG_ROOT": "$penv{VCPKG_ROOT}"

@@ -7,10 +7,12 @@
 project(
   Surge
   VERSION 1.4.0
-  LANGUAGES CXX
-)
+  LANGUAGES CXX)
+
 # Generate compile_commands.json for IDEs
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+set(CMAKE_EXPORT_COMPILE_COMMANDS
+    ON
+    CACHE INTERNAL "")
 
 # -----------------------------------------
 # In-source build guard
@@ -19,7 +21,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
   message(
     FATAL_ERROR
-    "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
+      "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there."
   )
 endif()
 
@@ -43,13 +45,8 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(xxHash CONFIG REQUIRED)
 
 find_program(
-  GLSL_VALIDATOR
-  glslangValidator
-  HINTS
-  /usr/bin /usr/local/bin
-  $ENV{VULKAN_SDK}/Bin/
-  $ENV{VULKAN_SDK}/Bin32/
-)
+  GLSL_VALIDATOR glslangValidator
+  HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
 
 message(STATUS "GLSL Validator: ${GLSL_VALIDATOR}")
 
@@ -69,10 +66,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(SURGE_COMPILER_FLAG_STYLE "gcc")
 else()
   set(SURGE_COMPILER_FLAG_STYLE "msvc")
-  if (POLICY CMP0141)
+  if(POLICY CMP0141)
     cmake_policy(SET CMP0141 NEW)
-    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
-    endif()
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT
+        "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>"
+    )
+  endif()
 endif()
 
 # -----------------------------------------
@@ -95,27 +94,34 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" OFF)
   option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" OFF)
   option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" OFF)
-  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5" ON)
+  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5"
+         ON)
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" OFF)
-  option(SURGE_ENABLE_FRAME_STEPPING "Enables frame-by-frame stepping when pressing LCTRL + F6" ON)
+  option(SURGE_ENABLE_FRAME_STEPPING
+         "Enables frame-by-frame stepping when pressing LCTRL + F6" ON)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
   option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" OFF)
   option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
   option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
   option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
   option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
-  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5" OFF)
+  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5"
+         OFF)
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" OFF)
-  option(SURGE_ENABLE_FRAME_STEPPING "Enables frame-by-frame stepping when pressing LCTRL + F6" OFF)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+  option(SURGE_ENABLE_FRAME_STEPPING
+         "Enables frame-by-frame stepping when pressing LCTRL + F6" OFF)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Profile" OR CMAKE_BUILD_TYPE STREQUAL
+                                              "RelWithDebInfo")
   option(SURGE_ENABLE_SANITIZERS "Compiles code with sanitizers" OFF)
   option(SURGE_ENABLE_OPTIMIZATIONS "Compiles code with optimizations" ON)
   option(SURGE_ENABLE_LTO "Compiles code with link time optimizations" ON)
   option(SURGE_ENABLE_FAST_MATH "Compiles code with fast math mode" ON)
   option(SURGE_ENABLE_TUNING "Compiles code with architecture tuning" ON)
-  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5" OFF)
+  option(SURGE_ENABLE_HR "Enable module hot reloading when pressing LCTRL + F5"
+         OFF)
   option(SURGE_ENABLE_TRACY "Enables Tracy profiler annotations" ON)
-  option(SURGE_ENABLE_FRAME_STEPPING "Enables frame-by-frame stepping when pressing LCTRL + F6" OFF)
+  option(SURGE_ENABLE_FRAME_STEPPING
+         "Enables frame-by-frame stepping when pressing LCTRL + F6" OFF)
 endif()
 
 if(SURGE_ENABLE_TRACY)
@@ -123,19 +129,19 @@ if(SURGE_ENABLE_TRACY)
 endif()
 
 # -----------------------------------------
-#  Engine core target
+# Engine core target
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/core)
 
 # -----------------------------------------
-#  Engine player target
+# Engine player target
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/player)
 
 # -----------------------------------------
-#  Module targets
+# Module targets
 # -----------------------------------------
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/modules)

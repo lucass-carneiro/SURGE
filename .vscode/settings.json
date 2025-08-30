@@ -11,17 +11,6 @@
     ],
     "C_Cpp.formatting": "clangFormat",
     "C_Cpp.codeAnalysis.clangTidy.enabled": true,
-    "clang-tidy.checks": [
-        "modernize*",
-        "cppcoreguidelines*",
-        "-cppcoreguidelines-avoid-magic-numbers",
-        "clang-diagnostic-*",
-        "clang-analyzer-*",
-        "bugprone*",
-        "performance",
-        "-cppcoreguidelines-pro-type-vararg",
-        "-cppcoreguidelines-macro-usage"
-    ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.autopep8"
     },
