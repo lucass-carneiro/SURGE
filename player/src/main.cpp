@@ -4,7 +4,6 @@
 #include "sc_logging.hpp"
 #include "sc_module.hpp"
 #include "sc_options.hpp"
-#include "sc_tasks.hpp"
 #include "sc_timers.hpp"
 #include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_window.hpp"
@@ -34,11 +33,6 @@ int main() {
      * Init allocators *
      *******************/
     allocators::mimalloc::init();
-
-    /**********************
-     * Init Task executor *
-     **********************/
-    tasks::executor::get();
 
     /*********************
      * Parse config file *

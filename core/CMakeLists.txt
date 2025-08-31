@@ -45,7 +45,6 @@ set(SURGE_CORE_HEADER_LIST
     "${PROJECT_SOURCE_DIR}/include/sc_module.hpp"
     "${PROJECT_SOURCE_DIR}/include/sc_random.hpp"
     "${PROJECT_SOURCE_DIR}/include/sc_module_context.hpp"
-    "${PROJECT_SOURCE_DIR}/include/sc_tasks.hpp"
     "${PROJECT_SOURCE_DIR}/include/sc_timers.hpp"
     "${PROJECT_SOURCE_DIR}/include/sc_window.hpp")
 
@@ -70,7 +69,6 @@ set(SURGE_CORE_SOURCE_LIST
     # "${PROJECT_SOURCE_DIR}/src/sc_imgui.cpp"
     "${PROJECT_SOURCE_DIR}/src/sc_module.cpp"
     "${PROJECT_SOURCE_DIR}/src/sc_random.cpp"
-    "${PROJECT_SOURCE_DIR}/src/sc_tasks.cpp"
     "${PROJECT_SOURCE_DIR}/src/sc_timers.cpp"
     "${PROJECT_SOURCE_DIR}/src/sc_window.cpp")
 
@@ -225,7 +223,6 @@ target_link_libraries(
          glfw
          imgui::imgui
          ryml::ryml
-         Taskflow::Taskflow
          tl::expected
          Vulkan::Vulkan
          Vulkan::Headers
