@@ -6,10 +6,9 @@
 #include "sc_vulkan/sc_vulkan_sync.hpp"
 #include "sc_vulkan/sc_vulkan_types.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
-auto surge::renderer::vk::command_pool_create_info(
-    u32 queue_family_idx, VkCommandPoolCreateFlags flags) -> VkCommandPoolCreateInfo {
+auto surge::renderer::vk::command_pool_create_info(u32 queue_family_idx,
+                                                   VkCommandPoolCreateFlags flags)
+    -> VkCommandPoolCreateInfo {
   VkCommandPoolCreateInfo ci{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                              .pNext = nullptr,
                              .flags = flags,
@@ -17,8 +16,8 @@ auto surge::renderer::vk::command_pool_create_info(
   return ci;
 }
 
-auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool,
-                                                    u32 count) -> VkCommandBufferAllocateInfo {
+auto surge::renderer::vk::command_buffer_alloc_info(VkCommandPool pool, u32 count)
+    -> VkCommandBufferAllocateInfo {
   VkCommandBufferAllocateInfo ai{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
                                  .pNext = nullptr,
                                  .commandPool = pool,
@@ -74,7 +73,7 @@ auto surge::renderer::vk::cmd_begin(Context ctx) -> Result<void> {
   auto result{vkResetCommandBuffer(cmd_buff, 0)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to reset command buffer: {}", string_VkResult(result));
+    log_error("Unable to reset command buffer:");
     return Err{Error::vk_cmd_buff_reset};
   }
 
@@ -86,7 +85,7 @@ auto surge::renderer::vk::cmd_begin(Context ctx) -> Result<void> {
   result = vkBeginCommandBuffer(cmd_buff, &cmd_beg_info);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to start command buffer recording: {}", string_VkResult(result));
+    log_error("Unable to start command buffer recording:");
     return Err{Error::vk_cmd_buff_rec_start};
   }
 
@@ -125,7 +124,7 @@ auto surge::renderer::vk::cmd_end(Context ctx) -> Result<void> {
   const auto result{vkEndCommandBuffer(cmd_buff)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to end command buffer recording: {}", string_VkResult(result));
+    log_error("Unable to end command buffer recording:");
     return Err{Error::vk_cmd_buff_rec_end};
   }
 
@@ -155,7 +154,7 @@ auto surge::renderer::vk::cmd_submit(Context ctx) -> Result<void> {
   const auto result{vkQueueSubmit2(graphics_queue, 1, &sub_info, render_fence)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to sumbit command buffer to graphics queue: {}", string_VkResult(result));
+    log_error("Unable to sumbit command buffer to graphics queue:");
     return Err{Error::vk_cmd_buff_submit};
   }
 
@@ -166,14 +165,14 @@ auto surge::renderer::vk::immediate_submit(Context ctx, immediate_command comman
   auto result{vkResetFences(ctx->device, 1, &(ctx->immediate_data.fence))};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to reset immediate mode fence: {}", string_VkResult(result));
+    log_error("Unable to reset immediate mode fence:");
     return Err{Error::vk_cmd_immediate_fence_reset};
   }
 
   result = vkResetCommandBuffer(ctx->immediate_data.cmd_buff, 0);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to reset immediate mode command buffer: {}", string_VkResult(result));
+    log_error("Unable to reset immediate mode command buffer:");
     return Err{Error::vk_cmd_immediate_cmd_buff_reset};
   }
 
@@ -183,7 +182,7 @@ auto surge::renderer::vk::immediate_submit(Context ctx, immediate_command comman
   result = vkBeginCommandBuffer(cmd, &cmd_buff_beg_info);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to begin immediate mode command reccording: {}", string_VkResult(result));
+    log_error("Unable to begin immediate mode command reccording:");
     return Err{Error::vk_cmd_immediate_cmd_buff_begin};
   }
 
@@ -192,7 +191,7 @@ auto surge::renderer::vk::immediate_submit(Context ctx, immediate_command comman
   result = vkEndCommandBuffer(cmd);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to end immediate mode command reccording: {}", string_VkResult(result));
+    log_error("Unable to end immediate mode command reccording:");
     return Err{Error::vk_cmd_immediate_cmd_buff_end};
   }
 
@@ -205,14 +204,14 @@ auto surge::renderer::vk::immediate_submit(Context ctx, immediate_command comman
   result = vkQueueSubmit2(ctx->q_handles.graphics, 1, &sub_info, ctx->immediate_data.fence);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to submit immediate mode commands: {}", string_VkResult(result));
+    log_error("Unable to submit immediate mode commands:");
     return Err{Error::vk_cmd_immediate_cmd_buff_submit};
   }
 
   result = vkWaitForFences(ctx->device, 1, &(ctx->immediate_data.fence), true, 10000000000);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to synchronize immediate mode commands: {}", string_VkResult(result));
+    log_error("Unable to synchronize immediate mode commands:");
     return Err{Error::vk_cmd_immediate_cmd_buff_sync};
   }
 

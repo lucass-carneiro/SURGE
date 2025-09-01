@@ -7,7 +7,6 @@
 #include "sc_vulkan/sc_vulkan_sync.hpp"
 
 #include <algorithm>
-#include <vulkan/vk_enum_string_helper.h>
 
 auto surge::renderer::vk::get_api_version() -> Result<u32> {
   log_info("Querying Vulkan API version");
@@ -16,7 +15,7 @@ auto surge::renderer::vk::get_api_version() -> Result<u32> {
   const auto result{vkEnumerateInstanceVersion(&vulkan_api_version)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable query Vulkan API version: {}", string_VkResult(result));
+    log_error("Unable query Vulkan API version:");
     return Err{Error::vk_api_version_query};
   }
 
@@ -71,7 +70,7 @@ auto surge::renderer::vk::get_required_validation_layers()
   auto result{vkEnumerateInstanceLayerProperties(&layer_count, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to query available validation layers: {}", string_VkResult(result));
+    log_error("Unable to query available validation layers:");
     return Err{Error::vk_val_layer_query};
   }
 
@@ -79,7 +78,7 @@ auto surge::renderer::vk::get_required_validation_layers()
   result = vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to query available validation layers: {}", string_VkResult(result));
+    log_error("Unable to query available validation layers:");
     return Err{Error::vk_val_layer_query};
   }
 
@@ -142,7 +141,7 @@ auto surge::renderer::vk::build_instance(
   VkInstance instance{};
   const auto result{vkCreateInstance(&create_info, get_alloc_callbacks(), &instance)};
   if (result != VK_SUCCESS) {
-    log_error("Unable initialize vulkan instance: {}", string_VkResult(result));
+    log_error("Unable initialize vulkan instance:");
     return Err{Error::vk_instance_init};
   }
 
@@ -178,7 +177,7 @@ auto surge::renderer::vk::build_instance(
   VkInstance instance{};
   const auto result{vkCreateInstance(&create_info, get_alloc_callbacks(), &instance)};
   if (result != VK_SUCCESS) {
-    log_error("Unable initialize vulkan instance: {}", string_VkResult(result));
+    log_error("Unable initialize vulkan instance:");
     return Err{Error::vk_instance_init};
   }
 
@@ -195,7 +194,7 @@ auto surge::renderer::vk::select_physical_device(VkInstance instance) -> Result<
   auto result{vkEnumeratePhysicalDevices(instance, &dev_count, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable enumerate physical devices: {}", string_VkResult(result));
+    log_error("Unable enumerate physical devices:");
     return Err{Error::vk_phys_dev_enum};
   }
 
@@ -203,7 +202,7 @@ auto surge::renderer::vk::select_physical_device(VkInstance instance) -> Result<
   result = vkEnumeratePhysicalDevices(instance, &dev_count, phys_devs.data());
 
   if (result != VK_SUCCESS) {
-    log_error("Unable enumerate physical devices: {}", string_VkResult(result));
+    log_error("Unable enumerate physical devices:");
     return Err{Error::vk_phys_dev_enum};
   }
 
@@ -343,7 +342,7 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
   auto result{vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &extension_count, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable retrieve device extension properties: {}", string_VkResult(result));
+    log_error("Unable retrieve device extension properties:");
     return Err{Error::vk_phys_dev_ext_enum};
   }
 
@@ -352,7 +351,7 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
                                                 available_extensions.data());
 
   if (result != VK_SUCCESS) {
-    log_error("Unable retrieve device extension properties: {}", string_VkResult(result));
+    log_error("Unable retrieve device extension properties:");
     return Err{Error::vk_phys_dev_ext_enum};
   }
 
@@ -461,7 +460,7 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Re
   const auto result{vkCreateDevice(phys_dev, &create_info, get_alloc_callbacks(), &log_dev)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create logical device: {}", string_VkResult(result));
+    log_error("Unable create logical device:");
     return Err{Error::vk_log_dev_create};
   } else {
     return log_dev;
@@ -476,7 +475,7 @@ auto surge::renderer::vk::create_window_surface(window::Window w, VkInstance ins
   const auto result{glfwCreateWindowSurface(instance, w, get_alloc_callbacks(), &surface)};
 
   if (result != VK_SUCCESS) {
-    log_error("Window Vulkan surface creation failed: {}", string_VkResult(result));
+    log_error("Window Vulkan surface creation failed:");
     return Err{Error::vk_surface_init};
   } else {
     log_info("Window surface created");
@@ -496,8 +495,7 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
   const auto result{vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev, idxs.graphics_family.value_or(0),
                                                          surface, &graphics_present_suport)};
   if (result != VK_SUCCESS) {
-    log_error("Unable to query graphics queue for presentation support: {}",
-              string_VkResult(result));
+    log_error("Unable to query graphics queue for presentation support");
     return Err{Error::vk_surface_present_query};
   }
 
@@ -538,7 +536,7 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
   auto result{vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, surface, &surface_capabilities)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to query surface capabilities: {}", string_VkResult(result));
+    log_error("Unable to query surface capabilities:");
     return Err{Error::vk_swapchain_query};
   }
 
@@ -593,13 +591,13 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
 
   result = vkCreateSwapchainKHR(log_dev, &swpc_ci, get_alloc_callbacks(), &swpc_data.swapchain);
   if (result != VK_SUCCESS) {
-    log_error("Unable to create swapchain: {}", string_VkResult(result));
+    log_error("Unable to create swapchain:");
     return Err{Error::vk_init_swapchain};
   }
 
   result = vkGetSwapchainImagesKHR(log_dev, swpc_data.swapchain, &image_count, nullptr);
   if (result != VK_SUCCESS) {
-    log_error("Unable to get swapchain images: {}", string_VkResult(result));
+    log_error("Unable to get swapchain images:");
     return Err{Error::vk_swapchain_imgs};
   }
 
@@ -607,7 +605,7 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
   result
       = vkGetSwapchainImagesKHR(log_dev, swpc_data.swapchain, &image_count, swpc_data.imgs.data());
   if (result != VK_SUCCESS) {
-    log_error("Unable to get swapchain images: {}", string_VkResult(result));
+    log_error("Unable to get swapchain images:");
     return Err{Error::vk_swapchain_imgs};
   }
 
@@ -636,7 +634,7 @@ auto surge::renderer::vk::create_swapchain(VkPhysicalDevice phys_dev, VkDevice l
     VkImageView img_view{};
     result = vkCreateImageView(log_dev, &img_view_ci, get_alloc_callbacks(), &img_view);
     if (result != VK_SUCCESS) {
-      log_error("Unable to create swapchain image view: {}", string_VkResult(result));
+      log_error("Unable to create swapchain image view:");
       return Err{Error::vk_swapchain_imgs_views};
     } else {
       swpc_data.imgs_views.push_back(img_view);
@@ -662,7 +660,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
                                     &frm_data.command_pools[i])}; // NOLINT
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create command pool: {}", string_VkResult(result));
+      log_error("Unable to create command pool:");
       return Err{Error::vk_cmd_pool_creation};
     }
 
@@ -673,7 +671,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
                                       &frm_data.command_buffers[i]); // NOLINT
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create buffer: {}", string_VkResult(result));
+      log_error("Unable to create buffer:");
       return Err{Error::vk_cmd_buffer_creation};
     }
   }
@@ -687,7 +685,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
                               &frm_data.render_fences[i])}; // NOLINT
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create fence: {}", string_VkResult(result));
+      log_error("Unable to create fence:");
       return Err{Error::vk_fence_creation};
     }
 
@@ -695,7 +693,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
                                &frm_data.render_semaphores[i]); // NOLINT
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create renderer semaphore: {}", string_VkResult(result));
+      log_error("Unable to create renderer semaphore:");
       return Err{Error::vk_semaphore_creation};
     }
 
@@ -703,7 +701,7 @@ auto surge::renderer::vk::create_frame_data(VkDevice device, u32 graphics_queue_
                                &frm_data.swpc_semaphores[i]); // NOLINT
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create swapchain semaphore: {}", string_VkResult(result));
+      log_error("Unable to create swapchain semaphore:");
       return Err{Error::vk_fence_creation};
     }
   }
@@ -749,7 +747,7 @@ auto surge::renderer::vk::create_immediate_mode_data(VkDevice device, u32 graphi
       vkCreateCommandPool(device, &cmd_pool_create_info, get_alloc_callbacks(), &data.cmd_pool)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to allocate immediate mode command pool: {}", string_VkResult(result));
+    log_error("Unable to allocate immediate mode command pool:");
     return Err{Error::vk_cmd_pool_creation};
   }
 
@@ -758,7 +756,7 @@ auto surge::renderer::vk::create_immediate_mode_data(VkDevice device, u32 graphi
   result = vkAllocateCommandBuffers(device, &cmd_buffer_info, &data.cmd_buff);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to allocate immediate mode command buffer: {}", string_VkResult(result));
+    log_error("Unable to allocate immediate mode command buffer:");
     return Err{Error::vk_cmd_buffer_creation};
   }
 
@@ -767,7 +765,7 @@ auto surge::renderer::vk::create_immediate_mode_data(VkDevice device, u32 graphi
   result = vkCreateFence(device, &fence_ci, get_alloc_callbacks(), &data.fence);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to create immediate mode fence: {}", string_VkResult(result));
+    log_error("Unable to create immediate mode fence:");
     return Err{Error::vk_fence_creation};
   }
 

@@ -5,8 +5,6 @@
 #include "sc_vulkan/sc_vulkan.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 auto surge::renderer::vk::imageview_create_info(VkFormat format, VkImage image,
                                                 VkImageAspectFlags aspect_flags)
     -> VkImageViewCreateInfo {
@@ -157,7 +155,7 @@ auto surge::renderer::vk::create_draw_img(const config::WindowResolution &w_res,
   auto result{vmaCreateImage(allocator, &rimg_info, &rimg_allocinfo, &draw_image.image,
                              &draw_image.allocation, nullptr)};
   if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image: {}", string_VkResult(result));
+    log_error("Unable to create draw image:");
     return Err{Error::vk_init_draw_img};
   }
 
@@ -168,7 +166,7 @@ auto surge::renderer::vk::create_draw_img(const config::WindowResolution &w_res,
   result = vkCreateImageView(logi_dev, &rview_info, get_alloc_callbacks(), &draw_image.image_view);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image view: {}", string_VkResult(result));
+    log_error("Unable to create draw image view:");
     return Err{Error::vk_init_draw_img};
   }
 
@@ -200,7 +198,7 @@ auto surge::renderer::vk::create_depth_image(const config::WindowResolution &w_r
   auto result{vmaCreateImage(allocator, &img_info, &img_alloc_info, &image.image, &image.allocation,
                              nullptr)};
   if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image: {}", string_VkResult(result));
+    log_error("Unable to create draw image:");
     return Err{Error::vk_init_draw_img};
   }
 
@@ -209,7 +207,7 @@ auto surge::renderer::vk::create_depth_image(const config::WindowResolution &w_r
   result = vkCreateImageView(logi_dev, &view_info, get_alloc_callbacks(), &image.image_view);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to create draw image view: {}", string_VkResult(result));
+    log_error("Unable to create draw image view:");
     return Err{Error::vk_init_draw_img};
   }
 
@@ -239,7 +237,7 @@ auto surge::renderer::vk::create_image(Context ctx, VkExtent3D size, VkFormat fo
                              &new_image.allocation, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to allocate memory for new image: {}", string_VkResult(result));
+    log_error("Unable to allocate memory for new image:");
     return Err{vk_image_allocation};
   }
 
@@ -255,7 +253,7 @@ auto surge::renderer::vk::create_image(Context ctx, VkExtent3D size, VkFormat fo
   result = vkCreateImageView(ctx->device, &view_info, get_alloc_callbacks(), &new_image.image_view);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to create image view for new image: {}", string_VkResult(result));
+    log_error("Unable to create image view for new image:");
     return Err{vk_image_allocation};
   }
 

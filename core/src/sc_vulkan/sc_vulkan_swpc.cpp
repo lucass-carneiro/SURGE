@@ -5,8 +5,6 @@
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 #include "sc_vulkan/sc_vulkan_types.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #if (defined(SURGE_BUILD_TYPE_Profile) || defined(SURGE_BUILD_TYPE_RelWithDebInfo))                \
     && defined(SURGE_ENABLE_TRACY)
 #  include <tracy/Tracy.hpp>
@@ -22,14 +20,14 @@ auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
   auto result{vkWaitForFences(dev, 1, &render_fence, true, 1000000000)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to wait render fence: {}", string_VkResult(result));
+    log_error("Unable to wait render fence:");
     return Err{Error::vk_surface_init};
   }
 
   result = vkResetFences(dev, 1, &render_fence);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to reset render fence: {}", string_VkResult(result));
+    log_error("Unable to reset render fence:");
     return Err{Error::vk_surface_init};
   }
 
@@ -46,7 +44,7 @@ auto surge::renderer::vk::request_swpc_img(Context ctx) -> Result<void> {
     log_warn("Acquired a suboptimal image from the swapchain");
     ctx->rebuild_swapchain = true;
   } else if (!success) {
-    log_error("Unable to acquire swapchain image: {}", string_VkResult(result));
+    log_error("Unable to acquire swapchain image:");
     return Err{Error::vk_get_swpc_img};
   }
 
@@ -85,7 +83,7 @@ auto surge::renderer::vk::present_swpc(Context ctx) -> Result<void> {
     log_warn("Presented a suboptimal image", ctx->frm_data.frame_idx);
     ctx->rebuild_swapchain = true;
   } else if (result != VK_SUCCESS) {
-    log_error("Unable to present rendering: {}", string_VkResult(result));
+    log_error("Unable to present rendering:");
     return Err{Error::vk_present};
   }
 

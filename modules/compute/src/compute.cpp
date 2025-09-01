@@ -8,7 +8,6 @@
 #include "sc_error_types.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 #include "sc_vulkan/sc_vulkan_pipelines.hpp"
-#include <vulkan/vk_enum_string_helper.h>
 // clang-format on
 
 #include <array>
@@ -124,7 +123,7 @@ static auto create_compute_pipeline(surge::renderer::vk::Context ctx) -> surge::
                                      &globals::compute_pipeline_layout)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create compue pipeline layout: {}", string_VkResult(result));
+    log_error("Unable create compue pipeline layout:");
     return Err{Error::vk_pipeline_layout_create};
   }
 
@@ -152,7 +151,7 @@ static auto create_compute_pipeline(surge::renderer::vk::Context ctx) -> surge::
                                     get_alloc_callbacks(), &globals::compute_pipeline);
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create compute pipeline: {}", string_VkResult(result));
+    log_error("Unable create compute pipeline");
     return Err{Error::vk_compute_pipeline_create};
   }
 

@@ -10,7 +10,6 @@
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <vulkan/vk_enum_string_helper.h>
 
 // Per sprite shader data
 struct SpriteData {
@@ -158,8 +157,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
         &database->cpu_data_buffer.allocation, &database->cpu_data_buffer.info)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create sprite database {} CPU data buffer: {}", dbh,
-                string_VkResult(result));
+      log_error("Unable to create sprite database {} CPU data buffer", dbh);
       return Err{vk_buffer_allocation};
     }
 
@@ -197,8 +195,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
                                           &database->cmd_pool)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to allocate sprite database {} command pool: {}", dbh,
-                string_VkResult(result));
+      log_error("Unable to allocate sprite database {} command pool", dbh);
       return Err{vk_cmd_pool_creation};
     }
   }
@@ -212,8 +209,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
     const auto result{vkAllocateCommandBuffers(ctx->device, &cmd_buffer_info, &database->cmd_buff)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to allocate sprite database {} command buffer: {}", dbh,
-                string_VkResult(result));
+      log_error("Unable to allocate sprite database {} command buffer", dbh);
       return Err{vk_cmd_buffer_creation};
     }
   }
@@ -227,8 +223,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
                                     &database->image_transfer_fence)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create sprite database {} image transfer fence: {}", dbh,
-                string_VkResult(result));
+      log_error("Unable to create sprite database {} image transfer fence", dbh);
       return Err{vk_fence_creation};
     }
   }
@@ -242,8 +237,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
                                     &database->data_transfer_fence)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create sprite database {} data transfer fence: {}", dbh,
-                string_VkResult(result));
+      log_error("Unable to create sprite database {} data transfer fence", dbh);
       return Err{vk_fence_creation};
     }
   }
@@ -265,7 +259,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
           vkCreateSampler(ctx->device, &texture_sampler, get_alloc_callbacks(), &sampler)};
 
       if (result != VK_SUCCESS) {
-        log_error("Unable to create sprite database texture sampler: {}", string_VkResult(result));
+        log_error("Unable to create sprite database texture sampler:");
         return Err{vk_sampler_creation};
       }
 
@@ -308,8 +302,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
                                                   &database->img_desc_layout)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to create sprite database texture descriptor set layout: {}",
-                string_VkResult(result));
+      log_error("Unable to create sprite database texture descriptor set layout");
       return Err{vk_descriptor_set_layout_build};
     }
   }
@@ -376,7 +369,7 @@ auto surge::renderer::vk::atom::sprite_database::create(Context ctx, const Creat
                                              get_alloc_callbacks(), &database->pipeline_layout)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable create compute pipeline layout: {}", string_VkResult(result));
+      log_error("Unable create compute pipeline layout:");
       return Err{vk_pipeline_layout_create};
     }
   }
@@ -543,17 +536,15 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
     auto result{vkResetFences(ctx->device, 1, &database->image_transfer_fence)};
 
     if (result != VK_SUCCESS) {
-      log_error("Sprite database {} unable to reset image transfer fence: {}", dbh,
-                string_VkResult(result));
+      log_error("Sprite database {} unable to reset image transfer fence", dbh);
       return Err{vk_atom_sprite_database_fence_reset};
     }
 
     result = vkResetCommandBuffer(database->cmd_buff, 0);
 
     if (result != VK_SUCCESS) {
-      log_error(
-          "Sprite database {} unable to reset command buffer for texture transfer operation: {}",
-          dbh, string_VkResult(result));
+      log_error("Sprite database {} unable to reset command buffer for texture transfer operation",
+                dbh);
       return Err{vk_atom_sprite_database_command_buffer_reset};
     }
 
@@ -563,8 +554,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
     result = vkBeginCommandBuffer(cmd, &cmd_buff_beg_info);
 
     if (result != VK_SUCCESS) {
-      log_error("Sprite database {} unable to begin texture transfer command recording: {}", dbh,
-                string_VkResult(result));
+      log_error("Sprite database {} unable to begin texture transfer command recording", dbh);
       return Err{vk_atom_sprite_database_command_buffer_begin};
     }
 
@@ -598,8 +588,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
     result = vkEndCommandBuffer(cmd);
 
     if (result != VK_SUCCESS) {
-      log_error("Sprite database {} unable to end texture transfer command recording: {}", dbh,
-                string_VkResult(result));
+      log_error("Sprite database {} unable to end texture transfer command recording", dbh);
       return Err{vk_atom_sprite_database_command_buffer_end};
     }
 
@@ -610,8 +599,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
     result = vkQueueSubmit2(ctx->q_handles.transfer, 1, &sub_info, database->image_transfer_fence);
 
     if (result != VK_SUCCESS) {
-      log_error("Sprite database {} unable to submit texture transfer commands: {}", dbh,
-                string_VkResult(result));
+      log_error("Sprite database {} unable to submit texture transfer commands", dbh);
       return Err{vk_atom_sprite_database_command_buffer_submit};
     }
   }
@@ -624,7 +612,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
         vkWaitForFences(ctx->device, 1, &database->image_transfer_fence, true, 10000000000)};
 
     if (result != VK_SUCCESS) {
-      log_error("Sprite database {} unable to upload textures: {}", dbh, string_VkResult(result));
+      log_error("Sprite database {} unable to upload textures", dbh);
       return Err{vk_atom_sprite_database_command_buffer_sync};
     }
   }
@@ -692,8 +680,8 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
     const auto result{vkResetFences(ctx->device, 1, &database->data_transfer_fence)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to reset sprite database {} buffer transfer fence: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to reset sprite database {} buffer transfer fence",
+                static_cast<void *>(database));
       return Err{vk_atom_sprite_database_fence_reset};
     }
   }
@@ -703,8 +691,7 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
     const auto result{vkResetCommandBuffer(database->cmd_buff, 0)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to reset sprite database {} command buffer: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to reset sprite database {} command buffer", static_cast<void *>(database));
       return Err{vk_atom_sprite_database_command_buffer_reset};
     }
   }
@@ -717,8 +704,8 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
     auto result{vkBeginCommandBuffer(cmd, &cmd_buff_beg_info)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to begin sprite database {} transfer command recording: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to begin sprite database {} transfer command recording",
+                static_cast<void *>(database));
       return Err{vk_atom_sprite_database_command_buffer_begin};
     }
 
@@ -735,8 +722,8 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
     result = vkEndCommandBuffer(cmd);
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to end sprite database {} transfer command reccording: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to end sprite database {} transfer command reccording",
+                static_cast<void *>(database));
       return Err{vk_atom_sprite_database_command_buffer_end};
     }
 
@@ -747,8 +734,8 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
     result = vkQueueSubmit2(ctx->q_handles.transfer, 1, &sub_info, database->data_transfer_fence);
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to submit sprite database {} transfer commands: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to submit sprite database {} transfer commands",
+                static_cast<void *>(database));
       return Err{vk_atom_sprite_database_command_buffer_submit};
     }
   }
@@ -759,8 +746,8 @@ auto surge::renderer::vk::atom::sprite_database::synchronize_draw_data(Context c
         vkWaitForFences(ctx->device, 1, &database->data_transfer_fence, true, 10000000000)};
 
     if (result != VK_SUCCESS) {
-      log_error("Unable to synchronize sprite database {} transfer commands: {}",
-                static_cast<void *>(database), string_VkResult(result));
+      log_error("Unable to synchronize sprite database {} transfer commands",
+                static_cast<void *>(database));
       return Err{vk_atom_sprite_database_command_buffer_sync};
     }
   }

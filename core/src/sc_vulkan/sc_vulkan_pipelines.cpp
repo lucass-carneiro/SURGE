@@ -5,7 +5,6 @@
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
 #include <array>
-#include <vulkan/vk_enum_string_helper.h>
 
 auto surge::renderer::vk::load_shader_module(Context ctx, const char *spirv_path)
     -> Result<VkShaderModule> {
@@ -33,8 +32,7 @@ auto surge::renderer::vk::load_shader_module(Context ctx, const char *spirv_path
       vkCreateShaderModule(ctx->device, &create_info, get_alloc_callbacks(), &shader_module)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create shader module from SPIRV file {}: {}", spirv_path,
-              string_VkResult(result));
+    log_error("Unable create shader module from SPIRV file {}", spirv_path);
     return Err{Error::vk_shader_module_create};
   } else {
     log_info("Loaded {} as SPIRV shader module, handle {}", spirv_path,
@@ -179,7 +177,7 @@ auto surge::renderer::vk::GraphicsPipelineBuilder::build(VkDevice device) -> Res
                                               get_alloc_callbacks(), &pipeline)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create graphics pipeline: {}", string_VkResult(result));
+    log_error("Unable create graphics pipeline:");
     return Err{Error::vk_graphics_pipeline_create};
   }
 

@@ -41,8 +41,6 @@
         "verbose"
       ]
     },
-    "vulkan",
-    "vulkan-utility-libraries",
     "vulkan-memory-allocator",
     "xxhash"
   ]

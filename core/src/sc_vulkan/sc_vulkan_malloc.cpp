@@ -4,9 +4,6 @@
 
 #include "sc_allocators.hpp"
 #include "sc_logging.hpp"
-#include "sc_options.hpp"
-
-#include <vulkan/vk_enum_string_helper.h>
 
 static auto vk_malloc(void *, size_t size, size_t alignment,
                       [[maybe_unused]] VkSystemAllocationScope scope) -> void * {
@@ -80,7 +77,7 @@ auto surge::renderer::vk::create_memory_allocator(VkInstance instance, VkPhysica
   const auto result{vmaCreateAllocator(&alloc_info, &allocator)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create memory allocator: {}", string_VkResult(result));
+    log_error("Unable create memory allocator:");
     return Err{Error::vk_allocator_creation};
   }
 

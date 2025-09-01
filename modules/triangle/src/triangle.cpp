@@ -5,8 +5,6 @@
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 #include "sc_vulkan/sc_vulkan_pipelines.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 namespace globals {
 
 static VkPipelineLayout pipeline_layout;
@@ -44,7 +42,7 @@ static auto create_pipeline(surge::renderer::vk::Context vk_ctx) -> surge::Resul
                                      &globals::pipeline_layout)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create compue pipeline layout: {}", string_VkResult(result));
+    log_error("Unable create compue pipeline layout");
     return Err{Error::vk_pipeline_layout_create};
   }
 

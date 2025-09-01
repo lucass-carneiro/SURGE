@@ -3,8 +3,6 @@
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
 
 static VKAPI_ATTR auto VKAPI_CALL debug_callback(
@@ -102,7 +100,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance) -> Result<VkDebugU
   const auto result{func(instance, &create_info, get_alloc_callbacks(), &dbg_msg)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create debug messenger: {}", string_VkResult(result));
+    log_error("Unable create debug messenger:");
     return Err{Error::vk_dbg_msg_create};
   } else {
     return dbg_msg;
@@ -126,7 +124,7 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
   const auto result{func(instance, &create_info, get_alloc_callbacks(), &dbg_msg)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create debug messenger: {}", string_VkResult(result));
+    log_error("Unable create debug messenger:");
     return Err{Error::vk_dbg_msg_create};
   } else {
     log_info("Debug messenger created");
@@ -134,8 +132,8 @@ auto surge::renderer::vk::create_dbg_msg(VkInstance instance,
   }
 }
 
-auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance,
-                                          VkDebugUtilsMessengerEXT dbg_msg) -> Result<void> {
+auto surge::renderer::vk::destroy_dbg_msg(VkInstance instance, VkDebugUtilsMessengerEXT dbg_msg)
+    -> Result<void> {
   log_info("Destroying debug messenger");
 
   auto func{reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(

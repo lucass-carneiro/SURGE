@@ -2,8 +2,6 @@
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 auto surge::renderer::vk::create_buffer(Context ctx, size_t size, VkBufferUsageFlags usage_flags,
                                         VmaMemoryUsage memory_usage) -> Result<Buffer> {
   // allocate buffer
@@ -24,7 +22,7 @@ auto surge::renderer::vk::create_buffer(Context ctx, size_t size, VkBufferUsageF
                                     &buffer.allocation, &buffer.info)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to allocate buffer: {}", string_VkResult(result));
+    log_error("Unable to allocate buffer");
     return Err{Error::vk_buffer_allocation};
   }
 

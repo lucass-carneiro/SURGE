@@ -3,8 +3,6 @@
 #include "sc_logging.hpp"
 #include "sc_vulkan/sc_vulkan_malloc.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
-
 void surge::renderer::vk::DescriptorLayoutBuilder::add_binding(u32 binding, VkDescriptorType type) {
   VkDescriptorSetLayoutBinding newbind{};
   newbind.binding = binding;
@@ -39,7 +37,7 @@ auto surge::renderer::vk::DescriptorLayoutBuilder::build(renderer::vk::Context c
       vkCreateDescriptorSetLayout(ctx->device, &info, get_alloc_callbacks(), &set_layout)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable create descriptor set layout: {}", string_VkResult(result));
+    log_error("Unable create descriptor set layout:");
     return Err{Error::vk_descriptor_set_layout_build};
   } else {
     return set_layout;
@@ -75,7 +73,7 @@ auto surge::renderer::vk::DescriptorPoolAllocator::init_pool(
   const auto result{vkCreateDescriptorPool(ctx->device, &pool_info, get_alloc_callbacks(), &pool)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to create descriptor pool: {}", string_VkResult(result));
+    log_error("Unable to create descriptor pool:");
     return Err{Error::vk_descriptor_pool_init};
   } else {
     return {};
@@ -86,7 +84,7 @@ auto surge::renderer::vk::DescriptorPoolAllocator::clear_descriptors(Context ctx
   const auto result{vkResetDescriptorPool(ctx->device, pool, 0)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable to reset descriptor pool: {}", string_VkResult(result));
+    log_error("Unable to reset descriptor pool:");
     return Err{Error::vk_descriptor_pool_reset};
   } else {
     return {};
@@ -111,7 +109,7 @@ auto surge::renderer::vk::DescriptorPoolAllocator::allocate(Context ctx,
   const auto result{vkAllocateDescriptorSets(ctx->device, &allocInfo, &ds)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable allocate descriptor sets: {}", string_VkResult(result));
+    log_error("Unable allocate descriptor sets:");
     return Err{Error::vk_descriptor_set_alloc};
   } else {
     return ds;
@@ -219,7 +217,7 @@ auto surge::renderer::vk::GrowableDescriptorAllocator::allocate(Context ctx,
   }
 
   if (result != VK_SUCCESS) {
-    log_error("Unable allocate descriptor sets: {}", string_VkResult(result));
+    log_error("Unable allocate descriptor sets:");
     return Err{Error::vk_descriptor_set_alloc};
   }
 

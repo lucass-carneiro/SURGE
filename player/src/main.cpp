@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <exception>
+#include <thread>
 
 int main() {
   using namespace surge;
