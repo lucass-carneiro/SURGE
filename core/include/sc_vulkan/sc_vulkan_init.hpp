@@ -8,6 +8,8 @@
 #include "sc_vulkan_types.hpp"
 #include "sc_window.hpp"
 
+#include <vulkan/vulkan.h>
+
 namespace surge::renderer::vk {
 
 auto get_api_version() -> Result<u32>;

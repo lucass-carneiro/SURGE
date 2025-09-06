@@ -237,20 +237,27 @@ endif()
 # Shader compilation
 # -----------------------------------------
 
-set(SURGE_CORE_SHADER_LIST "${PROJECT_SOURCE_DIR}/shaders/sprite_database.vert"
-                           "${PROJECT_SOURCE_DIR}/shaders/sprite_database.frag")
+set(
+  SURGE_CORE_SHADER_LIST
+  "${PROJECT_SOURCE_DIR}/shaders/sprite_database.vert"
+  "${PROJECT_SOURCE_DIR}/shaders/sprite_database.frag"
+)
 
-foreach(GLSL ${SURGE_CORE_SHADER_LIST})
-  message(STATUS "Building shader ${GLSL}")
-  get_filename_component(FILE_NAME ${GLSL} NAME)
-  get_filename_component(FILE_DIR ${GLSL} DIRECTORY)
-  set(SPIRV "${FILE_DIR}/${FILE_NAME}.spv")
-  message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
-  add_custom_command(
-    OUTPUT ${SPIRV}
-    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} -V ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL})
-  list(APPEND CORE_SPIRV_BINARY_FILES ${SPIRV})
-endforeach(GLSL)
+if(Vulkan_glslangValidator_FOUND)
+  foreach(GLSL ${SURGE_CORE_SHADER_LIST})
+    message(STATUS "Building shader ${GLSL}")
+    get_filename_component(FILE_NAME ${GLSL} NAME)
+    get_filename_component(FILE_DIR ${GLSL} DIRECTORY)
+    set(SPIRV "${FILE_DIR}/${FILE_NAME}.spv")
+    message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
+    add_custom_command(
+      OUTPUT ${SPIRV}
+      COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+      ARGS -V  ${GLSL} -o ${SPIRV}
+      DEPENDS ${GLSL}
+    )
+    list(APPEND CORE_SPIRV_BINARY_FILES ${SPIRV})
+  endforeach(GLSL)
+endif()
 
 add_custom_target(SurgeCoreShaders ALL DEPENDS ${CORE_SPIRV_BINARY_FILES})

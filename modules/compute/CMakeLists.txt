@@ -165,8 +165,7 @@ target_link_libraries(SurgeComputeDemoModule PRIVATE SurgeCore)
 # Shader compilation
 # -----------------------------------------
 
-set(SURGE_MODULE_COMPUTE_SHADER_LIST
-    "${PROJECT_SOURCE_DIR}/shaders/gradient.comp")
+set(SURGE_MODULE_COMPUTE_SHADER_LIST "${PROJECT_SOURCE_DIR}/shaders/gradient.comp")
 
 foreach(GLSL ${SURGE_MODULE_COMPUTE_SHADER_LIST})
   message(STATUS "Building shader ${GLSL}")
@@ -176,10 +175,11 @@ foreach(GLSL ${SURGE_MODULE_COMPUTE_SHADER_LIST})
   message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
   add_custom_command(
     OUTPUT ${SPIRV}
-    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL})
+    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+    ARGS -V  ${GLSL} -o ${SPIRV}
+    DEPENDS ${GLSL}
+  )
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
-add_custom_target(SurgeComputeDemoModuleShaders ALL
-                  DEPENDS ${SPIRV_BINARY_FILES})
+add_custom_target(SurgeComputeDemoModuleShaders ALL DEPENDS ${SPIRV_BINARY_FILES})

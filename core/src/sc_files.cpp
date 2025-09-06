@@ -146,7 +146,7 @@ auto surge::files::into_buffer(const char *path, void *output_buffer, usize *out
       return Err{short_dest_buffer};
     }
 
-    if (!os_open_read(path, output_buffer, file_size)) {
+    if (!os_open_read(path, output_buffer, static_cast<unsigned int>(file_size))) {
       return Err{Error::read_error};
     }
 

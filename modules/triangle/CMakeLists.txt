@@ -166,7 +166,8 @@ target_link_libraries(SurgeModuleTriangle PRIVATE SurgeCore)
 
 set(SURGE_MODULE_TRIANGLE_SHADER_LIST
     "${PROJECT_SOURCE_DIR}/shaders/triangle.vert"
-    "${PROJECT_SOURCE_DIR}/shaders/triangle.frag")
+    "${PROJECT_SOURCE_DIR}/shaders/triangle.frag"
+)
 
 foreach(GLSL ${SURGE_MODULE_TRIANGLE_SHADER_LIST})
   message(STATUS "Building shader ${GLSL}")
@@ -176,8 +177,10 @@ foreach(GLSL ${SURGE_MODULE_TRIANGLE_SHADER_LIST})
   message(STATUS "Output binary of ${GLSL}: ${SPIRV}")
   add_custom_command(
     OUTPUT ${SPIRV}
-    COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-    DEPENDS ${GLSL})
+    COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE}
+    ARGS -V  ${GLSL} -o ${SPIRV}
+    DEPENDS ${GLSL}
+  )
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
