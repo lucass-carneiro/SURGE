@@ -8,8 +8,8 @@
 
 #include <algorithm>
 
-auto surge::renderer::vk::get_api_version() -> Result<u32> {
-  log_info("Querying Vulkan API version");
+auto surge::renderer::vk::get_supported_api_version() -> Result<u32> {
+  log_info("Querying available Vulkan API version");
 
   u32 vulkan_api_version{0};
   const auto result{vkEnumerateInstanceVersion(&vulkan_api_version)};
@@ -19,18 +19,14 @@ auto surge::renderer::vk::get_api_version() -> Result<u32> {
     return Err{Error::vk_api_version_query};
   }
 
-  log_info("Vulkan API suported in this system:\n"
-           "  Variant: {}\n"
-           "  Major: {}\n"
-           "  Minor: {}\n"
-           "  Patch: {}",
-           VK_API_VERSION_VARIANT(vulkan_api_version), VK_API_VERSION_MAJOR(vulkan_api_version),
-           VK_API_VERSION_MINOR(vulkan_api_version), VK_API_VERSION_PATCH(vulkan_api_version));
+  log_info("Vulkan API suported in this system: {}.{}.{}-{}",
+           VK_API_VERSION_MAJOR(vulkan_api_version), VK_API_VERSION_MINOR(vulkan_api_version),
+           VK_API_VERSION_PATCH(vulkan_api_version), VK_API_VERSION_VARIANT(vulkan_api_version));
 
   return vulkan_api_version;
 }
 
-auto surge::renderer::vk::get_required_extensions()
+auto surge::renderer::vk::get_required_instance_extensions()
     -> Result<containers::mimalloc::Vector<const char *>> {
   log_info("Querying required Vulkan instance extensions");
 
@@ -43,8 +39,8 @@ auto surge::renderer::vk::get_required_extensions()
   }
 
   // NOLINTNEXTLINE
-  containers::mimalloc::Vector<const char *> required_extensions{
-      glfw_extensions, glfw_extensions + glfw_extension_count};
+  containers::mimalloc::Vector<const char *> required_extensions(
+      glfw_extensions, glfw_extensions + glfw_extension_count);
 
   // Debug handler (if validation layers are available)
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
@@ -53,7 +49,7 @@ auto surge::renderer::vk::get_required_extensions()
 
   // Printout
   for (const auto &ext : required_extensions) {
-    log_info("Vulkan extension required: {}", ext);
+    log_info("Vulkan instance extension required: {}", ext);
   }
 
   return required_extensions;
@@ -113,7 +109,7 @@ auto surge::renderer::vk::get_required_validation_layers()
 
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
 auto surge::renderer::vk::build_instance(
-    const containers::mimalloc::Vector<const char *> &required_extensions,
+    const containers::mimalloc::Vector<const char *> &required_instance_extensions,
     const containers::mimalloc::Vector<const char *> &required_validation_layers,
     const VkDebugUtilsMessengerCreateInfoEXT &dbg_msg_ci) -> Result<VkInstance> {
   log_info("Creating Vulkan Instance");
@@ -135,8 +131,8 @@ auto surge::renderer::vk::build_instance(
   create_info.pApplicationInfo = &app_info;
   create_info.enabledLayerCount = static_cast<u32>(required_validation_layers.size());
   create_info.ppEnabledLayerNames = required_validation_layers.data();
-  create_info.enabledExtensionCount = static_cast<u32>(required_extensions.size());
-  create_info.ppEnabledExtensionNames = required_extensions.data();
+  create_info.enabledExtensionCount = static_cast<u32>(required_instance_extensions.size());
+  create_info.ppEnabledExtensionNames = required_instance_extensions.data();
 
   VkInstance instance{};
   const auto result{vkCreateInstance(&create_info, get_alloc_callbacks(), &instance)};
@@ -151,7 +147,8 @@ auto surge::renderer::vk::build_instance(
 }
 #else
 auto surge::renderer::vk::build_instance(
-    const containers::mimalloc::Vector<const char *> &required_extensions) -> Result<VkInstance> {
+    const containers::mimalloc::Vector<const char *> &required_instance_extensions)
+    -> Result<VkInstance> {
   log_info("Creating Vulkan Instance");
 
   VkApplicationInfo app_info{
@@ -171,8 +168,8 @@ auto surge::renderer::vk::build_instance(
   create_info.pApplicationInfo = &app_info;
   create_info.enabledLayerCount = 0;
   create_info.ppEnabledLayerNames = nullptr;
-  create_info.enabledExtensionCount = static_cast<u32>(required_extensions.size());
-  create_info.ppEnabledExtensionNames = required_extensions.data();
+  create_info.enabledExtensionCount = static_cast<u32>(required_instance_extensions.size());
+  create_info.ppEnabledExtensionNames = required_instance_extensions.data();
 
   VkInstance instance{};
   const auto result{vkCreateInstance(&create_info, get_alloc_callbacks(), &instance)};
@@ -187,9 +184,8 @@ auto surge::renderer::vk::build_instance(
 }
 #endif
 
-auto surge::renderer::vk::select_physical_device(VkInstance instance) -> Result<VkPhysicalDevice> {
-  log_info("Selecting first suitable physical device");
-
+auto surge::renderer::vk::get_available_physical_devices(VkInstance instance)
+    -> Result<containers::mimalloc::Vector<VkPhysicalDevice>> {
   uint32_t dev_count{0};
   auto result{vkEnumeratePhysicalDevices(instance, &dev_count, nullptr)};
 
@@ -206,23 +202,11 @@ auto surge::renderer::vk::select_physical_device(VkInstance instance) -> Result<
     return Err{Error::vk_phys_dev_enum};
   }
 
-  for (const auto &phys_dev : phys_devs) {
-    if (is_device_suitable(phys_dev)) {
-      return phys_dev;
-    }
-  }
-
-  log_error("Unable to find suitable Vulkan Physical Device");
-
-  return Err{Error::vk_phys_dev_no_suitable};
+  return phys_devs;
 }
 
-auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool {
-  log_info("Cheking device suitability");
-
-  VkPhysicalDeviceProperties dev_prop{};
-  vkGetPhysicalDeviceProperties(phys_dev, &dev_prop);
-
+auto surge::renderer::vk::get_available_device_features(VkPhysicalDevice phys_dev)
+    -> std::tuple<VkPhysicalDeviceVulkan12Features, VkPhysicalDeviceVulkan13Features> {
   VkPhysicalDeviceVulkan13Features features_13{};
   features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
   features_13.pNext = nullptr;
@@ -237,112 +221,16 @@ auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool 
 
   vkGetPhysicalDeviceFeatures2(phys_dev, &features);
 
-  const auto has_required_features{
-      features_12.bufferDeviceAddress && features_12.descriptorIndexing
-      && features_12.descriptorIndexing && features_12.shaderSampledImageArrayNonUniformIndexing
-      && features_12.runtimeDescriptorArray && features_12.descriptorBindingVariableDescriptorCount
-      && features_12.descriptorBindingPartiallyBound && features_13.dynamicRendering
-      && features_13.synchronization2};
-
-  const auto idxs{find_queue_families(phys_dev)};
-  const auto has_all_queues{idxs.graphics_family.has_value() && idxs.transfer_family.has_value()
-                            && idxs.compute_family.has_value()};
-
-  const auto has_device_extensions{get_required_device_extensions(phys_dev).has_value()};
-
-  if (has_required_features && has_all_queues && has_device_extensions) {
-    switch (dev_prop.deviceType) {
-    case VK_PHYSICAL_DEVICE_TYPE_CPU:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: CPU",
-               dev_prop.deviceName);
-      break;
-
-    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: Discrete GPU",
-               dev_prop.deviceName);
-      break;
-
-    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: Integrated GPU",
-               dev_prop.deviceName);
-      break;
-
-    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: Virtual GPU",
-               dev_prop.deviceName);
-      break;
-
-    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: Other",
-               dev_prop.deviceName);
-      break;
-
-    case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
-      log_error("Invalid device type");
-      return false;
-
-    default:
-      log_info("Suitable device found:\n"
-               "  Name: {}\n"
-               "  Type: Unknown",
-               dev_prop.deviceName);
-      break;
-    }
-    return true;
-  } else {
-    return false;
-  }
+  return std::make_tuple(features_12, features_13);
 }
 
-auto surge::renderer::vk::find_queue_families(VkPhysicalDevice phys_dev) -> QueueFamilyIndices {
-  QueueFamilyIndices idxs{};
-
-  uint32_t queue_family_count{0};
-  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, nullptr);
-
-  containers::mimalloc::Vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, queue_families.data());
-
-  for (u32 i = 0; const auto &family : queue_families) {
-    if (family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-      idxs.graphics_family = i;
-    }
-
-    if (family.queueFlags & VK_QUEUE_TRANSFER_BIT) {
-      idxs.transfer_family = i;
-    }
-
-    if (family.queueFlags & VK_QUEUE_COMPUTE_BIT) {
-      idxs.compute_family = i;
-    }
-
-    i++;
-  }
-
-  return idxs;
-}
-
-auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_dev)
-    -> Result<containers::mimalloc::Vector<const char *>> {
-  using std::strcmp;
-
-  log_info("Cheking device extensions");
-
+auto surge::renderer::vk::get_available_device_extensions(VkPhysicalDevice phys_dev)
+    -> Result<containers::mimalloc::Vector<VkExtensionProperties>> {
   u32 extension_count{0};
   auto result{vkEnumerateDeviceExtensionProperties(phys_dev, nullptr, &extension_count, nullptr)};
 
   if (result != VK_SUCCESS) {
-    log_error("Unable retrieve device extension properties:");
+    log_error("Unable retrieve available device extensions.");
     return Err{Error::vk_phys_dev_ext_enum};
   }
 
@@ -355,48 +243,33 @@ auto surge::renderer::vk::get_required_device_extensions(VkPhysicalDevice phys_d
     return Err{Error::vk_phys_dev_ext_enum};
   }
 
-  containers::mimalloc::Vector<const char *> required_extensions{};
-  required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-  required_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-  required_extensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-
-  for (const auto &ext_name : required_extensions) {
-    bool found{false};
-
-    for (const auto &ext_properties : available_extensions) {
-      if (strcmp(ext_name, ext_properties.extensionName) == 0) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      return Err{Error::vk_phys_dev_ext_missing};
-    }
-  }
-
-  return required_extensions;
+  return available_extensions;
 }
 
-auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Result<VkDevice> {
-  log_info("Creating logical device");
+auto surge::renderer::vk::get_available_device_queue_families(VkPhysicalDevice phys_dev)
+    -> containers::mimalloc::Vector<VkQueueFamilyProperties> {
+  uint32_t queue_family_count{0};
+  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, nullptr);
 
-  // Extensions
-  const auto device_extensions{get_required_device_extensions(phys_dev)};
-  if (!device_extensions) {
-    return Err{device_extensions.error()};
-  }
+  containers::mimalloc::Vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(phys_dev, &queue_family_count, queue_families.data());
 
+  return queue_families;
+}
+
+auto surge::renderer::vk::get_required_device_features()
+    -> std::tuple<VkPhysicalDeviceVulkan12Features, VkPhysicalDeviceVulkan13Features> {
   // vulkan 1.3 features
   VkPhysicalDeviceVulkan13Features features_13{};
   features_13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  features_13.pNext = nullptr;
   features_13.dynamicRendering = true;
   features_13.synchronization2 = true;
 
   // vulkan 1.2 features
   VkPhysicalDeviceVulkan12Features features_12{};
   features_12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  features_12.pNext = &features_13;
+  features_12.pNext = nullptr;
   features_12.bufferDeviceAddress = true;
   features_12.descriptorIndexing = true;
   features_12.shaderSampledImageArrayNonUniformIndexing = true;
@@ -404,40 +277,204 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Re
   features_12.descriptorBindingVariableDescriptorCount = true;
   features_12.descriptorBindingPartiallyBound = true;
 
-  // Shader Objects EXT feature
-  VkPhysicalDeviceShaderObjectFeaturesEXT shader_objects_ext{};
-  shader_objects_ext.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
-  shader_objects_ext.pNext = &features_12;
-  shader_objects_ext.shaderObject = true;
+  return std::make_tuple(features_12, features_13);
+}
+
+auto surge::renderer::vk::get_required_device_extensions()
+    -> containers::mimalloc::Vector<const char *> {
+  containers::mimalloc::Vector<const char *> required_extensions{};
+
+  required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  required_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
+  return required_extensions;
+}
+
+auto surge::renderer::vk::get_required_device_queue_families()
+    -> containers::mimalloc::Vector<VkQueueFlagBits> {
+  containers::mimalloc::Vector<VkQueueFlagBits> queue_families;
+
+  queue_families.push_back(VK_QUEUE_GRAPHICS_BIT);
+  queue_families.push_back(VK_QUEUE_TRANSFER_BIT);
+  queue_families.push_back(VK_QUEUE_COMPUTE_BIT);
+
+  return queue_families;
+}
+
+auto surge::renderer::vk::device_has_required_features(VkPhysicalDevice phys_dev) -> bool {
+  const auto [av_features_12, av_features_13] = get_available_device_features(phys_dev);
+
+  const auto has_features_12{av_features_12.bufferDeviceAddress && av_features_12.descriptorIndexing
+                             && av_features_12.shaderSampledImageArrayNonUniformIndexing
+                             && av_features_12.runtimeDescriptorArray
+                             && av_features_12.descriptorBindingVariableDescriptorCount
+                             && av_features_12.descriptorBindingPartiallyBound};
+
+  const auto has_features_13{av_features_13.dynamicRendering && av_features_13.synchronization2};
+
+  return has_features_12 && has_features_13;
+}
+
+auto surge::renderer::vk::device_has_required_extensions(VkPhysicalDevice phys_dev) -> bool {
+  const auto av_dev_ext{get_available_device_extensions(phys_dev)};
+
+  if (!av_dev_ext) {
+    return false;
+  }
+
+  const auto rq_dev_ext{get_required_device_extensions()};
+
+  for (const auto &rq_ext : rq_dev_ext) {
+    bool ext_found{false};
+
+    for (const auto &av_ext : *av_dev_ext) {
+      if (strcmp(rq_ext, av_ext.extensionName) == 0) {
+        ext_found = true;
+        break;
+      }
+    }
+
+    if (!ext_found) {
+      log_error("Extension {} not available on device", rq_ext);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+auto surge::renderer::vk::device_has_required_queue_families(VkPhysicalDevice phys_dev) -> bool {
+  const auto av_queue_families{get_available_device_queue_families(phys_dev)};
+  const auto rq_queue_families{get_required_device_queue_families()};
+
+  // Check if the device has all queue families
+  for (const auto &rq_family : rq_queue_families) {
+    bool found{false};
+
+    for (const auto &av_queue_family : av_queue_families) {
+      if (rq_family & av_queue_family.queueFlags) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+auto surge::renderer::vk::get_queue_family_indices(
+    const containers::mimalloc::Vector<VkQueueFamilyProperties> &queue_families)
+    -> QueueFamilyIndices {
+  QueueFamilyIndices indices{};
+
+  for (u32 i = 0; i < queue_families.size(); i++) {
+    if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+      indices.graphics_family = i;
+    }
+
+    if (queue_families[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+      indices.transfer_family = i;
+    }
+    if (queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+      indices.compute_family = i;
+    }
+  }
+
+  return indices;
+}
+
+auto surge::renderer::vk::select_physical_device(VkInstance instance) -> Result<VkPhysicalDevice> {
+  log_info("Selecting first suitable physical device");
+
+  const auto phys_devs{get_available_physical_devices(instance)};
+  if (!phys_devs) {
+    return Err{phys_devs.error()};
+  }
+
+  for (const auto &phys_dev : *phys_devs) {
+    if (is_device_suitable(phys_dev)) {
+      return phys_dev;
+    }
+  }
+
+  log_error("Unable to find suitable Vulkan Physical Device");
+  return Err{Error::vk_phys_dev_no_suitable};
+}
+
+auto surge::renderer::vk::is_device_suitable(VkPhysicalDevice phys_dev) -> bool {
+  VkPhysicalDeviceProperties dev_props{};
+  vkGetPhysicalDeviceProperties(phys_dev, &dev_props);
+
+  log_info("Cheking suitability of {}", dev_props.deviceName);
+
+  const auto has_required_features{device_has_required_features(phys_dev)};
+  const auto has_device_extensions{device_has_required_extensions(phys_dev)};
+  const auto has_queue_families{device_has_required_queue_families(phys_dev)};
+
+  // TODO: This is probably overly restrictive and should be relaxed in the future.
+  const auto queue_families{get_available_device_queue_families(phys_dev)};
+  const auto indices{get_queue_family_indices(queue_families)};
+
+  const auto non_repeated_queue_family_indices{indices.graphics_family != indices.compute_family
+                                               && indices.graphics_family != indices.transfer_family
+                                               && indices.compute_family
+                                                      != indices.transfer_family};
+
+  const auto suitable{has_required_features && has_device_extensions && has_queue_families
+                      && non_repeated_queue_family_indices};
+
+  if (suitable) {
+    log_info("Suitable device found: {}", dev_props.deviceName);
+    return true;
+  } else {
+    log_info("{} {} {}", has_required_features, has_device_extensions, has_queue_families);
+    return false;
+  }
+}
+
+auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Result<VkDevice> {
+  log_info("Creating logical device");
+
+  // Enabled features. We have to restore the pointer chain explicitly.
+  auto [features_12, features_13] = get_required_device_features();
+
+  features_12.pNext = &features_13;
 
   VkPhysicalDeviceFeatures2 features{};
   features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-  features.pNext = &shader_objects_ext;
+  features.pNext = &features_12;
 
-  const auto indices{find_queue_families(phys_dev)};
+  // Extensions
+  const auto device_extensions{get_required_device_extensions()};
 
-  const float queue_priority{1.0f};
+  // Queues
+  const auto device_queue_families{get_available_device_queue_families(phys_dev)};
+  const auto indices{get_queue_family_indices(device_queue_families)};
 
-  // value_or(0) never returns 0 here because the selected device is only suitable if all queues
-  // are found.
+  constexpr float queue_priority{1.0f};
+
   VkDeviceQueueCreateInfo graphics_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                             .pNext = nullptr,
                                             .flags = 0,
-                                            .queueFamilyIndex = indices.graphics_family.value_or(0),
+                                            .queueFamilyIndex = indices.graphics_family,
                                             .queueCount = 1,
                                             .pQueuePriorities = &queue_priority};
 
   VkDeviceQueueCreateInfo transfer_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                             .pNext = nullptr,
                                             .flags = 0,
-                                            .queueFamilyIndex = indices.transfer_family.value_or(0),
+                                            .queueFamilyIndex = indices.transfer_family,
                                             .queueCount = 1,
                                             .pQueuePriorities = &queue_priority};
 
   VkDeviceQueueCreateInfo compute_queue_ci{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                                            .pNext = nullptr,
                                            .flags = 0,
-                                           .queueFamilyIndex = indices.compute_family.value_or(0),
+                                           .queueFamilyIndex = indices.compute_family,
                                            .queueCount = 1,
                                            .pQueuePriorities = &queue_priority};
 
@@ -452,8 +489,8 @@ auto surge::renderer::vk::create_logical_device(VkPhysicalDevice phys_dev) -> Re
       .pQueueCreateInfos = queue_create_infos.data(),
       .enabledLayerCount = 0,
       .ppEnabledLayerNames = nullptr,
-      .enabledExtensionCount = static_cast<u32>(device_extensions->size()),
-      .ppEnabledExtensionNames = device_extensions->data(),
+      .enabledExtensionCount = static_cast<u32>(device_extensions.size()),
+      .ppEnabledExtensionNames = device_extensions.data(),
       .pEnabledFeatures = nullptr};
 
   VkDevice log_dev{};
@@ -489,11 +526,12 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
 
   QueueHandles handles{};
 
-  const auto idxs{find_queue_families(phys_dev)};
+  const auto device_queue_families{get_available_device_queue_families(phys_dev)};
+  const auto indices{get_queue_family_indices(device_queue_families)};
 
   VkBool32 graphics_present_suport{false};
-  const auto result{vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev, idxs.graphics_family.value_or(0),
-                                                         surface, &graphics_present_suport)};
+  const auto result{vkGetPhysicalDeviceSurfaceSupportKHR(phys_dev, indices.graphics_family, surface,
+                                                         &graphics_present_suport)};
   if (result != VK_SUCCESS) {
     log_error("Unable to query graphics queue for presentation support");
     return Err{Error::vk_surface_present_query};
@@ -504,11 +542,9 @@ auto surge::renderer::vk::get_queue_handles(VkPhysicalDevice phys_dev, VkDevice 
     return Err{Error::vk_surface_present_unable};
   }
 
-  // value_or(0) never returns 0 here because the selected device is only suitable if all queues
-  // are found.
-  handles.graphics_idx = idxs.graphics_family.value_or(0);
-  handles.transfer_idx = idxs.transfer_family.value_or(0);
-  handles.compute_idx = idxs.compute_family.value_or(0);
+  handles.graphics_idx = indices.graphics_family;
+  handles.transfer_idx = indices.transfer_family;
+  handles.compute_idx = indices.compute_family;
 
   vkGetDeviceQueue(log_dev, handles.graphics_idx, 0, &(handles.graphics));
   vkGetDeviceQueue(log_dev, handles.transfer_idx, 0, &(handles.transfer));

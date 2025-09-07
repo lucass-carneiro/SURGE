@@ -25,22 +25,22 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
   new (ctx)(ContextData)();
 
   // API version
-  const auto api_version{get_api_version()};
-  if (!api_version) {
-    return Err{api_version.error()};
+  const auto supported_api_version{get_supported_api_version()};
+  if (!supported_api_version) {
+    return Err{supported_api_version.error()};
   }
 
-  // Extensions
-  const auto instance_extensions{get_required_extensions()};
-  if (!instance_extensions) {
-    return Err{instance_extensions.error()};
+  // Instance Extensions
+  const auto required_instance_extensions{get_required_instance_extensions()};
+  if (!required_instance_extensions) {
+    return Err{required_instance_extensions.error()};
   }
 
   // Validation layers
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto validation_layers{get_required_validation_layers()};
-  if (!validation_layers) {
-    return Err{validation_layers.error()};
+  const auto required_validation_layers{get_required_validation_layers()};
+  if (!required_validation_layers) {
+    return Err{required_validation_layers.error()};
   }
 
   auto dbg_msg_ci{dbg_msg_create_info()};
@@ -48,14 +48,15 @@ auto initialize(window::Window w, const config::RendererAttributes &r_attrs,
 
 // Instance
 #ifdef SURGE_USE_VK_VALIDATION_LAYERS
-  const auto instance{build_instance(*instance_extensions, *validation_layers, dbg_msg_ci)};
+  const auto instance{
+      build_instance(*required_instance_extensions, *required_validation_layers, dbg_msg_ci)};
   if (!instance) {
     return Err{instance.error()};
   } else {
     ctx->instance = *instance;
   }
 #else
-  const auto instance{build_instance(*instance_extensions)};
+  const auto instance{build_instance(*required_instance_extensions)};
   if (!instance) {
     return Err{instance.error()};
   } else {

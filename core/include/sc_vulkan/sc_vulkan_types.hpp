@@ -17,10 +17,9 @@
 namespace surge::renderer::vk {
 
 struct QueueFamilyIndices {
-  std::optional<u32> graphics_family{};
-  std::optional<u32> present_family{};
-  std::optional<u32> transfer_family{};
-  std::optional<u32> compute_family{};
+  u32 graphics_family{0};
+  u32 transfer_family{0};
+  u32 compute_family{0};
 };
 
 struct QueueHandles {
