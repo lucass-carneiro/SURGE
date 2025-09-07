@@ -11,6 +11,12 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
+// clang-format off
+// TODO: Use custom allocators
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+// clang-format on
+
 // Per sprite shader data
 struct SpriteData {
   alignas(16) glm::mat4 model_matrix{1.0};      // Model matrix
@@ -29,6 +35,12 @@ struct PushConstants {
 
 static constexpr auto push_consants_size{sizeof(PushConstants)};
 
+struct RawImageData {
+  surge::renderer::vk::Buffer image_data{};
+  VkExtent3D image_extent{0, 0, 0};
+  surge::usize size{0};
+};
+
 struct surge::renderer::vk::atom::sprite_database::SpriteDatabaseImpl {
   usize max_sprites{0}; // How many sprites we can add.
 
@@ -39,7 +51,7 @@ struct surge::renderer::vk::atom::sprite_database::SpriteDatabaseImpl {
   usize gpu_data_buffer_size{0};             // Num of sprite data elms. sent to gpu_data_buffer
   VkDeviceAddress gpu_data_buffer_address{}; // Address of GPU buffer with sprite data.
 
-  containers::mimalloc::Vector<Buffer> img_src_buffers{};        // CPU staging image data
+  containers::mimalloc::Vector<RawImageData> img_src_buffers{};  // CPU staging image data
   containers::mimalloc::Vector<AllocatedImage> img_dst_images{}; // GPU image data
 
   VkCommandBuffer cmd_buff{VK_NULL_HANDLE}; // Database cmd. buffer.
@@ -68,6 +80,8 @@ template <surge::usize dim> static inline auto gen_random_img() -> RandomImageDa
   using namespace surge;
 
   RandomImageData<dim> image{};
+  image.img_extent = VkExtent3D{dim, dim, 1};
+  image.total_image_size = 4 * dim * dim;
 
   static random::Xoshiro128 rng{random::Xoshiro128::State{{31, 47, 79, 113}}};
 
@@ -457,7 +471,7 @@ void surge::renderer::vk::atom::sprite_database::destroy(Context ctx, SpriteData
 
   // Destroy CPU images
   for (const auto &buffer : database->img_src_buffers) {
-    destroy_buffer(ctx, buffer);
+    destroy_buffer(ctx, buffer.image_data);
   }
   database->img_src_buffers.~vector();
 
@@ -488,12 +502,40 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
   // TODO: Read data from actual image
   {
     for (const auto &path : paths) {
-      // TODO: Get image data
-      const auto image_data{gen_random_img<8>()};
+      void *image_bytes{nullptr};
+      VkExtent3D image_extent{0, 0, 0};
+      usize total_image_size{0};
+
+      // Ask STB to read an image file into a buffer. Use a random texture in case of failure
+      int width{0}, height{0}, channels{0};
+      const auto img_file_data{stbi_load(path, &width, &height, &channels, 0)};
+
+      if (!img_file_data) {
+        log_warn("Unable to load image data from {}. Using default sprite", path);
+
+        auto random_image_data{gen_random_img<8>()};
+
+        image_bytes = static_cast<void *>(random_image_data.colors.data());
+        image_extent = random_image_data.img_extent;
+        total_image_size = random_image_data.total_image_size;
+      } else {
+        image_bytes = static_cast<void *>(img_file_data);
+        image_extent.width = static_cast<u32>(width);
+        image_extent.height = static_cast<u32>(height);
+        image_extent.depth = 1;
+        total_image_size = static_cast<usize>(width * height * channels);
+
+        /*
+         *TODO: We should get rid of this restriction. This would mean changing the GPU image
+         * format allocation to be adapted to the number of channels in the image
+         */
+        if (channels != 4) {
+          log_warn("Loaded image has {} channels. This will probably fail to load", channels);
+        }
+      }
 
       // Create source buffer
-      auto img_src_buffer{create_buffer(ctx, image_data.total_image_size,
-                                        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      auto img_src_buffer{create_buffer(ctx, total_image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                         VMA_MEMORY_USAGE_CPU_TO_GPU)};
 
       if (!img_src_buffer) {
@@ -502,11 +544,15 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
       }
 
       // Transfer image data to source buffer
-      memcpy(img_src_buffer->info.pMappedData, image_data.colors.data(),
-             image_data.total_image_size);
+      memcpy(img_src_buffer->info.pMappedData, image_bytes, total_image_size);
+
+      // If using STB, get rid of the STB buffer
+      if (img_file_data) {
+        stbi_image_free(img_file_data);
+      }
 
       // Save the buffer to source vector
-      database->img_src_buffers.push_back(*img_src_buffer);
+      database->img_src_buffers.push_back(RawImageData{*img_src_buffer, image_extent});
     }
   }
 
@@ -514,9 +560,10 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
   {
     for (usize i = 0; i < database->img_src_buffers.size(); i++) {
       // Create destination buffer
-      // TODO: Need to find a way to get the extent from the image data
-      VkExtent3D tmp_extent{8, 8, 1};
-      auto img_dest_image{create_image(ctx, tmp_extent, VK_FORMAT_R8G8B8A8_UNORM,
+      const VkExtent3D &img_extent{database->img_src_buffers[i].image_extent};
+
+      // TODO: We are making an assumption about the image format here. This could be a problem
+      auto img_dest_image{create_image(ctx, img_extent, VK_FORMAT_R8G8B8A8_UNORM,
                                        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                                            | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                                        false)};
@@ -560,7 +607,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
 
     // Begin transfer commands
     for (usize i = 0; i < database->img_src_buffers.size(); i++) {
-      auto &src_buffer{database->img_src_buffers[i]};
+      auto &src_buffer{database->img_src_buffers[i].image_data};
       auto &dst_image{database->img_dst_images[i]};
 
       transition_image(cmd, dst_image.image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -620,7 +667,7 @@ auto surge::renderer::vk::atom::sprite_database::upload_images(Context ctx, Spri
   // 5. Reset source buffers
   {
     for (auto &buffer : database->img_src_buffers) {
-      destroy_buffer(ctx, buffer);
+      destroy_buffer(ctx, buffer.image_data);
     }
     database->img_src_buffers.clear();
   }
