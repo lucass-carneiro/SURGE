@@ -1,0 +1,9 @@
+[package]
+name = "surge-hot-reload"
+version = "1.4.0"
+edition = "2024"
+
+[dependencies]
+surge-core = { path = "../surge-core" }
+libloading = "0.9.0"
+

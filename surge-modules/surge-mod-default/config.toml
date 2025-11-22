@@ -1,0 +1,22 @@
+[window]
+name = "SURGE: Default Module"
+monitor_index = 1
+windowed = true
+cursor = true
+allow_resizes = false
+
+[resolution]
+width = 800
+height = 600
+
+[renderer]
+vsync = true
+msaa = true
+cap_fps = true
+fps_cap = 60
+
+[clear_color]
+r = 0.2
+g = 0.3
+b = 0.3
+a = 1.0

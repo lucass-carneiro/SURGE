@@ -1,0 +1,11 @@
+[package]
+name = "surge-mod-default"
+version = "1.4.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4.28"
+surge-core = { path = "../../surge-core" }
+
+[lib]
+crate-type = ["rlib", "dylib"]
