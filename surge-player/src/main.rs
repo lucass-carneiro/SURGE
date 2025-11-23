@@ -2,9 +2,16 @@ extern crate surge_core as sc;
 
 #[cfg(feature = "hot_reloading")]
 extern crate surge_hot_reload;
-
 #[cfg(not(feature = "hot_reloading"))]
-extern crate surge_mod_default;
+extern crate surge_mod_default as md;
+
+use std::time::Instant;
+use std::{sync::Arc, time::Duration};
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::EventLoop,
+    window::{Fullscreen, WindowBuilder},
+};
 
 mod cli;
 
@@ -25,6 +32,25 @@ pub fn main() {
     /***************
      * Init window *
      ***************/
+    let event_loop = EventLoop::new();
+    let primary_monitor_handle = event_loop.primary_monitor();
+
+    let window = match WindowBuilder::new()
+        .with_title(engine_config.window.name.clone())
+        .with_fullscreen(if engine_config.window.windowed {
+            None
+        } else {
+            Some(Fullscreen::Borderless(primary_monitor_handle))
+        })
+        .with_resizable(engine_config.window.allow_resizes)
+        .build(&event_loop)
+    {
+        Ok(o) => Arc::new(o),
+        Err(e) => {
+            log::error!("Unable to create SURGE window: {}", e);
+            return;
+        }
+    };
 
     /***********************
      * Init render backend *
@@ -33,38 +59,72 @@ pub fn main() {
     /*********************
      * Load First module *
      *********************/
+    md::on_load();
 
     /***********************
      * Main Loop variables *
      ***********************/
+    let desired_loop_time = 1.0 / (engine_config.renderer.fps_cap as f64);
 
     /*************
      * Main Loop *
      *************/
-    // Event handling
-    // Stop rendering if minimized
-    // Rebuild swapchain if necessary
-    // Handle hot reloading
-    // Call module update
-    // Acquire swapchain image
-    // Begin command recording
-    // Clear screen
-    // Call module draw
-    // End command recording
-    // Submit command buffer
-    // Present
-    // Refresh HR key state
-    // FPS Cap.
+    event_loop.run(move |event, _, control_flow| {
+        let loop_timer = Instant::now();
 
-    /********************
-     * Finalize modules *
-     ********************/
+        control_flow.set_poll();
 
-    /********************************
-     * Finalize window and renderer *
-     ********************************/
+        // Event handling
+        match event {
+            // Window close
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                control_flow.set_exit();
+            }
 
-    #[cfg(feature = "hot_reloading")]
-    let lib = surge_hot_reload::HotReloadModule::load_module("target/debug/", "surge_mod_default");
-    surge_mod_default::mod_func();
+            // Engine shutdown
+            Event::LoopDestroyed => {
+                log::info!("Closing SURGE window");
+
+                /********************
+                 * Finalize modules *
+                 ********************/
+                md::on_unload();
+
+                /********************************
+                 * Finalize window and renderer *
+                 ********************************/
+                log::info!("TODO: Finalize renderer");
+            }
+
+            _ => (),
+        }
+
+        // Stop rendering if minimized
+        // Rebuild swapchain if necessary
+        // Handle hot reloading
+        // Call module update
+        md::update();
+
+        // Acquire swapchain image
+        // Begin command recording
+        // Clear screen
+
+        // Call module draw
+        md::draw();
+
+        // End command recording
+        // Submit command buffer
+        // Present
+        // Refresh HR key state
+
+        // FPS Cap.
+        let loop_time = loop_timer.elapsed().as_secs_f64();
+
+        if engine_config.renderer.cap_fps && (loop_time > desired_loop_time) {
+            std::thread::sleep(Duration::from_secs_f64(loop_time - desired_loop_time));
+        }
+    });
 }

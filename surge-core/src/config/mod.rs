@@ -8,9 +8,7 @@ use toml;
 #[derive(Debug, Deserialize)]
 pub struct WindowConfig {
     pub name: String,
-    pub monitor_index: u32,
     pub windowed: bool,
-    pub cursor: bool,
     pub allow_resizes: bool,
 }
 

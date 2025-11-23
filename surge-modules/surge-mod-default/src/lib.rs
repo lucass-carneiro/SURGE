@@ -3,7 +3,21 @@ extern crate surge_core;
 use log;
 
 #[unsafe(no_mangle)]
-pub fn mod_func() {
-    log::info!("This is a mod func!");
-    surge_core::core_func();
+pub fn on_load() {
+    log::info!("Module on_load");
+}
+
+#[unsafe(no_mangle)]
+pub fn on_unload() {
+    log::info!("Module on_unload");
+}
+
+#[unsafe(no_mangle)]
+pub fn update() {
+    // TODO
+}
+
+#[unsafe(no_mangle)]
+pub fn draw() {
+    // TODO
 }

@@ -10,6 +10,7 @@ log = "0.4.28"
 surge-core = { path = "../surge-core" }
 surge-hot-reload = { path = "../surge-hot-reload" }
 surge-mod-default = { path = "../surge-modules/surge-mod-default"}
+winit = "0.28.0"
 
 [features]
 default = []
