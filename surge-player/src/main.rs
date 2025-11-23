@@ -7,6 +7,7 @@ extern crate surge_mod_default as md;
 
 use std::time::Instant;
 use std::{sync::Arc, time::Duration};
+use winit::dpi::PhysicalSize;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
@@ -43,6 +44,10 @@ pub fn main() {
             Some(Fullscreen::Borderless(primary_monitor_handle))
         })
         .with_resizable(engine_config.window.allow_resizes)
+        .with_inner_size(PhysicalSize::new(
+            engine_config.resolution.width,
+            engine_config.resolution.height,
+        ))
         .build(&event_loop)
     {
         Ok(o) => Arc::new(o),
@@ -55,6 +60,7 @@ pub fn main() {
     /***********************
      * Init render backend *
      ***********************/
+    let vulkan_context = sc::vulkan::VulkanContext::new(&event_loop).unwrap();
 
     /*********************
      * Load First module *

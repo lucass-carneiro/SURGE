@@ -26,3 +26,20 @@ pub enum ConfigError {
         error: toml::de::Error,
     },
 }
+
+#[derive(Debug, Error)]
+pub enum VulkanError {
+    #[error("Unable to lod Vulkan library: {0}")]
+    LibraryLoadingError(#[from] vulkano::LoadingError),
+
+    #[cfg(feature = "validation_layers")]
+    #[error("Unable to query available Vulkan validation layers {0}")]
+    ValidationLayerQueryError(vulkano::VulkanError),
+
+    #[cfg(feature = "validation_layers")]
+    #[error("Validation layer {0} is not available")]
+    ValidationLayerNotFound(String),
+
+    #[error("Unable to create Vulkan instance: {0}")]
+    InstanceCreationError(vulkano::VulkanError),
+}
