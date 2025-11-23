@@ -10,7 +10,7 @@ height = 600
 [renderer]
 vsync = true
 msaa = true
-cap_fps = false
+cap_fps = true
 fps_cap = 60
 
 [clear_color]

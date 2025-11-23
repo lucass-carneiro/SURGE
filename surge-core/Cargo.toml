@@ -9,8 +9,8 @@ log = "0.4.28"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.17"
 toml = "0.9.8"
-vulkano = "0.34.0"
-winit = "0.28.0"
+vulkano = "0.35.2"
+winit = "0.30.12"
 
 [features]
 default = ["validation_layers"]

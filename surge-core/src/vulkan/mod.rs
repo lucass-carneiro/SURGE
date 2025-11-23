@@ -13,20 +13,20 @@ use vulkano::{
     },
     swapchain::Surface,
 };
-use winit::event_loop::EventLoop;
+use winit::event_loop::ActiveEventLoop;
 
 #[derive(Debug)]
 pub struct VulkanContext {
     instance: Arc<Instance>,
 }
 
-fn get_required_instance_extensions(event_loop: &EventLoop<()>) -> InstanceExtensions {
+fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
     log::info!("Querying required Vulkan instance extensions");
 
     // Window extensions
-    let mut ext = Surface::required_extensions(event_loop);
+    let mut ext = Surface::required_extensions(event_loop).unwrap();
 
-    // Debug handler (if validation layers are available)
+    //Debug handler
     #[cfg(feature = "validation_layers")]
     {
         ext.ext_debug_utils = true;
@@ -207,7 +207,7 @@ fn build_instance(
 }
 
 impl VulkanContext {
-    pub fn new(event_loop: &EventLoop<()>) -> Result<Self, VulkanError> {
+    pub fn new(event_loop: &ActiveEventLoop) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
 
         // API version
