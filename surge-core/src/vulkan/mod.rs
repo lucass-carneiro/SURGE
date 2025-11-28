@@ -6,7 +6,10 @@ use std::sync::Arc;
 use vulkano::instance::debug::DebugUtilsMessenger;
 use vulkano::{
     Version, VulkanLibrary,
-    device::{DeviceExtensions, QueueFamilyProperties, QueueFlags, physical::PhysicalDevice},
+    device::{
+        Device, DeviceCreateInfo, DeviceExtensions, DeviceFeatures, Queue, QueueCreateInfo,
+        QueueFamilyProperties, QueueFlags, physical::PhysicalDevice,
+    },
     instance::{
         Instance, InstanceCreateInfo, InstanceExtensions, LayerProperties,
         debug::{
@@ -30,6 +33,8 @@ pub struct VulkanContext {
     instance: Arc<Instance>,
     dbg_msg: DebugUtilsMessenger,
     physical_device: Arc<PhysicalDevice>,
+    device: Arc<Device>,
+    queues: Vec<Arc<Queue>>,
 }
 
 fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
@@ -354,6 +359,74 @@ fn select_physical_device(instance: &Arc<Instance>) -> Result<Arc<PhysicalDevice
     Err(VulkanError::UnsuitablePhysicalDevice)
 }
 
+fn get_required_device_features() -> DeviceFeatures {
+    let mut features = DeviceFeatures::empty();
+    features.dynamic_rendering = true;
+    features.synchronization2 = true;
+    features.buffer_device_address = true;
+    features.descriptor_indexing = true;
+    features.shader_sampled_image_array_non_uniform_indexing = true;
+    features.runtime_descriptor_array = true;
+    features.descriptor_binding_variable_descriptor_count = true;
+    features.descriptor_binding_partially_bound = true;
+    features
+}
+
+fn create_logical_device(
+    physical_device: &Arc<PhysicalDevice>,
+) -> Result<(Arc<Device>, Vec<Arc<Queue>>), VulkanError> {
+    log::info!("Creating logical device");
+
+    // Extensions and features
+    let features = get_required_device_features();
+    let extensions = get_required_device_extensions();
+
+    // Queues. We need at least a graphics queue. The other queues are optional
+    let queue_families = physical_device.queue_family_properties();
+    let indices = get_queue_family_indices(queue_families);
+
+    let mut queue_cis: Vec<QueueCreateInfo> = Vec::new();
+
+    // The required graphics queue
+    queue_cis.push(QueueCreateInfo {
+        queue_family_index: indices.graphics,
+        ..Default::default()
+    });
+
+    // Optional queues
+    if indices.transfer != indices.graphics && indices.transfer != indices.compute {
+        queue_cis.push(QueueCreateInfo {
+            queue_family_index: indices.transfer,
+            ..Default::default()
+        });
+    }
+
+    if indices.compute != indices.graphics && indices.compute != indices.transfer {
+        queue_cis.push(QueueCreateInfo {
+            queue_family_index: indices.transfer,
+            ..Default::default()
+        });
+    }
+
+    // Device creation
+    let device_ci = DeviceCreateInfo {
+        queue_create_infos: queue_cis,
+        enabled_extensions: extensions,
+        enabled_features: features,
+        ..Default::default()
+    };
+
+    let (device, queues_it) = match Device::new(physical_device.clone(), device_ci) {
+        Ok(o) => o,
+        Err(e) => {
+            log::error!("Unable to create vulkan device: {}", e);
+            return Err(VulkanError::LogicalDeviceCreationError(e.unwrap()));
+        }
+    };
+
+    Ok((device, queues_it.collect()))
+}
+
 impl VulkanContext {
     pub fn new(event_loop: &ActiveEventLoop) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
@@ -407,10 +480,15 @@ impl VulkanContext {
         // Select physical device
         let physical_device = select_physical_device(&instance)?;
 
+        // Create logical device and queues
+        let (device, queues) = create_logical_device(&physical_device)?;
+
         Ok(Self {
             instance,
             dbg_msg,
             physical_device,
+            device,
+            queues,
         })
     }
 }

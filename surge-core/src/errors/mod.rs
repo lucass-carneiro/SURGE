@@ -51,4 +51,7 @@ pub enum VulkanError {
 
     #[error("Unable to list find suitable Vulkan physical device")]
     UnsuitablePhysicalDevice,
+
+    #[error("Unable to create Vulkan device: {0}")]
+    LogicalDeviceCreationError(vulkano::VulkanError),
 }
