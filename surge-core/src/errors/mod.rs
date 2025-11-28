@@ -63,4 +63,16 @@ pub enum VulkanError {
 
     #[error("Unable to create swapchain: {0}")]
     SwapchainCreationError(vulkano::VulkanError),
+
+    #[error("Unable to create command pool: {0}")]
+    CommandPoolCreateion(vulkano::VulkanError),
+
+    #[error("Unable to allocate command buffer: {0}")]
+    CommandBufferAllocation(vulkano::VulkanError),
+
+    #[error("Unable to create semaphore: {0}")]
+    SemaphoreCreationError(vulkano::VulkanError),
+
+    #[error("Unable to create fence: {0}")]
+    FenceCreationError(vulkano::VulkanError),
 }

@@ -3,10 +3,17 @@ use crate::errors::VulkanError;
 use log;
 use std::default::Default;
 use std::sync::Arc;
+use vulkano::command_buffer::CommandBufferLevel;
+use vulkano::command_buffer::pool::CommandPoolAlloc;
 #[cfg(feature = "validation_layers")]
 use vulkano::instance::debug::DebugUtilsMessenger;
+use vulkano::sync::fence::FenceCreateFlags;
+use vulkano::sync::semaphore::SemaphoreType;
 use vulkano::{
     Version, VulkanLibrary,
+    command_buffer::pool::{
+        CommandBufferAllocateInfo, CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo,
+    },
     device::{
         Device, DeviceCreateInfo, DeviceExtensions, DeviceFeatures, Queue, QueueCreateInfo,
         QueueFamilyProperties, QueueFlags, physical::PhysicalDevice,
@@ -21,7 +28,11 @@ use vulkano::{
         },
     },
     swapchain::{ColorSpace, CompositeAlpha, PresentMode, Surface, Swapchain, SwapchainCreateInfo},
-    sync::Sharing,
+    sync::{
+        Sharing,
+        fence::{Fence, FenceCreateInfo},
+        semaphore::{Semaphore, SemaphoreCreateInfo},
+    },
 };
 use winit::{event_loop::ActiveEventLoop, window::Window};
 
@@ -31,6 +42,8 @@ struct QueueFamilyIndices {
     compute: u32,
     transfer: u32,
 }
+
+const FRAMES_IN_FLIGHT: u32 = 2;
 
 #[derive(Debug)]
 pub struct VulkanContext {
@@ -44,6 +57,13 @@ pub struct VulkanContext {
     surface: Arc<Surface>,
     swapchain: Arc<Swapchain>,
     swapchain_images: Vec<Arc<Image>>,
+
+    command_pool: CommandPool,
+    command_buffers: Vec<CommandPoolAlloc>,
+
+    present_completed_sem: Vec<Semaphore>,
+    render_finished_sem: Vec<Semaphore>,
+    frame_fences: Vec<Fence>,
 }
 
 fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
@@ -512,6 +532,83 @@ fn create_swapchain(
     }
 }
 
+fn create_command_pool(
+    device: Arc<Device>,
+    flags: CommandPoolCreateFlags,
+    queue_family_index: u32,
+) -> Result<CommandPool, VulkanError> {
+    let ci = CommandPoolCreateInfo {
+        flags,
+        queue_family_index,
+        ..Default::default()
+    };
+    match CommandPool::new(device, ci) {
+        Ok(o) => Ok(o),
+        Err(e) => {
+            log::error!("Unable to create command pool: {}", e);
+            Err(VulkanError::CommandPoolCreateion(e.unwrap()))
+        }
+    }
+}
+
+fn create_command_buffers(
+    command_pool: &CommandPool,
+) -> Result<Vec<CommandPoolAlloc>, VulkanError> {
+    let cmdbuff_ci = CommandBufferAllocateInfo {
+        level: CommandBufferLevel::Primary,
+        command_buffer_count: FRAMES_IN_FLIGHT,
+        ..Default::default()
+    };
+
+    match command_pool.allocate_command_buffers(cmdbuff_ci) {
+        Ok(o) => Ok(o.collect()),
+        Err(e) => {
+            log::error!("Unable to allocate command buffers: {}", e);
+            return Err(VulkanError::CommandBufferAllocation(e));
+        }
+    }
+}
+
+fn create_semaphores(device: Arc<Device>) -> Result<Vec<Semaphore>, VulkanError> {
+    let mut semaphores = Vec::new();
+
+    for _ in 0..FRAMES_IN_FLIGHT {
+        let ci = SemaphoreCreateInfo {
+            semaphore_type: SemaphoreType::Binary,
+            ..Default::default()
+        };
+
+        match Semaphore::new(device.clone(), ci) {
+            Ok(o) => semaphores.push(o),
+            Err(e) => {
+                log::error!("Unable to create binary semaphore: {}", e);
+                return Err(VulkanError::SemaphoreCreationError(e.unwrap()));
+            }
+        }
+    }
+
+    Ok(semaphores)
+}
+
+fn create_fences(device: Arc<Device>) -> Result<Vec<Fence>, VulkanError> {
+    let mut fences = Vec::new();
+
+    let ci = FenceCreateInfo {
+        flags: FenceCreateFlags::SIGNALED,
+        ..Default::default()
+    };
+
+    match Fence::new(device, ci) {
+        Ok(o) => fences.push(o),
+        Err(e) => {
+            log::error!("Unable to create binary semaphore: {}", e);
+            return Err(VulkanError::FenceCreationError(e.unwrap()));
+        }
+    }
+
+    Ok(fences)
+}
+
 impl VulkanContext {
     pub fn new(
         event_loop: &ActiveEventLoop,
@@ -591,6 +688,21 @@ impl VulkanContext {
             config.renderer.vsync,
         )?;
 
+        // Create default command pool. We know that queue 0 is always the graphics queue
+        let command_pool = create_command_pool(
+            device.clone(),
+            CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
+            queues[0].queue_family_index(),
+        )?;
+
+        // Create default command buffers
+        let command_buffers = create_command_buffers(&command_pool)?;
+
+        // Create sync objects
+        let present_completed_sem = create_semaphores(device.clone())?;
+        let render_finished_sem = create_semaphores(device.clone())?;
+        let frame_fences = create_fences(device.clone())?;
+
         Ok(Self {
             instance,
             dbg_msg,
@@ -600,6 +712,11 @@ impl VulkanContext {
             surface,
             swapchain,
             swapchain_images,
+            command_pool,
+            command_buffers,
+            present_completed_sem,
+            render_finished_sem,
+            frame_fences,
         })
     }
 }
