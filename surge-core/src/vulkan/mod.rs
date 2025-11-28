@@ -1,3 +1,4 @@
+use crate::config::EngineConfig;
 use crate::errors::VulkanError;
 use log;
 use std::default::Default;
@@ -10,6 +11,8 @@ use vulkano::{
         Device, DeviceCreateInfo, DeviceExtensions, DeviceFeatures, Queue, QueueCreateInfo,
         QueueFamilyProperties, QueueFlags, physical::PhysicalDevice,
     },
+    format::Format,
+    image::{Image, ImageUsage},
     instance::{
         Instance, InstanceCreateInfo, InstanceExtensions, LayerProperties,
         debug::{
@@ -17,9 +20,10 @@ use vulkano::{
             DebugUtilsMessengerCallbackData, DebugUtilsMessengerCreateInfo,
         },
     },
-    swapchain::Surface,
+    swapchain::{ColorSpace, CompositeAlpha, PresentMode, Surface, Swapchain, SwapchainCreateInfo},
+    sync::Sharing,
 };
-use winit::event_loop::ActiveEventLoop;
+use winit::{event_loop::ActiveEventLoop, window::Window};
 
 #[derive(Debug)]
 struct QueueFamilyIndices {
@@ -33,8 +37,13 @@ pub struct VulkanContext {
     instance: Arc<Instance>,
     dbg_msg: DebugUtilsMessenger,
     physical_device: Arc<PhysicalDevice>,
+
     device: Arc<Device>,
     queues: Vec<Arc<Queue>>,
+
+    surface: Arc<Surface>,
+    swapchain: Arc<Swapchain>,
+    swapchain_images: Vec<Arc<Image>>,
 }
 
 fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
@@ -427,8 +436,88 @@ fn create_logical_device(
     Ok((device, queues_it.collect()))
 }
 
+fn create_swapchain(
+    physical_device: &Arc<PhysicalDevice>,
+    device: &Arc<Device>,
+    surface: &Arc<Surface>,
+    width: u32,
+    height: u32,
+    vsync: bool,
+) -> Result<(Arc<Swapchain>, Vec<Arc<Image>>), VulkanError> {
+    log::info!("Creating swapchain");
+
+    // Surface capabilities
+    let surface_capabilities =
+        match physical_device.surface_capabilities(surface, Default::default()) {
+            Ok(o) => o,
+            Err(e) => {
+                log::error!("Unable to query device surface capabilities {}", e);
+                return Err(VulkanError::SurfaceCapabilityQueryError(e.unwrap()));
+            }
+        };
+
+    // Clamp extents to make sure they fit the device capabilities
+    let img_extent = [
+        u32::clamp(
+            width,
+            surface_capabilities.min_image_extent[0],
+            surface_capabilities.min_image_extent[0],
+        ),
+        u32::clamp(
+            height,
+            surface_capabilities.min_image_extent[1],
+            surface_capabilities.min_image_extent[1],
+        ),
+    ];
+
+    // Set image formats
+    let img_format = Format::B8G8R8A8_UNORM;
+    let img_colorspace = ColorSpace::SrgbNonLinear;
+    let img_usage = ImageUsage::TRANSFER_DST | ImageUsage::COLOR_ATTACHMENT;
+
+    // Set image count
+    let image_count = surface_capabilities
+        .max_image_count
+        .unwrap_or(surface_capabilities.min_image_count + 1);
+
+    // Set presentation mode
+    let present_mode = if vsync {
+        PresentMode::Fifo
+    } else {
+        PresentMode::Immediate
+    };
+
+    // Creation
+    let swpc_ci = SwapchainCreateInfo {
+        min_image_count: image_count,
+        image_format: img_format,
+        image_color_space: img_colorspace,
+        image_extent: img_extent,
+        image_array_layers: 1,
+        image_usage: img_usage,
+        image_sharing: Sharing::Exclusive,
+        pre_transform: surface_capabilities.current_transform,
+        composite_alpha: CompositeAlpha::Opaque,
+        present_mode: present_mode,
+        clipped: true,
+        ..Default::default()
+    };
+
+    match Swapchain::new(device.clone(), surface.clone(), swpc_ci) {
+        Ok(o) => Ok(o),
+        Err(e) => {
+            log::error!("Unable to create swapchain: {}", e);
+            return Err(VulkanError::SwapchainCreationError(e.unwrap()));
+        }
+    }
+}
+
 impl VulkanContext {
-    pub fn new(event_loop: &ActiveEventLoop) -> Result<Self, VulkanError> {
+    pub fn new(
+        event_loop: &ActiveEventLoop,
+        window: &Arc<Window>,
+        config: &EngineConfig,
+    ) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
 
         // API version
@@ -483,12 +572,34 @@ impl VulkanContext {
         // Create logical device and queues
         let (device, queues) = create_logical_device(&physical_device)?;
 
+        // Get window surface
+        let surface = match Surface::from_window(instance.clone(), window.clone()) {
+            Ok(o) => o,
+            Err(e) => {
+                log::error!("Unable to obtain Vulkan surface from window");
+                return Err(VulkanError::SurfaceCreationError(e));
+            }
+        };
+
+        // Create Swapchain
+        let (swapchain, swapchain_images) = create_swapchain(
+            &physical_device,
+            &device,
+            &surface,
+            config.resolution.width,
+            config.resolution.height,
+            config.renderer.vsync,
+        )?;
+
         Ok(Self {
             instance,
             dbg_msg,
             physical_device,
             device,
             queues,
+            surface,
+            swapchain,
+            swapchain_images,
         })
     }
 }

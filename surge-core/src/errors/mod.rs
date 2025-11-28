@@ -54,4 +54,13 @@ pub enum VulkanError {
 
     #[error("Unable to create Vulkan device: {0}")]
     LogicalDeviceCreationError(vulkano::VulkanError),
+
+    #[error("Unable to create Vulkan window surface: {0}")]
+    SurfaceCreationError(vulkano::swapchain::FromWindowError),
+
+    #[error("Unable to query Vulkan device surface capabilities: {0}")]
+    SurfaceCapabilityQueryError(vulkano::VulkanError),
+
+    #[error("Unable to create swapchain: {0}")]
+    SwapchainCreationError(vulkano::VulkanError),
 }

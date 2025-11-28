@@ -54,7 +54,10 @@ impl ApplicationHandler for SurgeContext {
         let desired_frame_time = 1.0 / (self.engine_config.renderer.fps_cap as f64);
         let frame_time = self.frame_timer.elapsed().as_secs_f64();
 
-        if self.engine_config.renderer.cap_fps && (frame_time < desired_frame_time) {
+        if !self.engine_config.renderer.vsync
+            && self.engine_config.renderer.cap_fps
+            && (frame_time < desired_frame_time)
+        {
             std::thread::sleep(Duration::from_secs_f64(desired_frame_time - frame_time));
         }
     }
@@ -82,11 +85,15 @@ impl ApplicationHandler for SurgeContext {
 
             match event_loop.create_window(window_attributes) {
                 Ok(window) => {
-                    self.window = Some(Arc::new(window));
-
                     // Init Vulkan
-                    self.vulkan_context =
-                        Some(sc::vulkan::VulkanContext::new(&event_loop).unwrap());
+                    let w = Arc::new(window);
+                    self.vulkan_context = Some(
+                        sc::vulkan::VulkanContext::new(&event_loop, &w, &self.engine_config)
+                            .unwrap(),
+                    );
+
+                    //Save window to context
+                    self.window = Some(w);
 
                     // Load first module
                     md::on_load();
