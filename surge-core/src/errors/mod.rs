@@ -30,7 +30,7 @@ pub enum ConfigError {
 #[derive(Debug, Error)]
 pub enum VulkanError {
     #[error("Unable to lod Vulkan library: {0}")]
-    LibraryLoadingError(#[from] vulkano::LoadingError),
+    LibraryLoadingError(vulkano::LoadingError),
 
     #[cfg(feature = "validation_layers")]
     #[error("Unable to query available Vulkan validation layers {0}")]
@@ -42,4 +42,13 @@ pub enum VulkanError {
 
     #[error("Unable to create Vulkan instance: {0}")]
     InstanceCreationError(vulkano::VulkanError),
+
+    #[error("Unable to create Vulkan debug messenger: {0}")]
+    DebugMessengerCreationError(vulkano::VulkanError),
+
+    #[error("Unable to list available Vulkan physical devices: {0}")]
+    PhysicalDeviceListError(vulkano::VulkanError),
+
+    #[error("Unable to list find suitable Vulkan physical device")]
+    UnsuitablePhysicalDevice,
 }

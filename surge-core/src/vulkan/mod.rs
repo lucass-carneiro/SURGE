@@ -2,8 +2,11 @@ use crate::errors::VulkanError;
 use log;
 use std::default::Default;
 use std::sync::Arc;
+#[cfg(feature = "validation_layers")]
+use vulkano::instance::debug::DebugUtilsMessenger;
 use vulkano::{
     Version, VulkanLibrary,
+    device::{DeviceExtensions, QueueFamilyProperties, QueueFlags, physical::PhysicalDevice},
     instance::{
         Instance, InstanceCreateInfo, InstanceExtensions, LayerProperties,
         debug::{
@@ -16,8 +19,17 @@ use vulkano::{
 use winit::event_loop::ActiveEventLoop;
 
 #[derive(Debug)]
+struct QueueFamilyIndices {
+    graphics: u32,
+    compute: u32,
+    transfer: u32,
+}
+
+#[derive(Debug)]
 pub struct VulkanContext {
     instance: Arc<Instance>,
+    dbg_msg: DebugUtilsMessenger,
+    physical_device: Arc<PhysicalDevice>,
 }
 
 fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
@@ -206,6 +218,142 @@ fn build_instance(
     }
 }
 
+fn get_available_physical_devices(
+    instance: &Arc<Instance>,
+) -> Result<Vec<Arc<PhysicalDevice>>, VulkanError> {
+    match instance.enumerate_physical_devices() {
+        Ok(o) => Ok(o.collect()),
+        Err(e) => {
+            log::error!("Unable to list available Vulkan physical devices: {}", e);
+            Err(VulkanError::PhysicalDeviceListError(e))
+        }
+    }
+}
+
+fn device_has_required_features(physical_device: &Arc<PhysicalDevice>) -> bool {
+    let features = physical_device.supported_features();
+    features.buffer_device_address
+        && features.descriptor_indexing
+        && features.shader_sampled_image_array_non_uniform_indexing
+        && features.runtime_descriptor_array
+        && features.descriptor_binding_variable_descriptor_count
+        && features.descriptor_binding_partially_bound
+        && features.dynamic_rendering
+        && features.synchronization2
+}
+
+fn get_required_device_extensions() -> DeviceExtensions {
+    let mut ext = DeviceExtensions::empty();
+    ext.khr_swapchain = true;
+    ext.khr_dynamic_rendering = true;
+    ext
+}
+
+fn device_has_required_extensions(physical_device: &Arc<PhysicalDevice>) -> bool {
+    let av_dev_ext = physical_device.supported_extensions();
+    let rq_dev_ext = get_required_device_extensions();
+    av_dev_ext.contains(&rq_dev_ext)
+}
+
+fn get_required_device_queue_families() -> Vec<QueueFlags> {
+    vec![
+        QueueFlags::GRAPHICS,
+        QueueFlags::TRANSFER,
+        QueueFlags::COMPUTE,
+    ]
+}
+
+fn device_has_required_queue_families(physical_device: &Arc<PhysicalDevice>) -> bool {
+    let av_queue_families = physical_device.queue_family_properties();
+    let rq_queue_families = get_required_device_queue_families();
+
+    for rq_family in rq_queue_families {
+        let mut found = false;
+
+        for av_queue_family in av_queue_families {
+            if av_queue_family.queue_flags.contains(rq_family) {
+                found = true;
+                break;
+            }
+            log::warn!("av {:?}", av_queue_family);
+        }
+
+        if !found {
+            log::warn!("{:?}", rq_family);
+            return false;
+        }
+    }
+
+    true
+}
+
+fn get_queue_family_indices(queue_families: &[QueueFamilyProperties]) -> QueueFamilyIndices {
+    let mut indices = QueueFamilyIndices {
+        graphics: 0,
+        compute: 0,
+        transfer: 0,
+    };
+
+    let mut i = 0u32;
+
+    for family in queue_families {
+        match family.queue_flags {
+            QueueFlags::GRAPHICS => indices.graphics = i,
+            QueueFlags::TRANSFER => indices.transfer = i,
+            QueueFlags::COMPUTE => indices.compute = i,
+            _ => (),
+        }
+
+        i += 1;
+    }
+
+    indices
+}
+
+fn is_device_suitable(physical_device: &Arc<PhysicalDevice>) -> bool {
+    log::info!(
+        "Checking device suitability of {}",
+        physical_device.properties().device_name
+    );
+
+    let has_required_features = device_has_required_features(physical_device);
+    let has_device_extensions = device_has_required_extensions(physical_device);
+    let has_queue_familes = device_has_required_queue_families(physical_device);
+
+    let is_suitable = has_required_features && has_device_extensions && has_queue_familes;
+
+    if is_suitable {
+        log::info!("Device is suitable");
+    } else {
+        log::info!(
+            "Device is unsuitable:
+  Has required features? {}
+  Has required device extensions? {}
+  Has required queue families? {}",
+            has_required_features,
+            has_device_extensions,
+            has_queue_familes
+        );
+    }
+
+    is_suitable
+}
+
+fn select_physical_device(instance: &Arc<Instance>) -> Result<Arc<PhysicalDevice>, VulkanError> {
+    log::info!("Selecting first suitable physical device");
+
+    let physical_devices = get_available_physical_devices(instance)?;
+
+    for physical_device in physical_devices {
+        if is_device_suitable(&physical_device) {
+            return Ok(physical_device.clone());
+        }
+    }
+
+    log::error!("No suitable vulkan device found");
+    Err(VulkanError::UnsuitablePhysicalDevice)
+}
+
 impl VulkanContext {
     pub fn new(event_loop: &ActiveEventLoop) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
@@ -214,7 +362,7 @@ impl VulkanContext {
         let library = match VulkanLibrary::new() {
             Ok(o) => o,
             Err(e) => {
-                log::error!("{}", e);
+                log::error!("Unable to load Vulkan library: {}", e);
                 return Err(VulkanError::LibraryLoadingError(e));
             }
         };
@@ -229,7 +377,7 @@ impl VulkanContext {
         #[cfg(feature = "validation_layers")]
         let required_validation_layers = get_required_validation_layers(&library)?;
 
-        // Debug msg
+        // Debug msg info
         #[cfg(feature = "validation_layers")]
         let dbg_msg_ci = dbg_msg_create_info();
 
@@ -240,12 +388,29 @@ impl VulkanContext {
             supported_api_version,
             required_validation_layers,
             required_instance_extensions,
-            dbg_msg_ci,
+            dbg_msg_ci.clone(),
         )?;
         #[cfg(not(feature = "validation_layers"))]
         let instance =
             build_instance(library, supported_api_version, required_instance_extensions)?;
 
-        Ok(Self { instance })
+        // Debug msg
+        #[cfg(feature = "validation_layers")]
+        let dbg_msg = match DebugUtilsMessenger::new(instance.clone(), dbg_msg_ci.clone()) {
+            Ok(o) => o,
+            Err(e) => {
+                log::error!("Unable to create Vulkan debug messenger: {}", e);
+                return Err(VulkanError::DebugMessengerCreationError(e.unwrap()));
+            }
+        };
+
+        // Select physical device
+        let physical_device = select_physical_device(&instance)?;
+
+        Ok(Self {
+            instance,
+            dbg_msg,
+            physical_device,
+        })
     }
 }

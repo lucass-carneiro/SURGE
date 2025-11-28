@@ -21,14 +21,47 @@ struct SurgeContext {
     window: Option<Arc<Window>>,
     vulkan_context: Option<VulkanContext>,
     engine_config: sc::config::EngineConfig,
-    loop_timer: Instant,
+    frame_timer: Instant,
 }
 
 impl ApplicationHandler for SurgeContext {
+    /// Frame start
+    fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
+        self.frame_timer = Instant::now();
+    }
+
+    /// Frame end
+    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        // Stop rendering if minimized
+        // Rebuild swapchain if necessary
+        // Handle hot reloading
+        // Call module update
+        md::update();
+
+        // Acquire swapchain image
+        // Begin command recording
+        // Clear screen
+
+        // Call module draw
+        md::draw();
+
+        // End command recording
+        // Submit command buffer
+        // Present
+        // Refresh HR key state
+
+        // FPS Cap.
+        let desired_frame_time = 1.0 / (self.engine_config.renderer.fps_cap as f64);
+        let frame_time = self.frame_timer.elapsed().as_secs_f64();
+
+        if self.engine_config.renderer.cap_fps && (frame_time < desired_frame_time) {
+            std::thread::sleep(Duration::from_secs_f64(desired_frame_time - frame_time));
+        }
+    }
+
+    /// Frame loop startup
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        /***************
-         * Init Window *
-         ***************/
+        // Init window
         if self.window.is_none() && self.vulkan_context.is_none() {
             log::info!("Creating SURGE window");
 
@@ -51,15 +84,11 @@ impl ApplicationHandler for SurgeContext {
                 Ok(window) => {
                     self.window = Some(Arc::new(window));
 
-                    /***********************
-                     * Init render backend *
-                     ***********************/
+                    // Init Vulkan
                     self.vulkan_context =
                         Some(sc::vulkan::VulkanContext::new(&event_loop).unwrap());
 
-                    /*********************
-                     * Load First module *
-                     *********************/
+                    // Load first module
                     md::on_load();
                 }
                 Err(e) => {
@@ -68,6 +97,12 @@ impl ApplicationHandler for SurgeContext {
                 }
             }
         }
+    }
+
+    /// Shutdown
+    fn exiting(&mut self, _: &ActiveEventLoop) {
+        log::info!("Closing SURGE window");
+        md::on_unload();
     }
 
     fn window_event(
@@ -81,45 +116,6 @@ impl ApplicationHandler for SurgeContext {
                 event_loop.exit();
             }
             _ => (),
-        }
-    }
-
-    fn exiting(&mut self, _: &ActiveEventLoop) {
-        log::info!("Closing SURGE window");
-        md::on_unload();
-    }
-
-    fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
-        self.loop_timer = Instant::now();
-    }
-
-    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
-        // Stop rendering if minimized
-        // Rebuild swapchain if necessary
-        // Handle hot reloading
-        // Call module update
-        md::update();
-
-        // Acquire swapchain image
-        // Begin command recording
-        // Clear screen
-
-        // Call module draw
-        md::draw();
-
-        // End command recording
-        // Submit command buffer
-        // Present
-        // Refresh HR key state
-
-        // FPS Cap.
-        let desired_loop_time = 1.0 / (self.engine_config.renderer.fps_cap as f64);
-        let loop_time = self.loop_timer.elapsed().as_secs_f64();
-
-        log::info!("{}, {}", loop_time, 1.0 / loop_time);
-
-        if self.engine_config.renderer.cap_fps && (loop_time < desired_loop_time) {
-            std::thread::sleep(Duration::from_secs_f64(desired_loop_time - loop_time));
         }
     }
 }
@@ -151,7 +147,7 @@ pub fn main() {
         window: None,
         vulkan_context: None,
         engine_config,
-        loop_timer: Instant::now(),
+        frame_timer: Instant::now(),
     };
 
     /*************
