@@ -1,6 +1,12 @@
 use crate::config::EngineConfig;
 use crate::errors::VulkanError;
-use ash::{Entry, ext, khr, vk};
+use ash::vk::{
+    AccessFlags2, ClearColorValue, CommandBufferBeginInfo, CommandBufferResetFlags,
+    CommandBufferUsageFlags, DependencyInfo, Fence, ImageAspectFlags, ImageLayout,
+    ImageMemoryBarrier, ImageMemoryBarrier2, ImageSubresourceRange, PipelineStageFlags,
+    PipelineStageFlags2, PresentInfoKHR, SubmitInfo,
+};
+use ash::{Device, Entry, ext, khr, vk};
 use log;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_void;
@@ -17,7 +23,23 @@ struct QueueFamilyIndices {
     transfer: u32,
 }
 
-const FRAMES_IN_FLIGHT: u32 = 2;
+#[derive(Debug)]
+pub struct SwapchainData {
+    pub index: u32,
+    pub suboptimal: bool,
+}
+
+struct SwpcLayoutTransitionInfo {
+    pub image_index: u32,
+    pub old_layout: ImageLayout,
+    pub new_layout: ImageLayout,
+    pub src_access_mask: AccessFlags2,
+    pub dst_access_mask: AccessFlags2,
+    pub src_stage_mask: PipelineStageFlags2,
+    pub dst_stage_mask: PipelineStageFlags2,
+}
+
+const FRAMES_IN_FLIGHT: usize = 2;
 
 pub struct VulkanContext {
     entry: Entry,
@@ -47,6 +69,9 @@ pub struct VulkanContext {
     present_completed_sem: Vec<vk::Semaphore>,
     render_finished_sem: Vec<vk::Semaphore>,
     frame_fences: Vec<vk::Fence>,
+
+    current_frame: usize,
+    semaphore_index: usize,
 }
 
 fn get_required_instance_extensions(
@@ -547,7 +572,7 @@ fn create_command_buffers(
     let allocate_info = vk::CommandBufferAllocateInfo::default()
         .command_pool(command_pool)
         .level(vk::CommandBufferLevel::PRIMARY)
-        .command_buffer_count(FRAMES_IN_FLIGHT);
+        .command_buffer_count(FRAMES_IN_FLIGHT as u32);
 
     unsafe {
         device
@@ -556,11 +581,14 @@ fn create_command_buffers(
     }
 }
 
-fn create_semaphores(device: &ash::Device) -> Result<Vec<vk::Semaphore>, VulkanError> {
+fn create_semaphores(
+    device: &ash::Device,
+    swpc_images: usize,
+) -> Result<Vec<vk::Semaphore>, VulkanError> {
     let mut semaphores = Vec::new();
     let create_info = vk::SemaphoreCreateInfo::default();
 
-    for _ in 0..FRAMES_IN_FLIGHT {
+    for _ in 0..swpc_images {
         let semaphore = unsafe {
             device
                 .create_semaphore(&create_info, None)
@@ -605,11 +633,15 @@ impl VulkanContext {
 
                 // Wait for device to be idle before destroying swapchain
                 if let Err(e) = self.device.device_wait_idle() {
-                    log::error!("Failed to wait for device idle before swapchain destruction: {:?}", e);
+                    log::error!(
+                        "Failed to wait for device idle before swapchain destruction: {:?}",
+                        e
+                    );
                     return;
                 }
 
-                self.swapchain_loader.destroy_swapchain(self.swapchain, None);
+                self.swapchain_loader
+                    .destroy_swapchain(self.swapchain, None);
                 self.swapchain = vk::SwapchainKHR::null();
 
                 log::info!("Swapchain destroyed successfully");
@@ -713,8 +745,8 @@ impl VulkanContext {
         let command_pool = create_command_pool(&device, indices.graphics)?;
         let command_buffers = create_command_buffers(&device, command_pool)?;
 
-        let present_completed_sem = create_semaphores(&device)?;
-        let render_finished_sem = create_semaphores(&device)?;
+        let present_completed_sem = create_semaphores(&device, swapchain_images.len())?;
+        let render_finished_sem = create_semaphores(&device, swapchain_images.len())?;
         let frame_fences = create_fences(&device)?;
 
         Ok(Self {
@@ -741,7 +773,179 @@ impl VulkanContext {
             present_completed_sem,
             render_finished_sem,
             frame_fences,
+            current_frame: 0,
+            semaphore_index: 0,
         })
+    }
+
+    fn cmd_transition_swpc_image_layout(&self, ti: SwpcLayoutTransitionInfo) {
+        let subresource_range = ImageSubresourceRange {
+            aspect_mask: ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+            ..Default::default()
+        };
+
+        let barrier = ImageMemoryBarrier2 {
+            src_stage_mask: ti.src_stage_mask,
+            src_access_mask: ti.src_access_mask,
+            dst_stage_mask: ti.dst_stage_mask,
+            dst_access_mask: ti.dst_access_mask,
+            old_layout: ti.old_layout,
+            new_layout: ti.new_layout,
+            image: self.swapchain_images[ti.image_index as usize],
+            subresource_range: subresource_range,
+            ..Default::default()
+        };
+
+        let dependency_info = DependencyInfo {
+            image_memory_barrier_count: 1,
+            p_image_memory_barriers: &barrier,
+            ..Default::default()
+        };
+
+        unsafe {
+            self.device
+                .cmd_pipeline_barrier2(self.command_buffers[self.current_frame], &dependency_info)
+        }
+    }
+
+    pub fn request_swpc_img(&self) -> Result<SwapchainData, VulkanError> {
+        let timeout = 1000000000;
+
+        // Wait frame fences
+        unsafe {
+            self.device
+                .wait_for_fences(&[self.frame_fences[self.current_frame]], true, timeout)
+                .map_err(|e| VulkanError::FenceWaiteError(e))?;
+        }
+
+        // Acquire next image
+        let (index, suboptimal) = unsafe {
+            self.swapchain_loader
+                .acquire_next_image(
+                    self.swapchain,
+                    timeout,
+                    self.present_completed_sem[self.semaphore_index],
+                    Fence::null(),
+                )
+                .map_err(|e| VulkanError::SwapchainAcquireError(e))
+        }?;
+
+        // Reset fences
+        unsafe {
+            self.device
+                .reset_fences(&[self.frame_fences[self.current_frame]])
+                .map_err(|e| VulkanError::FenceResetError(e))
+        }?;
+
+        Ok(SwapchainData { index, suboptimal })
+    }
+
+    pub fn cmd_begin(&self, swpc_img_idx: u32) -> Result<(), VulkanError> {
+        // Reset command buffer
+        unsafe {
+            self.device
+                .reset_command_buffer(
+                    self.command_buffers[self.current_frame],
+                    CommandBufferResetFlags::empty(),
+                )
+                .map_err(|e| VulkanError::FrameCommandBufferReset(self.current_frame, e))
+        }?;
+
+        // Begin command recording
+        unsafe {
+            let bi = CommandBufferBeginInfo {
+                flags: CommandBufferUsageFlags::ONE_TIME_SUBMIT,
+                ..Default::default()
+            };
+
+            self.device
+                .begin_command_buffer(self.command_buffers[self.current_frame], &bi)
+                .map_err(|e| VulkanError::FrameCommandBufferRecordBeginError(self.current_frame, e))
+        }?;
+
+        // Transition swapchain image
+        let swpc_ti = SwpcLayoutTransitionInfo {
+            image_index: swpc_img_idx,
+            old_layout: ImageLayout::UNDEFINED,
+            new_layout: ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            src_access_mask: AccessFlags2::empty(),
+            dst_access_mask: AccessFlags2::COLOR_ATTACHMENT_WRITE,
+            src_stage_mask: PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT,
+            dst_stage_mask: PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT,
+        };
+        self.cmd_transition_swpc_image_layout(swpc_ti);
+
+        Ok(())
+    }
+
+    pub fn cmd_end(&self, swpc_img_idx: u32) -> Result<(), VulkanError> {
+        // Transition swapchain image
+        let swpc_ti = SwpcLayoutTransitionInfo {
+            image_index: swpc_img_idx,
+            old_layout: ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            new_layout: ImageLayout::PRESENT_SRC_KHR,
+            src_access_mask: AccessFlags2::COLOR_ATTACHMENT_WRITE,
+            dst_access_mask: AccessFlags2::empty(),
+            src_stage_mask: PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT,
+            dst_stage_mask: PipelineStageFlags2::BOTTOM_OF_PIPE,
+        };
+        self.cmd_transition_swpc_image_layout(swpc_ti);
+
+        // End recording
+        unsafe {
+            self.device
+                .end_command_buffer(self.command_buffers[self.current_frame])
+                .map_err(|e| VulkanError::FrameCommandBufferRecordEndError(self.current_frame, e))
+        }
+    }
+
+    pub fn cmd_submit(&self) -> Result<(), VulkanError> {
+        let si = SubmitInfo {
+            wait_semaphore_count: 1,
+            p_wait_semaphores: &self.present_completed_sem[self.semaphore_index],
+            p_wait_dst_stage_mask: &PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
+            command_buffer_count: 1,
+            p_command_buffers: &self.command_buffers[self.current_frame],
+            signal_semaphore_count: 1,
+            p_signal_semaphores: &self.render_finished_sem[self.semaphore_index],
+            ..Default::default()
+        };
+
+        unsafe {
+            self.device
+                .queue_submit(
+                    self.graphics_queue,
+                    &[si],
+                    self.frame_fences[self.current_frame],
+                )
+                .map_err(|e| VulkanError::FrameCommandBufferSubmitError(self.current_frame, e))
+        }
+    }
+
+    pub fn present_swpc(&mut self, swpc_data: &mut SwapchainData) -> Result<(), VulkanError> {
+        let pi = PresentInfoKHR {
+            wait_semaphore_count: 1,
+            p_wait_semaphores: &self.render_finished_sem[self.semaphore_index],
+            swapchain_count: 1,
+            p_swapchains: &self.swapchain,
+            p_image_indices: &swpc_data.index,
+            ..Default::default()
+        };
+
+        swpc_data.suboptimal = unsafe {
+            self.swapchain_loader
+                .queue_present(self.graphics_queue, &pi)
+                .map_err(|e| VulkanError::SwapchainPresentError(self.current_frame, e))
+        }?;
+
+        self.semaphore_index = (self.semaphore_index + 1) % self.present_completed_sem.len();
+        self.current_frame = (self.current_frame + 1) % FRAMES_IN_FLIGHT;
+
+        Ok(())
     }
 }
 
@@ -796,7 +1000,8 @@ impl Drop for VulkanContext {
             log::debug!("Destroying debug messenger");
             // Destroy debug messenger before instance
             #[cfg(feature = "validation_layers")]
-            self.debug_utils.destroy_debug_utils_messenger(self.debug_messenger, None);
+            self.debug_utils
+                .destroy_debug_utils_messenger(self.debug_messenger, None);
 
             log::debug!("Destroying instance");
             // Destroy instance last

@@ -33,21 +33,51 @@ impl ApplicationHandler for SurgeContext {
     /// Frame end
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
         // Stop rendering if minimized
-        // Rebuild swapchain if necessary
         // Handle hot reloading
         // Call module update
         md::update();
 
         // Acquire swapchain image
+        let mut swpc_img_data = self
+            .vulkan_context
+            .as_ref()
+            .unwrap()
+            .request_swpc_img()
+            .unwrap();
+
+        // Rebuild swapchain if necessary
+        if swpc_img_data.suboptimal {
+            log::warn!("Suboptimal swapchain image. Recreating swapchain.");
+            // TODO: Recreate swapchain
+        }
+
         // Begin command recording
-        // Clear screen
+        self.vulkan_context
+            .as_ref()
+            .unwrap()
+            .cmd_begin(swpc_img_data.index)
+            .unwrap();
 
         // Call module draw
         md::draw();
 
         // End command recording
+        self.vulkan_context
+            .as_ref()
+            .unwrap()
+            .cmd_end(swpc_img_data.index)
+            .unwrap();
+
         // Submit command buffer
+        self.vulkan_context.as_ref().unwrap().cmd_submit().unwrap();
+
         // Present
+        self.vulkan_context
+            .as_mut()
+            .unwrap()
+            .present_swpc(&mut swpc_img_data)
+            .unwrap();
+
         // Refresh HR key state
 
         // FPS Cap.

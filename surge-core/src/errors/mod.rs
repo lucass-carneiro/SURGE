@@ -64,6 +64,9 @@ pub enum VulkanError {
     #[error("Unable to create swapchain: {0}")]
     SwapchainCreationError(ash::vk::Result),
 
+    #[error("Unable to present frame {0} swapchain: {1}")]
+    SwapchainPresentError(usize, ash::vk::Result),
+
     #[error("Unable to create command pool: {0}")]
     CommandPoolCreation(ash::vk::Result),
 
@@ -75,4 +78,25 @@ pub enum VulkanError {
 
     #[error("Unable to create fence: {0}")]
     FenceCreationError(ash::vk::Result),
+
+    #[error("Unable to wait fence: {0}")]
+    FenceWaiteError(ash::vk::Result),
+
+    #[error("Unable to reset fence: {0}")]
+    FenceResetError(ash::vk::Result),
+
+    #[error("Unable to acquire next swapchain image: {0}")]
+    SwapchainAcquireError(ash::vk::Result),
+
+    #[error("Unable to reset frame {0} command buffer: {1}")]
+    FrameCommandBufferReset(usize, ash::vk::Result),
+
+    #[error("Unable to begin recording frame {0} command buffer: {1}")]
+    FrameCommandBufferRecordBeginError(usize, ash::vk::Result),
+
+    #[error("Unable to end recording frame {0} command buffer: {1}")]
+    FrameCommandBufferRecordEndError(usize, ash::vk::Result),
+
+    #[error("Unable to submit frame {0} command buffer: {1}")]
+    FrameCommandBufferSubmitError(usize, ash::vk::Result),
 }
