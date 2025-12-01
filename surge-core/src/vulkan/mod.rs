@@ -1,40 +1,14 @@
 use crate::config::EngineConfig;
 use crate::errors::VulkanError;
+use ash::{Entry, ext, khr, vk};
 use log;
-use std::default::Default;
-use std::sync::Arc;
-use vulkano::command_buffer::CommandBufferLevel;
-use vulkano::command_buffer::pool::CommandPoolAlloc;
-#[cfg(feature = "validation_layers")]
-use vulkano::instance::debug::DebugUtilsMessenger;
-use vulkano::sync::fence::FenceCreateFlags;
-use vulkano::sync::semaphore::SemaphoreType;
-use vulkano::{
-    Version, VulkanLibrary,
-    command_buffer::pool::{
-        CommandBufferAllocateInfo, CommandPool, CommandPoolCreateFlags, CommandPoolCreateInfo,
-    },
-    device::{
-        Device, DeviceCreateInfo, DeviceExtensions, DeviceFeatures, Queue, QueueCreateInfo,
-        QueueFamilyProperties, QueueFlags, physical::PhysicalDevice,
-    },
-    format::Format,
-    image::{Image, ImageUsage},
-    instance::{
-        Instance, InstanceCreateInfo, InstanceExtensions, LayerProperties,
-        debug::{
-            DebugUtilsMessageSeverity, DebugUtilsMessageType, DebugUtilsMessengerCallback,
-            DebugUtilsMessengerCallbackData, DebugUtilsMessengerCreateInfo,
-        },
-    },
-    swapchain::{ColorSpace, CompositeAlpha, PresentMode, Surface, Swapchain, SwapchainCreateInfo},
-    sync::{
-        Sharing,
-        fence::{Fence, FenceCreateInfo},
-        semaphore::{Semaphore, SemaphoreCreateInfo},
-    },
+use std::ffi::{CStr, CString};
+use std::os::raw::c_void;
+use winit::{
+    event_loop::ActiveEventLoop,
+    raw_window_handle::{HasDisplayHandle, HasWindowHandle},
+    window::Window,
 };
-use winit::{event_loop::ActiveEventLoop, window::Window};
 
 #[derive(Debug)]
 struct QueueFamilyIndices {
@@ -45,275 +19,253 @@ struct QueueFamilyIndices {
 
 const FRAMES_IN_FLIGHT: u32 = 2;
 
-#[derive(Debug)]
 pub struct VulkanContext {
-    instance: Arc<Instance>,
-    dbg_msg: DebugUtilsMessenger,
-    physical_device: Arc<PhysicalDevice>,
+    entry: Entry,
+    instance: ash::Instance,
+    #[cfg(feature = "validation_layers")]
+    debug_utils: ext::debug_utils::Instance,
+    #[cfg(feature = "validation_layers")]
+    debug_messenger: vk::DebugUtilsMessengerEXT,
+    physical_device: vk::PhysicalDevice,
 
-    device: Arc<Device>,
-    queues: Vec<Arc<Queue>>,
+    device: ash::Device,
+    graphics_queue: vk::Queue,
+    compute_queue: vk::Queue,
+    transfer_queue: vk::Queue,
 
-    surface: Arc<Surface>,
-    swapchain: Arc<Swapchain>,
-    swapchain_images: Vec<Arc<Image>>,
+    surface: khr::surface::Instance,
+    surface_khr: vk::SurfaceKHR,
+    swapchain_loader: khr::swapchain::Device,
+    swapchain: vk::SwapchainKHR,
+    swapchain_images: Vec<vk::Image>,
+    swapchain_format: vk::Format,
+    swapchain_extent: vk::Extent2D,
 
-    command_pool: CommandPool,
-    command_buffers: Vec<CommandPoolAlloc>,
+    command_pool: vk::CommandPool,
+    command_buffers: Vec<vk::CommandBuffer>,
 
-    present_completed_sem: Vec<Semaphore>,
-    render_finished_sem: Vec<Semaphore>,
-    frame_fences: Vec<Fence>,
+    present_completed_sem: Vec<vk::Semaphore>,
+    render_finished_sem: Vec<vk::Semaphore>,
+    frame_fences: Vec<vk::Fence>,
 }
 
-fn get_required_instance_extensions(event_loop: &ActiveEventLoop) -> InstanceExtensions {
+fn get_required_instance_extensions(
+    event_loop: &ActiveEventLoop,
+) -> Result<Vec<*const i8>, VulkanError> {
     log::info!("Querying required Vulkan instance extensions");
 
-    // Window extensions
-    let mut ext = Surface::required_extensions(event_loop).unwrap();
+    // Get required surface extensions from winit
+    let mut extensions =
+        ash_window::enumerate_required_extensions(event_loop.display_handle().unwrap().as_raw())
+            .map_err(|_| VulkanError::UnsuitablePhysicalDevice)?
+            .to_vec();
 
-    //Debug handler
+    // Add debug utils extension for validation layers
     #[cfg(feature = "validation_layers")]
-    {
-        ext.ext_debug_utils = true;
-    }
+    extensions.push(ext::debug_utils::NAME.as_ptr());
 
-    ext
+    Ok(extensions)
 }
 
 #[cfg(feature = "validation_layers")]
-fn get_required_validation_layers(
-    library: &Arc<VulkanLibrary>,
-) -> Result<Vec<String>, VulkanError> {
-    log::info!("Cheking available validation layers");
+fn get_required_validation_layers(entry: &Entry) -> Result<Vec<CString>, VulkanError> {
+    log::info!("Checking available validation layers");
 
-    let av_layers: Vec<LayerProperties> = match library.layer_properties() {
-        Ok(o) => o,
-        Err(e) => {
-            log::error!("Unable to query available Vulkan validation layers: {}", e);
-            return Err(VulkanError::ValidationLayerQueryError(e));
-        }
-    }
-    .collect();
+    let available_layers = unsafe {
+        entry
+            .enumerate_instance_layer_properties()
+            .map_err(|e| VulkanError::ValidationLayerQueryError(e))?
+    };
 
-    // The list of required layer names goes here
-    let req_layers = vec!["VK_LAYER_KHRONOS_validation".to_string()];
+    let required_layer = CString::new("VK_LAYER_KHRONOS_validation").unwrap();
 
-    for req_layer in &req_layers {
-        let mut found = false;
-
-        for av_layer in &av_layers {
-            if req_layer == av_layer.name() {
-                found = true;
-                break;
-            }
-        }
-
-        if !found {
-            return Err(VulkanError::ValidationLayerNotFound(req_layer.to_string()));
+    let mut found = false;
+    for layer in &available_layers {
+        let layer_name = unsafe { CStr::from_ptr(layer.layer_name.as_ptr()) };
+        if layer_name == required_layer.as_c_str() {
+            found = true;
+            break;
         }
     }
 
-    Ok(req_layers)
+    if !found {
+        return Err(VulkanError::ValidationLayerNotFound(
+            required_layer.to_string_lossy().to_string(),
+        ));
+    }
+
+    Ok(vec![required_layer])
 }
 
 #[cfg(feature = "validation_layers")]
-fn dbg_msg_callback(
-    message_severity: DebugUtilsMessageSeverity,
-    message_type: DebugUtilsMessageType,
-    callback_data: DebugUtilsMessengerCallbackData<'_>,
-) {
-    let verbose_or_info = message_severity == DebugUtilsMessageSeverity::VERBOSE
-        || message_severity == DebugUtilsMessageSeverity::INFO;
+unsafe extern "system" fn debug_callback(
+    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _p_user_data: *mut c_void,
+) -> vk::Bool32 {
+    unsafe {
+        let callback_data = &*p_callback_data;
+        let message = CStr::from_ptr(callback_data.p_message).to_string_lossy();
 
-    let warning = message_severity == DebugUtilsMessageSeverity::WARNING;
+        let type_str = match message_type {
+            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL => "General",
+            vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION => "Validation",
+            vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "Performance",
+            _ => "Unknown",
+        };
 
-    if verbose_or_info {
-        match message_type {
-            DebugUtilsMessageType::GENERAL => {
-                log::info!("Vulkan info (General): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::VALIDATION => {
-                log::info!("Vulkan info (Validation): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::PERFORMANCE => {
-                log::info!("Vulkan info (Performance): {}", callback_data.message)
-            }
-            _ => {
-                log::info!("Vulkan info (Unknown): {}", callback_data.message)
-            }
+        if message_severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
+            || message_severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::INFO)
+        {
+            log::info!("Vulkan info ({}): {}", type_str, message);
+        } else if message_severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::WARNING) {
+            log::warn!("Vulkan warning ({}): {}", type_str, message);
+        } else {
+            log::error!("Vulkan error ({}): {}", type_str, message);
         }
-    } else if warning {
-        match message_type {
-            DebugUtilsMessageType::GENERAL => {
-                log::warn!("Vulkan warning (General): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::VALIDATION => {
-                log::warn!("Vulkan warning (Validation): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::PERFORMANCE => {
-                log::warn!("Vulkan warning (Performance): {}", callback_data.message)
-            }
-            _ => {
-                log::warn!("Vulkan warning (Unknown): {}", callback_data.message)
-            }
-        }
-    } else {
-        match message_type {
-            DebugUtilsMessageType::GENERAL => {
-                log::error!("Vulkan error (General): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::VALIDATION => {
-                log::error!("Vulkan error (Validation): {}", callback_data.message)
-            }
-            DebugUtilsMessageType::PERFORMANCE => {
-                log::error!("Vulkan error (Performance): {}", callback_data.message)
-            }
-            _ => {
-                log::error!("Vulkan error (Unknown): {}", callback_data.message)
-            }
-        }
+
+        vk::FALSE
     }
-}
-
-#[cfg(feature = "validation_layers")]
-fn dbg_msg_create_info() -> DebugUtilsMessengerCreateInfo {
-    let mut ci = DebugUtilsMessengerCreateInfo::user_callback(unsafe {
-        DebugUtilsMessengerCallback::new(dbg_msg_callback)
-    });
-
-    ci.message_severity = DebugUtilsMessageSeverity::INFO
-        | DebugUtilsMessageSeverity::VERBOSE
-        | DebugUtilsMessageSeverity::WARNING
-        | DebugUtilsMessageSeverity::ERROR;
-
-    ci.message_type = DebugUtilsMessageType::GENERAL
-        | DebugUtilsMessageType::VALIDATION
-        | DebugUtilsMessageType::PERFORMANCE;
-
-    ci
 }
 
 #[cfg(feature = "validation_layers")]
 fn build_instance(
-    library: Arc<VulkanLibrary>,
-    api_version: Version,
-    layers: Vec<String>,
-    extensions: InstanceExtensions,
-    dbg_msg_ci: DebugUtilsMessengerCreateInfo,
-) -> Result<Arc<Instance>, VulkanError> {
+    entry: &Entry,
+    extensions: &[*const i8],
+    layers: &[CString],
+) -> Result<ash::Instance, VulkanError> {
     log::info!("Creating Vulkan instance");
 
-    let ci = InstanceCreateInfo {
-        application_name: Some("SURGE Player".to_string()),
-        application_version: Version::major_minor(1, 4),
-        engine_name: Some("SURGE".to_string()),
-        engine_version: Version::major_minor(1, 4),
-        max_api_version: Some(api_version),
-        enabled_layers: layers,
-        enabled_extensions: extensions,
-        debug_utils_messengers: vec![dbg_msg_ci],
-        ..Default::default()
-    };
+    let app_name = CString::new("SURGE Player").unwrap();
+    let engine_name = CString::new("SURGE").unwrap();
 
-    match Instance::new(library, ci) {
-        Ok(o) => Ok(o),
-        Err(e) => {
-            log::error!("Unable  to create Vulkan instance: {}", e);
-            Err(VulkanError::InstanceCreationError(e.unwrap()))
-        }
+    let app_info = vk::ApplicationInfo::default()
+        .application_name(&app_name)
+        .application_version(vk::make_api_version(0, 1, 4, 0))
+        .engine_name(&engine_name)
+        .engine_version(vk::make_api_version(0, 1, 4, 0))
+        .api_version(vk::API_VERSION_1_3);
+
+    let layer_ptrs: Vec<*const i8> = layers.iter().map(|l| l.as_ptr()).collect();
+
+    let mut debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT::default()
+        .message_severity(
+            vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+                | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+                | vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+                | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        )
+        .message_type(
+            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
+                | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+        )
+        .pfn_user_callback(Some(debug_callback));
+
+    let create_info = vk::InstanceCreateInfo::default()
+        .application_info(&app_info)
+        .enabled_extension_names(extensions)
+        .enabled_layer_names(&layer_ptrs)
+        .push_next(&mut debug_create_info);
+
+    unsafe {
+        entry
+            .create_instance(&create_info, None)
+            .map_err(|e| VulkanError::InstanceCreationError(e))
     }
 }
 
 #[cfg(not(feature = "validation_layers"))]
-fn build_instance(
-    library: Arc<VulkanLibrary>,
-    api_version: Version,
-    extensions: InstanceExtensions,
-) -> Result<Arc<Instance>, VulkanError> {
+fn build_instance(entry: &Entry, extensions: &[*const i8]) -> Result<ash::Instance, VulkanError> {
     log::info!("Creating Vulkan instance");
 
-    let ci = InstanceCreateInfo {
-        application_name: Some("SURGE Player".to_string()),
-        application_version: Version::major_minor(1, 4),
-        engine_name: Some("SURGE".to_string()),
-        engine_version: Version::major_minor(1, 4),
-        max_api_version: Some(api_version),
-        enabled_extensions: extensions,
-        ..Default::default()
-    };
+    let app_name = CString::new("SURGE Player").unwrap();
+    let engine_name = CString::new("SURGE").unwrap();
 
-    match Instance::new(library, ci) {
-        Ok(o) => Ok(o),
-        Err(e) => {
-            log::error!("Unable  to create Vulkan instance: {}", e);
-            Err(VulkanError::InstanceCreationError(e.unwrap()))
-        }
+    let app_info = vk::ApplicationInfo::default()
+        .application_name(&app_name)
+        .application_version(vk::make_api_version(0, 1, 4, 0))
+        .engine_name(&engine_name)
+        .engine_version(vk::make_api_version(0, 1, 4, 0))
+        .api_version(vk::API_VERSION_1_3);
+
+    let create_info = vk::InstanceCreateInfo::default()
+        .application_info(&app_info)
+        .enabled_extension_names(extensions);
+
+    unsafe {
+        entry
+            .create_instance(&create_info, None)
+            .map_err(|e| VulkanError::InstanceCreationError(e))
     }
 }
 
 fn get_available_physical_devices(
-    instance: &Arc<Instance>,
-) -> Result<Vec<Arc<PhysicalDevice>>, VulkanError> {
-    match instance.enumerate_physical_devices() {
-        Ok(o) => Ok(o.collect()),
-        Err(e) => {
-            log::error!("Unable to list available Vulkan physical devices: {}", e);
-            Err(VulkanError::PhysicalDeviceListError(e))
-        }
+    instance: &ash::Instance,
+) -> Result<Vec<vk::PhysicalDevice>, VulkanError> {
+    unsafe {
+        instance
+            .enumerate_physical_devices()
+            .map_err(|e| VulkanError::PhysicalDeviceListError(e))
     }
 }
 
-fn device_has_required_features(physical_device: &Arc<PhysicalDevice>) -> bool {
-    let features = physical_device.supported_features();
-    features.buffer_device_address
-        && features.descriptor_indexing
-        && features.shader_sampled_image_array_non_uniform_indexing
-        && features.runtime_descriptor_array
-        && features.descriptor_binding_variable_descriptor_count
-        && features.descriptor_binding_partially_bound
-        && features.dynamic_rendering
-        && features.synchronization2
+fn device_has_required_features(
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+) -> bool {
+    let mut features13 = vk::PhysicalDeviceVulkan13Features::default();
+    let mut features12 = vk::PhysicalDeviceVulkan12Features::default();
+    features12.p_next = &mut features13 as *mut _ as *mut c_void;
+
+    let mut features2 = vk::PhysicalDeviceFeatures2::default();
+    features2.p_next = &mut features12 as *mut _ as *mut c_void;
+
+    unsafe {
+        instance.get_physical_device_features2(physical_device, &mut features2);
+    }
+
+    features12.buffer_device_address == vk::TRUE
+        && features12.descriptor_indexing == vk::TRUE
+        && features12.shader_sampled_image_array_non_uniform_indexing == vk::TRUE
+        && features12.runtime_descriptor_array == vk::TRUE
+        && features12.descriptor_binding_variable_descriptor_count == vk::TRUE
+        && features12.descriptor_binding_partially_bound == vk::TRUE
+        && features13.dynamic_rendering == vk::TRUE
+        && features13.synchronization2 == vk::TRUE
 }
 
-fn get_required_device_extensions() -> DeviceExtensions {
-    let mut ext = DeviceExtensions::empty();
-    ext.khr_swapchain = true;
-    ext.khr_dynamic_rendering = true;
-    ext
+fn get_required_device_extensions() -> Vec<*const i8> {
+    vec![khr::swapchain::NAME.as_ptr()]
 }
 
-fn device_has_required_extensions(physical_device: &Arc<PhysicalDevice>) -> bool {
-    let av_dev_ext = physical_device.supported_extensions();
-    let rq_dev_ext = get_required_device_extensions();
-    av_dev_ext.contains(&rq_dev_ext)
-}
+fn device_has_required_extensions(
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+) -> bool {
+    let available_extensions = unsafe {
+        match instance.enumerate_device_extension_properties(physical_device) {
+            Ok(ext) => ext,
+            Err(_) => return false,
+        }
+    };
 
-fn get_required_device_queue_families() -> Vec<QueueFlags> {
-    vec![
-        QueueFlags::GRAPHICS,
-        QueueFlags::TRANSFER,
-        QueueFlags::COMPUTE,
-    ]
-}
+    let required = get_required_device_extensions();
 
-fn device_has_required_queue_families(physical_device: &Arc<PhysicalDevice>) -> bool {
-    let av_queue_families = physical_device.queue_family_properties();
-    let rq_queue_families = get_required_device_queue_families();
-
-    for rq_family in rq_queue_families {
+    for req_ext in required {
+        let req_name = unsafe { CStr::from_ptr(req_ext) };
         let mut found = false;
 
-        for av_queue_family in av_queue_families {
-            if av_queue_family.queue_flags.contains(rq_family) {
+        for av_ext in &available_extensions {
+            let av_name = unsafe { CStr::from_ptr(av_ext.extension_name.as_ptr()) };
+            if req_name == av_name {
                 found = true;
                 break;
             }
-            log::warn!("av {:?}", av_queue_family);
         }
 
         if !found {
-            log::warn!("{:?}", rq_family);
             return false;
         }
     }
@@ -321,40 +273,69 @@ fn device_has_required_queue_families(physical_device: &Arc<PhysicalDevice>) -> 
     true
 }
 
-fn get_queue_family_indices(queue_families: &[QueueFamilyProperties]) -> QueueFamilyIndices {
+fn device_has_required_queue_families(
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+) -> bool {
+    let queue_families =
+        unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
+
+    let mut has_graphics = false;
+    let mut has_compute = false;
+    let mut has_transfer = false;
+
+    for family in queue_families {
+        if family.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
+            has_graphics = true;
+        }
+        if family.queue_flags.contains(vk::QueueFlags::COMPUTE) {
+            has_compute = true;
+        }
+        if family.queue_flags.contains(vk::QueueFlags::TRANSFER) {
+            has_transfer = true;
+        }
+    }
+
+    has_graphics && has_compute && has_transfer
+}
+
+fn get_queue_family_indices(queue_families: &[vk::QueueFamilyProperties]) -> QueueFamilyIndices {
     let mut indices = QueueFamilyIndices {
         graphics: 0,
         compute: 0,
         transfer: 0,
     };
 
-    let mut i = 0u32;
-
-    for family in queue_families {
-        match family.queue_flags {
-            QueueFlags::GRAPHICS => indices.graphics = i,
-            QueueFlags::TRANSFER => indices.transfer = i,
-            QueueFlags::COMPUTE => indices.compute = i,
-            _ => (),
+    for (i, family) in queue_families.iter().enumerate() {
+        if family.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
+            indices.graphics = i as u32;
         }
-
-        i += 1;
+        if family.queue_flags.contains(vk::QueueFlags::COMPUTE) {
+            indices.compute = i as u32;
+        }
+        if family.queue_flags.contains(vk::QueueFlags::TRANSFER) {
+            indices.transfer = i as u32;
+        }
     }
 
     indices
 }
 
-fn is_device_suitable(physical_device: &Arc<PhysicalDevice>) -> bool {
-    log::info!(
-        "Checking device suitability of {}",
-        physical_device.properties().device_name
-    );
+fn is_device_suitable(instance: &ash::Instance, physical_device: vk::PhysicalDevice) -> bool {
+    let properties = unsafe { instance.get_physical_device_properties(physical_device) };
+    let device_name = unsafe {
+        CStr::from_ptr(properties.device_name.as_ptr())
+            .to_string_lossy()
+            .to_string()
+    };
 
-    let has_required_features = device_has_required_features(physical_device);
-    let has_device_extensions = device_has_required_extensions(physical_device);
-    let has_queue_familes = device_has_required_queue_families(physical_device);
+    log::info!("Checking device suitability of {}", device_name);
 
-    let is_suitable = has_required_features && has_device_extensions && has_queue_familes;
+    let has_required_features = device_has_required_features(instance, physical_device);
+    let has_device_extensions = device_has_required_extensions(instance, physical_device);
+    let has_queue_families = device_has_required_queue_families(instance, physical_device);
+
+    let is_suitable = has_required_features && has_device_extensions && has_queue_families;
 
     if is_suitable {
         log::info!("Device is suitable");
@@ -366,357 +347,462 @@ fn is_device_suitable(physical_device: &Arc<PhysicalDevice>) -> bool {
   Has required queue families? {}",
             has_required_features,
             has_device_extensions,
-            has_queue_familes
+            has_queue_families
         );
     }
 
     is_suitable
 }
 
-fn select_physical_device(instance: &Arc<Instance>) -> Result<Arc<PhysicalDevice>, VulkanError> {
+fn select_physical_device(instance: &ash::Instance) -> Result<vk::PhysicalDevice, VulkanError> {
     log::info!("Selecting first suitable physical device");
 
     let physical_devices = get_available_physical_devices(instance)?;
 
     for physical_device in physical_devices {
-        if is_device_suitable(&physical_device) {
-            return Ok(physical_device.clone());
+        if is_device_suitable(instance, physical_device) {
+            return Ok(physical_device);
         }
     }
 
-    log::error!("No suitable vulkan device found");
+    log::error!("No suitable Vulkan device found");
     Err(VulkanError::UnsuitablePhysicalDevice)
 }
 
-fn get_required_device_features() -> DeviceFeatures {
-    let mut features = DeviceFeatures::empty();
-    features.dynamic_rendering = true;
-    features.synchronization2 = true;
-    features.buffer_device_address = true;
-    features.descriptor_indexing = true;
-    features.shader_sampled_image_array_non_uniform_indexing = true;
-    features.runtime_descriptor_array = true;
-    features.descriptor_binding_variable_descriptor_count = true;
-    features.descriptor_binding_partially_bound = true;
-    features
-}
-
 fn create_logical_device(
-    physical_device: &Arc<PhysicalDevice>,
-) -> Result<(Arc<Device>, Vec<Arc<Queue>>), VulkanError> {
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+) -> Result<(ash::Device, vk::Queue, vk::Queue, vk::Queue), VulkanError> {
     log::info!("Creating logical device");
 
-    // Extensions and features
-    let features = get_required_device_features();
+    let queue_families =
+        unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
+    let indices = get_queue_family_indices(&queue_families);
+
+    let queue_priorities = [1.0f32];
+    let mut queue_create_infos = vec![
+        vk::DeviceQueueCreateInfo::default()
+            .queue_family_index(indices.graphics)
+            .queue_priorities(&queue_priorities),
+    ];
+
+    // Add optional dedicated transfer queue if different from graphics
+    if indices.transfer != indices.graphics && indices.transfer != indices.compute {
+        queue_create_infos.push(
+            vk::DeviceQueueCreateInfo::default()
+                .queue_family_index(indices.transfer)
+                .queue_priorities(&queue_priorities),
+        );
+    }
+
+    // Add optional dedicated compute queue if different from graphics and transfer
+    if indices.compute != indices.graphics && indices.compute != indices.transfer {
+        queue_create_infos.push(
+            vk::DeviceQueueCreateInfo::default()
+                .queue_family_index(indices.compute)
+                .queue_priorities(&queue_priorities),
+        );
+    }
+
     let extensions = get_required_device_extensions();
 
-    // Queues. We need at least a graphics queue. The other queues are optional
-    let queue_families = physical_device.queue_family_properties();
-    let indices = get_queue_family_indices(queue_families);
+    let mut features13 = vk::PhysicalDeviceVulkan13Features::default()
+        .dynamic_rendering(true)
+        .synchronization2(true);
 
-    let mut queue_cis: Vec<QueueCreateInfo> = Vec::new();
+    let mut features12 = vk::PhysicalDeviceVulkan12Features::default()
+        .buffer_device_address(true)
+        .descriptor_indexing(true)
+        .shader_sampled_image_array_non_uniform_indexing(true)
+        .runtime_descriptor_array(true)
+        .descriptor_binding_variable_descriptor_count(true)
+        .descriptor_binding_partially_bound(true);
+    features12.p_next = &mut features13 as *mut _ as *mut c_void;
 
-    // The required graphics queue
-    queue_cis.push(QueueCreateInfo {
-        queue_family_index: indices.graphics,
-        ..Default::default()
-    });
+    let mut features2 = vk::PhysicalDeviceFeatures2::default();
+    features2.p_next = &mut features12 as *mut _ as *mut c_void;
 
-    // Optional queues
-    if indices.transfer != indices.graphics && indices.transfer != indices.compute {
-        queue_cis.push(QueueCreateInfo {
-            queue_family_index: indices.transfer,
-            ..Default::default()
-        });
-    }
+    let mut device_create_info = vk::DeviceCreateInfo::default()
+        .queue_create_infos(&queue_create_infos)
+        .enabled_extension_names(&extensions);
+    device_create_info.p_next = &mut features2 as *mut _ as *mut c_void;
 
-    if indices.compute != indices.graphics && indices.compute != indices.transfer {
-        queue_cis.push(QueueCreateInfo {
-            queue_family_index: indices.transfer,
-            ..Default::default()
-        });
-    }
-
-    // Device creation
-    let device_ci = DeviceCreateInfo {
-        queue_create_infos: queue_cis,
-        enabled_extensions: extensions,
-        enabled_features: features,
-        ..Default::default()
+    let device = unsafe {
+        instance
+            .create_device(physical_device, &device_create_info, None)
+            .map_err(|e| VulkanError::LogicalDeviceCreationError(e))?
     };
 
-    let (device, queues_it) = match Device::new(physical_device.clone(), device_ci) {
-        Ok(o) => o,
-        Err(e) => {
-            log::error!("Unable to create vulkan device: {}", e);
-            return Err(VulkanError::LogicalDeviceCreationError(e.unwrap()));
-        }
-    };
+    let graphics_queue = unsafe { device.get_device_queue(indices.graphics, 0) };
+    let compute_queue = unsafe { device.get_device_queue(indices.compute, 0) };
+    let transfer_queue = unsafe { device.get_device_queue(indices.transfer, 0) };
 
-    Ok((device, queues_it.collect()))
+    Ok((device, graphics_queue, compute_queue, transfer_queue))
 }
 
 fn create_swapchain(
-    physical_device: &Arc<PhysicalDevice>,
-    device: &Arc<Device>,
-    surface: &Arc<Surface>,
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+    device: &ash::Device,
+    surface_loader: &khr::surface::Instance,
+    surface: vk::SurfaceKHR,
     width: u32,
     height: u32,
     vsync: bool,
-) -> Result<(Arc<Swapchain>, Vec<Arc<Image>>), VulkanError> {
+) -> Result<
+    (
+        khr::swapchain::Device,
+        vk::SwapchainKHR,
+        Vec<vk::Image>,
+        vk::Format,
+        vk::Extent2D,
+    ),
+    VulkanError,
+> {
     log::info!("Creating swapchain");
 
-    // Surface capabilities
-    let surface_capabilities =
-        match physical_device.surface_capabilities(surface, Default::default()) {
-            Ok(o) => o,
-            Err(e) => {
-                log::error!("Unable to query device surface capabilities {}", e);
-                return Err(VulkanError::SurfaceCapabilityQueryError(e.unwrap()));
-            }
-        };
+    let surface_capabilities = unsafe {
+        surface_loader
+            .get_physical_device_surface_capabilities(physical_device, surface)
+            .map_err(|e| VulkanError::SurfaceCapabilityQueryError(e))?
+    };
 
-    // Clamp extents to make sure they fit the device capabilities
-    let img_extent = [
-        u32::clamp(
-            width,
-            surface_capabilities.min_image_extent[0],
-            surface_capabilities.min_image_extent[0],
+    let extent = vk::Extent2D {
+        width: width.clamp(
+            surface_capabilities.min_image_extent.width,
+            surface_capabilities.max_image_extent.width,
         ),
-        u32::clamp(
-            height,
-            surface_capabilities.min_image_extent[1],
-            surface_capabilities.min_image_extent[1],
+        height: height.clamp(
+            surface_capabilities.min_image_extent.height,
+            surface_capabilities.max_image_extent.height,
         ),
-    ];
+    };
 
-    // Set image formats
-    let img_format = Format::B8G8R8A8_UNORM;
-    let img_colorspace = ColorSpace::SrgbNonLinear;
-    let img_usage = ImageUsage::TRANSFER_DST | ImageUsage::COLOR_ATTACHMENT;
+    let format = vk::Format::B8G8R8A8_UNORM;
+    let color_space = vk::ColorSpaceKHR::SRGB_NONLINEAR;
 
-    // Set image count
-    let image_count = surface_capabilities
-        .max_image_count
-        .unwrap_or(surface_capabilities.min_image_count + 1);
-
-    // Set presentation mode
-    let present_mode = if vsync {
-        PresentMode::Fifo
+    let image_count = if surface_capabilities.max_image_count > 0 {
+        surface_capabilities
+            .max_image_count
+            .min(surface_capabilities.min_image_count + 1)
     } else {
-        PresentMode::Immediate
+        surface_capabilities.min_image_count + 1
     };
 
-    // Creation
-    let swpc_ci = SwapchainCreateInfo {
-        min_image_count: image_count,
-        image_format: img_format,
-        image_color_space: img_colorspace,
-        image_extent: img_extent,
-        image_array_layers: 1,
-        image_usage: img_usage,
-        image_sharing: Sharing::Exclusive,
-        pre_transform: surface_capabilities.current_transform,
-        composite_alpha: CompositeAlpha::Opaque,
-        present_mode: present_mode,
-        clipped: true,
-        ..Default::default()
+    let present_mode = if vsync {
+        vk::PresentModeKHR::FIFO
+    } else {
+        vk::PresentModeKHR::IMMEDIATE
     };
 
-    match Swapchain::new(device.clone(), surface.clone(), swpc_ci) {
-        Ok(o) => Ok(o),
-        Err(e) => {
-            log::error!("Unable to create swapchain: {}", e);
-            return Err(VulkanError::SwapchainCreationError(e.unwrap()));
-        }
-    }
+    let swapchain_create_info = vk::SwapchainCreateInfoKHR::default()
+        .surface(surface)
+        .min_image_count(image_count)
+        .image_format(format)
+        .image_color_space(color_space)
+        .image_extent(extent)
+        .image_array_layers(1)
+        .image_usage(vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
+        .pre_transform(surface_capabilities.current_transform)
+        .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
+        .present_mode(present_mode)
+        .clipped(true);
+
+    let swapchain_loader = khr::swapchain::Device::new(instance, device);
+    let swapchain = unsafe {
+        swapchain_loader
+            .create_swapchain(&swapchain_create_info, None)
+            .map_err(|e| VulkanError::SwapchainCreationError(e))?
+    };
+
+    let images = unsafe {
+        swapchain_loader
+            .get_swapchain_images(swapchain)
+            .map_err(|e| VulkanError::SwapchainCreationError(e))?
+    };
+
+    Ok((swapchain_loader, swapchain, images, format, extent))
 }
 
 fn create_command_pool(
-    device: Arc<Device>,
-    flags: CommandPoolCreateFlags,
+    device: &ash::Device,
     queue_family_index: u32,
-) -> Result<CommandPool, VulkanError> {
-    let ci = CommandPoolCreateInfo {
-        flags,
-        queue_family_index,
-        ..Default::default()
-    };
-    match CommandPool::new(device, ci) {
-        Ok(o) => Ok(o),
-        Err(e) => {
-            log::error!("Unable to create command pool: {}", e);
-            Err(VulkanError::CommandPoolCreateion(e.unwrap()))
-        }
+) -> Result<vk::CommandPool, VulkanError> {
+    let create_info = vk::CommandPoolCreateInfo::default()
+        .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
+        .queue_family_index(queue_family_index);
+
+    unsafe {
+        device
+            .create_command_pool(&create_info, None)
+            .map_err(|e| VulkanError::CommandPoolCreation(e))
     }
 }
 
 fn create_command_buffers(
-    command_pool: &CommandPool,
-) -> Result<Vec<CommandPoolAlloc>, VulkanError> {
-    let cmdbuff_ci = CommandBufferAllocateInfo {
-        level: CommandBufferLevel::Primary,
-        command_buffer_count: FRAMES_IN_FLIGHT,
-        ..Default::default()
-    };
+    device: &ash::Device,
+    command_pool: vk::CommandPool,
+) -> Result<Vec<vk::CommandBuffer>, VulkanError> {
+    let allocate_info = vk::CommandBufferAllocateInfo::default()
+        .command_pool(command_pool)
+        .level(vk::CommandBufferLevel::PRIMARY)
+        .command_buffer_count(FRAMES_IN_FLIGHT);
 
-    match command_pool.allocate_command_buffers(cmdbuff_ci) {
-        Ok(o) => Ok(o.collect()),
-        Err(e) => {
-            log::error!("Unable to allocate command buffers: {}", e);
-            return Err(VulkanError::CommandBufferAllocation(e));
-        }
+    unsafe {
+        device
+            .allocate_command_buffers(&allocate_info)
+            .map_err(|e| VulkanError::CommandBufferAllocation(e))
     }
 }
 
-fn create_semaphores(device: Arc<Device>) -> Result<Vec<Semaphore>, VulkanError> {
+fn create_semaphores(device: &ash::Device) -> Result<Vec<vk::Semaphore>, VulkanError> {
     let mut semaphores = Vec::new();
+    let create_info = vk::SemaphoreCreateInfo::default();
 
     for _ in 0..FRAMES_IN_FLIGHT {
-        let ci = SemaphoreCreateInfo {
-            semaphore_type: SemaphoreType::Binary,
-            ..Default::default()
+        let semaphore = unsafe {
+            device
+                .create_semaphore(&create_info, None)
+                .map_err(|e| VulkanError::SemaphoreCreationError(e))?
         };
-
-        match Semaphore::new(device.clone(), ci) {
-            Ok(o) => semaphores.push(o),
-            Err(e) => {
-                log::error!("Unable to create binary semaphore: {}", e);
-                return Err(VulkanError::SemaphoreCreationError(e.unwrap()));
-            }
-        }
+        semaphores.push(semaphore);
     }
 
     Ok(semaphores)
 }
 
-fn create_fences(device: Arc<Device>) -> Result<Vec<Fence>, VulkanError> {
+fn create_fences(device: &ash::Device) -> Result<Vec<vk::Fence>, VulkanError> {
     let mut fences = Vec::new();
+    let create_info = vk::FenceCreateInfo::default().flags(vk::FenceCreateFlags::SIGNALED);
 
-    let ci = FenceCreateInfo {
-        flags: FenceCreateFlags::SIGNALED,
-        ..Default::default()
-    };
-
-    match Fence::new(device, ci) {
-        Ok(o) => fences.push(o),
-        Err(e) => {
-            log::error!("Unable to create binary semaphore: {}", e);
-            return Err(VulkanError::FenceCreationError(e.unwrap()));
-        }
+    for _ in 0..FRAMES_IN_FLIGHT {
+        let fence = unsafe {
+            device
+                .create_fence(&create_info, None)
+                .map_err(|e| VulkanError::FenceCreationError(e))?
+        };
+        fences.push(fence);
     }
 
     Ok(fences)
 }
 
 impl VulkanContext {
+    /// Manually destroy the swapchain
+    ///
+    /// **IMPORTANT**: This MUST be called before the window is destroyed/closed
+    /// to avoid segfaults. The swapchain depends on the window surface, and if
+    /// the surface is destroyed first (by winit), attempting to destroy the
+    /// swapchain will cause a crash.
+    ///
+    /// Call this in your application's cleanup code before dropping the window,
+    /// or in response to window close events.
+    pub fn destroy_swapchain(&mut self) {
+        unsafe {
+            if self.swapchain != vk::SwapchainKHR::null() {
+                log::info!("Manually destroying swapchain before window cleanup");
+
+                // Wait for device to be idle before destroying swapchain
+                if let Err(e) = self.device.device_wait_idle() {
+                    log::error!("Failed to wait for device idle before swapchain destruction: {:?}", e);
+                    return;
+                }
+
+                self.swapchain_loader.destroy_swapchain(self.swapchain, None);
+                self.swapchain = vk::SwapchainKHR::null();
+
+                log::info!("Swapchain destroyed successfully");
+            }
+        }
+    }
+
     pub fn new(
         event_loop: &ActiveEventLoop,
-        window: &Arc<Window>,
+        window: &Window,
         config: &EngineConfig,
     ) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
 
-        // API version
-        let library = match VulkanLibrary::new() {
-            Ok(o) => o,
-            Err(e) => {
-                log::error!("Unable to load Vulkan library: {}", e);
-                return Err(VulkanError::LibraryLoadingError(e));
-            }
+        let entry = unsafe { Entry::load().map_err(|e| VulkanError::LibraryLoadingError(e))? };
+
+        let api_version = unsafe {
+            entry
+                .try_enumerate_instance_version()
+                .map_err(|e| VulkanError::InstanceCreationError(e))?
+                .unwrap_or(vk::API_VERSION_1_0)
         };
 
-        let supported_api_version = library.api_version();
-        log::info!("Vulkan supported API version: {}", supported_api_version);
+        log::info!(
+            "Vulkan supported API version: {}.{}.{}",
+            vk::api_version_major(api_version),
+            vk::api_version_minor(api_version),
+            vk::api_version_patch(api_version)
+        );
 
-        // Instance extensions
-        let required_instance_extensions = get_required_instance_extensions(event_loop);
+        let extensions = get_required_instance_extensions(event_loop)?;
 
-        // Validation layers
         #[cfg(feature = "validation_layers")]
-        let required_validation_layers = get_required_validation_layers(&library)?;
+        let layers = get_required_validation_layers(&entry)?;
 
-        // Debug msg info
         #[cfg(feature = "validation_layers")]
-        let dbg_msg_ci = dbg_msg_create_info();
+        let instance = build_instance(&entry, &extensions, &layers)?;
 
-        // Instance
-        #[cfg(feature = "validation_layers")]
-        let instance = build_instance(
-            library,
-            supported_api_version,
-            required_validation_layers,
-            required_instance_extensions,
-            dbg_msg_ci.clone(),
-        )?;
         #[cfg(not(feature = "validation_layers"))]
-        let instance =
-            build_instance(library, supported_api_version, required_instance_extensions)?;
+        let instance = build_instance(&entry, &extensions)?;
 
-        // Debug msg
         #[cfg(feature = "validation_layers")]
-        let dbg_msg = match DebugUtilsMessenger::new(instance.clone(), dbg_msg_ci.clone()) {
-            Ok(o) => o,
-            Err(e) => {
-                log::error!("Unable to create Vulkan debug messenger: {}", e);
-                return Err(VulkanError::DebugMessengerCreationError(e.unwrap()));
-            }
+        let (debug_utils, debug_messenger) = {
+            let debug_utils = ext::debug_utils::Instance::new(&entry, &instance);
+            let debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT::default()
+                .message_severity(
+                    vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+                        | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+                        | vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+                        | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+                )
+                .message_type(
+                    vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                        | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
+                        | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+                )
+                .pfn_user_callback(Some(debug_callback));
+
+            let messenger = unsafe {
+                debug_utils
+                    .create_debug_utils_messenger(&debug_create_info, None)
+                    .map_err(|e| VulkanError::DebugMessengerCreationError(e))?
+            };
+
+            (debug_utils, messenger)
         };
 
-        // Select physical device
         let physical_device = select_physical_device(&instance)?;
 
-        // Create logical device and queues
-        let (device, queues) = create_logical_device(&physical_device)?;
+        let (device, graphics_queue, compute_queue, transfer_queue) =
+            create_logical_device(&instance, physical_device)?;
 
-        // Get window surface
-        let surface = match Surface::from_window(instance.clone(), window.clone()) {
-            Ok(o) => o,
-            Err(e) => {
-                log::error!("Unable to obtain Vulkan surface from window");
-                return Err(VulkanError::SurfaceCreationError(e));
-            }
+        let surface_loader = khr::surface::Instance::new(&entry, &instance);
+        let surface_khr = unsafe {
+            ash_window::create_surface(
+                &entry,
+                &instance,
+                window.display_handle().unwrap().as_raw(),
+                window.window_handle().unwrap().as_raw(),
+                None,
+            )
+            .map_err(|e| VulkanError::SurfaceCreationError(e))?
         };
 
-        // Create Swapchain
-        let (swapchain, swapchain_images) = create_swapchain(
-            &physical_device,
-            &device,
-            &surface,
-            config.resolution.width,
-            config.resolution.height,
-            config.renderer.vsync,
-        )?;
+        let (swapchain_loader, swapchain, swapchain_images, swapchain_format, swapchain_extent) =
+            create_swapchain(
+                &instance,
+                physical_device,
+                &device,
+                &surface_loader,
+                surface_khr,
+                config.resolution.width,
+                config.resolution.height,
+                config.renderer.vsync,
+            )?;
 
-        // Create default command pool. We know that queue 0 is always the graphics queue
-        let command_pool = create_command_pool(
-            device.clone(),
-            CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
-            queues[0].queue_family_index(),
-        )?;
+        let queue_families =
+            unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
+        let indices = get_queue_family_indices(&queue_families);
 
-        // Create default command buffers
-        let command_buffers = create_command_buffers(&command_pool)?;
+        let command_pool = create_command_pool(&device, indices.graphics)?;
+        let command_buffers = create_command_buffers(&device, command_pool)?;
 
-        // Create sync objects
-        let present_completed_sem = create_semaphores(device.clone())?;
-        let render_finished_sem = create_semaphores(device.clone())?;
-        let frame_fences = create_fences(device.clone())?;
+        let present_completed_sem = create_semaphores(&device)?;
+        let render_finished_sem = create_semaphores(&device)?;
+        let frame_fences = create_fences(&device)?;
 
         Ok(Self {
+            entry,
             instance,
-            dbg_msg,
+            #[cfg(feature = "validation_layers")]
+            debug_utils,
+            #[cfg(feature = "validation_layers")]
+            debug_messenger,
             physical_device,
             device,
-            queues,
-            surface,
+            graphics_queue,
+            compute_queue,
+            transfer_queue,
+            surface: surface_loader,
+            surface_khr,
+            swapchain_loader,
             swapchain,
             swapchain_images,
+            swapchain_format,
+            swapchain_extent,
             command_pool,
             command_buffers,
             present_completed_sem,
             render_finished_sem,
             frame_fences,
         })
+    }
+}
+
+impl Drop for VulkanContext {
+    fn drop(&mut self) {
+        log::info!("Cleaning up Vulkan resources");
+
+        unsafe {
+            // Wait for device to be idle before destroying anything
+            if let Err(e) = self.device.device_wait_idle() {
+                log::error!("Failed to wait for device idle during cleanup: {:?}", e);
+                return; // Don't proceed with cleanup if device is in bad state
+            }
+
+            log::debug!("Destroying sync objects");
+            // Destroy sync objects
+            for fence in &self.frame_fences {
+                self.device.destroy_fence(*fence, None);
+            }
+            for semaphore in &self.present_completed_sem {
+                self.device.destroy_semaphore(*semaphore, None);
+            }
+            for semaphore in &self.render_finished_sem {
+                self.device.destroy_semaphore(*semaphore, None);
+            }
+
+            log::debug!("Destroying command pool");
+            // Destroy command pool (this also frees command buffers)
+            self.device.destroy_command_pool(self.command_pool, None);
+
+            log::debug!("Skipping swapchain destruction in Drop");
+            // NOTE: Swapchain destruction MUST happen before the window/surface is destroyed.
+            // Since winit may destroy the surface before our Drop runs, we cannot safely
+            // destroy the swapchain here. The swapchain should be destroyed manually by
+            // calling destroy_swapchain() before the window is closed.
+            //
+            // If not destroyed manually, the device destruction below will implicitly
+            // clean up the swapchain, but this will trigger validation layer warnings.
+            // This is a known limitation when integrating with window libraries.
+
+            log::debug!("About to destroy device");
+            // Destroy device - this must happen before destroying the instance
+            self.device.destroy_device(None);
+
+            log::debug!("Destroying surface");
+            // Destroy surface after device but before instance
+            // Surface is owned by instance, not device
+            if self.surface_khr != vk::SurfaceKHR::null() {
+                self.surface.destroy_surface(self.surface_khr, None);
+            }
+
+            log::debug!("Destroying debug messenger");
+            // Destroy debug messenger before instance
+            #[cfg(feature = "validation_layers")]
+            self.debug_utils.destroy_debug_utils_messenger(self.debug_messenger, None);
+
+            log::debug!("Destroying instance");
+            // Destroy instance last
+            self.instance.destroy_instance(None);
+        }
+
+        log::info!("Vulkan cleanup complete");
     }
 }

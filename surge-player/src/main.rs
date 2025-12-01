@@ -110,6 +110,12 @@ impl ApplicationHandler for SurgeContext {
     fn exiting(&mut self, _: &ActiveEventLoop) {
         log::info!("Closing SURGE window");
         md::on_unload();
+
+        // We need to destroy the swapchain here because Winnit
+        // drops the surface before we have a chance to drop the Vulkan context.
+        // We can't have this, so we must destroy the swapchain before Winnit drops
+        // the window surface.
+        self.vulkan_context.as_mut().unwrap().destroy_swapchain();
     }
 
     fn window_event(

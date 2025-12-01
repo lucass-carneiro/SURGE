@@ -29,50 +29,50 @@ pub enum ConfigError {
 
 #[derive(Debug, Error)]
 pub enum VulkanError {
-    #[error("Unable to lod Vulkan library: {0}")]
-    LibraryLoadingError(vulkano::LoadingError),
+    #[error("Unable to load Vulkan library: {0}")]
+    LibraryLoadingError(ash::LoadingError),
 
     #[cfg(feature = "validation_layers")]
     #[error("Unable to query available Vulkan validation layers {0}")]
-    ValidationLayerQueryError(vulkano::VulkanError),
+    ValidationLayerQueryError(ash::vk::Result),
 
     #[cfg(feature = "validation_layers")]
     #[error("Validation layer {0} is not available")]
     ValidationLayerNotFound(String),
 
     #[error("Unable to create Vulkan instance: {0}")]
-    InstanceCreationError(vulkano::VulkanError),
+    InstanceCreationError(ash::vk::Result),
 
     #[error("Unable to create Vulkan debug messenger: {0}")]
-    DebugMessengerCreationError(vulkano::VulkanError),
+    DebugMessengerCreationError(ash::vk::Result),
 
     #[error("Unable to list available Vulkan physical devices: {0}")]
-    PhysicalDeviceListError(vulkano::VulkanError),
+    PhysicalDeviceListError(ash::vk::Result),
 
-    #[error("Unable to list find suitable Vulkan physical device")]
+    #[error("Unable to find suitable Vulkan physical device")]
     UnsuitablePhysicalDevice,
 
     #[error("Unable to create Vulkan device: {0}")]
-    LogicalDeviceCreationError(vulkano::VulkanError),
+    LogicalDeviceCreationError(ash::vk::Result),
 
     #[error("Unable to create Vulkan window surface: {0}")]
-    SurfaceCreationError(vulkano::swapchain::FromWindowError),
+    SurfaceCreationError(ash::vk::Result),
 
     #[error("Unable to query Vulkan device surface capabilities: {0}")]
-    SurfaceCapabilityQueryError(vulkano::VulkanError),
+    SurfaceCapabilityQueryError(ash::vk::Result),
 
     #[error("Unable to create swapchain: {0}")]
-    SwapchainCreationError(vulkano::VulkanError),
+    SwapchainCreationError(ash::vk::Result),
 
     #[error("Unable to create command pool: {0}")]
-    CommandPoolCreateion(vulkano::VulkanError),
+    CommandPoolCreation(ash::vk::Result),
 
     #[error("Unable to allocate command buffer: {0}")]
-    CommandBufferAllocation(vulkano::VulkanError),
+    CommandBufferAllocation(ash::vk::Result),
 
     #[error("Unable to create semaphore: {0}")]
-    SemaphoreCreationError(vulkano::VulkanError),
+    SemaphoreCreationError(ash::vk::Result),
 
     #[error("Unable to create fence: {0}")]
-    FenceCreationError(vulkano::VulkanError),
+    FenceCreationError(ash::vk::Result),
 }
