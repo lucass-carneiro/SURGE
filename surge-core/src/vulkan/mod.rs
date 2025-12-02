@@ -1,12 +1,12 @@
 use crate::config::EngineConfig;
 use crate::errors::VulkanError;
 use ash::vk::{
-    AccessFlags2, ClearColorValue, CommandBufferBeginInfo, CommandBufferResetFlags,
-    CommandBufferUsageFlags, DependencyInfo, Fence, ImageAspectFlags, ImageLayout,
-    ImageMemoryBarrier, ImageMemoryBarrier2, ImageSubresourceRange, PipelineStageFlags,
+    AccessFlags2, CommandBufferBeginInfo, CommandBufferResetFlags, CommandBufferUsageFlags,
+    DependencyInfo, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrier2,
+    ImageSubresourceRange, ImageViewCreateInfo, ImageViewType, PipelineStageFlags,
     PipelineStageFlags2, PresentInfoKHR, SubmitInfo,
 };
-use ash::{Device, Entry, ext, khr, vk};
+use ash::{Entry, ext, khr, vk};
 use log;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_void;
@@ -24,9 +24,18 @@ struct QueueFamilyIndices {
 }
 
 #[derive(Debug)]
-pub struct SwapchainData {
+pub struct SwapchainImageData {
     pub index: u32,
     pub suboptimal: bool,
+}
+
+struct SwapchainData {
+    swapchain_loader: khr::swapchain::Device,
+    swapchain: vk::SwapchainKHR,
+    images: Vec<vk::Image>,
+    image_views: Vec<vk::ImageView>,
+    format: vk::Format,
+    extent: vk::Extent2D,
 }
 
 struct SwpcLayoutTransitionInfo {
@@ -57,11 +66,8 @@ pub struct VulkanContext {
 
     surface: khr::surface::Instance,
     surface_khr: vk::SurfaceKHR,
-    swapchain_loader: khr::swapchain::Device,
-    swapchain: vk::SwapchainKHR,
-    swapchain_images: Vec<vk::Image>,
-    swapchain_format: vk::Format,
-    swapchain_extent: vk::Extent2D,
+
+    swapchain_data: SwapchainData,
 
     command_pool: vk::CommandPool,
     command_buffers: Vec<vk::CommandBuffer>,
@@ -474,16 +480,7 @@ fn create_swapchain(
     width: u32,
     height: u32,
     vsync: bool,
-) -> Result<
-    (
-        khr::swapchain::Device,
-        vk::SwapchainKHR,
-        Vec<vk::Image>,
-        vk::Format,
-        vk::Extent2D,
-    ),
-    VulkanError,
-> {
+) -> Result<SwapchainData, VulkanError> {
     log::info!("Creating swapchain");
 
     let surface_capabilities = unsafe {
@@ -547,7 +544,41 @@ fn create_swapchain(
             .map_err(|e| VulkanError::SwapchainCreationError(e))?
     };
 
-    Ok((swapchain_loader, swapchain, images, format, extent))
+    let mut image_views = Vec::new();
+
+    for image in &images {
+        let sr = ImageSubresourceRange {
+            aspect_mask: ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+            ..Default::default()
+        };
+
+        let ivci = ImageViewCreateInfo {
+            view_type: ImageViewType::TYPE_2D,
+            format: format,
+            subresource_range: sr,
+            image: *image,
+            ..Default::default()
+        };
+
+        image_views.push(unsafe {
+            device
+                .create_image_view(&ivci, None)
+                .map_err(|e| VulkanError::SwapchainCreationError(e))
+        }?);
+    }
+
+    Ok(SwapchainData {
+        swapchain_loader,
+        swapchain,
+        images,
+        image_views,
+        format,
+        extent,
+    })
 }
 
 fn create_command_pool(
@@ -617,38 +648,6 @@ fn create_fences(device: &ash::Device) -> Result<Vec<vk::Fence>, VulkanError> {
 }
 
 impl VulkanContext {
-    /// Manually destroy the swapchain
-    ///
-    /// **IMPORTANT**: This MUST be called before the window is destroyed/closed
-    /// to avoid segfaults. The swapchain depends on the window surface, and if
-    /// the surface is destroyed first (by winit), attempting to destroy the
-    /// swapchain will cause a crash.
-    ///
-    /// Call this in your application's cleanup code before dropping the window,
-    /// or in response to window close events.
-    pub fn destroy_swapchain(&mut self) {
-        unsafe {
-            if self.swapchain != vk::SwapchainKHR::null() {
-                log::info!("Manually destroying swapchain before window cleanup");
-
-                // Wait for device to be idle before destroying swapchain
-                if let Err(e) = self.device.device_wait_idle() {
-                    log::error!(
-                        "Failed to wait for device idle before swapchain destruction: {:?}",
-                        e
-                    );
-                    return;
-                }
-
-                self.swapchain_loader
-                    .destroy_swapchain(self.swapchain, None);
-                self.swapchain = vk::SwapchainKHR::null();
-
-                log::info!("Swapchain destroyed successfully");
-            }
-        }
-    }
-
     pub fn new(
         event_loop: &ActiveEventLoop,
         window: &Window,
@@ -726,17 +725,16 @@ impl VulkanContext {
             .map_err(|e| VulkanError::SurfaceCreationError(e))?
         };
 
-        let (swapchain_loader, swapchain, swapchain_images, swapchain_format, swapchain_extent) =
-            create_swapchain(
-                &instance,
-                physical_device,
-                &device,
-                &surface_loader,
-                surface_khr,
-                config.resolution.width,
-                config.resolution.height,
-                config.renderer.vsync,
-            )?;
+        let swapchain_data = create_swapchain(
+            &instance,
+            physical_device,
+            &device,
+            &surface_loader,
+            surface_khr,
+            config.resolution.width,
+            config.resolution.height,
+            config.renderer.vsync,
+        )?;
 
         let queue_families =
             unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
@@ -745,8 +743,8 @@ impl VulkanContext {
         let command_pool = create_command_pool(&device, indices.graphics)?;
         let command_buffers = create_command_buffers(&device, command_pool)?;
 
-        let present_completed_sem = create_semaphores(&device, swapchain_images.len())?;
-        let render_finished_sem = create_semaphores(&device, swapchain_images.len())?;
+        let present_completed_sem = create_semaphores(&device, swapchain_data.images.len())?;
+        let render_finished_sem = create_semaphores(&device, swapchain_data.images.len())?;
         let frame_fences = create_fences(&device)?;
 
         Ok(Self {
@@ -763,11 +761,7 @@ impl VulkanContext {
             transfer_queue,
             surface: surface_loader,
             surface_khr,
-            swapchain_loader,
-            swapchain,
-            swapchain_images,
-            swapchain_format,
-            swapchain_extent,
+            swapchain_data,
             command_pool,
             command_buffers,
             present_completed_sem,
@@ -795,7 +789,7 @@ impl VulkanContext {
             dst_access_mask: ti.dst_access_mask,
             old_layout: ti.old_layout,
             new_layout: ti.new_layout,
-            image: self.swapchain_images[ti.image_index as usize],
+            image: self.swapchain_data.images[ti.image_index as usize],
             subresource_range: subresource_range,
             ..Default::default()
         };
@@ -810,38 +804,6 @@ impl VulkanContext {
             self.device
                 .cmd_pipeline_barrier2(self.command_buffers[self.current_frame], &dependency_info)
         }
-    }
-
-    pub fn request_swpc_img(&self) -> Result<SwapchainData, VulkanError> {
-        let timeout = 1000000000;
-
-        // Wait frame fences
-        unsafe {
-            self.device
-                .wait_for_fences(&[self.frame_fences[self.current_frame]], true, timeout)
-                .map_err(|e| VulkanError::FenceWaiteError(e))?;
-        }
-
-        // Acquire next image
-        let (index, suboptimal) = unsafe {
-            self.swapchain_loader
-                .acquire_next_image(
-                    self.swapchain,
-                    timeout,
-                    self.present_completed_sem[self.semaphore_index],
-                    Fence::null(),
-                )
-                .map_err(|e| VulkanError::SwapchainAcquireError(e))
-        }?;
-
-        // Reset fences
-        unsafe {
-            self.device
-                .reset_fences(&[self.frame_fences[self.current_frame]])
-                .map_err(|e| VulkanError::FenceResetError(e))
-        }?;
-
-        Ok(SwapchainData { index, suboptimal })
     }
 
     pub fn cmd_begin(&self, swpc_img_idx: u32) -> Result<(), VulkanError> {
@@ -926,24 +888,130 @@ impl VulkanContext {
         }
     }
 
-    pub fn present_swpc(&mut self, swpc_data: &mut SwapchainData) -> Result<(), VulkanError> {
+    /// Manually destroy the swapchain
+    ///
+    /// **IMPORTANT**: This MUST be called before the window is destroyed/closed
+    /// to avoid segfaults. The swapchain depends on the window surface, and if
+    /// the surface is destroyed first (by winit), attempting to destroy the
+    /// swapchain will cause a crash.
+    ///
+    /// Call this in your application's cleanup code before dropping the window,
+    /// or in response to window close events.
+    pub fn destroy_swapchain(&mut self) -> Result<(), VulkanError> {
+        unsafe {
+            if self.swapchain_data.swapchain != vk::SwapchainKHR::null() {
+                self.device
+                    .device_wait_idle()
+                    .map_err(|e| VulkanError::SwapchainDestructionError(e))?;
+
+                for image_view in &self.swapchain_data.image_views {
+                    self.device.destroy_image_view(*image_view, None);
+                }
+
+                self.swapchain_data
+                    .swapchain_loader
+                    .destroy_swapchain(self.swapchain_data.swapchain, None);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn request_swpc_img(
+        &mut self,
+        config: &EngineConfig,
+    ) -> Result<SwapchainImageData, VulkanError> {
+        let timeout = 1000000000;
+
+        // Wait frame fences
+        unsafe {
+            self.device
+                .wait_for_fences(&[self.frame_fences[self.current_frame]], true, timeout)
+                .map_err(|e| VulkanError::FenceWaiteError(e))?;
+        }
+
+        // Acquire next image
+        let (index, suboptimal) = unsafe {
+            self.swapchain_data
+                .swapchain_loader
+                .acquire_next_image(
+                    self.swapchain_data.swapchain,
+                    timeout,
+                    self.present_completed_sem[self.semaphore_index],
+                    Fence::null(),
+                )
+                .map_err(|e| VulkanError::SwapchainAcquireError(e))
+        }?;
+
+        let swpc_img_data = SwapchainImageData { index, suboptimal };
+
+        // Only reset the fence if we are submitting work
+        if swpc_img_data.suboptimal {
+            self.recreate_swapchain(&config)?;
+            return Ok(swpc_img_data);
+        }
+
+        unsafe {
+            self.device
+                .reset_fences(&[self.frame_fences[self.current_frame]])
+                .map_err(|e| VulkanError::FenceResetError(e))
+        }?;
+
+        Ok(swpc_img_data)
+    }
+
+    pub fn present_swpc(
+        &mut self,
+        swpc_img_data: &mut SwapchainImageData,
+        config: &EngineConfig,
+    ) -> Result<(), VulkanError> {
         let pi = PresentInfoKHR {
             wait_semaphore_count: 1,
             p_wait_semaphores: &self.render_finished_sem[self.semaphore_index],
             swapchain_count: 1,
-            p_swapchains: &self.swapchain,
-            p_image_indices: &swpc_data.index,
+            p_swapchains: &self.swapchain_data.swapchain,
+            p_image_indices: &swpc_img_data.index,
             ..Default::default()
         };
 
-        swpc_data.suboptimal = unsafe {
-            self.swapchain_loader
+        swpc_img_data.suboptimal = unsafe {
+            self.swapchain_data
+                .swapchain_loader
                 .queue_present(self.graphics_queue, &pi)
                 .map_err(|e| VulkanError::SwapchainPresentError(self.current_frame, e))
         }?;
 
+        if swpc_img_data.suboptimal {
+            self.recreate_swapchain(config)?;
+        }
+
         self.semaphore_index = (self.semaphore_index + 1) % self.present_completed_sem.len();
         self.current_frame = (self.current_frame + 1) % FRAMES_IN_FLIGHT;
+
+        Ok(())
+    }
+
+    pub fn recreate_swapchain(&mut self, config: &EngineConfig) -> Result<(), VulkanError> {
+        log::info!("Recreating swapchain");
+
+        unsafe {
+            self.device
+                .device_wait_idle()
+                .map_err(|e| VulkanError::SwapchainRecreationError(e))
+        }?;
+
+        self.destroy_swapchain()?;
+
+        self.swapchain_data = create_swapchain(
+            &self.instance,
+            self.physical_device,
+            &self.device,
+            &self.surface,
+            self.surface_khr,
+            config.resolution.width,
+            config.resolution.height,
+            config.renderer.vsync,
+        )?;
 
         Ok(())
     }

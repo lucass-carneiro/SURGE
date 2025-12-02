@@ -64,6 +64,12 @@ pub enum VulkanError {
     #[error("Unable to create swapchain: {0}")]
     SwapchainCreationError(ash::vk::Result),
 
+    #[error("Unable to recreate swapchain: {0}")]
+    SwapchainRecreationError(ash::vk::Result),
+
+    #[error("Unable to destroy swapchain: {0}")]
+    SwapchainDestructionError(ash::vk::Result),
+
     #[error("Unable to present frame {0} swapchain: {1}")]
     SwapchainPresentError(usize, ash::vk::Result),
 

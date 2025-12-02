@@ -40,15 +40,14 @@ impl ApplicationHandler for SurgeContext {
         // Acquire swapchain image
         let mut swpc_img_data = self
             .vulkan_context
-            .as_ref()
+            .as_mut()
             .unwrap()
-            .request_swpc_img()
+            .request_swpc_img(&self.engine_config)
             .unwrap();
 
-        // Rebuild swapchain if necessary
         if swpc_img_data.suboptimal {
-            log::warn!("Suboptimal swapchain image. Recreating swapchain.");
-            // TODO: Recreate swapchain
+            log::info!("Frame skipped due to suboptimal swapchain");
+            return;
         }
 
         // Begin command recording
@@ -75,7 +74,7 @@ impl ApplicationHandler for SurgeContext {
         self.vulkan_context
             .as_mut()
             .unwrap()
-            .present_swpc(&mut swpc_img_data)
+            .present_swpc(&mut swpc_img_data, &self.engine_config)
             .unwrap();
 
         // Refresh HR key state
@@ -145,7 +144,11 @@ impl ApplicationHandler for SurgeContext {
         // drops the surface before we have a chance to drop the Vulkan context.
         // We can't have this, so we must destroy the swapchain before Winnit drops
         // the window surface.
-        self.vulkan_context.as_mut().unwrap().destroy_swapchain();
+        self.vulkan_context
+            .as_mut()
+            .unwrap()
+            .destroy_swapchain()
+            .unwrap();
     }
 
     fn window_event(
