@@ -57,8 +57,17 @@ impl ApplicationHandler for SurgeContext {
             .cmd_begin(swpc_img_data.index)
             .unwrap();
 
+        // Begin rendering
+        self.vulkan_context
+            .as_ref()
+            .unwrap()
+            .cmd_render_begin(swpc_img_data.index, &self.engine_config);
+
         // Call module draw
         md::draw();
+
+        // End rendering
+        self.vulkan_context.as_ref().unwrap().cmd_render_end();
 
         // End command recording
         self.vulkan_context

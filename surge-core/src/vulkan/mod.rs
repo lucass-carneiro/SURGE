@@ -1,10 +1,11 @@
 use crate::config::EngineConfig;
 use crate::errors::VulkanError;
 use ash::vk::{
-    AccessFlags2, CommandBufferBeginInfo, CommandBufferResetFlags, CommandBufferUsageFlags,
-    DependencyInfo, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrier2,
-    ImageSubresourceRange, ImageViewCreateInfo, ImageViewType, PipelineStageFlags,
-    PipelineStageFlags2, PresentInfoKHR, SubmitInfo,
+    AccessFlags2, AttachmentLoadOp, AttachmentStoreOp, ClearColorValue, CommandBufferBeginInfo,
+    CommandBufferResetFlags, CommandBufferUsageFlags, DependencyInfo, Fence, ImageAspectFlags,
+    ImageLayout, ImageMemoryBarrier2, ImageSubresourceRange, ImageViewCreateInfo, ImageViewType,
+    Offset2D, PipelineStageFlags, PipelineStageFlags2, PresentInfoKHR, Rect2D,
+    RenderingAttachmentInfo, RenderingInfo, SubmitInfo,
 };
 use ash::{Entry, ext, khr, vk};
 use log;
@@ -60,6 +61,7 @@ pub struct VulkanContext {
     physical_device: vk::PhysicalDevice,
 
     device: ash::Device,
+
     graphics_queue: vk::Queue,
     compute_queue: vk::Queue,
     transfer_queue: vk::Queue,
@@ -839,9 +841,55 @@ impl VulkanContext {
             src_stage_mask: PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT,
             dst_stage_mask: PipelineStageFlags2::COLOR_ATTACHMENT_OUTPUT,
         };
+
         self.cmd_transition_swpc_image_layout(swpc_ti);
 
         Ok(())
+    }
+
+    pub fn cmd_render_begin(&self, swpc_img_idx: u32, config: &EngineConfig) {
+        let ccl = ClearColorValue {
+            float32: [
+                config.clear_color.r as f32,
+                config.clear_color.g as f32,
+                config.clear_color.b as f32,
+                config.clear_color.a as f32,
+            ],
+        };
+
+        let rai = RenderingAttachmentInfo {
+            image_view: self.swapchain_data.image_views[swpc_img_idx as usize],
+            image_layout: ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+            load_op: AttachmentLoadOp::CLEAR,
+            store_op: AttachmentStoreOp::STORE,
+            clear_value: vk::ClearValue { color: ccl },
+            ..Default::default()
+        };
+
+        let ra = Rect2D {
+            offset: Offset2D { x: 0, y: 0 },
+            extent: self.swapchain_data.extent,
+        };
+
+        let ri = RenderingInfo {
+            render_area: ra,
+            layer_count: 1,
+            color_attachment_count: 1,
+            p_color_attachments: &rai,
+            ..Default::default()
+        };
+
+        unsafe {
+            self.device
+                .cmd_begin_rendering(self.command_buffers[self.current_frame], &ri)
+        }
+    }
+
+    pub fn cmd_render_end(&self) {
+        unsafe {
+            self.device
+                .cmd_end_rendering(self.command_buffers[self.current_frame]);
+        }
     }
 
     pub fn cmd_end(&self, swpc_img_idx: u32) -> Result<(), VulkanError> {

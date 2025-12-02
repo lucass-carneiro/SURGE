@@ -19,5 +19,8 @@ pub fn update() {
 
 #[unsafe(no_mangle)]
 pub fn draw() {
-    // TODO
+    // Bind pipeline
+    // Set viewport
+    // Set scissor
+    // Draw
 }
