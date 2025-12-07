@@ -1,16 +1,16 @@
 extern crate surge_core;
 
-use surge_core::errors::ModuleError;
-
 use libloading::{Library, Symbol};
-
 use std::path::Path;
+use surge_core::errors::ModuleError;
+use uuid::Uuid;
 
 /// A hot reloadable SURGE module
 #[derive(Debug)]
 pub struct HotReloadModule {
     module_name: String,
     module_library: Library,
+    module_id: Uuid,
 }
 
 impl HotReloadModule {
@@ -54,6 +54,7 @@ impl HotReloadModule {
         Ok(HotReloadModule {
             module_name: module_name.to_string(),
             module_library,
+            module_id: Uuid::new_v4(),
         })
     }
 

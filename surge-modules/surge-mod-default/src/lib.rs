@@ -1,26 +1,41 @@
-extern crate surge_core;
-
 use log;
+use surge_core::module::SurgeModule;
 
-#[unsafe(no_mangle)]
-pub fn on_load() {
-    log::info!("Module on_load");
+pub struct ModuleDefault {}
+
+impl ModuleDefault {
+    pub fn new() -> Self {
+        ModuleDefault {}
+    }
 }
 
-#[unsafe(no_mangle)]
-pub fn on_unload() {
-    log::info!("Module on_unload");
-}
+impl SurgeModule for ModuleDefault {
+    fn on_load(&self) {
+        log::info!("Default module startup");
+    }
 
-#[unsafe(no_mangle)]
-pub fn update() {
-    // TODO
-}
+    /// Update module state
+    fn update(&self) {
+        // Do nothing
+    }
 
-#[unsafe(no_mangle)]
-pub fn draw() {
-    // Bind pipeline
-    // Set viewport
-    // Set scissor
-    // Draw
+    /// Records module rendering commands
+    fn draw(&self) {
+        // Do nothing
+    }
+
+    /// Called when the module recieves a keyboard event
+    fn keyboard_event(&self) {
+        log::info!("Keyboard");
+    }
+
+    /// Called when the module recieves a mouse event
+    fn mouse_event(&self) {
+        log::info!("Mouse");
+    }
+
+    /// Called when engin is about to exit, and the module is about to quit
+    fn on_unload(&self) {
+        log::info!("Default module shutdown");
+    }
 }

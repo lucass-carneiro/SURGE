@@ -1,15 +1,10 @@
-extern crate surge_core as sc;
-
-#[cfg(feature = "hot_reloading")]
-extern crate surge_hot_reload;
-#[cfg(not(feature = "hot_reloading"))]
-extern crate surge_mod_default as md;
-
 use sc::vulkan::VulkanContext;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use surge_core::{self as sc, module::SurgeModule};
+use surge_mod_default as md;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -20,15 +15,19 @@ use winit::{
 
 mod cli;
 
-struct SurgeContext {
+struct SurgeContext<ModuleType: SurgeModule> {
     window: Option<Arc<Window>>,
     vulkan_context: Option<VulkanContext>,
     engine_config: sc::config::EngineConfig,
+    module: ModuleType,
     frame_timer: Instant,
     pause_rendering: bool,
 }
 
-impl ApplicationHandler for SurgeContext {
+impl<ModuleType> ApplicationHandler for SurgeContext<ModuleType>
+where
+    ModuleType: SurgeModule,
+{
     /// Game loop start
     fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
         self.frame_timer = Instant::now();
@@ -43,7 +42,7 @@ impl ApplicationHandler for SurgeContext {
 
         // Handle hot reloading
         // Call module update
-        md::update();
+        self.module.update();
 
         // Acquire swapchain image
         let mut swpc_img_data = self
@@ -72,7 +71,7 @@ impl ApplicationHandler for SurgeContext {
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
         // Call module draw
-        md::draw();
+        self.module.draw();
 
         // End rendering
         self.vulkan_context.as_ref().unwrap().cmd_render_end();
@@ -142,7 +141,7 @@ impl ApplicationHandler for SurgeContext {
                     self.window = Some(w);
 
                     // Load first module
-                    md::on_load();
+                    self.module.on_load();
                 }
                 Err(e) => {
                     log::error!("Unable to create SURGE window: {}", e);
@@ -155,7 +154,7 @@ impl ApplicationHandler for SurgeContext {
     /// Game loop Shutdown
     fn exiting(&mut self, _: &ActiveEventLoop) {
         log::info!("Closing SURGE window");
-        md::on_unload();
+        self.module.on_unload();
 
         // We need to destroy the swapchain here because Winnit
         // drops the surface before we have a chance to drop the Vulkan context.
@@ -218,6 +217,7 @@ pub fn main() {
         window: None,
         vulkan_context: None,
         engine_config,
+        module: md::ModuleDefault::new(),
         frame_timer: Instant::now(),
         pause_rendering: false,
     };
