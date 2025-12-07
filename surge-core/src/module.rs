@@ -1,3 +1,5 @@
+use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
+
 /// Defines a SURGE application
 pub trait SurgeModule {
     /// Called when the application starts
@@ -10,10 +12,13 @@ pub trait SurgeModule {
     fn draw(&self);
 
     /// Called when the application recieves a keyboard event
-    fn keyboard_event(&self);
+    fn keyboard_event(&self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool);
 
-    /// Called when the application recieves a mouse event
-    fn mouse_event(&self);
+    /// Called when the application recieves a mouse button event
+    fn mouse_button_event(&self, device_id: DeviceId, state: ElementState, button: MouseButton);
+
+    /// Called when the application recieves a mouse wheel event
+    fn mouse_wheel_event(&self, device_id: DeviceId, delta: MouseScrollDelta, phase: TouchPhase);
 
     /// Called when engin is about to exit, and the application is about to quit
     fn on_unload(&self);

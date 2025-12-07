@@ -1,5 +1,6 @@
 use log;
 use surge_core::module::SurgeModule;
+use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
 pub struct ModuleDefault {}
 
@@ -14,27 +15,46 @@ impl SurgeModule for ModuleDefault {
         log::info!("Default module startup");
     }
 
-    /// Update module state
     fn update(&self) {
         // Do nothing
     }
 
-    /// Records module rendering commands
     fn draw(&self) {
         // Do nothing
     }
 
-    /// Called when the module recieves a keyboard event
-    fn keyboard_event(&self) {
-        log::info!("Keyboard");
+    fn keyboard_event(&self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {
+        log::info!(
+            "Keyboard event: ID = {:?} event = {:?} synthetic = {}",
+            device_id,
+            event,
+            is_synthetic
+        );
     }
 
-    /// Called when the module recieves a mouse event
-    fn mouse_event(&self) {
-        log::info!("Mouse");
+    fn mouse_button_event(&self, device_id: DeviceId, state: ElementState, button: MouseButton) {
+        log::info!(
+            "Mouse event: ID = {:?} event = {:?} button = {:?}",
+            device_id,
+            state,
+            button
+        );
     }
 
-    /// Called when engin is about to exit, and the module is about to quit
+    fn mouse_wheel_event(
+        &self,
+        device_id: DeviceId,
+        delta: winit::event::MouseScrollDelta,
+        phase: winit::event::TouchPhase,
+    ) {
+        log::info!(
+            "Mouse scroll event: ID = {:?} delta = {:?} phaase = {:?}",
+            device_id,
+            delta,
+            phase
+        );
+    }
+
     fn on_unload(&self) {
         log::info!("Default module shutdown");
     }

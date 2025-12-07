@@ -185,6 +185,27 @@ where
                     self.pause_rendering = true;
                 }
             }
+            WindowEvent::KeyboardInput {
+                device_id,
+                event,
+                is_synthetic,
+            } => {
+                self.module.keyboard_event(device_id, event, is_synthetic);
+            }
+            WindowEvent::MouseInput {
+                device_id,
+                state,
+                button,
+            } => {
+                self.module.mouse_button_event(device_id, state, button);
+            }
+            WindowEvent::MouseWheel {
+                device_id,
+                delta,
+                phase,
+            } => {
+                self.module.mouse_wheel_event(device_id, delta, phase);
+            }
             _ => (),
         }
     }
