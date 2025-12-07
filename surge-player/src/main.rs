@@ -6,7 +6,10 @@ extern crate surge_hot_reload;
 extern crate surge_mod_default as md;
 
 use sc::vulkan::VulkanContext;
-use std::{sync::Arc, time::Duration, time::Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -22,17 +25,22 @@ struct SurgeContext {
     vulkan_context: Option<VulkanContext>,
     engine_config: sc::config::EngineConfig,
     frame_timer: Instant,
+    pause_rendering: bool,
 }
 
 impl ApplicationHandler for SurgeContext {
-    /// Frame start
+    /// Game loop start
     fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
         self.frame_timer = Instant::now();
     }
 
-    /// Frame end
+    /// Gme loop body
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
         // Stop rendering if minimized
+        if self.pause_rendering {
+            return;
+        }
+
         // Handle hot reloading
         // Call module update
         md::update();
@@ -100,7 +108,7 @@ impl ApplicationHandler for SurgeContext {
         }
     }
 
-    /// Frame loop startup
+    /// Game loop startup
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         // Init window
         if self.window.is_none() && self.vulkan_context.is_none() {
@@ -144,7 +152,7 @@ impl ApplicationHandler for SurgeContext {
         }
     }
 
-    /// Shutdown
+    /// Game loop Shutdown
     fn exiting(&mut self, _: &ActiveEventLoop) {
         log::info!("Closing SURGE window");
         md::on_unload();
@@ -169,6 +177,14 @@ impl ApplicationHandler for SurgeContext {
         match event {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
+            }
+            WindowEvent::Occluded(o) => {
+                self.pause_rendering = o;
+            }
+            WindowEvent::Resized(size) => {
+                if size.width == 0 && size.height == 0 {
+                    self.pause_rendering = true;
+                }
             }
             _ => (),
         }
@@ -203,6 +219,7 @@ pub fn main() {
         vulkan_context: None,
         engine_config,
         frame_timer: Instant::now(),
+        pause_rendering: false,
     };
 
     /*************
