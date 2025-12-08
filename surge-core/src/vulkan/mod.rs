@@ -961,12 +961,26 @@ impl VulkanContext {
             ],
         };
 
-        let rai = RenderingAttachmentInfo {
+        let cdp = vk::ClearDepthStencilValue {
+            depth: 0.0,
+            stencil: 0,
+        };
+
+        let cai = RenderingAttachmentInfo {
             image_view: self.swapchain_data.image_views[swpc_img_idx as usize],
             image_layout: ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             load_op: AttachmentLoadOp::CLEAR,
             store_op: AttachmentStoreOp::STORE,
             clear_value: vk::ClearValue { color: ccl },
+            ..Default::default()
+        };
+
+        let dai = RenderingAttachmentInfo {
+            image_view: self.depth_image.image_view,
+            image_layout: ImageLayout::DEPTH_ATTACHMENT_OPTIMAL,
+            load_op: AttachmentLoadOp::CLEAR,
+            store_op: AttachmentStoreOp::STORE,
+            clear_value: vk::ClearValue { depth_stencil: cdp },
             ..Default::default()
         };
 
@@ -979,7 +993,8 @@ impl VulkanContext {
             render_area: ra,
             layer_count: 1,
             color_attachment_count: 1,
-            p_color_attachments: &rai,
+            p_color_attachments: &cai,
+            p_depth_attachment: &dai,
             ..Default::default()
         };
 
