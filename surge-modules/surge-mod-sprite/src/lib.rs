@@ -2,17 +2,17 @@ use log;
 use surge_core::module::SurgeModule;
 use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
-pub struct ModuleDefault {}
+pub struct ModuleSprite {}
 
-impl ModuleDefault {
+impl ModuleSprite {
     pub fn new() -> Self {
-        ModuleDefault {}
+        ModuleSprite {}
     }
 }
 
-impl SurgeModule for ModuleDefault {
+impl SurgeModule for ModuleSprite {
     fn on_load(&self) {
-        log::info!("Default module startup");
+        log::info!("Sprite demo module startup");
     }
 
     fn update(&self) {
@@ -51,6 +51,6 @@ impl SurgeModule for ModuleDefault {
     }
 
     fn on_unload(&self) {
-        log::info!("Default module shutdown");
+        log::info!("Sprite demo module shutdown");
     }
 }

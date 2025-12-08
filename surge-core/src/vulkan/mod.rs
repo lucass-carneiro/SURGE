@@ -2,20 +2,24 @@ use crate::config::EngineConfig;
 use crate::errors::VulkanError;
 use ash::vk::{
     AccessFlags2, AttachmentLoadOp, AttachmentStoreOp, ClearColorValue, CommandBufferBeginInfo,
-    CommandBufferResetFlags, CommandBufferUsageFlags, DependencyInfo, Fence, ImageAspectFlags,
-    ImageLayout, ImageMemoryBarrier2, ImageSubresourceRange, ImageViewCreateInfo, ImageViewType,
-    Offset2D, PipelineStageFlags, PipelineStageFlags2, PresentInfoKHR, Rect2D,
+    CommandBufferResetFlags, CommandBufferUsageFlags, DependencyInfo, Fence, Handle,
+    ImageAspectFlags, ImageLayout, ImageMemoryBarrier2, ImageSubresourceRange, ImageViewCreateInfo,
+    ImageViewType, Offset2D, PipelineStageFlags, PipelineStageFlags2, PresentInfoKHR, Rect2D,
     RenderingAttachmentInfo, RenderingInfo, SubmitInfo,
 };
 use ash::{Entry, ext, khr, vk};
 use log;
 use std::ffi::{CStr, CString};
+use std::mem::ManuallyDrop;
 use std::os::raw::c_void;
+use vk_mem::{self, Alloc, AllocatorCreateFlags};
 use winit::{
     event_loop::ActiveEventLoop,
     raw_window_handle::{HasDisplayHandle, HasWindowHandle},
     window::Window,
 };
+
+pub mod sprite_database;
 
 #[derive(Debug)]
 struct QueueFamilyIndices {
@@ -49,6 +53,13 @@ struct SwpcLayoutTransitionInfo {
     pub dst_stage_mask: PipelineStageFlags2,
 }
 
+#[derive(Debug)]
+pub struct AllocatedImage {
+    image: vk::Image,
+    image_view: vk::ImageView,
+    image_memory: vk_mem::Allocation,
+}
+
 const FRAMES_IN_FLIGHT: usize = 2;
 
 pub struct VulkanContext {
@@ -60,6 +71,8 @@ pub struct VulkanContext {
     debug_messenger: vk::DebugUtilsMessengerEXT,
     physical_device: vk::PhysicalDevice,
 
+    memory_allocator: ManuallyDrop<vk_mem::Allocator>,
+
     device: ash::Device,
 
     graphics_queue: vk::Queue,
@@ -70,6 +83,7 @@ pub struct VulkanContext {
     surface_khr: vk::SurfaceKHR,
 
     swapchain_data: SwapchainData,
+    depth_image: AllocatedImage,
 
     command_pool: vk::CommandPool,
     command_buffers: Vec<vk::CommandBuffer>,
@@ -649,6 +663,86 @@ fn create_fences(device: &ash::Device) -> Result<Vec<vk::Fence>, VulkanError> {
     Ok(fences)
 }
 
+fn create_memory_allocator(
+    instance: &ash::Instance,
+    device: &ash::Device,
+    physical_device: vk::PhysicalDevice,
+) -> Result<vk_mem::Allocator, VulkanError> {
+    let mut ci = vk_mem::AllocatorCreateInfo::new(instance, device, physical_device);
+    ci.flags = AllocatorCreateFlags::BUFFER_DEVICE_ADDRESS;
+    Ok(unsafe {
+        vk_mem::Allocator::new(ci).map_err(|e| VulkanError::MemoryAllocatorCreationError(e))
+    })?
+}
+
+fn create_depth_image(
+    memory_allocator: &vk_mem::Allocator,
+    device: &ash::Device,
+    config: &EngineConfig,
+) -> Result<AllocatedImage, VulkanError> {
+    let extent = vk::Extent3D {
+        width: config.resolution.width,
+        height: config.resolution.height,
+        depth: 1,
+    };
+
+    let format = vk::Format::D32_SFLOAT;
+
+    let usage_flags = vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT;
+
+    let image_ci = vk::ImageCreateInfo {
+        image_type: vk::ImageType::TYPE_2D,
+        format: format,
+        extent: extent,
+        mip_levels: 1,
+        array_layers: 1,
+        samples: vk::SampleCountFlags::TYPE_1,
+        tiling: vk::ImageTiling::OPTIMAL,
+        usage: usage_flags,
+        ..Default::default()
+    };
+
+    let alloc_ci = vk_mem::AllocationCreateInfo {
+        usage: vk_mem::MemoryUsage::AutoPreferDevice,
+        ..Default::default()
+    };
+
+    let (depth_image, depth_image_allocation) = unsafe {
+        memory_allocator
+            .create_image(&image_ci, &alloc_ci)
+            .map_err(|e| VulkanError::DepthImageCreationError(e))
+    }?;
+
+    let sr = ImageSubresourceRange {
+        aspect_mask: ImageAspectFlags::DEPTH,
+        base_mip_level: 0,
+        level_count: 1,
+        base_array_layer: 0,
+        layer_count: 1,
+        ..Default::default()
+    };
+
+    let ivci = ImageViewCreateInfo {
+        view_type: ImageViewType::TYPE_2D,
+        format: format,
+        subresource_range: sr,
+        image: depth_image,
+        ..Default::default()
+    };
+
+    let depth_image_view = unsafe {
+        device
+            .create_image_view(&ivci, None)
+            .map_err(|e| VulkanError::SwapchainCreationError(e))
+    }?;
+
+    Ok(AllocatedImage {
+        image: depth_image,
+        image_view: depth_image_view,
+        image_memory: depth_image_allocation,
+    })
+}
+
 impl VulkanContext {
     pub fn new(
         event_loop: &ActiveEventLoop,
@@ -745,6 +839,14 @@ impl VulkanContext {
         let command_pool = create_command_pool(&device, indices.graphics)?;
         let command_buffers = create_command_buffers(&device, command_pool)?;
 
+        let memory_allocator = ManuallyDrop::new(create_memory_allocator(
+            &instance,
+            &device,
+            physical_device,
+        )?);
+
+        let depth_image = create_depth_image(&memory_allocator, &device, config)?;
+
         let present_completed_sem = create_semaphores(&device, swapchain_data.images.len())?;
         let render_finished_sem = create_semaphores(&device, swapchain_data.images.len())?;
         let frame_fences = create_fences(&device)?;
@@ -764,8 +866,10 @@ impl VulkanContext {
             surface: surface_loader,
             surface_khr,
             swapchain_data,
+            depth_image,
             command_pool,
             command_buffers,
+            memory_allocator,
             present_completed_sem,
             render_finished_sem,
             frame_fences,
@@ -936,6 +1040,15 @@ impl VulkanContext {
         }
     }
 
+    fn destroy_depth_image(&mut self) {
+        unsafe {
+            self.device
+                .destroy_image_view(self.depth_image.image_view, None);
+            self.memory_allocator
+                .destroy_image(self.depth_image.image, &mut self.depth_image.image_memory)
+        };
+    }
+
     /// Manually destroy the swapchain
     ///
     /// **IMPORTANT**: This MUST be called before the window is destroyed/closed
@@ -1049,6 +1162,7 @@ impl VulkanContext {
         }?;
 
         self.destroy_swapchain()?;
+        self.destroy_depth_image();
 
         self.swapchain_data = create_swapchain(
             &self.instance,
@@ -1061,8 +1175,51 @@ impl VulkanContext {
             config.renderer.vsync,
         )?;
 
+        self.depth_image = create_depth_image(&self.memory_allocator, &self.device, config)?;
+
         Ok(())
     }
+
+    // pub fn create_image(
+    //     &self,
+    //     width: u32,
+    //     height: u32,
+    //     format: vk::Format,
+    //     tiling: vk::ImageTiling,
+    //     usage: vk::ImageUsageFlags,
+    //     properties: vk::MemoryPropertyFlags,
+    // ) -> Result<DeviceImage, VulkanError> {
+    //     let image_ci = vk::ImageCreateInfo {
+    //         image_type: vk::ImageType::TYPE_2D,
+    //         format: format,
+    //         extent: vk::Extent3D {
+    //             width,
+    //             height,
+    //             depth: 1,
+    //         },
+    //         mip_levels: 1,
+    //         array_layers: 1,
+    //         samples: vk::SampleCountFlags::TYPE_1,
+    //         tiling: tiling,
+    //         usage: usage,
+    //         sharing_mode: vk::SharingMode::EXCLUSIVE,
+    //         initial_layout: vk::ImageLayout::UNDEFINED,
+    //         ..Default::default()
+    //     };
+
+    //     let image = unsafe {
+    //         self.device
+    //             .create_image(&image_ci, None)
+    //             .map_err(|e| VulkanError::ImageCreationError(e))
+    //     }?;
+
+    //     let image_mem_req = unsafe { self.device.get_image_memory_requirements(image) };
+
+    //     // vk::MemoryAllocateInfo {
+    //     //     allocation_size: image_mem_req.size,
+    //     //     memory_type_index:
+    //     // }
+    // }
 }
 
 impl Drop for VulkanContext {
@@ -1101,6 +1258,15 @@ impl Drop for VulkanContext {
             // If not destroyed manually, the device destruction below will implicitly
             // clean up the swapchain, but this will trigger validation layer warnings.
             // This is a known limitation when integrating with window libraries.
+
+            log::debug!("Destroying depth buffer");
+            self.destroy_depth_image();
+
+            log::debug!("Dropping memory allocator");
+            // Explicitly drop the memory allocator before destroying the device
+            // This ensures all VkDeviceMemory allocations are freed
+            // ManuallyDrop::drop ensures this is only dropped once
+            ManuallyDrop::drop(&mut self.memory_allocator);
 
             log::debug!("About to destroy device");
             // Destroy device - this must happen before destroying the instance

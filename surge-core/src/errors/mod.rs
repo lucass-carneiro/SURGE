@@ -73,11 +73,17 @@ pub enum VulkanError {
     #[error("Unable to present frame {0} swapchain: {1}")]
     SwapchainPresentError(usize, ash::vk::Result),
 
+    #[error("Unable to create depth buffer {0}")]
+    DepthImageCreationError(ash::vk::Result),
+
     #[error("Unable to create command pool: {0}")]
     CommandPoolCreation(ash::vk::Result),
 
     #[error("Unable to allocate command buffer: {0}")]
     CommandBufferAllocation(ash::vk::Result),
+
+    #[error("Unable to create memory allocator: {0}")]
+    MemoryAllocatorCreationError(ash::vk::Result),
 
     #[error("Unable to create semaphore: {0}")]
     SemaphoreCreationError(ash::vk::Result),
@@ -105,4 +111,7 @@ pub enum VulkanError {
 
     #[error("Unable to submit frame {0} command buffer: {1}")]
     FrameCommandBufferSubmitError(usize, ash::vk::Result),
+
+    #[error("Unable to create image on device: {0}")]
+    ImageCreationError(ash::vk::Result),
 }
