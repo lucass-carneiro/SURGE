@@ -4,7 +4,6 @@ use std::{
     time::{Duration, Instant},
 };
 use surge_core::{self as sc, module::SurgeModule};
-use surge_mod_default as md;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -12,6 +11,8 @@ use winit::{
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     window::{Fullscreen, Window, WindowId},
 };
+
+use surge_mod_default as md;
 
 mod cli;
 

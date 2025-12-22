@@ -123,4 +123,7 @@ pub enum VulkanError {
 
     #[error("Unable to create shader module: {0}")]
     ShaderModuleCreateError(ash::vk::Result),
+
+    #[error("Unable to create graphics pipeline: {0}")]
+    GraphicsPipelineCreationError(ash::vk::Result),
 }
