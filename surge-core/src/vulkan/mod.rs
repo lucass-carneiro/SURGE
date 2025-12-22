@@ -77,11 +77,12 @@ pub struct VulkanContext {
 }
 
 mod command;
+mod ctx_buffer;
 mod ctx_command;
+mod ctx_graphics_pipeline;
 mod ctx_new_drop;
 mod ctx_swpc;
 mod device;
-mod graphics_pipeline;
 mod image;
 mod instance;
 mod shader;

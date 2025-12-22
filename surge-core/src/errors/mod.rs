@@ -126,4 +126,7 @@ pub enum VulkanError {
 
     #[error("Unable to create graphics pipeline: {0}")]
     GraphicsPipelineCreationError(ash::vk::Result),
+
+    #[error("Unable to allocate buffer: {0}")]
+    BufferAllocationError(ash::vk::Result),
 }
