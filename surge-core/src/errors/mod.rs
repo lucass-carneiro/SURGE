@@ -114,4 +114,13 @@ pub enum VulkanError {
 
     #[error("Unable to create image on device: {0}")]
     ImageCreationError(ash::vk::Result),
+
+    #[error("Unable to read shader module: {0}")]
+    ShaderModuleReadError(std::io::Error),
+
+    #[error("The shader module does {0} not have a size multiple of u32. Module size: {1} bytes")]
+    ShaderModuleInvalidSizeError(String, usize),
+
+    #[error("Unable to create shader module: {0}")]
+    ShaderModuleCreateError(ash::vk::Result),
 }

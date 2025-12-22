@@ -81,6 +81,8 @@ mod ctx_command;
 mod ctx_new_drop;
 mod ctx_swpc;
 mod device;
+mod graphics_pipeline;
 mod image;
 mod instance;
+mod shader;
 pub mod sprite_database;
