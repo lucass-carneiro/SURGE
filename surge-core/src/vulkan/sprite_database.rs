@@ -1,7 +1,9 @@
 use super::{AllocatedImage, VulkanContext, ctx_buffer::Buffer};
-use ash::vk;
+use crate::errors::VulkanError;
+use ash::vk::{self, CommandPoolCreateFlags};
 use nalgebra;
-use std::mem::size_of;
+use std::{mem::size_of, sync::Arc};
+use vk_mem::{Alloc, AllocationCreateFlags};
 
 /// Database blending mode
 #[derive(Debug)]
@@ -53,6 +55,9 @@ struct RawImageData {
 }
 
 struct SpriteDatabase {
+    /// The vulkan context that created this database
+    context: Arc<VulkanContext>,
+
     /// How many sprites we can add
     max_sprites: usize,
 
@@ -77,11 +82,11 @@ struct SpriteDatabase {
     ///GPU image data
     img_dst_images: Vec<AllocatedImage>,
 
-    /// Database command buffer
-    cmd_buff: vk::CommandBuffer,
-
     /// Database command pool
     cmd_pool: vk::CommandPool,
+
+    /// Database command buffer
+    cmd_buff: vk::CommandBuffer,
 
     /// Image transfer fence
     image_transfer_fence: vk::Fence,
@@ -106,6 +111,200 @@ struct SpriteDatabase {
 
     /// Database pipeline
     pipeline: vk::Pipeline,
+}
+
+impl SpriteDatabase {
+    pub fn new(context: Arc<VulkanContext>, ci: CreateInfo) -> Result<Self, VulkanError> {
+        let buffer_size = (ci.max_sprites * SPRITE_DATA_SIZE) as u64;
+
+        // CPU data buffer
+        let cpu_data_buffer = {
+            let buffer_info = vk::BufferCreateInfo {
+                size: buffer_size,
+                usage: vk::BufferUsageFlags::TRANSFER_SRC,
+                ..Default::default()
+            };
+
+            let create_info = vk_mem::AllocationCreateInfo {
+                usage: vk_mem::MemoryUsage::Auto,
+                flags: AllocationCreateFlags::HOST_ACCESS_SEQUENTIAL_WRITE
+                    | AllocationCreateFlags::MAPPED,
+                ..Default::default()
+            };
+
+            let (buffer, allocation) = unsafe {
+                context
+                    .memory_allocator
+                    .create_buffer(&buffer_info, &create_info)
+                    .map_err(|e| VulkanError::BufferAllocationError(e))
+            }?;
+
+            Buffer { buffer, allocation }
+        };
+
+        // GPU data buffer
+        let gpu_data_buffer = context.create_buffer(
+            buffer_size,
+            vk::BufferUsageFlags::STORAGE_BUFFER
+                | vk::BufferUsageFlags::TRANSFER_DST
+                | vk::BufferUsageFlags::SHADER_DEVICE_ADDRESS,
+            vk_mem::MemoryUsage::AutoPreferDevice,
+        )?;
+
+        let gpu_data_buffer_address = {
+            let ai = vk::BufferDeviceAddressInfo {
+                buffer: gpu_data_buffer.buffer,
+                ..Default::default()
+            };
+
+            unsafe { context.device.get_buffer_device_address(&ai) }
+        };
+
+        // Command pool
+        let cmd_pool = {
+            let ci = vk::CommandPoolCreateInfo {
+                queue_family_index: context.indices.transfer,
+                flags: CommandPoolCreateFlags::RESET_COMMAND_BUFFER,
+                ..Default::default()
+            };
+            unsafe {
+                context
+                    .device
+                    .create_command_pool(&ci, None)
+                    .map_err(|e| VulkanError::CommandPoolCreation(e))
+            }
+        }?;
+
+        let cmd_buff = {
+            let ai = vk::CommandBufferAllocateInfo {
+                command_pool: cmd_pool,
+                level: vk::CommandBufferLevel::PRIMARY,
+                command_buffer_count: 1,
+                ..Default::default()
+            };
+
+            unsafe {
+                context
+                    .device
+                    .allocate_command_buffers(&ai)
+                    .map_err(|e| VulkanError::CommandBufferAllocation(e))
+            }
+        }?[0];
+
+        // Image transfer fence
+        let image_transfer_fence = {
+            let ci = vk::FenceCreateInfo {
+                flags: vk::FenceCreateFlags::SIGNALED,
+                ..Default::default()
+            };
+
+            unsafe {
+                context
+                    .device
+                    .create_fence(&ci, None)
+                    .map_err(|e| VulkanError::FenceCreationError(e))
+            }
+        }?;
+
+        // Image transfer fence
+        let data_transfer_fence = {
+            let ci = vk::FenceCreateInfo {
+                flags: vk::FenceCreateFlags::SIGNALED,
+                ..Default::default()
+            };
+
+            unsafe {
+                context
+                    .device
+                    .create_fence(&ci, None)
+                    .map_err(|e| VulkanError::FenceCreationError(e))
+            }
+        }?;
+
+        // Texture samplers
+        // TODO: choose filters. do mip-maps
+        let img_samplers = {
+            let sci = vk::SamplerCreateInfo {
+                mag_filter: vk::Filter::NEAREST,
+                min_filter: vk::Filter::NEAREST,
+                ..Default::default()
+            };
+
+            let mut samplers = Vec::new();
+
+            for i in 0..ci.max_sprites {
+                let sampler = unsafe {
+                    context
+                        .device
+                        .create_sampler(&sci, None)
+                        .map_err(|e| VulkanError::SamplerCreationError(e))
+                }?;
+
+                samplers.push(sampler);
+            }
+
+            samplers
+        };
+
+        // Image Descriptor set layout
+        let img_desc_layout = {
+            let texture_descriptor_binding = vk::DescriptorSetLayoutBinding {
+                binding: 0,
+                descriptor_type: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
+                descriptor_count: ci.max_sprites as u32,
+                stage_flags: vk::ShaderStageFlags::FRAGMENT,
+                p_immutable_samplers: img_samplers.as_ptr(),
+                ..Default::default()
+            };
+
+            let texture_binding_flags = [vk::DescriptorBindingFlags::VARIABLE_DESCRIPTOR_COUNT
+                | vk::DescriptorBindingFlags::PARTIALLY_BOUND];
+
+            let texture_descriptor_set_layout_binding_flags =
+                vk::DescriptorSetLayoutBindingFlagsCreateInfo {
+                    binding_count: texture_binding_flags.len() as u32,
+                    p_binding_flags: texture_binding_flags.as_ptr(),
+                    ..Default::default()
+                };
+
+            let texture_descriptor_set_layout_info = vk::DescriptorSetLayoutCreateInfo {
+                binding_count: 1,
+                p_bindings: &texture_descriptor_binding,
+                ..Default::default()
+            };
+
+            unsafe {
+                context
+                    .device
+                    .create_descriptor_set_layout(&texture_descriptor_set_layout_info, None)
+                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
+            }
+        }?;
+
+        // Descriptor set
+
+        Ok(Self {
+            context,
+            max_sprites: ci.max_sprites,
+            cpu_data_buffer,
+            cpu_data_buffer_size: 0,
+            gpu_data_buffer,
+            gpu_data_buffer_size: 0,
+            gpu_data_buffer_address,
+            img_src_buffers: Vec::with_capacity(ci.max_sprites),
+            img_dst_images: Vec::with_capacity(ci.max_sprites),
+            cmd_pool,
+            cmd_buff,
+            image_transfer_fence,
+            data_transfer_fence,
+            img_desc_infos: Vec::with_capacity(ci.max_sprites),
+            img_samplers,
+            img_desc_layout,
+            img_desc_set: Default::default(),
+            pipeline_layout: Default::default(),
+            pipeline: Default::default(),
+        })
+    }
 }
 
 /// Creates an orthographic projection for 2D rendering.

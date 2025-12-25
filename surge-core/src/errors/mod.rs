@@ -129,4 +129,10 @@ pub enum VulkanError {
 
     #[error("Unable to allocate buffer: {0}")]
     BufferAllocationError(ash::vk::Result),
+
+    #[error("Unable to create image sampler: {0}")]
+    SamplerCreationError(ash::vk::Result),
+
+    #[error("Unable to create descriptor set layout: {0}")]
+    DescriptorSetLayoutCreationError(ash::vk::Result),
 }

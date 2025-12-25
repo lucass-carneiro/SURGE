@@ -55,6 +55,7 @@ pub struct VulkanContext {
 
     device: ash::Device,
 
+    indices: QueueFamilyIndices,
     graphics_queue: vk::Queue,
     compute_queue: vk::Queue,
     transfer_queue: vk::Queue,

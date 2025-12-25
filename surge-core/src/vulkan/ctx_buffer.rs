@@ -4,8 +4,8 @@ use ash::vk;
 use vk_mem::{self, Alloc};
 
 pub struct Buffer {
-    buffer: vk::Buffer,
-    allocation: vk_mem::Allocation,
+    pub buffer: vk::Buffer,
+    pub allocation: vk_mem::Allocation,
 }
 
 impl VulkanContext {

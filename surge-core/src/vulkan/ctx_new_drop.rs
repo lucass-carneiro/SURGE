@@ -126,6 +126,7 @@ impl VulkanContext {
             debug_messenger,
             physical_device,
             device,
+            indices,
             graphics_queue,
             compute_queue,
             transfer_queue,
