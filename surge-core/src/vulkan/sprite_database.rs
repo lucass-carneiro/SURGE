@@ -246,32 +246,32 @@ impl SpriteDatabase {
             samplers
         };
 
+        // Descriptor set pool allocator
+
         // Image Descriptor set layout
         let img_desc_layout = {
-            let texture_descriptor_binding = vk::DescriptorSetLayoutBinding {
+            let texture_descriptor_binding = [vk::DescriptorSetLayoutBinding {
                 binding: 0,
                 descriptor_type: vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
                 descriptor_count: ci.max_sprites as u32,
                 stage_flags: vk::ShaderStageFlags::FRAGMENT,
                 p_immutable_samplers: img_samplers.as_ptr(),
                 ..Default::default()
-            };
+            }];
 
             let texture_binding_flags = [vk::DescriptorBindingFlags::VARIABLE_DESCRIPTOR_COUNT
                 | vk::DescriptorBindingFlags::PARTIALLY_BOUND];
 
-            let texture_descriptor_set_layout_binding_flags =
+            let mut texture_descriptor_set_layout_binding_flags =
                 vk::DescriptorSetLayoutBindingFlagsCreateInfo {
                     binding_count: texture_binding_flags.len() as u32,
                     p_binding_flags: texture_binding_flags.as_ptr(),
                     ..Default::default()
                 };
 
-            let texture_descriptor_set_layout_info = vk::DescriptorSetLayoutCreateInfo {
-                binding_count: 1,
-                p_bindings: &texture_descriptor_binding,
-                ..Default::default()
-            };
+            let texture_descriptor_set_layout_info = vk::DescriptorSetLayoutCreateInfo::default()
+                .bindings(&texture_descriptor_binding)
+                .push_next(&mut texture_descriptor_set_layout_binding_flags);
 
             unsafe {
                 context
@@ -282,6 +282,18 @@ impl SpriteDatabase {
         }?;
 
         // Descriptor set
+        {
+            let descriptor_counts = [ci.max_sprites as u32];
+
+            let letvariable_descriptor_count_info =
+                vk::DescriptorSetVariableDescriptorCountAllocateInfo {
+                    descriptor_set_count: descriptor_counts.len() as u32,
+                    p_descriptor_counts: descriptor_counts.as_ptr(),
+                    ..Default::default()
+                };
+
+            // Allocate descriptor
+        }
 
         Ok(Self {
             context,
