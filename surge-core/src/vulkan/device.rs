@@ -1,6 +1,6 @@
 use super::QueueFamilyIndices;
 use crate::errors::VulkanError;
-use ash::{khr, vk};
+use ash::{ext, khr, vk};
 use std::ffi::{CStr, c_void};
 
 fn get_available_physical_devices(
@@ -13,12 +13,17 @@ fn get_available_physical_devices(
     }
 }
 
+// TAG: Device features
 fn device_has_required_features(
     instance: &ash::Instance,
     physical_device: vk::PhysicalDevice,
 ) -> bool {
+    let mut descriptor_buffer_features = vk::PhysicalDeviceDescriptorBufferFeaturesEXT::default();
     let mut features13 = vk::PhysicalDeviceVulkan13Features::default();
     let mut features12 = vk::PhysicalDeviceVulkan12Features::default();
+
+    descriptor_buffer_features.p_next = std::ptr::null_mut();
+    features13.p_next = &mut descriptor_buffer_features as *mut _ as *mut c_void;
     features12.p_next = &mut features13 as *mut _ as *mut c_void;
 
     let mut features2 = vk::PhysicalDeviceFeatures2::default();
@@ -36,10 +41,15 @@ fn device_has_required_features(
         && features12.descriptor_binding_partially_bound == vk::TRUE
         && features13.dynamic_rendering == vk::TRUE
         && features13.synchronization2 == vk::TRUE
+        && descriptor_buffer_features.descriptor_buffer == vk::TRUE
 }
 
+// TAG: Device extensions
 fn get_required_device_extensions() -> Vec<*const i8> {
-    vec![khr::swapchain::NAME.as_ptr()]
+    vec![
+        khr::swapchain::NAME.as_ptr(),
+        ext::descriptor_buffer::NAME.as_ptr(),
+    ]
 }
 
 fn device_has_required_extensions(
@@ -212,9 +222,14 @@ pub(super) fn create_logical_device(
 
     let extensions = get_required_device_extensions();
 
+    // TAG: Device features
+    let mut descriptor_buffer_features = vk::PhysicalDeviceDescriptorBufferFeaturesEXT::default()
+        .descriptor_buffer(true);
+
     let mut features13 = vk::PhysicalDeviceVulkan13Features::default()
         .dynamic_rendering(true)
         .synchronization2(true);
+    features13.p_next = &mut descriptor_buffer_features as *mut _ as *mut c_void;
 
     let mut features12 = vk::PhysicalDeviceVulkan12Features::default()
         .buffer_device_address(true)
