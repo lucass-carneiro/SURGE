@@ -135,4 +135,10 @@ pub enum VulkanError {
 
     #[error("Unable to create descriptor set layout: {0}")]
     DescriptorSetLayoutCreationError(ash::vk::Result),
+
+    #[error("Unable to create descriptor pool: {0}")]
+    DescriptorPoolCreationError(ash::vk::Result),
+
+    #[error("Unable to allocate descriptor set: {0}")]
+    DescriptorSetAllocationError(ash::vk::Result),
 }
