@@ -2,7 +2,7 @@ use super::{AllocatedImage, FRAMES_IN_FLIGHT, VulkanContext, ctx_buffer::Buffer}
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
 use nalgebra;
-use std::{mem::size_of, sync::Arc};
+use std::{cell::RefCell, mem::size_of, sync::Arc};
 use vk_mem;
 
 /// Database blending mode
@@ -87,7 +87,7 @@ struct TextureRecord {
 
 pub struct SpriteDatabase {
     /// The vulkan context that created this database
-    context: Arc<VulkanContext>,
+    context: Arc<RefCell<VulkanContext>>,
 
     /// Creation info
     ci: CreateInfo,
@@ -112,7 +112,9 @@ pub struct SpriteDatabase {
 }
 
 impl SpriteDatabase {
-    pub fn new(context: Arc<VulkanContext>, ci: CreateInfo) -> Result<Self, VulkanError> {
+    pub fn new(context: Arc<RefCell<VulkanContext>>, ci: CreateInfo) -> Result<Self, VulkanError> {
+        log::info!("Creating sprite database");
+
         //Frame globals UBO
         let frame_globals_ubo = {
             let bci = vk::BufferCreateInfo::default()
@@ -124,7 +126,7 @@ impl SpriteDatabase {
                 ..Default::default()
             };
 
-            context.create_buffer(&bci, &bai)
+            context.borrow().create_buffer(&bci, &bai)
         }?;
 
         //Instance record SSBO
@@ -137,35 +139,19 @@ impl SpriteDatabase {
                 );
 
             let bai = vk_mem::AllocationCreateInfo {
-                flags: vk_mem::AllocationCreateFlags::MAPPED,
+                flags: vk_mem::AllocationCreateFlags::MAPPED
+                    | vk_mem::AllocationCreateFlags::HOST_ACCESS_SEQUENTIAL_WRITE,
                 usage: vk_mem::MemoryUsage::Auto,
                 ..Default::default()
             };
 
-            context.create_buffer(&bci, &bai)
+            context.borrow().create_buffer(&bci, &bai)
         }?;
 
         let instance_records_ssbo_address = {
             let ai = vk::BufferDeviceAddressInfo::default().buffer(instance_records_ssbo.buffer);
-            unsafe { context.device.get_buffer_device_address(&ai) }
+            unsafe { context.borrow().device.get_buffer_device_address(&ai) }
         };
-
-        //Material database record SSBO
-        let material_records_ssbo = {
-            let bci = vk::BufferCreateInfo::default()
-                .size(
-                    (INSTANCE_RECORD_STRUCT_SIZE * (ci.max_sprites as usize) * FRAMES_IN_FLIGHT)
-                        as u64,
-                )
-                .usage(vk::BufferUsageFlags::STORAGE_BUFFER | vk::BufferUsageFlags::TRANSFER_DST);
-
-            let bai = vk_mem::AllocationCreateInfo {
-                usage: vk_mem::MemoryUsage::Auto,
-                ..Default::default()
-            };
-
-            context.create_buffer(&bci, &bai)
-        }?;
 
         // Desc. set layout
         let desc_set_layout = {
@@ -210,6 +196,7 @@ impl SpriteDatabase {
 
             unsafe {
                 context
+                    .borrow()
                     .device
                     .create_descriptor_set_layout(&dslci, None)
                     .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
@@ -236,6 +223,7 @@ impl SpriteDatabase {
 
             unsafe {
                 context
+                    .borrow()
                     .device
                     .create_descriptor_pool(&dpci, None)
                     .map_err(|e| VulkanError::DescriptorPoolCreationError(e))
@@ -257,6 +245,7 @@ impl SpriteDatabase {
 
             unsafe {
                 context
+                    .borrow()
                     .device
                     .allocate_descriptor_sets(&ai)
                     .map_err(|e| VulkanError::DescriptorSetAllocationError(e))
@@ -278,17 +267,25 @@ impl SpriteDatabase {
 
 impl Drop for SpriteDatabase {
     fn drop(&mut self) {
+        log::debug!("Destroying sprite database");
+
         unsafe {
             self.context
+                .borrow()
                 .device
                 .destroy_descriptor_pool(self.desc_pool, None);
 
             self.context
+                .borrow()
                 .device
                 .destroy_descriptor_set_layout(self.desc_set_layout, None);
         }
-        self.context.destroy_buffer(&mut self.instance_records_ssbo);
-        self.context.destroy_buffer(&mut self.frame_globals_ubo);
+        self.context
+            .borrow()
+            .destroy_buffer(&mut self.instance_records_ssbo);
+        self.context
+            .borrow()
+            .destroy_buffer(&mut self.frame_globals_ubo);
     }
 }
 

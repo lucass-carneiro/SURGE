@@ -1,5 +1,6 @@
-use sc::vulkan::VulkanContext;
+use sc::vulkan::{VulkanContext, sprite_database as spd};
 use std::{
+    cell::RefCell,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -18,7 +19,8 @@ mod cli;
 
 struct SurgeContext<ModuleType: SurgeModule> {
     window: Option<Arc<Window>>,
-    vulkan_context: Option<VulkanContext>,
+    vulkan_context: Option<Arc<RefCell<VulkanContext>>>,
+    sprite_database: Option<spd::SpriteDatabase>,
     engine_config: sc::config::EngineConfig,
     module: ModuleType,
     frame_timer: Instant,
@@ -34,7 +36,7 @@ where
         self.frame_timer = Instant::now();
     }
 
-    /// Gme loop body
+    /// Game loop body
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
         // Stop rendering if minimized
         if self.pause_rendering {
@@ -50,6 +52,7 @@ where
             .vulkan_context
             .as_mut()
             .unwrap()
+            .borrow_mut()
             .request_swpc_img(&self.engine_config)
             .unwrap();
 
@@ -62,6 +65,7 @@ where
         self.vulkan_context
             .as_ref()
             .unwrap()
+            .borrow()
             .cmd_begin(swpc_img_data.index)
             .unwrap();
 
@@ -69,28 +73,40 @@ where
         self.vulkan_context
             .as_ref()
             .unwrap()
+            .borrow()
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
         // Call module draw
         self.module.draw();
 
         // End rendering
-        self.vulkan_context.as_ref().unwrap().cmd_render_end();
+        self.vulkan_context
+            .as_ref()
+            .unwrap()
+            .borrow()
+            .cmd_render_end();
 
         // End command recording
         self.vulkan_context
             .as_ref()
             .unwrap()
+            .borrow()
             .cmd_end(swpc_img_data.index)
             .unwrap();
 
         // Submit command buffer
-        self.vulkan_context.as_ref().unwrap().cmd_submit().unwrap();
+        self.vulkan_context
+            .as_ref()
+            .unwrap()
+            .borrow()
+            .cmd_submit()
+            .unwrap();
 
         // Present
         self.vulkan_context
-            .as_mut()
+            .as_ref()
             .unwrap()
+            .borrow_mut()
             .present_swpc(&mut swpc_img_data, &self.engine_config)
             .unwrap();
 
@@ -133,9 +149,18 @@ where
                 Ok(window) => {
                     // Init Vulkan
                     let w = Arc::new(window);
-                    self.vulkan_context = Some(
+                    self.vulkan_context = Some(Arc::new(RefCell::new(
                         sc::vulkan::VulkanContext::new(&event_loop, &w, &self.engine_config)
                             .unwrap(),
+                    )));
+
+                    // Init sprite database
+                    self.sprite_database = Some(
+                        spd::SpriteDatabase::new(
+                            self.vulkan_context.as_ref().unwrap().clone(),
+                            spd::CreateInfo::default(),
+                        )
+                        .unwrap(),
                     );
 
                     //Save window to context
@@ -162,8 +187,9 @@ where
         // We can't have this, so we must destroy the swapchain before Winnit drops
         // the window surface.
         self.vulkan_context
-            .as_mut()
+            .as_ref()
             .unwrap()
+            .borrow_mut()
             .destroy_swapchain()
             .unwrap();
     }
@@ -238,6 +264,7 @@ pub fn main() {
     let mut ctx = SurgeContext {
         window: None,
         vulkan_context: None,
+        sprite_database: None,
         engine_config,
         module: md::ModuleDefault::new(),
         frame_timer: Instant::now(),

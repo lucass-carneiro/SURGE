@@ -117,6 +117,8 @@ impl VulkanContext {
         let render_finished_sem = command::create_semaphores(&device, swapchain_data.images.len())?;
         let frame_fences = command::create_fences(&device)?;
 
+        log::info!("Vulkan context created");
+
         Ok(Self {
             entry,
             instance,
