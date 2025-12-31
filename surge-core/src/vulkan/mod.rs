@@ -42,6 +42,8 @@ struct SwapchainData {
     extent: vk::Extent2D,
 }
 
+const DPETH_FORMAT: vk::Format = vk::Format::D32_SFLOAT;
+
 pub struct VulkanContext {
     entry: ash::Entry,
     instance: ash::Instance,

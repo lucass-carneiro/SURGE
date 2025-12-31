@@ -19,17 +19,17 @@ pub struct GraphicsPipelineBuilder<'a> {
 }
 
 impl<'a> GraphicsPipelineBuilder<'a> {
-    pub fn set_layout(&mut self, layout: vk::PipelineLayout) -> &mut Self {
+    pub fn set_layout(mut self, layout: vk::PipelineLayout) -> Self {
         self.pipeline_layout = layout;
         self
     }
 
     pub fn set_shaders(
-        &mut self,
+        mut self,
         vertex_shader: vk::ShaderModule,
         fragment_sader: vk::ShaderModule,
-    ) -> &mut Self {
-        let entry_point = ['m' as i8, 'a' as i8, 'i' as i8, 'n' as i8];
+    ) -> Self {
+        let entry_point = ['m' as i8, 'a' as i8, 'i' as i8, 'n' as i8, '\0' as i8];
 
         // Vertex Shader
         let vs_info = vk::PipelineShaderStageCreateInfo {
@@ -51,29 +51,29 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_input_topology(&mut self, topology: vk::PrimitiveTopology) -> &mut Self {
+    pub fn set_input_topology(mut self, topology: vk::PrimitiveTopology) -> Self {
         self.input_assembly_info.topology = topology;
         self.input_assembly_info.primitive_restart_enable = vk::FALSE;
         self
     }
 
-    pub fn set_polygon_mode(&mut self, mode: vk::PolygonMode) -> &mut Self {
+    pub fn set_polygon_mode(mut self, mode: vk::PolygonMode) -> Self {
         self.rasterizer_info.polygon_mode = mode;
         self.rasterizer_info.line_width = 1.0;
         self
     }
 
     pub fn set_cull_mode(
-        &mut self,
+        mut self,
         cull_mode: vk::CullModeFlags,
         front_face: vk::FrontFace,
-    ) -> &mut Self {
+    ) -> Self {
         self.rasterizer_info.cull_mode = cull_mode;
         self.rasterizer_info.front_face = front_face;
         self
     }
 
-    pub fn set_multisampling_none(&mut self) -> &mut Self {
+    pub fn set_multisampling_none(mut self) -> Self {
         self.multisampling_info.sample_shading_enable = vk::FALSE;
 
         // Multisampling defaulted to no multisampling (1 sample per pixel)
@@ -87,7 +87,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_blending_none(&mut self) -> &mut Self {
+    pub fn set_blending_none(mut self) -> Self {
         // Default write mask
         self.blend_attachment.color_write_mask = vk::ColorComponentFlags::R
             | vk::ColorComponentFlags::G
@@ -99,7 +99,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_blending_additive(&mut self) -> &mut Self {
+    pub fn set_blending_additive(mut self) -> Self {
         self.blend_attachment.color_write_mask = vk::ColorComponentFlags::R
             | vk::ColorComponentFlags::G
             | vk::ColorComponentFlags::B
@@ -115,7 +115,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_blending_alpha(&mut self) -> &mut Self {
+    pub fn set_blending_alpha(mut self) -> Self {
         self.blend_attachment.color_write_mask = vk::ColorComponentFlags::R
             | vk::ColorComponentFlags::G
             | vk::ColorComponentFlags::B
@@ -131,19 +131,19 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_color_attachment_format(&mut self, format: vk::Format) -> &mut Self {
+    pub fn set_color_attachment_format(mut self, format: vk::Format) -> Self {
         self.color_attachment_format = format;
         self.render_info.color_attachment_count = 1;
         self.render_info.p_color_attachment_formats = &self.color_attachment_format;
         self
     }
 
-    pub fn set_depth_format(&mut self, format: vk::Format) -> &mut Self {
+    pub fn set_depth_format(mut self, format: vk::Format) -> Self {
         self.render_info.depth_attachment_format = format;
         self
     }
 
-    pub fn set_depth_test_enabled(&mut self, enable_write: bool, op: vk::CompareOp) -> &mut Self {
+    pub fn set_depth_test_enabled(mut self, enable_write: bool, op: vk::CompareOp) -> Self {
         self.depth_info.depth_test_enable = vk::TRUE;
         self.depth_info.depth_write_enable = enable_write as u32;
         self.depth_info.depth_compare_op = op;
@@ -160,7 +160,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn set_depth_test_disabled(&mut self) -> &mut Self {
+    pub fn set_depth_test_disabled(mut self) -> Self {
         self.depth_info.depth_test_enable = vk::FALSE;
         self.depth_info.depth_write_enable = vk::FALSE;
         self.depth_info.depth_compare_op = vk::CompareOp::NEVER;
@@ -236,5 +236,11 @@ impl VulkanContext {
         }?;
 
         Ok(pipelines[0])
+    }
+
+    pub fn destroy_pipeline(&self, pipeline: vk::Pipeline) {
+        unsafe {
+            self.device.destroy_pipeline(pipeline, None);
+        }
     }
 }

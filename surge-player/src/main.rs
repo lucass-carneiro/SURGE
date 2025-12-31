@@ -79,6 +79,9 @@ where
         // Call module draw
         self.module.draw();
 
+        //TODO: temporary
+        self.sprite_database.as_ref().unwrap().draw();
+
         // End rendering
         self.vulkan_context
             .as_ref()
@@ -167,6 +170,9 @@ where
                         )
                         .unwrap(),
                     );
+
+                    // TODO: temporary
+                    self.sprite_database.as_mut().unwrap().tmp_test();
 
                     //Save window to context
                     self.window = Some(w);

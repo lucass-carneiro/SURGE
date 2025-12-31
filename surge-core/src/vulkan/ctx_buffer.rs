@@ -6,6 +6,7 @@ use vk_mem::{self, Alloc};
 pub struct Buffer {
     pub buffer: vk::Buffer,
     pub allocation: vk_mem::Allocation,
+    pub allocation_info: vk_mem::AllocationInfo,
 }
 
 impl VulkanContext {
@@ -20,7 +21,13 @@ impl VulkanContext {
                 .map_err(|e| VulkanError::BufferAllocationError(e))
         }?;
 
-        Ok(Buffer { buffer, allocation })
+        let allocation_info = self.memory_allocator.get_allocation_info(&allocation);
+
+        Ok(Buffer {
+            buffer,
+            allocation,
+            allocation_info,
+        })
     }
 
     pub fn destroy_buffer(&self, buffer: &mut Buffer) {

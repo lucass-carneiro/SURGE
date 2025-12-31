@@ -129,6 +129,81 @@ impl VulkanContext {
         }
     }
 
+    pub fn cmd_bind_graphics_pipeline(&self, pipeline: vk::Pipeline) {
+        unsafe {
+            self.device.cmd_bind_pipeline(
+                self.command_buffers[self.current_frame],
+                vk::PipelineBindPoint::GRAPHICS,
+                pipeline,
+            );
+        }
+    }
+
+    pub fn cmd_bind_descriptor_sets(
+        &self,
+        layout: vk::PipelineLayout,
+        first_set: u32,
+        descriptor_sets: &[vk::DescriptorSet],
+    ) {
+        unsafe {
+            self.device.cmd_bind_descriptor_sets(
+                self.command_buffers[self.current_frame],
+                vk::PipelineBindPoint::GRAPHICS,
+                layout,
+                first_set,
+                descriptor_sets,
+                &[],
+            );
+        }
+    }
+
+    pub fn cmd_set_push_constants<T>(&self, layout: vk::PipelineLayout, push_constants: &T) {
+        unsafe {
+            self.device.cmd_push_constants(
+                self.command_buffers[self.current_frame],
+                layout,
+                vk::ShaderStageFlags::VERTEX,
+                0,
+                std::slice::from_raw_parts(
+                    push_constants as *const T as *const u8,
+                    std::mem::size_of::<T>(),
+                ),
+            );
+        }
+    }
+
+    pub fn cmd_set_viewport(&self, viewport: vk::Viewport) {
+        unsafe {
+            self.device
+                .cmd_set_viewport(self.command_buffers[self.current_frame], 0, &[viewport])
+        }
+    }
+
+    pub fn cmd_set_scissor(&self, scissor: vk::Rect2D) {
+        unsafe {
+            self.device
+                .cmd_set_scissor(self.command_buffers[self.current_frame], 0, &[scissor])
+        }
+    }
+
+    pub fn cmd_draw(
+        &self,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) {
+        unsafe {
+            self.device.cmd_draw(
+                self.command_buffers[self.current_frame],
+                vertex_count,
+                instance_count,
+                first_vertex,
+                first_instance,
+            );
+        }
+    }
+
     pub fn cmd_render_end(&self) {
         unsafe {
             self.device

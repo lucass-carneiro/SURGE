@@ -1,4 +1,4 @@
-use super::{AllocatedImage, SwapchainData};
+use super::{AllocatedImage, DPETH_FORMAT, SwapchainData};
 use crate::{config::EngineConfig, errors::VulkanError};
 use ash::{self, khr, vk};
 use vk_mem::Alloc;
@@ -124,19 +124,15 @@ pub(super) fn create_depth_image(
         depth: 1,
     };
 
-    let format = vk::Format::D32_SFLOAT;
-
-    let usage_flags = vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT;
-
     let image_ci = vk::ImageCreateInfo {
         image_type: vk::ImageType::TYPE_2D,
-        format: format,
+        format: DPETH_FORMAT,
         extent: extent,
         mip_levels: 1,
         array_layers: 1,
         samples: vk::SampleCountFlags::TYPE_1,
         tiling: vk::ImageTiling::OPTIMAL,
-        usage: usage_flags,
+        usage: vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT,
         ..Default::default()
     };
 
@@ -162,7 +158,7 @@ pub(super) fn create_depth_image(
 
     let ivci = vk::ImageViewCreateInfo {
         view_type: vk::ImageViewType::TYPE_2D,
-        format: format,
+        format: DPETH_FORMAT,
         subresource_range: sr,
         image: depth_image,
         ..Default::default()
