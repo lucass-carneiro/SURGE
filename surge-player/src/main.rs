@@ -158,7 +158,12 @@ where
                     self.sprite_database = Some(
                         spd::SpriteDatabase::new(
                             self.vulkan_context.as_ref().unwrap().clone(),
-                            spd::CreateInfo::default(),
+                            spd::CreateInfo {
+                                blending_mode: spd::BlendingMode::Alpha,
+                                max_sprites: 32,
+                                window_width: self.engine_config.resolution.width as f32,
+                                window_height: self.engine_config.resolution.height as f32,
+                            },
                         )
                         .unwrap(),
                     );

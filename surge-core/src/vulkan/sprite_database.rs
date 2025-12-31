@@ -1,4 +1,4 @@
-use super::{AllocatedImage, FRAMES_IN_FLIGHT, VulkanContext, ctx_buffer::Buffer};
+use super::{AllocatedImage, VulkanContext, ctx_buffer::Buffer};
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
 use nalgebra;
@@ -24,15 +24,8 @@ impl BlendingMode {
 pub struct CreateInfo {
     pub blending_mode: BlendingMode,
     pub max_sprites: u32,
-}
-
-impl CreateInfo {
-    pub fn default() -> Self {
-        Self {
-            blending_mode: BlendingMode::default(),
-            max_sprites: 32,
-        }
-    }
+    pub window_width: f32,
+    pub window_height: f32,
 }
 
 /// Controls sprite update data
@@ -92,6 +85,9 @@ pub struct SpriteDatabase {
     /// Creation info
     ci: CreateInfo,
 
+    /// The number of elements currently in the databasae
+    occupancy: u32,
+
     /// UBO storing frame global data (see FrameGlobals)
     frame_globals_ubo: Buffer,
 
@@ -101,14 +97,20 @@ pub struct SpriteDatabase {
     /// Address of SSBO storing instance data
     instance_records_ssbo_address: vk::DeviceAddress,
 
-    /// Descriptor set layout for the database
-    desc_set_layout: vk::DescriptorSetLayout,
-
     /// Database descriptor pool
     desc_pool: vk::DescriptorPool,
 
-    /// Database descriptor set
-    desc_set: vk::DescriptorSet,
+    /// Descriptor set layout for the UBO
+    ubo_desc_set_layout: vk::DescriptorSetLayout,
+
+    /// Descriptor set layout for the sampler and textures
+    img_desc_set_layout: vk::DescriptorSetLayout,
+
+    /// UBO descriptor set
+    ubo_desc_set: vk::DescriptorSet,
+
+    /// Sampler and textures descriptor set
+    img_desc_set: vk::DescriptorSet,
 }
 
 impl SpriteDatabase {
@@ -153,56 +155,6 @@ impl SpriteDatabase {
             unsafe { context.borrow().device.get_buffer_device_address(&ai) }
         };
 
-        // Desc. set layout
-        let desc_set_layout = {
-            let bindings = [
-                vk::DescriptorSetLayoutBinding {
-                    binding: 0,
-                    descriptor_type: vk::DescriptorType::UNIFORM_BUFFER,
-                    descriptor_count: 1,
-                    stage_flags: vk::ShaderStageFlags::VERTEX,
-                    ..Default::default()
-                },
-                vk::DescriptorSetLayoutBinding {
-                    binding: 1,
-                    descriptor_type: vk::DescriptorType::SAMPLED_IMAGE,
-                    descriptor_count: ci.max_sprites,
-                    stage_flags: vk::ShaderStageFlags::FRAGMENT,
-                    ..Default::default()
-                },
-                vk::DescriptorSetLayoutBinding {
-                    binding: 2,
-                    descriptor_type: vk::DescriptorType::SAMPLER,
-                    descriptor_count: ci.max_sprites,
-                    stage_flags: vk::ShaderStageFlags::FRAGMENT,
-                    ..Default::default()
-                },
-            ];
-
-            let binding_flags = [
-                vk::DescriptorBindingFlags::empty(),
-                vk::DescriptorBindingFlags::PARTIALLY_BOUND
-                    | vk::DescriptorBindingFlags::VARIABLE_DESCRIPTOR_COUNT,
-                vk::DescriptorBindingFlags::PARTIALLY_BOUND
-                    | vk::DescriptorBindingFlags::VARIABLE_DESCRIPTOR_COUNT,
-            ];
-
-            let mut binding_flags_ci = vk::DescriptorSetLayoutBindingFlagsCreateInfo::default()
-                .binding_flags(&binding_flags);
-
-            let dslci = vk::DescriptorSetLayoutCreateInfo::default()
-                .bindings(&bindings)
-                .push_next(&mut binding_flags_ci);
-
-            unsafe {
-                context
-                    .borrow()
-                    .device
-                    .create_descriptor_set_layout(&dslci, None)
-                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
-            }
-        }?;
-
         // Descriptor pool
         let desc_pool = {
             let sizes = [
@@ -210,15 +162,15 @@ impl SpriteDatabase {
                     .ty(DescriptorType::UNIFORM_BUFFER)
                     .descriptor_count(1),
                 vk::DescriptorPoolSize::default()
-                    .ty(DescriptorType::SAMPLED_IMAGE)
-                    .descriptor_count(ci.max_sprites),
-                vk::DescriptorPoolSize::default()
                     .ty(DescriptorType::SAMPLER)
+                    .descriptor_count(1),
+                vk::DescriptorPoolSize::default()
+                    .ty(DescriptorType::SAMPLED_IMAGE)
                     .descriptor_count(ci.max_sprites),
             ];
 
             let dpci = vk::DescriptorPoolCreateInfo::default()
-                .max_sets(1)
+                .max_sets(2)
                 .pool_sizes(&sizes);
 
             unsafe {
@@ -230,18 +182,96 @@ impl SpriteDatabase {
             }
         }?;
 
-        let desc_set = {
-            let counts = [ci.max_sprites, ci.max_sprites];
+        // Desc. set layouts
+        let ubo_desc_set_layout = {
+            let bindings = [vk::DescriptorSetLayoutBinding {
+                binding: 0,
+                descriptor_type: vk::DescriptorType::UNIFORM_BUFFER,
+                descriptor_count: 1,
+                stage_flags: vk::ShaderStageFlags::VERTEX,
+                ..Default::default()
+            }];
 
-            let mut cnti = vk::DescriptorSetVariableDescriptorCountAllocateInfo::default()
-                .descriptor_counts(&counts);
+            let dslci = vk::DescriptorSetLayoutCreateInfo::default().bindings(&bindings);
 
-            let set_layouts = [desc_set_layout];
+            unsafe {
+                context
+                    .borrow()
+                    .device
+                    .create_descriptor_set_layout(&dslci, None)
+                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
+            }
+        }?;
+
+        let img_desc_set_layout = {
+            let bindings = [
+                vk::DescriptorSetLayoutBinding {
+                    binding: 0,
+                    descriptor_type: vk::DescriptorType::SAMPLER,
+                    descriptor_count: 1,
+                    stage_flags: vk::ShaderStageFlags::FRAGMENT,
+                    ..Default::default()
+                },
+                vk::DescriptorSetLayoutBinding {
+                    binding: 1,
+                    descriptor_type: vk::DescriptorType::SAMPLED_IMAGE,
+                    descriptor_count: ci.max_sprites,
+                    stage_flags: vk::ShaderStageFlags::FRAGMENT,
+                    ..Default::default()
+                },
+            ];
+
+            let dsbf = [
+                vk::DescriptorBindingFlags::empty(),
+                vk::DescriptorBindingFlags::PARTIALLY_BOUND
+                    | vk::DescriptorBindingFlags::VARIABLE_DESCRIPTOR_COUNT,
+            ];
+
+            let mut dbfci =
+                vk::DescriptorSetLayoutBindingFlagsCreateInfo::default().binding_flags(&dsbf);
+
+            let dslci = vk::DescriptorSetLayoutCreateInfo::default()
+                .bindings(&bindings)
+                .push_next(&mut dbfci);
+
+            unsafe {
+                context
+                    .borrow()
+                    .device
+                    .create_descriptor_set_layout(&dslci, None)
+                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
+            }
+        }?;
+
+        // Desc. sets
+        let ubo_desc_set = {
+            let layouts = [ubo_desc_set_layout];
 
             let ai = vk::DescriptorSetAllocateInfo::default()
                 .descriptor_pool(desc_pool)
-                .set_layouts(&set_layouts)
-                .push_next(&mut cnti);
+                .set_layouts(&layouts);
+
+            unsafe {
+                context
+                    .borrow()
+                    .device
+                    .allocate_descriptor_sets(&ai)
+                    .map_err(|e| VulkanError::DescriptorSetAllocationError(e))
+            }
+        }?[0];
+
+        let img_desc_set = {
+            let counts = [ci.max_sprites];
+
+            let mut dsvdcai = vk::DescriptorSetVariableDescriptorCountAllocateInfo::default()
+                .descriptor_counts(&counts);
+
+            let layouts = [img_desc_set_layout];
+
+            let ai = vk::DescriptorSetAllocateInfo::default()
+                .descriptor_pool(desc_pool)
+                .set_layouts(&layouts)
+                .push_next(&mut dsvdcai);
 
             unsafe {
                 context
@@ -255,12 +285,15 @@ impl SpriteDatabase {
         Ok(Self {
             context,
             ci,
+            occupancy: 0,
             frame_globals_ubo,
             instance_records_ssbo,
             instance_records_ssbo_address,
-            desc_set_layout,
-            desc_set,
             desc_pool,
+            ubo_desc_set_layout,
+            img_desc_set_layout,
+            ubo_desc_set,
+            img_desc_set,
         })
     }
 }
@@ -273,12 +306,17 @@ impl Drop for SpriteDatabase {
             self.context
                 .borrow()
                 .device
-                .destroy_descriptor_pool(self.desc_pool, None);
+                .destroy_descriptor_set_layout(self.img_desc_set_layout, None);
 
             self.context
                 .borrow()
                 .device
-                .destroy_descriptor_set_layout(self.desc_set_layout, None);
+                .destroy_descriptor_set_layout(self.ubo_desc_set_layout, None);
+
+            self.context
+                .borrow()
+                .device
+                .destroy_descriptor_pool(self.desc_pool, None);
         }
         self.context
             .borrow()
@@ -303,7 +341,7 @@ pub fn make_ortho_projection(width: f32, height: f32) -> nalgebra::Matrix4<f32> 
 ///
 /// # Parameters:
 /// `eye`: Position of the camera in 2D coordinates.
-pub fn make_view(eye: nalgebra::Point2<f32>) -> nalgebra::Matrix4<f32> {
+pub fn make_view(eye: nalgebra::Vector2<f32>) -> nalgebra::Matrix4<f32> {
     let eye_3d = nalgebra::Point3::new(eye[0], eye[1], 1.0f32);
     let target = nalgebra::Point3::new(eye[0], eye[1], 0.0f32);
     let up = nalgebra::Vector3::new(0.0f32, 1.0f32, 0.0f32);

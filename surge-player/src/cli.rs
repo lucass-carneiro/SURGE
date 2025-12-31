@@ -5,7 +5,7 @@ pub(crate) fn init_env_logger() {
     use log::LevelFilter;
 
     let mut builder = Builder::from_default_env();
-    builder.filter_level(LevelFilter::Trace);
+    builder.filter_level(LevelFilter::Debug);
 
     builder.format(|buf, record| {
         let banner = match record.level() {
