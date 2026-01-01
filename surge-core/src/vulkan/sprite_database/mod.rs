@@ -55,7 +55,6 @@ impl UpdateInfo {
 
 /// Data shared across all sprite instances in a frame.
 /// Provided via UBO.
-#[repr(align(16))]
 struct FrameGlobals {
     view: nalgebra::Matrix4<f32>,
     proj: nalgebra::Matrix4<f32>,
@@ -517,7 +516,7 @@ impl SpriteDatabase {
             let model = make_model_matrix(
                 nalgebra::Vector2::from_element(0.0f32),
                 nalgebra::Vector2::from_element(100.0f32),
-                0.1f32,
+                0.0f32,
             );
 
             let color = nalgebra::Vector4::from_element(1.0f32);
@@ -587,7 +586,6 @@ impl SpriteDatabase {
             });
         self.context.borrow().cmd_set_scissor(scissor);
 
-        //self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
         self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
     }
 }
@@ -651,7 +649,9 @@ impl Drop for SpriteDatabase {
 /// # Parameters:
 /// * `dims`: Screen dimensions.
 pub fn make_ortho_projection(width: f32, height: f32) -> nalgebra::Matrix4<f32> {
-    nalgebra::Matrix4::new_orthographic(0.0f32, width, 0.0f32, height, 1.0f32, 0.0f32)
+    // For some reason, I had to set znear to the double of the
+    // range I wanted ([0, 1])
+    nalgebra::Matrix4::new_orthographic(0.0f32, width, 0.0f32, height, 2.0f32, 0.0f32)
 }
 
 /// Creates a view matrix for 2D rendering
@@ -673,7 +673,7 @@ pub fn make_model_matrix(
 ) -> nalgebra::Matrix4<f32> {
     let mv = nalgebra::Vector3::new(position[0], position[1], z);
     let sc = nalgebra::Vector3::new(scale[0], scale[1], 1.0f32);
-    nalgebra::Matrix4::identity()
-        .append_translation(&mv)
-        .append_nonuniform_scaling(&sc)
+    let translation_matrix = nalgebra::Matrix4::new_translation(&mv);
+    let scaling_matrix = nalgebra::Matrix4::new_nonuniform_scaling(&sc);
+    scaling_matrix * translation_matrix
 }

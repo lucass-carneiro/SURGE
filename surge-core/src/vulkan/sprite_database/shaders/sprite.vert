@@ -49,8 +49,7 @@ void main() {
 
     const InstanceRecord instance_record = PushConstants.instance_record_buffer.instance_records[gl_InstanceIndex];
 
-    //gl_Position = proj * view * instance_record.model * vec4(positions[gl_VertexIndex], 1.0f);
-    gl_Position = instance_record.model * vec4(positions[gl_VertexIndex], 1.0f);
+    gl_Position = proj * view * instance_record.model * vec4(positions[gl_VertexIndex], 1.0f);
     uv = uv_coordinates[gl_VertexIndex];
     color = instance_record.color;
     material = instance_record.material;
