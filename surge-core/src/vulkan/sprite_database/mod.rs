@@ -31,26 +31,14 @@ pub struct CreateInfo {
     pub window_height: f32,
 }
 
-/// Controls sprite update data
+/// Specifies the parameters of an instance to be added to the database
 #[derive(Debug)]
-pub struct UpdateInfo {
+pub struct InstanceInfo {
     pub position: nalgebra::Vector2<f32>,
     pub scale: nalgebra::Vector2<f32>,
     pub z: f32,
     pub texture_id: usize,
     pub color_multiplier: nalgebra::Vector4<f32>,
-}
-
-impl UpdateInfo {
-    pub fn default() -> Self {
-        Self {
-            position: nalgebra::Vector2::new(0.0f32, 0.0f32),
-            scale: nalgebra::Vector2::new(100.0f32, 100.0f32),
-            z: 0.0f32,
-            texture_id: 0,
-            color_multiplier: nalgebra::Vector4::from_element(1.0f32),
-        }
-    }
 }
 
 /// Data shared across all sprite instances in a frame.
@@ -502,6 +490,31 @@ impl SpriteDatabase {
         })
     }
 
+    /// Adds a sprite instance to the databse
+    pub fn add_instance(&mut self, aii: &InstanceInfo) {
+        if self.occupancy == self.ci.max_sprites {
+            log::warn!("Unable to add new sprite instance to full database. Ignoring requrest");
+            return;
+        }
+
+        let instance_records_slice: &mut [InstanceRecord] = unsafe {
+            slice::from_raw_parts_mut(
+                self.instance_records_ssbo.allocation_info.mapped_data as *mut InstanceRecord,
+                self.ci.max_sprites as usize,
+            )
+        };
+
+        let record = InstanceRecord {
+            model: make_model_matrix(aii.position, aii.scale, aii.z),
+            color: aii.color_multiplier,
+            material_id: 0,
+        };
+
+        instance_records_slice[self.occupancy as usize] = record;
+
+        self.occupancy += 1;
+    }
+
     /// Temporary test function, adds a sprite with random texture. Will be removed
     pub fn tmp_test(&mut self) {
         // Instance data update
@@ -644,14 +657,13 @@ impl Drop for SpriteDatabase {
 
 /// Creates an orthographic projection for 2D rendering.
 /// It places the origin on upper left corner of the game window
-/// and normalizes the frustum to be on the 1.0 (near) to 0.0 (far) range
+/// with +x pointing right, +y pointing down and +z pointing into
+/// The view frustum is normalized the 0.0 (near) to 1.0 (far) range
 ///
 /// # Parameters:
 /// * `dims`: Screen dimensions.
 pub fn make_ortho_projection(width: f32, height: f32) -> nalgebra::Matrix4<f32> {
-    // For some reason, I had to set znear to the double of the
-    // range I wanted ([0, 1])
-    nalgebra::Matrix4::new_orthographic(0.0f32, width, 0.0f32, height, 2.0f32, 0.0f32)
+    nalgebra::Matrix4::new_orthographic(0.0f32, width, 0.0f32, height, 0.0f32, 1.0f32)
 }
 
 /// Creates a view matrix for 2D rendering
@@ -673,7 +685,7 @@ pub fn make_model_matrix(
 ) -> nalgebra::Matrix4<f32> {
     let mv = nalgebra::Vector3::new(position[0], position[1], z);
     let sc = nalgebra::Vector3::new(scale[0], scale[1], 1.0f32);
-    let translation_matrix = nalgebra::Matrix4::new_translation(&mv);
-    let scaling_matrix = nalgebra::Matrix4::new_nonuniform_scaling(&sc);
-    scaling_matrix * translation_matrix
+    nalgebra::Matrix4::identity()
+        .append_nonuniform_scaling(&sc)
+        .append_translation(&mv)
 }

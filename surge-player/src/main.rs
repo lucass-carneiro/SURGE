@@ -171,14 +171,11 @@ where
                         .unwrap(),
                     );
 
-                    // TODO: temporary
-                    self.sprite_database.as_mut().unwrap().tmp_test();
-
                     //Save window to context
                     self.window = Some(w);
 
                     // Load first module
-                    self.module.on_load();
+                    self.module.on_load(self.sprite_database.as_mut().unwrap());
                 }
                 Err(e) => {
                     log::error!("Unable to create SURGE window: {}", e);

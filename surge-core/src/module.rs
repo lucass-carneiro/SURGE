@@ -1,9 +1,10 @@
+use crate::vulkan::sprite_database::SpriteDatabase;
 use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
 /// Defines a SURGE application
 pub trait SurgeModule {
     /// Called when the application starts
-    fn on_load(&self);
+    fn on_load(&self, spdb: &mut SpriteDatabase);
 
     /// Update application state
     fn update(&self);
