@@ -5,7 +5,8 @@ use super::{
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
 use nalgebra;
-use std::{cell::RefCell, mem::size_of, slice, sync::Arc};
+use png;
+use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, slice, sync::Arc};
 use vk_mem::{self, Alloc};
 
 /// Database blending mode
@@ -71,12 +72,6 @@ struct PushConstants {
 
 const PUSH_CONSTANTS_STRUCT_SIZE: u32 = size_of::<PushConstants>() as u32;
 
-/// TODO: Uhhhhmmmmm ?
-struct TextureRecord {
-    staging_buffer: Buffer,
-    image: AllocatedImage,
-}
-
 pub struct SpriteDatabase {
     /// The vulkan context that created this database
     context: Arc<RefCell<VulkanContext>>,
@@ -123,8 +118,8 @@ pub struct SpriteDatabase {
     /// Graphics pipeline
     pipeline: vk::Pipeline,
 
-    /// Default iamage to use when textures are missing
-    default_image: AllocatedImage,
+    /// Sprite textures uploaded to GPU memory
+    uploaded_textures: Vec<AllocatedImage>,
 }
 
 impl SpriteDatabase {
@@ -408,70 +403,6 @@ impl SpriteDatabase {
             pipeline
         };
 
-        let default_image = {
-            let extent = vk::Extent3D {
-                width: 100,
-                height: 100,
-                depth: 1,
-            };
-
-            let image_ci = vk::ImageCreateInfo {
-                image_type: vk::ImageType::TYPE_2D,
-                format: vk::Format::R8G8B8A8_UNORM,
-                extent: extent,
-                mip_levels: 1,
-                array_layers: 1,
-                samples: vk::SampleCountFlags::TYPE_1,
-                tiling: vk::ImageTiling::OPTIMAL,
-                usage: vk::ImageUsageFlags::SAMPLED,
-                ..Default::default()
-            };
-
-            let alloc_ci = vk_mem::AllocationCreateInfo {
-                usage: vk_mem::MemoryUsage::AutoPreferDevice,
-                ..Default::default()
-            };
-
-            let (image, image_memory) = unsafe {
-                context
-                    .borrow()
-                    .memory_allocator
-                    .create_image(&image_ci, &alloc_ci)
-                    .map_err(|e| VulkanError::DepthImageCreationError(e))
-            }?;
-
-            let sr = vk::ImageSubresourceRange {
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-                ..Default::default()
-            };
-
-            let ivci = vk::ImageViewCreateInfo {
-                view_type: vk::ImageViewType::TYPE_2D,
-                format: vk::Format::R8G8B8A8_UNORM,
-                subresource_range: sr,
-                image: image,
-                ..Default::default()
-            };
-
-            let image_view = unsafe {
-                context
-                    .borrow()
-                    .device
-                    .create_image_view(&ivci, None)
-                    .map_err(|e| VulkanError::SwapchainCreationError(e))
-            }?;
-
-            AllocatedImage {
-                image,
-                image_view,
-                image_memory,
-            }
-        };
-
         Ok(Self {
             context,
             ci,
@@ -487,14 +418,14 @@ impl SpriteDatabase {
             mat_desc_set,
             pipeline_layout,
             pipeline,
-            default_image,
+            uploaded_textures: Vec::new(),
         })
     }
 
     /// Adds a sprite instance to the databse
     pub fn add_instance(&mut self, aii: &InstanceInfo) {
         if self.occupancy == self.ci.max_sprites {
-            log::warn!("Unable to add new sprite instance to full database. Ignoring requrest");
+            log::warn!("Unable to add new sprite instance to full database. Ignoring request");
             return;
         }
 
@@ -520,49 +451,219 @@ impl SpriteDatabase {
         self.occupancy += 1;
     }
 
-    /// Temporary test function, adds a sprite with random texture. Will be removed
-    pub fn tmp_test(&mut self) {
-        // Instance data update
-        {
-            let current_frame = self.context.borrow().current_frame;
-
-            let instance_records_slice: &mut [InstanceRecord] = unsafe {
-                slice::from_raw_parts_mut(
-                    self.instance_records_ssbos[current_frame]
-                        .allocation_info
-                        .mapped_data as *mut InstanceRecord,
-                    self.ci.max_sprites as usize,
-                )
-            };
-
-            let model = make_model_matrix(
-                nalgebra::Vector2::from_element(0.0f32),
-                nalgebra::Vector2::from_element(100.0f32),
-                0.0f32,
-            );
-
-            let color = nalgebra::Vector4::from_element(1.0f32);
-
-            let record = InstanceRecord {
-                model,
-                color,
-                material_id: 0,
-            };
-
-            instance_records_slice[self.occupancy as usize] = record;
+    // TODO: Handle errors
+    pub fn upload_texture(&mut self, texture_file: &str) {
+        // Only do this if the ammount of stored image records < database capacity
+        if self.uploaded_textures.len() == self.ci.max_sprites as usize {
+            log::warn!("Unable to upload new texture to full database. Ignoring request");
+            return;
         }
 
-        // Image data update
+        // Read image file and metadata
+        let file = File::open(texture_file).unwrap();
+        let buf_reader = BufReader::new(file);
+
+        let decoder = png::Decoder::new(buf_reader);
+        let mut reader = decoder.read_info().unwrap();
+
+        let image_size = reader.output_buffer_size().unwrap();
+
+        // Create CPU buffer
+        let mut cpu_buffer = {
+            let bci = vk::BufferCreateInfo::default()
+                .size(image_size as u64)
+                .usage(vk::BufferUsageFlags::TRANSFER_SRC);
+
+            let bai = vk_mem::AllocationCreateInfo {
+                flags: vk_mem::AllocationCreateFlags::MAPPED
+                    | vk_mem::AllocationCreateFlags::HOST_ACCESS_SEQUENTIAL_WRITE,
+                usage: vk_mem::MemoryUsage::Auto,
+                ..Default::default()
+            };
+
+            self.context.borrow().create_buffer(&bci, &bai).unwrap()
+        };
+
+        let cpu_buffer_slice: &mut [u8] = unsafe {
+            slice::from_raw_parts_mut(
+                cpu_buffer.allocation_info.mapped_data as *mut u8,
+                image_size,
+            )
+        };
+
+        // Read image into CPU buffer
+        let read_info = reader.next_frame(cpu_buffer_slice).unwrap();
+
+        assert!(read_info.buffer_size() == image_size);
+
+        // Allocate GPU image
+        let (gpu_image, gpu_image_extent, gpu_image_sr) = {
+            let extent = vk::Extent3D {
+                width: read_info.width,
+                height: read_info.height,
+                depth: 1,
+            };
+
+            let format = match read_info.bit_depth {
+                png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
+                png::BitDepth::Sixteen => vk::Format::R16G16B16A16_UNORM,
+                _ => vk::Format::R8G8B8A8_UNORM, // TODO: Error, unsupported format
+            };
+
+            let image_ci = vk::ImageCreateInfo {
+                image_type: vk::ImageType::TYPE_2D,
+                format: format,
+                extent: extent,
+                mip_levels: 1,
+                array_layers: 1,
+                samples: vk::SampleCountFlags::TYPE_1,
+                tiling: vk::ImageTiling::OPTIMAL,
+                usage: vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED,
+                initial_layout: vk::ImageLayout::UNDEFINED,
+                ..Default::default()
+            };
+
+            let alloc_ci = vk_mem::AllocationCreateInfo {
+                usage: vk_mem::MemoryUsage::Auto,
+                ..Default::default()
+            };
+
+            let (image, image_memory) = unsafe {
+                self.context
+                    .borrow()
+                    .memory_allocator
+                    .create_image(&image_ci, &alloc_ci)
+                    .map_err(|e| VulkanError::DepthImageCreationError(e))
+                    .unwrap()
+            };
+
+            let sr = vk::ImageSubresourceRange {
+                aspect_mask: vk::ImageAspectFlags::COLOR,
+                base_mip_level: 0,
+                level_count: 1,
+                base_array_layer: 0,
+                layer_count: 1,
+                ..Default::default()
+            };
+
+            let ivci = vk::ImageViewCreateInfo {
+                view_type: vk::ImageViewType::TYPE_2D,
+                format: format,
+                subresource_range: sr,
+                image: image,
+                ..Default::default()
+            };
+
+            let image_view = unsafe {
+                self.context
+                    .borrow()
+                    .device
+                    .create_image_view(&ivci, None)
+                    .map_err(|e| VulkanError::SwapchainCreationError(e))
+                    .unwrap()
+            };
+
+            (
+                AllocatedImage {
+                    image,
+                    image_view,
+                    image_memory,
+                },
+                extent,
+                sr,
+            )
+        };
+
+        // Submit CPU to GPU buffer copy command
+        self.context.borrow().cmd_immediate_begin().unwrap();
+
         {
-            let si = [vk::DescriptorImageInfo::default()
-                .image_view(self.default_image.image_view)
-                .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)];
+            let barrier_1 = [vk::ImageMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::TOP_OF_PIPE)
+                .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .old_layout(vk::ImageLayout::UNDEFINED)
+                .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .image(gpu_image.image)
+                .subresource_range(gpu_image_sr)];
+
+            let dep_info_1 = vk::DependencyInfo::default().image_memory_barriers(&barrier_1);
+
+            let barrier_2 = [vk::ImageMemoryBarrier2::default()
+                .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
+                .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
+                .dst_stage_mask(vk::PipelineStageFlags2::FRAGMENT_SHADER)
+                .dst_access_mask(vk::AccessFlags2::SHADER_READ)
+                .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
+                .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+                .image(gpu_image.image)
+                .subresource_range(gpu_image_sr)];
+
+            let dep_info_2 = vk::DependencyInfo::default().image_memory_barriers(&barrier_2);
+
+            let cmd_buffer = self.context.borrow().immediate_command_buffer;
+
+            let sr_layers = vk::ImageSubresourceLayers::default()
+                .aspect_mask(gpu_image_sr.aspect_mask)
+                .mip_level(gpu_image_sr.base_mip_level)
+                .base_array_layer(gpu_image_sr.base_array_layer)
+                .layer_count(gpu_image_sr.layer_count);
+
+            let copy_region = [vk::BufferImageCopy::default()
+                .buffer_offset(0)
+                .buffer_row_length(0)
+                .buffer_image_height(0)
+                .image_subresource(sr_layers)
+                .image_extent(gpu_image_extent)];
+
+            unsafe {
+                self.context
+                    .borrow()
+                    .device
+                    .cmd_pipeline_barrier2(cmd_buffer, &dep_info_1);
+
+                self.context.borrow().device.cmd_copy_buffer_to_image(
+                    cmd_buffer,
+                    cpu_buffer.buffer,
+                    gpu_image.image,
+                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                    &copy_region,
+                );
+
+                self.context
+                    .borrow()
+                    .device
+                    .cmd_pipeline_barrier2(cmd_buffer, &dep_info_2);
+            }
+        }
+
+        self.context.borrow().cmd_immediate_end().unwrap();
+        self.context.borrow().cmd_immediate_submit().unwrap();
+
+        // Free CPU buffer
+        self.context.borrow().destroy_buffer(&mut cpu_buffer);
+
+        // Add GPU image record to database so it can be freed later
+        self.uploaded_textures.push(gpu_image);
+
+        // Update texture descriptor.
+        // TODO: Do this somewhere else?
+        {
+            let mut si = Vec::new();
+
+            for texture in &self.uploaded_textures {
+                si.push(
+                    vk::DescriptorImageInfo::default()
+                        .image_view(texture.image_view)
+                        .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL),
+                )
+            }
 
             let dsw = [vk::WriteDescriptorSet::default()
                 .dst_set(self.mat_desc_set)
                 .dst_binding(1)
                 .descriptor_type(vk::DescriptorType::SAMPLED_IMAGE)
-                .descriptor_count(1)
+                .descriptor_count(si.len() as u32)
                 .image_info(&si)];
 
             unsafe {
@@ -572,8 +673,6 @@ impl SpriteDatabase {
                     .update_descriptor_sets(&dsw, &[])
             };
         }
-
-        self.occupancy += 1;
     }
 
     pub fn draw(&mut self) {
@@ -624,14 +723,17 @@ impl Drop for SpriteDatabase {
         log::debug!("Destroying sprite database");
 
         unsafe {
-            self.context
-                .borrow()
-                .device
-                .destroy_image_view(self.default_image.image_view, None);
-            self.context.borrow().memory_allocator.destroy_image(
-                self.default_image.image,
-                &mut self.default_image.image_memory,
-            )
+            for texture in &mut self.uploaded_textures {
+                self.context
+                    .borrow()
+                    .device
+                    .destroy_image_view(texture.image_view, None);
+
+                self.context
+                    .borrow()
+                    .memory_allocator
+                    .destroy_image(texture.image, &mut texture.image_memory);
+            }
         };
 
         self.context.borrow().destroy_pipeline(self.pipeline);

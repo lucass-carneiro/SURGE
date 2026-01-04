@@ -254,4 +254,70 @@ impl VulkanContext {
                 .map_err(|e| VulkanError::FrameCommandBufferSubmitError(self.current_frame, e))
         }
     }
+
+    pub fn cmd_immediate_begin(&self) -> Result<(), VulkanError> {
+        // Reset command buffer
+        unsafe {
+            self.device
+                .reset_command_buffer(
+                    self.immediate_command_buffer,
+                    vk::CommandBufferResetFlags::empty(),
+                )
+                .map_err(|e| VulkanError::FrameCommandBufferReset(self.current_frame, e))
+        }?;
+
+        // Begin command recording
+        unsafe {
+            let bi = vk::CommandBufferBeginInfo {
+                flags: vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT,
+                ..Default::default()
+            };
+
+            self.device
+                .begin_command_buffer(self.immediate_command_buffer, &bi)
+                .map_err(|e| VulkanError::FrameCommandBufferRecordBeginError(self.current_frame, e))
+        }?;
+
+        Ok(())
+    }
+
+    pub fn cmd_immediate_end(&self) -> Result<(), VulkanError> {
+        unsafe {
+            self.device
+                .end_command_buffer(self.immediate_command_buffer)
+                .map_err(|e| VulkanError::FrameCommandBufferRecordEndError(self.current_frame, e))
+        }
+    }
+
+    /// Blocks until submission is done
+    pub fn cmd_immediate_submit(&self) -> Result<(), VulkanError> {
+        let fence = {
+            let ci = vk::FenceCreateInfo::default();
+            unsafe {
+                self.device
+                    .create_fence(&ci, None)
+                    .map_err(|e| VulkanError::FenceCreationError(e))
+            }
+        }?;
+
+        let si = vk::SubmitInfo {
+            command_buffer_count: 1,
+            p_command_buffers: &self.immediate_command_buffer,
+            ..Default::default()
+        };
+
+        unsafe {
+            self.device
+                .queue_submit(self.graphics_queue, &[si], fence)
+                .map_err(|e| VulkanError::FrameCommandBufferSubmitError(self.current_frame, e))?;
+
+            self.device
+                .wait_for_fences(&[fence], true, 1000000000)
+                .map_err(|e| VulkanError::FenceWaiteError(e))?;
+
+            self.device.destroy_fence(fence, None)
+        };
+
+        Ok(())
+    }
 }

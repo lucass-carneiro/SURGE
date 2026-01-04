@@ -15,8 +15,10 @@ impl ModuleDefault {
 }
 
 impl SurgeModule for ModuleDefault {
-    fn on_load(&self, _: &mut SpriteDatabase) {
+    fn on_load(&self, spd: &mut SpriteDatabase) {
         log::info!("Default module startup");
+
+        spd.upload_texture("awesomeface.png");
     }
 
     fn update(&self, _: f32, spdb: &mut SpriteDatabase) {

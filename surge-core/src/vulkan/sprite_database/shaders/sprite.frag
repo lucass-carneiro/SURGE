@@ -11,12 +11,12 @@ layout(location = 2) flat in uint material;
 layout(location = 0) out vec4 out_color;
 
 void main() {
-    // out_color = texture(
-    //     sampler2D(
-    //         textures[nonuniformEXT(material)],
-    //         smp
-    //     ),
-    //     uv
-    // ) * color;
-    out_color = color;
+    out_color = texture(
+        sampler2D(
+            textures[nonuniformEXT(material)],
+            smp
+        ),
+        uv
+    ) * color;
+    //out_color = color;
 }

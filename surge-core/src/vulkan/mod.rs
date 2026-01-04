@@ -70,6 +70,7 @@ pub struct VulkanContext {
 
     command_pool: vk::CommandPool,
     command_buffers: Vec<vk::CommandBuffer>,
+    immediate_command_buffer: vk::CommandBuffer,
 
     present_completed_sem: Vec<vk::Semaphore>,
     render_finished_sem: Vec<vk::Semaphore>,

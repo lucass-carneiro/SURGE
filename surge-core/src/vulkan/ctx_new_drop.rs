@@ -104,6 +104,19 @@ impl VulkanContext {
         let command_pool = command::create_command_pool(&device, indices.graphics)?;
         let command_buffers = command::create_command_buffers(&device, command_pool)?;
 
+        let immediate_command_buffer = {
+            let allocate_info = vk::CommandBufferAllocateInfo::default()
+                .command_pool(command_pool)
+                .level(vk::CommandBufferLevel::PRIMARY)
+                .command_buffer_count(1);
+
+            unsafe {
+                device
+                    .allocate_command_buffers(&allocate_info)
+                    .map_err(|e| VulkanError::CommandBufferAllocation(e))
+            }
+        }?[0];
+
         let memory_allocator = ManuallyDrop::new(command::create_memory_allocator(
             &instance,
             &device,
@@ -138,6 +151,7 @@ impl VulkanContext {
             depth_image,
             command_pool,
             command_buffers,
+            immediate_command_buffer,
             memory_allocator,
             present_completed_sem,
             render_finished_sem,
@@ -209,8 +223,8 @@ impl Drop for VulkanContext {
                 self.device.destroy_semaphore(*semaphore, None);
             }
 
+            // This also frees command buffers
             log::debug!("Destroying command pool");
-            // Destroy command pool (this also frees command buffers)
             self.device.destroy_command_pool(self.command_pool, None);
 
             log::debug!("Skipping swapchain destruction in Drop");
