@@ -15,9 +15,11 @@ impl ModuleDefault {
 }
 
 impl SurgeModule for ModuleDefault {
-    fn on_load(&self, spdb: &mut SpriteDatabase) {
+    fn on_load(&self, _: &mut SpriteDatabase) {
         log::info!("Default module startup");
+    }
 
+    fn update(&self, _: f32, spdb: &mut SpriteDatabase) {
         // Test depth buffer
         let mut aii = InstanceInfo {
             position: Vector2::from_element(0.0),
@@ -43,10 +45,20 @@ impl SurgeModule for ModuleDefault {
         aii.color_multiplier = Vector4::new(0.0, 0.0, 1.0, 0.5);
         aii.z = 0.0;
         spdb.add_instance(&aii);
-    }
 
-    fn update(&self) {
-        // Do nothing
+        // Test motion
+        static mut POS: f32 = 0.0;
+
+        unsafe {
+            aii.position = Vector2::new(POS, 150.0);
+            POS += 2.5;
+            if POS > 800.0 {
+                POS = -100.0;
+            }
+        }
+        aii.color_multiplier = Vector4::from_element(1.0);
+        aii.z = 0.0;
+        spdb.add_instance(&aii);
     }
 
     fn draw(&self) {

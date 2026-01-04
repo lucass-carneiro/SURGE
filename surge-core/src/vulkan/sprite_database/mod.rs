@@ -1,5 +1,5 @@
 use super::{
-    AllocatedImage, DPETH_FORMAT, VulkanContext, ctx_buffer::Buffer,
+    AllocatedImage, DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, ctx_buffer::Buffer,
     ctx_graphics_pipeline::GraphicsPipelineBuilder,
 };
 use crate::errors::VulkanError;
@@ -91,7 +91,13 @@ pub struct SpriteDatabase {
     frame_globals_ubo: Buffer,
 
     /// SSBO storing instance data (see InstanceRecord)
-    instance_records_ssbo: Buffer,
+    /// We need to make sure that we don't write to a buffer
+    /// while it is being read by the GPU. For that reason,
+    /// we need as many buffers as there are frames in flight
+    instance_records_ssbos: [Buffer; FRAMES_IN_FLIGHT],
+
+    /// Device addresses of instance record SSBOs
+    instance_records_ssbo_addresses: [vk::DeviceAddress; FRAMES_IN_FLIGHT],
 
     /// Texture sampler
     texture_sampler: vk::Sampler,
@@ -117,9 +123,6 @@ pub struct SpriteDatabase {
     /// Graphics pipeline
     pipeline: vk::Pipeline,
 
-    /// Push constant data
-    push_constant_data: PushConstants,
-
     /// Default iamage to use when textures are missing
     default_image: AllocatedImage,
 }
@@ -144,8 +147,8 @@ impl SpriteDatabase {
             context.borrow().create_buffer(&bci, &bai)
         }?;
 
-        //Instance record SSBO
-        let instance_records_ssbo = {
+        //Instance record SSBOs
+        let instance_records_ssbos: [Buffer; FRAMES_IN_FLIGHT] = std::array::from_fn(|_| {
             let bci = vk::BufferCreateInfo::default()
                 .size(INSTANCE_RECORD_STRUCT_SIZE * (ci.max_sprites as u64))
                 .usage(
@@ -160,13 +163,15 @@ impl SpriteDatabase {
                 ..Default::default()
             };
 
-            context.borrow().create_buffer(&bci, &bai)
-        }?;
+            context.borrow().create_buffer(&bci, &bai).unwrap()
+        });
 
-        let instance_records_ssbo_address = {
-            let ai = vk::BufferDeviceAddressInfo::default().buffer(instance_records_ssbo.buffer);
-            unsafe { context.borrow().device.get_buffer_device_address(&ai) }
-        };
+        let instance_records_ssbo_addresses: [vk::DeviceAddress; FRAMES_IN_FLIGHT] =
+            std::array::from_fn(|i| {
+                let ai =
+                    vk::BufferDeviceAddressInfo::default().buffer(instance_records_ssbos[i].buffer);
+                unsafe { context.borrow().device.get_buffer_device_address(&ai) }
+            });
 
         // Texture sampler
         // TODO: Texture filtering and mip maps
@@ -467,16 +472,13 @@ impl SpriteDatabase {
             }
         };
 
-        let push_constant_data = PushConstants {
-            instance_records_ssbo_address,
-        };
-
         Ok(Self {
             context,
             ci,
             occupancy: 0,
             frame_globals_ubo,
-            instance_records_ssbo,
+            instance_records_ssbos,
+            instance_records_ssbo_addresses,
             texture_sampler,
             desc_pool,
             ubo_desc_set_layout,
@@ -485,7 +487,6 @@ impl SpriteDatabase {
             mat_desc_set,
             pipeline_layout,
             pipeline,
-            push_constant_data,
             default_image,
         })
     }
@@ -497,9 +498,13 @@ impl SpriteDatabase {
             return;
         }
 
+        let current_frame = self.context.borrow().current_frame;
+
         let instance_records_slice: &mut [InstanceRecord] = unsafe {
             slice::from_raw_parts_mut(
-                self.instance_records_ssbo.allocation_info.mapped_data as *mut InstanceRecord,
+                self.instance_records_ssbos[current_frame]
+                    .allocation_info
+                    .mapped_data as *mut InstanceRecord,
                 self.ci.max_sprites as usize,
             )
         };
@@ -519,9 +524,13 @@ impl SpriteDatabase {
     pub fn tmp_test(&mut self) {
         // Instance data update
         {
+            let current_frame = self.context.borrow().current_frame;
+
             let instance_records_slice: &mut [InstanceRecord] = unsafe {
                 slice::from_raw_parts_mut(
-                    self.instance_records_ssbo.allocation_info.mapped_data as *mut InstanceRecord,
+                    self.instance_records_ssbos[current_frame]
+                        .allocation_info
+                        .mapped_data as *mut InstanceRecord,
                     self.ci.max_sprites as usize,
                 )
             };
@@ -567,7 +576,7 @@ impl SpriteDatabase {
         self.occupancy += 1;
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&mut self) {
         self.context
             .borrow()
             .cmd_bind_graphics_pipeline(self.pipeline);
@@ -578,9 +587,14 @@ impl SpriteDatabase {
             &[self.ubo_desc_set, self.mat_desc_set],
         );
 
+        let current_frame = self.context.borrow().current_frame;
+        let push_constant_data = PushConstants {
+            instance_records_ssbo_address: self.instance_records_ssbo_addresses[current_frame],
+        };
+
         self.context
             .borrow()
-            .cmd_set_push_constants(self.pipeline_layout, &self.push_constant_data);
+            .cmd_set_push_constants(self.pipeline_layout, &push_constant_data);
 
         let viewport = vk::Viewport::default()
             .x(0.0)
@@ -600,6 +614,8 @@ impl SpriteDatabase {
         self.context.borrow().cmd_set_scissor(scissor);
 
         self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
+
+        self.occupancy = 0;
     }
 }
 
@@ -646,9 +662,11 @@ impl Drop for SpriteDatabase {
                 .device
                 .destroy_sampler(self.texture_sampler, None);
         }
-        self.context
-            .borrow()
-            .destroy_buffer(&mut self.instance_records_ssbo);
+
+        for buffer in &mut self.instance_records_ssbos {
+            self.context.borrow().destroy_buffer(buffer);
+        }
+
         self.context
             .borrow()
             .destroy_buffer(&mut self.frame_globals_ubo);

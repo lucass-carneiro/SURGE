@@ -24,6 +24,7 @@ struct SurgeContext<ModuleType: SurgeModule> {
     engine_config: sc::config::EngineConfig,
     module: ModuleType,
     frame_timer: Instant,
+    previous_dt: f32,
     pause_rendering: bool,
 }
 
@@ -45,7 +46,10 @@ where
 
         // Handle hot reloading
         // Call module update
-        self.module.update();
+        let dt_timer = Instant::now();
+        self.module
+            .update(self.previous_dt, self.sprite_database.as_mut().unwrap());
+        self.previous_dt = dt_timer.elapsed().as_secs_f32();
 
         // Acquire swapchain image
         let mut swpc_img_data = self
@@ -80,7 +84,7 @@ where
         self.module.draw();
 
         //TODO: temporary
-        self.sprite_database.as_ref().unwrap().draw();
+        self.sprite_database.as_mut().unwrap().draw();
 
         // End rendering
         self.vulkan_context
@@ -276,6 +280,7 @@ pub fn main() {
         engine_config,
         module: md::ModuleDefault::new(),
         frame_timer: Instant::now(),
+        previous_dt: 0.0,
         pause_rendering: false,
     };
 

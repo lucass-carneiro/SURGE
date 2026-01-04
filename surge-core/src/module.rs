@@ -7,7 +7,7 @@ pub trait SurgeModule {
     fn on_load(&self, spdb: &mut SpriteDatabase);
 
     /// Update application state
-    fn update(&self);
+    fn update(&self, dt: f32, spdb: &mut SpriteDatabase);
 
     /// Records application rendering commands
     fn draw(&self);
