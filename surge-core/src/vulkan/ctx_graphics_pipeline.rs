@@ -29,24 +29,18 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         vertex_shader: vk::ShaderModule,
         fragment_sader: vk::ShaderModule,
     ) -> Self {
-        let entry_point = ['m' as i8, 'a' as i8, 'i' as i8, 'n' as i8, '\0' as i8];
-
         // Vertex Shader
-        let vs_info = vk::PipelineShaderStageCreateInfo {
-            stage: vk::ShaderStageFlags::VERTEX,
-            module: vertex_shader,
-            p_name: entry_point.as_ptr(),
-            ..Default::default()
-        };
+        let vs_info = vk::PipelineShaderStageCreateInfo::default()
+            .stage(vk::ShaderStageFlags::VERTEX)
+            .module(vertex_shader)
+            .name(c"main");
         self.shader_stage_infos.push(vs_info);
 
         // Fragment Shader
-        let fs_info = vk::PipelineShaderStageCreateInfo {
-            stage: vk::ShaderStageFlags::FRAGMENT,
-            module: fragment_sader,
-            p_name: entry_point.as_ptr(),
-            ..Default::default()
-        };
+        let fs_info = vk::PipelineShaderStageCreateInfo::default()
+            .stage(vk::ShaderStageFlags::FRAGMENT)
+            .module(fragment_sader)
+            .name(c"main");
         self.shader_stage_infos.push(fs_info);
         self
     }
