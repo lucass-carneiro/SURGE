@@ -1,24 +1,24 @@
 use log;
 use nalgebra::{Vector2, Vector4};
 use surge_core::{
-    module::SurgeModule,
+    app::SurgeApp,
     vulkan::sprite_database::{InstanceInfo, SpriteDatabase},
 };
 use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
-pub struct ModuleDefault {}
+pub struct AppDefault {}
 
-impl ModuleDefault {
-    pub fn new() -> Self {
-        ModuleDefault {}
-    }
+#[unsafe(no_mangle)]
+pub fn surge_register_app() -> Box<dyn SurgeApp> {
+    Box::new(AppDefault {})
 }
 
-impl SurgeModule for ModuleDefault {
+impl SurgeApp for AppDefault {
     fn on_load(&self, spd: &mut SpriteDatabase) {
-        log::info!("Default module startup");
+        surge_core::cli::init_env_logger();
+        log::info!("Default app startup");
 
-        spd.upload_texture("awesomeface.png");
+        spd.upload_texture("awesomeface.png").unwrap();
     }
 
     fn update(&self, _: f32, spdb: &mut SpriteDatabase) {
@@ -63,10 +63,6 @@ impl SurgeModule for ModuleDefault {
         spdb.add_instance(&aii);
     }
 
-    fn draw(&self) {
-        // Do nothing
-    }
-
     fn keyboard_event(&self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {
         log::info!(
             "Keyboard event: ID = {:?} event = {:?} synthetic = {}",
@@ -95,6 +91,6 @@ impl SurgeModule for ModuleDefault {
     }
 
     fn on_unload(&self) {
-        log::info!("Default module shutdown");
+        log::info!("Default app shutdown");
     }
 }

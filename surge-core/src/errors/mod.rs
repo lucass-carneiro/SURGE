@@ -16,6 +16,18 @@ pub enum ModuleError {
 }
 
 #[derive(Debug, Error)]
+pub enum AppError {
+    #[error("Unable to load SURGE app {name}: {io_error}")]
+    IoError { name: String, io_error: io::Error },
+
+    #[error("Unable to load SURGE app {name}: {lib_error}")]
+    LibLoadingError {
+        name: String,
+        lib_error: libloading::Error,
+    },
+}
+
+#[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("Unable to load SURGE configuration file {name}: {io_error}")]
     IoError { name: String, io_error: io::Error },

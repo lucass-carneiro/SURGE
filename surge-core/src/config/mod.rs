@@ -35,11 +35,18 @@ pub struct ClearColorConfig {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct StartupAppConfig {
+    pub app_folder: String,
+    pub app_name: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct EngineConfig {
     pub window: WindowConfig,
     pub resolution: ResolutionConfig,
     pub renderer: RendererConfig,
     pub clear_color: ClearColorConfig,
+    pub startup_app: StartupAppConfig,
 }
 
 pub fn parse_config(config_file_path: &str) -> Result<EngineConfig, ConfigError> {

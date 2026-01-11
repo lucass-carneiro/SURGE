@@ -1,5 +1,5 @@
 use super::{
-    AllocatedImage, DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
+    DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
     ctx_graphics_pipeline::GraphicsPipelineBuilder, texture::Texture,
 };
 use crate::errors::VulkanError;
@@ -7,7 +7,7 @@ use ash::vk::{self, DescriptorType};
 use nalgebra;
 use png;
 use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, slice, sync::Arc};
-use vk_mem::{self, Alloc};
+use vk_mem;
 
 /// Database blending mode
 #[derive(Debug)]

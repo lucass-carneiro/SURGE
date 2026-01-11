@@ -18,3 +18,7 @@ r = 0.2
 g = 0.3
 b = 0.3
 a = 1.0
+
+[startup_app]
+app_folder = "target/debug/"
+app_name = "surge_mod_default"

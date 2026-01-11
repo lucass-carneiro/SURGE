@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use surge_core::{self as sc, module::SurgeModule};
+use surge_core::{self as sc};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -13,25 +13,18 @@ use winit::{
     window::{Fullscreen, Window, WindowId},
 };
 
-use surge_mod_default as md;
-
-mod cli;
-
-struct SurgeContext<ModuleType: SurgeModule> {
+struct SurgeContext {
     window: Option<Arc<Window>>,
     vulkan_context: Option<Arc<RefCell<VulkanContext>>>,
     sprite_database: Option<spd::SpriteDatabase>,
     engine_config: sc::config::EngineConfig,
-    module: ModuleType,
+    startup_app: sc::app::LoadedApp,
     frame_timer: Instant,
     previous_dt: f32,
     pause_rendering: bool,
 }
 
-impl<ModuleType> ApplicationHandler for SurgeContext<ModuleType>
-where
-    ModuleType: SurgeModule,
-{
+impl ApplicationHandler for SurgeContext {
     /// Game loop start
     fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
         self.frame_timer = Instant::now();
@@ -45,9 +38,9 @@ where
         }
 
         // Handle hot reloading
-        // Call module update
+        // Call startup app update
         let dt_timer = Instant::now();
-        self.module
+        self.startup_app
             .update(self.previous_dt, self.sprite_database.as_mut().unwrap());
         self.previous_dt = dt_timer.elapsed().as_secs_f32();
 
@@ -80,8 +73,8 @@ where
             .borrow()
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
-        // Call module draw
-        self.module.draw();
+        // Call startup app draw
+        self.startup_app.draw();
 
         //TODO: temporary
         self.sprite_database.as_mut().unwrap().draw();
@@ -178,8 +171,9 @@ where
                     //Save window to context
                     self.window = Some(w);
 
-                    // Load first module
-                    self.module.on_load(self.sprite_database.as_mut().unwrap());
+                    // Load startup app
+                    self.startup_app
+                        .on_load(self.sprite_database.as_mut().unwrap());
                 }
                 Err(e) => {
                     log::error!("Unable to create SURGE window: {}", e);
@@ -192,7 +186,7 @@ where
     /// Game loop Shutdown
     fn exiting(&mut self, _: &ActiveEventLoop) {
         log::info!("Closing SURGE window");
-        self.module.on_unload();
+        self.startup_app.on_unload();
 
         // We need to destroy the swapchain here because Winnit
         // drops the surface before we have a chance to drop the Vulkan context.
@@ -229,21 +223,23 @@ where
                 event,
                 is_synthetic,
             } => {
-                self.module.keyboard_event(device_id, event, is_synthetic);
+                self.startup_app
+                    .keyboard_event(device_id, event, is_synthetic);
             }
             WindowEvent::MouseInput {
                 device_id,
                 state,
                 button,
             } => {
-                self.module.mouse_button_event(device_id, state, button);
+                self.startup_app
+                    .mouse_button_event(device_id, state, button);
             }
             WindowEvent::MouseWheel {
                 device_id,
                 delta,
                 phase,
             } => {
-                self.module.mouse_wheel_event(device_id, delta, phase);
+                self.startup_app.mouse_wheel_event(device_id, delta, phase);
             }
             _ => (),
         }
@@ -254,15 +250,22 @@ pub fn main() {
     /********
      * Logo *
      ********/
-    cli::print_logo();
+    sc::cli::print_logo();
 
     /*********************
      * Parse config file *
      *********************/
-    cli::init_env_logger();
+    sc::cli::init_env_logger();
 
     // Parse config
     let engine_config = sc::config::parse_config("config.toml").unwrap();
+
+    // Load startup app library
+    let startup_app = surge_core::app::load_from_dylib(
+        &engine_config.startup_app.app_folder,
+        &engine_config.startup_app.app_name,
+    )
+    .unwrap();
 
     /*******************
      * Init event loop *
@@ -278,7 +281,7 @@ pub fn main() {
         vulkan_context: None,
         sprite_database: None,
         engine_config,
-        module: md::ModuleDefault::new(),
+        startup_app,
         frame_timer: Instant::now(),
         previous_dt: 0.0,
         pause_rendering: false,

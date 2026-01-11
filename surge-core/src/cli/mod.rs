@@ -1,6 +1,6 @@
 use std::io::Write;
 
-pub(crate) fn init_env_logger() {
+pub fn init_env_logger() {
     use env_logger::Builder;
     use log::LevelFilter;
 
@@ -28,7 +28,7 @@ pub(crate) fn init_env_logger() {
     builder.init();
 }
 
-pub(crate) fn print_logo() {
+pub fn print_logo() {
     let logo = r"    d888888o.   8 8888      88 8 888888888o.        ,o888888o.    8 8888888888
   .`8888:' `88. 8 8888      88 8 8888    `88.      8888     `88.  8 8888
   8.`8888.   Y8 8 8888      88 8 8888     `88   ,8 8888       `8. 8 8888
