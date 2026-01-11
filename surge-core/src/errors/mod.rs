@@ -141,4 +141,13 @@ pub enum VulkanError {
 
     #[error("Unable to allocate descriptor set: {0}")]
     DescriptorSetAllocationError(ash::vk::Result),
+
+    #[error("Texture file IO error: {0}")]
+    TextureIOError(std::io::Error),
+
+    #[error("Texture file decoding error: {0}")]
+    TextureDecodingError(png::DecodingError),
+
+    #[error("Texture file has unsupported bit depth: {0:?}")]
+    UnsupportedTextureBitDepth(png::BitDepth),
 }

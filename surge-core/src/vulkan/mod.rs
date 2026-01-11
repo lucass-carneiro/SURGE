@@ -80,8 +80,8 @@ pub struct VulkanContext {
     semaphore_index: usize,
 }
 
+mod buffer;
 mod command;
-mod ctx_buffer;
 mod ctx_command;
 mod ctx_graphics_pipeline;
 mod ctx_new_drop;
@@ -91,3 +91,4 @@ mod device;
 mod image;
 mod instance;
 pub mod sprite_database;
+pub mod texture;

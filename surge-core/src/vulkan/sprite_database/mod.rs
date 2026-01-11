@@ -1,6 +1,6 @@
 use super::{
-    AllocatedImage, DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, ctx_buffer::Buffer,
-    ctx_graphics_pipeline::GraphicsPipelineBuilder,
+    AllocatedImage, DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
+    ctx_graphics_pipeline::GraphicsPipelineBuilder, texture::Texture,
 };
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
@@ -119,7 +119,7 @@ pub struct SpriteDatabase {
     pipeline: vk::Pipeline,
 
     /// Sprite textures uploaded to GPU memory
-    uploaded_textures: Vec<AllocatedImage>,
+    uploaded_textures: Vec<Texture>,
 }
 
 impl SpriteDatabase {
@@ -139,7 +139,7 @@ impl SpriteDatabase {
                 ..Default::default()
             };
 
-            context.borrow().create_buffer(&bci, &bai)
+            Buffer::new(context.clone(), &bci, &bai)
         }?;
 
         //Instance record SSBOs
@@ -158,13 +158,13 @@ impl SpriteDatabase {
                 ..Default::default()
             };
 
-            context.borrow().create_buffer(&bci, &bai).unwrap()
+            Buffer::new(context.clone(), &bci, &bai).unwrap()
         });
 
         let instance_records_ssbo_addresses: [vk::DeviceAddress; FRAMES_IN_FLIGHT] =
             std::array::from_fn(|i| {
-                let ai =
-                    vk::BufferDeviceAddressInfo::default().buffer(instance_records_ssbos[i].buffer);
+                let ai = vk::BufferDeviceAddressInfo::default()
+                    .buffer(instance_records_ssbos[i].get_buffer());
                 unsafe { context.borrow().device.get_buffer_device_address(&ai) }
             });
 
@@ -314,7 +314,7 @@ impl SpriteDatabase {
         // Global UBO descriptor update
         {
             let bi = [vk::DescriptorBufferInfo::default()
-                .buffer(frame_globals_ubo.buffer)
+                .buffer(frame_globals_ubo.get_buffer())
                 .offset(0)
                 .range(FRAME_GLOBALS_STRUCT_SIZE)];
 
@@ -330,7 +330,7 @@ impl SpriteDatabase {
             let proj = make_ortho_projection(ci.window_width, ci.window_height);
 
             unsafe {
-                *(frame_globals_ubo.allocation_info.mapped_data as *mut FrameGlobals) =
+                *(frame_globals_ubo.get_allocation_info().mapped_data as *mut FrameGlobals) =
                     FrameGlobals { view, proj };
             }
 
@@ -434,7 +434,7 @@ impl SpriteDatabase {
         let instance_records_slice: &mut [InstanceRecord] = unsafe {
             slice::from_raw_parts_mut(
                 self.instance_records_ssbos[current_frame]
-                    .allocation_info
+                    .get_allocation_info()
                     .mapped_data as *mut InstanceRecord,
                 self.ci.max_sprites as usize,
             )
@@ -451,25 +451,26 @@ impl SpriteDatabase {
         self.occupancy += 1;
     }
 
-    // TODO: Handle errors
-    pub fn upload_texture(&mut self, texture_file: &str) {
+    pub fn upload_texture(&mut self, texture_file: &str) -> Result<(), VulkanError> {
         // Only do this if the ammount of stored image records < database capacity
         if self.uploaded_textures.len() == self.ci.max_sprites as usize {
             log::warn!("Unable to upload new texture to full database. Ignoring request");
-            return;
+            return Ok(());
         }
 
         // Read image file and metadata
-        let file = File::open(texture_file).unwrap();
+        let file = File::open(texture_file).map_err(|e| VulkanError::TextureIOError(e))?;
         let buf_reader = BufReader::new(file);
 
         let decoder = png::Decoder::new(buf_reader);
-        let mut reader = decoder.read_info().unwrap();
+        let mut reader = decoder
+            .read_info()
+            .map_err(|e| VulkanError::TextureDecodingError(e))?;
 
         let image_size = reader.output_buffer_size().unwrap();
 
         // Create CPU buffer
-        let mut cpu_buffer = {
+        let cpu_buffer = {
             let bci = vk::BufferCreateInfo::default()
                 .size(image_size as u64)
                 .usage(vk::BufferUsageFlags::TRANSFER_SRC);
@@ -481,170 +482,42 @@ impl SpriteDatabase {
                 ..Default::default()
             };
 
-            self.context.borrow().create_buffer(&bci, &bai).unwrap()
-        };
+            Buffer::new(self.context.clone(), &bci, &bai)
+        }?;
 
         let cpu_buffer_slice: &mut [u8] = unsafe {
             slice::from_raw_parts_mut(
-                cpu_buffer.allocation_info.mapped_data as *mut u8,
+                cpu_buffer.get_allocation_info().mapped_data as *mut u8,
                 image_size,
             )
         };
 
         // Read image into CPU buffer
-        let read_info = reader.next_frame(cpu_buffer_slice).unwrap();
+        let read_info = reader
+            .next_frame(cpu_buffer_slice)
+            .map_err(|e| VulkanError::TextureDecodingError(e))?;
 
         assert!(read_info.buffer_size() == image_size);
 
-        // Allocate GPU image
-        let (gpu_image, gpu_image_extent, gpu_image_sr) = {
-            let extent = vk::Extent3D {
-                width: read_info.width,
-                height: read_info.height,
-                depth: 1,
-            };
-
-            let format = match read_info.bit_depth {
-                png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
-                png::BitDepth::Sixteen => vk::Format::R16G16B16A16_UNORM,
-                _ => vk::Format::R8G8B8A8_UNORM, // TODO: Error, unsupported format
-            };
-
-            let image_ci = vk::ImageCreateInfo {
-                image_type: vk::ImageType::TYPE_2D,
-                format: format,
-                extent: extent,
-                mip_levels: 1,
-                array_layers: 1,
-                samples: vk::SampleCountFlags::TYPE_1,
-                tiling: vk::ImageTiling::OPTIMAL,
-                usage: vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED,
-                initial_layout: vk::ImageLayout::UNDEFINED,
-                ..Default::default()
-            };
-
-            let alloc_ci = vk_mem::AllocationCreateInfo {
-                usage: vk_mem::MemoryUsage::Auto,
-                ..Default::default()
-            };
-
-            let (image, image_memory) = unsafe {
-                self.context
-                    .borrow()
-                    .memory_allocator
-                    .create_image(&image_ci, &alloc_ci)
-                    .map_err(|e| VulkanError::DepthImageCreationError(e))
-                    .unwrap()
-            };
-
-            let sr = vk::ImageSubresourceRange {
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-                ..Default::default()
-            };
-
-            let ivci = vk::ImageViewCreateInfo {
-                view_type: vk::ImageViewType::TYPE_2D,
-                format: format,
-                subresource_range: sr,
-                image: image,
-                ..Default::default()
-            };
-
-            let image_view = unsafe {
-                self.context
-                    .borrow()
-                    .device
-                    .create_image_view(&ivci, None)
-                    .map_err(|e| VulkanError::SwapchainCreationError(e))
-                    .unwrap()
-            };
-
-            (
-                AllocatedImage {
-                    image,
-                    image_view,
-                    image_memory,
-                },
-                extent,
-                sr,
-            )
+        // Allocate GPU texture
+        let format = match read_info.bit_depth {
+            png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
+            png::BitDepth::Sixteen => vk::Format::R16G16B16A16_UNORM,
+            other => return Err(VulkanError::UnsupportedTextureBitDepth(other)),
         };
 
+        let texture = Texture::new(
+            self.context.clone(),
+            read_info.width,
+            read_info.height,
+            format,
+        )?;
+
         // Submit CPU to GPU buffer copy command
-        self.context.borrow().cmd_immediate_begin().unwrap();
-
-        {
-            let barrier_1 = [vk::ImageMemoryBarrier2::default()
-                .src_stage_mask(vk::PipelineStageFlags2::TOP_OF_PIPE)
-                .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
-                .dst_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
-                .old_layout(vk::ImageLayout::UNDEFINED)
-                .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-                .image(gpu_image.image)
-                .subresource_range(gpu_image_sr)];
-
-            let dep_info_1 = vk::DependencyInfo::default().image_memory_barriers(&barrier_1);
-
-            let barrier_2 = [vk::ImageMemoryBarrier2::default()
-                .src_stage_mask(vk::PipelineStageFlags2::TRANSFER)
-                .src_access_mask(vk::AccessFlags2::TRANSFER_WRITE)
-                .dst_stage_mask(vk::PipelineStageFlags2::FRAGMENT_SHADER)
-                .dst_access_mask(vk::AccessFlags2::SHADER_READ)
-                .old_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-                .new_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-                .image(gpu_image.image)
-                .subresource_range(gpu_image_sr)];
-
-            let dep_info_2 = vk::DependencyInfo::default().image_memory_barriers(&barrier_2);
-
-            let cmd_buffer = self.context.borrow().immediate_command_buffer;
-
-            let sr_layers = vk::ImageSubresourceLayers::default()
-                .aspect_mask(gpu_image_sr.aspect_mask)
-                .mip_level(gpu_image_sr.base_mip_level)
-                .base_array_layer(gpu_image_sr.base_array_layer)
-                .layer_count(gpu_image_sr.layer_count);
-
-            let copy_region = [vk::BufferImageCopy::default()
-                .buffer_offset(0)
-                .buffer_row_length(0)
-                .buffer_image_height(0)
-                .image_subresource(sr_layers)
-                .image_extent(gpu_image_extent)];
-
-            unsafe {
-                self.context
-                    .borrow()
-                    .device
-                    .cmd_pipeline_barrier2(cmd_buffer, &dep_info_1);
-
-                self.context.borrow().device.cmd_copy_buffer_to_image(
-                    cmd_buffer,
-                    cpu_buffer.buffer,
-                    gpu_image.image,
-                    vk::ImageLayout::TRANSFER_DST_OPTIMAL,
-                    &copy_region,
-                );
-
-                self.context
-                    .borrow()
-                    .device
-                    .cmd_pipeline_barrier2(cmd_buffer, &dep_info_2);
-            }
-        }
-
-        self.context.borrow().cmd_immediate_end().unwrap();
-        self.context.borrow().cmd_immediate_submit().unwrap();
-
-        // Free CPU buffer
-        self.context.borrow().destroy_buffer(&mut cpu_buffer);
+        texture.immediate_upload_from_buffer(&cpu_buffer)?;
 
         // Add GPU image record to database so it can be freed later
-        self.uploaded_textures.push(gpu_image);
+        self.uploaded_textures.push(texture);
 
         // Update texture descriptor.
         // TODO: Do this somewhere else?
@@ -654,7 +527,7 @@ impl SpriteDatabase {
             for texture in &self.uploaded_textures {
                 si.push(
                     vk::DescriptorImageInfo::default()
-                        .image_view(texture.image_view)
+                        .image_view(texture.get_image_view())
                         .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL),
                 )
             }
@@ -673,6 +546,8 @@ impl SpriteDatabase {
                     .update_descriptor_sets(&dsw, &[])
             };
         }
+
+        Ok(())
     }
 
     pub fn draw(&mut self) {
@@ -722,20 +597,6 @@ impl Drop for SpriteDatabase {
     fn drop(&mut self) {
         log::debug!("Destroying sprite database");
 
-        unsafe {
-            for texture in &mut self.uploaded_textures {
-                self.context
-                    .borrow()
-                    .device
-                    .destroy_image_view(texture.image_view, None);
-
-                self.context
-                    .borrow()
-                    .memory_allocator
-                    .destroy_image(texture.image, &mut texture.image_memory);
-            }
-        };
-
         self.context.borrow().destroy_pipeline(self.pipeline);
 
         unsafe {
@@ -764,14 +625,6 @@ impl Drop for SpriteDatabase {
                 .device
                 .destroy_sampler(self.texture_sampler, None);
         }
-
-        for buffer in &mut self.instance_records_ssbos {
-            self.context.borrow().destroy_buffer(buffer);
-        }
-
-        self.context
-            .borrow()
-            .destroy_buffer(&mut self.frame_globals_ubo);
     }
 }
 
