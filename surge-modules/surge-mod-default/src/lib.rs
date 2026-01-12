@@ -26,7 +26,7 @@ impl SurgeApp for AppDefault {
         let mut aii = InstanceInfo {
             position: Vector2::from_element(0.0),
             scale: Vector2::from_element(100.0),
-            z: 0.0,
+            z: 0.5,
             texture_id: 0,
             color_multiplier: Vector4::from_element(1.0),
         };
@@ -34,7 +34,7 @@ impl SurgeApp for AppDefault {
 
         aii.position = Vector2::new(50.0, 0.0);
         aii.color_multiplier = Vector4::new(1.0, 0.0, 0.0, 1.0);
-        aii.z = 0.5;
+        aii.z = 0.0;
         spdb.add_instance(&aii);
 
         // Test alpha blending
