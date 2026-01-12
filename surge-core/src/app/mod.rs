@@ -50,7 +50,7 @@ pub fn load_from_dylib(dylib_folder: &str, dylib_name: &str) -> Result<LoadedApp
     let app_path_string = {
         #[cfg(target_os = "windows")]
         {
-            format!("{}\\{}.dll", module_folder, app_name)
+            format!("{}\\{}.dll", dylib_folder, dylib_name)
         }
         #[cfg(target_os = "linux")]
         {
