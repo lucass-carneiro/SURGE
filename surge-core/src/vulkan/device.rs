@@ -29,7 +29,8 @@ fn device_has_required_features(
         instance.get_physical_device_features2(physical_device, &mut features2);
     }
 
-    features12.buffer_device_address == vk::TRUE
+    features2.features.sampler_anisotropy == vk::TRUE
+        && features12.buffer_device_address == vk::TRUE
         && features12.descriptor_indexing == vk::TRUE
         && features12.shader_sampled_image_array_non_uniform_indexing == vk::TRUE
         && features12.runtime_descriptor_array == vk::TRUE
@@ -227,7 +228,10 @@ pub(super) fn create_logical_device(
         .descriptor_binding_variable_descriptor_count(true)
         .descriptor_binding_partially_bound(true);
 
+    let features = vk::PhysicalDeviceFeatures::default().sampler_anisotropy(true);
+
     let mut features2 = vk::PhysicalDeviceFeatures2::default()
+        .features(features)
         .push_next(&mut features12)
         .push_next(&mut features13);
 

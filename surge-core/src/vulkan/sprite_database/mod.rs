@@ -23,10 +23,30 @@ impl BlendingMode {
     }
 }
 
+/// Texture filtering modes
+#[derive(Debug)]
+pub enum TextureFilteringMode {
+    Nearest,
+    Linear,
+}
+
+/// Texture anisotropic  filtering level
+#[derive(Debug)]
+pub enum TextureFilteringLevel {
+    X0 = 0,
+    X1 = 1,
+    X2 = 2,
+    X4 = 4,
+    X8 = 8,
+    X16 = 16,
+}
+
 /// Controls database creation
 #[derive(Debug)]
 pub struct CreateInfo {
     pub blending_mode: BlendingMode,
+    pub texture_filtering_mode: TextureFilteringMode,
+    pub texture_filtering_level: TextureFilteringLevel,
     pub max_sprites: u32,
     pub window_width: f32,
     pub window_height: f32,
@@ -171,9 +191,30 @@ impl SpriteDatabase {
         // Texture sampler
         // TODO: Texture filtering and mip maps
         let texture_sampler = {
-            let sci = vk::SamplerCreateInfo::default()
-                .mag_filter(vk::Filter::NEAREST)
-                .min_filter(vk::Filter::NEAREST);
+            let mut sci = vk::SamplerCreateInfo::default()
+                .address_mode_u(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+                .address_mode_v(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+                .address_mode_w(vk::SamplerAddressMode::CLAMP_TO_BORDER)
+                .border_color(vk::BorderColor::FLOAT_TRANSPARENT_BLACK)
+                .anisotropy_enable(true);
+
+            sci = match ci.texture_filtering_mode {
+                TextureFilteringMode::Nearest => sci
+                    .min_filter(vk::Filter::NEAREST)
+                    .mag_filter(vk::Filter::NEAREST),
+                TextureFilteringMode::Linear => sci
+                    .min_filter(vk::Filter::LINEAR)
+                    .mag_filter(vk::Filter::LINEAR),
+            };
+
+            sci = match ci.texture_filtering_level {
+                TextureFilteringLevel::X0 => sci.anisotropy_enable(false),
+                TextureFilteringLevel::X1 => sci.max_anisotropy(1.0),
+                TextureFilteringLevel::X2 => sci.max_anisotropy(2.0),
+                TextureFilteringLevel::X4 => sci.max_anisotropy(4.0),
+                TextureFilteringLevel::X8 => sci.max_anisotropy(8.0),
+                TextureFilteringLevel::X16 => sci.max_anisotropy(16.0),
+            };
 
             unsafe {
                 context
@@ -383,17 +424,22 @@ impl SpriteDatabase {
                 .borrow()
                 .load_shader_module("shaders/sprite.frag.spv")?;
 
-            let pb = GraphicsPipelineBuilder::default()
+            let mut pb = GraphicsPipelineBuilder::default()
                 .set_layout(pipeline_layout)
                 .set_shaders(vert_shader, frag_shader)
                 .set_input_topology(vk::PrimitiveTopology::TRIANGLE_LIST)
                 .set_polygon_mode(vk::PolygonMode::FILL)
                 .set_cull_mode(vk::CullModeFlags::NONE, vk::FrontFace::CLOCKWISE)
-                .set_multisampling_none()
-                .set_blending_alpha() // TODO: take this from creation info
+                .set_multisampling_none() // TODO: Enable multisampling
                 .set_depth_test_enabled(true, vk::CompareOp::GREATER_OR_EQUAL)
                 .set_color_attachment_format(context.borrow().swapchain_data.format)
                 .set_depth_format(DPETH_FORMAT);
+
+            pb = match ci.blending_mode {
+                BlendingMode::None => pb.set_blending_none(),
+                BlendingMode::Additive => pb.set_blending_additive(),
+                BlendingMode::Alpha => pb.set_blending_alpha(),
+            };
 
             let pipeline = context.borrow().create_graphics_pipeline(pb)?;
 
@@ -516,7 +562,7 @@ impl SpriteDatabase {
         // Submit CPU to GPU buffer copy command
         texture.immediate_upload_from_buffer(&cpu_buffer)?;
 
-        // Add GPU image record to database so it can be freed later
+        // Add GPU image record to database
         self.uploaded_textures.push(texture);
 
         // Update texture descriptor.

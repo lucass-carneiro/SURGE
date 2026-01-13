@@ -160,6 +160,8 @@ impl ApplicationHandler for SurgeContext {
                             self.vulkan_context.as_ref().unwrap().clone(),
                             spd::CreateInfo {
                                 blending_mode: spd::BlendingMode::Alpha,
+                                texture_filtering_mode: spd::TextureFilteringMode::Linear,
+                                texture_filtering_level: spd::TextureFilteringLevel::X4,
                                 max_sprites: 32,
                                 window_width: self.engine_config.resolution.width as f32,
                                 window_height: self.engine_config.resolution.height as f32,
