@@ -18,7 +18,8 @@ impl SurgeApp for AppDefault {
         surge_core::cli::init_env_logger();
         log::info!("Default app startup");
 
-        spd.upload_texture("awesomeface.png").unwrap();
+        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
+            .unwrap();
     }
 
     fn update(&self, _: f32, spdb: &mut SpriteDatabase) {

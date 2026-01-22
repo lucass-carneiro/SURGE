@@ -3,4 +3,3 @@ target
 staging-*
 config.toml
 *.spv
-*.png
