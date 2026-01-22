@@ -9,7 +9,6 @@ use toml;
 pub struct WindowConfig {
     pub name: String,
     pub windowed: bool,
-    pub allow_resizes: bool,
 }
 
 #[derive(Debug, Deserialize)]

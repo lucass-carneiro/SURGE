@@ -45,7 +45,7 @@ struct SwapchainData {
 const DPETH_FORMAT: vk::Format = vk::Format::D32_SFLOAT;
 
 pub struct VulkanContext {
-    entry: ash::Entry,
+    _entry: ash::Entry,
     instance: ash::Instance,
     #[cfg(feature = "validation_layers")]
     debug_utils: ext::debug_utils::Instance,
@@ -57,10 +57,7 @@ pub struct VulkanContext {
 
     device: ash::Device,
 
-    indices: QueueFamilyIndices,
     graphics_queue: vk::Queue,
-    compute_queue: vk::Queue,
-    transfer_queue: vk::Queue,
 
     surface: khr::surface::Instance,
     surface_khr: vk::SurfaceKHR,

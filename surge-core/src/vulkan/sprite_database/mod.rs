@@ -65,8 +65,8 @@ pub struct InstanceInfo {
 /// Data shared across all sprite instances in a frame.
 /// Provided via UBO.
 struct FrameGlobals {
-    view: nalgebra::Matrix4<f32>,
-    proj: nalgebra::Matrix4<f32>,
+    _view: nalgebra::Matrix4<f32>,
+    _proj: nalgebra::Matrix4<f32>,
 }
 
 const FRAME_GLOBALS_STRUCT_SIZE: u64 = size_of::<FrameGlobals>() as u64;
@@ -77,9 +77,9 @@ const FRAME_GLOBALS_STRUCT_SIZE: u64 = size_of::<FrameGlobals>() as u64;
 /// Indexed by gl_InstanceID (or equivalent)
 #[repr(align(16))]
 struct InstanceRecord {
-    model: nalgebra::Matrix4<f32>,
-    color: nalgebra::Vector4<f32>,
-    material_id: u32,
+    _model: nalgebra::Matrix4<f32>,
+    _color: nalgebra::Vector4<f32>,
+    _material_id: u32,
 }
 
 const INSTANCE_RECORD_STRUCT_SIZE: u64 = size_of::<InstanceRecord>() as u64;
@@ -103,7 +103,7 @@ pub struct SpriteDatabase {
     occupancy: u32,
 
     /// UBO storing frame global data (see FrameGlobals)
-    frame_globals_ubo: Buffer,
+    _frame_globals_ubo: Buffer,
 
     /// SSBO storing instance data (see InstanceRecord)
     /// We need to make sure that we don't write to a buffer
@@ -372,7 +372,10 @@ impl SpriteDatabase {
 
             unsafe {
                 *(frame_globals_ubo.get_allocation_info().mapped_data as *mut FrameGlobals) =
-                    FrameGlobals { view, proj };
+                    FrameGlobals {
+                        _view: view,
+                        _proj: proj,
+                    };
             }
 
             unsafe { context.borrow().device.update_descriptor_sets(&dsw, &[]) };
@@ -453,7 +456,7 @@ impl SpriteDatabase {
             context,
             ci,
             occupancy: 0,
-            frame_globals_ubo,
+            _frame_globals_ubo: frame_globals_ubo,
             instance_records_ssbos,
             instance_records_ssbo_addresses,
             texture_sampler,
@@ -487,9 +490,9 @@ impl SpriteDatabase {
         };
 
         let record = InstanceRecord {
-            model: make_model_matrix(aii.position, aii.scale, aii.z),
-            color: aii.color_multiplier,
-            material_id: 0,
+            _model: make_model_matrix(aii.position, aii.scale, aii.z),
+            _color: aii.color_multiplier,
+            _material_id: 0,
         };
 
         instance_records_slice[self.occupancy as usize] = record;

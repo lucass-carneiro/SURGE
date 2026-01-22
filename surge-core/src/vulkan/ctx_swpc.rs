@@ -3,10 +3,7 @@ use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;
 
 impl VulkanContext {
-    pub fn request_swpc_img(
-        &mut self,
-        config: &EngineConfig,
-    ) -> Result<SwapchainImageData, VulkanError> {
+    pub fn request_swpc_img(&mut self) -> Result<SwapchainImageData, VulkanError> {
         let timeout = 1000000000;
 
         // Wait frame fences
@@ -31,12 +28,6 @@ impl VulkanContext {
 
         let swpc_img_data = SwapchainImageData { index, suboptimal };
 
-        // Only reset the fence if we are submitting work
-        if swpc_img_data.suboptimal {
-            self.recreate_swapchain(&config)?;
-            return Ok(swpc_img_data);
-        }
-
         unsafe {
             self.device
                 .reset_fences(&[self.frame_fences[self.current_frame]])
@@ -49,7 +40,6 @@ impl VulkanContext {
     pub fn present_swpc(
         &mut self,
         swpc_img_data: &mut SwapchainImageData,
-        config: &EngineConfig,
     ) -> Result<(), VulkanError> {
         let pi = vk::PresentInfoKHR {
             wait_semaphore_count: 1,
@@ -66,10 +56,6 @@ impl VulkanContext {
                 .queue_present(self.graphics_queue, &pi)
                 .map_err(|e| VulkanError::SwapchainPresentError(self.current_frame, e))
         }?;
-
-        if swpc_img_data.suboptimal {
-            self.recreate_swapchain(config)?;
-        }
 
         self.semaphore_index = (self.semaphore_index + 1) % self.present_completed_sem.len();
         self.current_frame = (self.current_frame + 1) % FRAMES_IN_FLIGHT;

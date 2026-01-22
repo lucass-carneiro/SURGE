@@ -22,6 +22,7 @@ struct SurgeContext {
     frame_timer: Instant,
     previous_dt: f32,
     pause_rendering: bool,
+    recreate_swapchain: bool,
 }
 
 impl ApplicationHandler for SurgeContext {
@@ -45,18 +46,26 @@ impl ApplicationHandler for SurgeContext {
         self.previous_dt = dt_timer.elapsed().as_secs_f32();
 
         // Acquire swapchain image
+        if self.recreate_swapchain {
+            self.vulkan_context
+                .as_mut()
+                .unwrap()
+                .borrow_mut()
+                .recreate_swapchain(&self.engine_config)
+                .unwrap();
+
+            self.recreate_swapchain = false;
+        }
+
         let mut swpc_img_data = self
             .vulkan_context
             .as_mut()
             .unwrap()
             .borrow_mut()
-            .request_swpc_img(&self.engine_config)
+            .request_swpc_img()
             .unwrap();
 
-        if swpc_img_data.suboptimal {
-            log::info!("Frame skipped due to suboptimal swapchain");
-            return;
-        }
+        self.recreate_swapchain = swpc_img_data.suboptimal;
 
         // Begin command recording
         self.vulkan_context
@@ -107,7 +116,7 @@ impl ApplicationHandler for SurgeContext {
             .as_ref()
             .unwrap()
             .borrow_mut()
-            .present_swpc(&mut swpc_img_data, &self.engine_config)
+            .present_swpc(&mut swpc_img_data)
             .unwrap();
 
         // Refresh HR key state
@@ -139,7 +148,7 @@ impl ApplicationHandler for SurgeContext {
                 } else {
                     Some(Fullscreen::Borderless(primary_monitor_handle))
                 })
-                .with_resizable(self.engine_config.window.allow_resizes)
+                .with_resizable(false)
                 .with_inner_size(PhysicalSize::new(
                     self.engine_config.resolution.width,
                     self.engine_config.resolution.height,
@@ -212,11 +221,24 @@ impl ApplicationHandler for SurgeContext {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
-            WindowEvent::Occluded(o) => {
-                self.pause_rendering = o;
-            }
             WindowEvent::Resized(size) => {
-                if size.width == 0 && size.height == 0 {
+                if size.width == 0 || size.height == 0 {
+                    self.pause_rendering = true;
+                } else if size.width != self.engine_config.resolution.width
+                    || size.height != self.engine_config.resolution.height
+                {
+                    self.engine_config.resolution.width = size.width;
+                    self.engine_config.resolution.height = size.width;
+                    self.recreate_swapchain = true;
+                }
+            }
+            WindowEvent::Focused(true) => {
+                if self.pause_rendering {
+                    self.pause_rendering = false;
+                }
+            }
+            WindowEvent::Focused(false) => {
+                if !self.pause_rendering {
                     self.pause_rendering = true;
                 }
             }
@@ -287,6 +309,7 @@ pub fn main() {
         frame_timer: Instant::now(),
         previous_dt: 0.0,
         pause_rendering: false,
+        recreate_swapchain: false,
     };
 
     /*************

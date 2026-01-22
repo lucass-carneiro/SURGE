@@ -71,7 +71,7 @@ impl VulkanContext {
 
         let physical_device = device::select_physical_device(&instance)?;
 
-        let (device, graphics_queue, compute_queue, transfer_queue) =
+        let (device, graphics_queue, _compute_queue, _transfer_queue) =
             device::create_logical_device(&instance, physical_device)?;
 
         let surface_loader = khr::surface::Instance::new(&entry, &instance);
@@ -133,7 +133,7 @@ impl VulkanContext {
         log::info!("Vulkan context created");
 
         Ok(Self {
-            entry,
+            _entry: entry,
             instance,
             #[cfg(feature = "validation_layers")]
             debug_utils,
@@ -141,10 +141,7 @@ impl VulkanContext {
             debug_messenger,
             physical_device,
             device,
-            indices,
             graphics_queue,
-            compute_queue,
-            transfer_queue,
             surface: surface_loader,
             surface_khr,
             swapchain_data,
