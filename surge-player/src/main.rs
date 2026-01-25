@@ -38,14 +38,7 @@ impl ApplicationHandler for SurgeContext {
             return;
         }
 
-        // Handle hot reloading
-        // Call startup app update
-        let dt_timer = Instant::now();
-        self.startup_app
-            .update(self.previous_dt, self.sprite_database.as_mut().unwrap());
-        self.previous_dt = dt_timer.elapsed().as_secs_f32();
-
-        // Acquire swapchain image
+        // Reinitialize if necessary
         if self.recreate_swapchain {
             self.vulkan_context
                 .as_mut()
@@ -54,9 +47,35 @@ impl ApplicationHandler for SurgeContext {
                 .recreate_swapchain(&self.engine_config)
                 .unwrap();
 
+            self.sprite_database = Some(
+                spd::SpriteDatabase::new(
+                    self.vulkan_context.as_ref().unwrap().clone(),
+                    spd::CreateInfo {
+                        blending_mode: spd::BlendingMode::Alpha,
+                        texture_filtering_mode: spd::TextureFilteringMode::Linear,
+                        texture_filtering_level: spd::TextureFilteringLevel::X4,
+                        max_sprites: 32,
+                        window_width: self.engine_config.resolution.width as f32,
+                        window_height: self.engine_config.resolution.height as f32,
+                    },
+                )
+                .unwrap(),
+            );
+
+            self.startup_app
+                .on_swapchain_recreate(self.sprite_database.as_mut().unwrap());
+
             self.recreate_swapchain = false;
         }
 
+        // Handle hot reloading
+        // Call startup app update
+        let dt_timer = Instant::now();
+        self.startup_app
+            .update(self.previous_dt, self.sprite_database.as_mut().unwrap());
+        self.previous_dt = dt_timer.elapsed().as_secs_f32();
+
+        // Acquire swapchain image
         let mut swpc_img_data = self
             .vulkan_context
             .as_mut()
@@ -222,13 +241,21 @@ impl ApplicationHandler for SurgeContext {
                 event_loop.exit();
             }
             WindowEvent::Resized(size) => {
+                log::info!(
+                    "Resizing window ({},{}) -> ({},{})",
+                    self.engine_config.resolution.width,
+                    self.engine_config.resolution.height,
+                    size.width,
+                    size.height
+                );
+
                 if size.width == 0 || size.height == 0 {
                     self.pause_rendering = true;
                 } else if size.width != self.engine_config.resolution.width
                     || size.height != self.engine_config.resolution.height
                 {
                     self.engine_config.resolution.width = size.width;
-                    self.engine_config.resolution.height = size.width;
+                    self.engine_config.resolution.height = size.height;
                     self.recreate_swapchain = true;
                 }
             }

@@ -22,6 +22,11 @@ impl SurgeApp for AppDefault {
             .unwrap();
     }
 
+    fn on_swapchain_recreate(&self, spd: &mut SpriteDatabase) {
+        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
+            .unwrap();
+    }
+
     fn update(&self, _: f32, spdb: &mut SpriteDatabase) {
         // Test depth buffer
         let mut aii = InstanceInfo {

@@ -27,6 +27,9 @@ pub trait SurgeApp {
     /// Called when the application starts
     fn on_load(&self, _: &mut SpriteDatabase) {}
 
+    /// Called if the swapchain is recreated
+    fn on_swapchain_recreate(&self, _: &mut SpriteDatabase) {}
+
     /// Update application state
     fn update(&self, _: f32, _: &mut SpriteDatabase) {}
 
