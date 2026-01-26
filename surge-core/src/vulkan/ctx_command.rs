@@ -3,6 +3,42 @@ use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;
 
 impl VulkanContext {
+    fn cmd_transition_depth_image(&self) {
+        let subresource_range = vk::ImageSubresourceRange {
+            aspect_mask: vk::ImageAspectFlags::DEPTH,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+            ..Default::default()
+        };
+
+        let barrier = vk::ImageMemoryBarrier2 {
+            src_access_mask: vk::AccessFlags2::DEPTH_STENCIL_ATTACHMENT_WRITE,
+            dst_access_mask: vk::AccessFlags2::DEPTH_STENCIL_ATTACHMENT_WRITE,
+            src_stage_mask: vk::PipelineStageFlags2::EARLY_FRAGMENT_TESTS
+                | vk::PipelineStageFlags2::LATE_FRAGMENT_TESTS,
+            dst_stage_mask: vk::PipelineStageFlags2::EARLY_FRAGMENT_TESTS
+                | vk::PipelineStageFlags2::LATE_FRAGMENT_TESTS,
+            old_layout: vk::ImageLayout::UNDEFINED,
+            new_layout: vk::ImageLayout::DEPTH_ATTACHMENT_OPTIMAL,
+            image: self.depth_image.image,
+            subresource_range: subresource_range,
+            ..Default::default()
+        };
+
+        let dependency_info = vk::DependencyInfo {
+            image_memory_barrier_count: 1,
+            p_image_memory_barriers: &barrier,
+            ..Default::default()
+        };
+
+        unsafe {
+            self.device
+                .cmd_pipeline_barrier2(self.command_buffers[self.current_frame], &dependency_info)
+        }
+    }
+
     fn cmd_transition_swpc_image_layout(&self, ti: SwpcLayoutTransitionInfo) {
         let subresource_range = vk::ImageSubresourceRange {
             aspect_mask: vk::ImageAspectFlags::COLOR,
@@ -72,6 +108,7 @@ impl VulkanContext {
         };
 
         self.cmd_transition_swpc_image_layout(swpc_ti);
+        self.cmd_transition_depth_image();
 
         Ok(())
     }
