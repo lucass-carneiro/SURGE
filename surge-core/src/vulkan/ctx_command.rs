@@ -233,14 +233,16 @@ impl VulkanContext {
     }
 
     pub fn cmd_submit(&self) -> Result<(), VulkanError> {
+        // present_completed_sem is indexed by frame (short lifetime, within same frame)
+        // render_finished_sem is indexed by image (held by presentation engine until image re-acquired)
         let si = vk::SubmitInfo {
             wait_semaphore_count: 1,
-            p_wait_semaphores: &self.present_completed_sem[self.semaphore_index],
+            p_wait_semaphores: &self.present_completed_sem[self.current_frame],
             p_wait_dst_stage_mask: &vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT,
             command_buffer_count: 1,
             p_command_buffers: &self.command_buffers[self.current_frame],
             signal_semaphore_count: 1,
-            p_signal_semaphores: &self.render_finished_sem[self.semaphore_index],
+            p_signal_semaphores: &self.render_finished_sem[self.current_image_index],
             ..Default::default()
         };
 

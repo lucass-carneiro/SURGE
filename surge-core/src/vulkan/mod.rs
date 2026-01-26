@@ -74,7 +74,7 @@ pub struct VulkanContext {
     frame_fences: Vec<vk::Fence>,
 
     current_frame: usize,
-    semaphore_index: usize,
+    current_image_index: usize,
 }
 
 mod buffer;

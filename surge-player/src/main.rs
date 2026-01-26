@@ -250,6 +250,7 @@ impl ApplicationHandler for SurgeContext {
                 );
 
                 if size.width == 0 || size.height == 0 {
+                    log::info!("Pausing");
                     self.pause_rendering = true;
                 } else if size.width != self.engine_config.resolution.width
                     || size.height != self.engine_config.resolution.height
@@ -261,11 +262,13 @@ impl ApplicationHandler for SurgeContext {
             }
             WindowEvent::Focused(true) => {
                 if self.pause_rendering {
+                    log::info!("Resuming");
                     self.pause_rendering = false;
                 }
             }
             WindowEvent::Focused(false) => {
                 if !self.pause_rendering {
+                    log::info!("Pausing");
                     self.pause_rendering = true;
                 }
             }

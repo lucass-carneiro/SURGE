@@ -36,12 +36,12 @@ pub(super) fn create_command_buffers(
 
 pub(super) fn create_semaphores(
     device: &ash::Device,
-    swpc_images: usize,
+    count: usize,
 ) -> Result<Vec<vk::Semaphore>, VulkanError> {
     let mut semaphores = Vec::new();
     let create_info = vk::SemaphoreCreateInfo::default();
 
-    for _ in 0..swpc_images {
+    for _ in 0..count {
         let semaphore = unsafe {
             device
                 .create_semaphore(&create_info, None)
