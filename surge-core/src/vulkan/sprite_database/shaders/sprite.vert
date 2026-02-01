@@ -26,14 +26,14 @@ layout(location = 1) out vec4 color;
 layout(location = 2) flat out uint material;
 
 vec2 get_subtexture_uv(vec2 original_uv, vec4 subtexture_data) {
-    vec3 extented_uv = vec3(original_uv, 1.0);
+    const vec3 extented_uv = vec3(original_uv, 1.0);
 
-    float sw_ow = subtexture_data[0];
-    float sh_oh = subtexture_data[1];
-    float sx_ow = subtexture_data[2];
-    float sy_oh = subtexture_data[3];
+    const float sw_ow = subtexture_data[0];
+    const float sh_oh = subtexture_data[1];
+    const float sx_ow = subtexture_data[2];
+    const float sy_oh = subtexture_data[3];
 
-    mat3 subtexture_matrix = mat3(
+    const mat3 subtexture_matrix = mat3(
         sw_ow, 0.0  , 0.0,
         0.0  , sh_oh, 0.0,
         sx_ow, sy_oh, 1.0
