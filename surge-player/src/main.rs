@@ -20,7 +20,7 @@ struct SurgeContext {
     engine_config: sc::config::EngineConfig,
     startup_app: sc::app::LoadedApp,
     frame_timer: Instant,
-    previous_dt: f32,
+    last_update_call_timer: Instant,
     pause_rendering: bool,
     recreate_swapchain: bool,
 }
@@ -70,10 +70,10 @@ impl ApplicationHandler for SurgeContext {
 
         // Handle hot reloading
         // Call startup app update
-        let dt_timer = Instant::now();
+        let dt = self.last_update_call_timer.elapsed().as_secs_f32();
         self.startup_app
-            .update(self.previous_dt, self.sprite_database.as_mut().unwrap());
-        self.previous_dt = dt_timer.elapsed().as_secs_f32();
+            .update(dt, self.sprite_database.as_mut().unwrap());
+        self.last_update_call_timer = Instant::now();
 
         // Acquire swapchain image
         let mut swpc_img_data = self
@@ -337,7 +337,7 @@ pub fn main() {
         engine_config,
         startup_app,
         frame_timer: Instant::now(),
-        previous_dt: 0.0,
+        last_update_call_timer: Instant::now(),
         pause_rendering: false,
         recreate_swapchain: false,
     };
