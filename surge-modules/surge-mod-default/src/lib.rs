@@ -2,7 +2,7 @@ use log;
 use nalgebra::{Vector2, Vector4};
 use surge_core::{
     app::SurgeApp,
-    vulkan::sprite_database::{InstanceInfo, SpriteDatabase},
+    vulkan::sprite_database::{InstanceInfo, SpriteDatabase, SubTextureInfo},
 };
 use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
@@ -20,10 +20,16 @@ impl SurgeApp for AppDefault {
 
         spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
             .unwrap();
+
+        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeanim.png")
+            .unwrap();
     }
 
     fn on_swapchain_recreate(&self, spd: &mut SpriteDatabase) {
         spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
+            .unwrap();
+
+        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeanim.png")
             .unwrap();
     }
 
@@ -35,6 +41,7 @@ impl SurgeApp for AppDefault {
             z: 0.5,
             texture_id: 0,
             color_multiplier: Vector4::from_element(1.0),
+            subtexture_info: None,
         };
         spdb.add_instance(&aii);
 
@@ -67,6 +74,21 @@ impl SurgeApp for AppDefault {
         aii.color_multiplier = Vector4::from_element(1.0);
         aii.z = 0.0;
         spdb.add_instance(&aii);
+
+        // Test anim
+        let anim_ii = InstanceInfo {
+            position: Vector2::new(0.0, 300.0),
+            scale: Vector2::from_element(100.0),
+            z: 0.5,
+            texture_id: 1,
+            color_multiplier: Vector4::from_element(1.0),
+            subtexture_info: Some(
+                SubTextureInfo::default()
+                    .origin(nalgebra::Vector2::from_element(2))
+                    .extent(nalgebra::Vector2::from_element(498)),
+            ),
+        };
+        spdb.add_instance(&anim_ii);
     }
 
     fn keyboard_event(&self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {

@@ -1,6 +1,7 @@
 use super::VulkanContext;
 use crate::errors::VulkanError;
 use ash::vk;
+use std::ffi::CStr;
 use std::ptr::null;
 
 #[derive(Default)]
@@ -28,19 +29,21 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         mut self,
         vertex_shader: vk::ShaderModule,
         fragment_sader: vk::ShaderModule,
+        vertex_shader_name: &'a CStr,
+        fragmen_shader_name: &'a CStr,
     ) -> Self {
         // Vertex Shader
         let vs_info = vk::PipelineShaderStageCreateInfo::default()
             .stage(vk::ShaderStageFlags::VERTEX)
             .module(vertex_shader)
-            .name(c"main");
+            .name(vertex_shader_name);
         self.shader_stage_infos.push(vs_info);
 
         // Fragment Shader
         let fs_info = vk::PipelineShaderStageCreateInfo::default()
             .stage(vk::ShaderStageFlags::FRAGMENT)
             .module(fragment_sader)
-            .name(c"main");
+            .name(fragmen_shader_name);
         self.shader_stage_infos.push(fs_info);
         self
     }

@@ -20,16 +20,20 @@ fn device_has_required_features(
 ) -> bool {
     let mut features13 = vk::PhysicalDeviceVulkan13Features::default();
     let mut features12 = vk::PhysicalDeviceVulkan12Features::default();
+    let mut features11 = vk::PhysicalDeviceVulkan11Features::default();
+
+    features11.p_next = &mut features12 as *mut _ as *mut c_void;
     features12.p_next = &mut features13 as *mut _ as *mut c_void;
 
     let mut features2 = vk::PhysicalDeviceFeatures2::default();
-    features2.p_next = &mut features12 as *mut _ as *mut c_void;
+    features2.p_next = &mut features11 as *mut _ as *mut c_void;
 
     unsafe {
         instance.get_physical_device_features2(physical_device, &mut features2);
     }
 
     features2.features.sampler_anisotropy == vk::TRUE
+        && features2.features.shader_int64 == vk::TRUE
         && features12.buffer_device_address == vk::TRUE
         && features12.descriptor_indexing == vk::TRUE
         && features12.shader_sampled_image_array_non_uniform_indexing == vk::TRUE
@@ -228,10 +232,15 @@ pub(super) fn create_logical_device(
         .descriptor_binding_variable_descriptor_count(true)
         .descriptor_binding_partially_bound(true);
 
-    let features = vk::PhysicalDeviceFeatures::default().sampler_anisotropy(true);
+    let mut features11 = vk::PhysicalDeviceVulkan11Features::default().shader_draw_parameters(true);
+
+    let features = vk::PhysicalDeviceFeatures::default()
+        .sampler_anisotropy(true)
+        .shader_int64(true);
 
     let mut features2 = vk::PhysicalDeviceFeatures2::default()
         .features(features)
+        .push_next(&mut features11)
         .push_next(&mut features12)
         .push_next(&mut features13);
 

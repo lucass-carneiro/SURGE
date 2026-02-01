@@ -9,6 +9,7 @@ layout(set = 0, binding = 0) uniform FrameGlobals {
 struct InstanceRecord {
     mat4 model;
     vec4 color;
+    vec4 subtexture_data;
     uint material;
 };
 
@@ -23,6 +24,23 @@ layout(push_constant) uniform constants {
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec4 color;
 layout(location = 2) flat out uint material;
+
+vec2 get_subtexture_uv(vec2 original_uv, vec4 subtexture_data) {
+    vec3 extented_uv = vec3(original_uv, 1.0);
+
+    float sw_ow = subtexture_data[0];
+    float sh_oh = subtexture_data[1];
+    float sx_ow = subtexture_data[2];
+    float sy_oh = subtexture_data[3];
+
+    mat3 subtexture_matrix = mat3(
+        sw_ow, 0.0  , 0.0,
+        0.0  , sh_oh, 0.0,
+        sx_ow, sy_oh, 1.0
+    );
+
+    return (subtexture_matrix * extented_uv).xy;
+}
 
 void main() {
     // Base quad vertices
@@ -50,7 +68,7 @@ void main() {
     const InstanceRecord instance_record = PushConstants.instance_record_buffer.instance_records[gl_InstanceIndex];
 
     gl_Position = proj * view * instance_record.model * vec4(positions[gl_VertexIndex], 1.0f);
-    uv = uv_coordinates[gl_VertexIndex];
+    uv = get_subtexture_uv(uv_coordinates[gl_VertexIndex], instance_record.subtexture_data);
     color = instance_record.color;
     material = instance_record.material;
 }

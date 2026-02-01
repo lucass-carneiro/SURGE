@@ -52,6 +52,31 @@ pub struct CreateInfo {
     pub window_height: f32,
 }
 
+#[derive(Debug)]
+pub struct SubTextureInfo {
+    pub origin: nalgebra::Vector2<u32>,
+    pub extent: nalgebra::Vector2<u32>,
+}
+
+impl SubTextureInfo {
+    pub fn default() -> Self {
+        SubTextureInfo {
+            origin: nalgebra::Vector2::from_element(0),
+            extent: nalgebra::Vector2::from_element(0),
+        }
+    }
+
+    pub fn origin(mut self, origin: nalgebra::Vector2<u32>) -> Self {
+        self.origin = origin;
+        self
+    }
+
+    pub fn extent(mut self, extent: nalgebra::Vector2<u32>) -> Self {
+        self.extent = extent;
+        self
+    }
+}
+
 /// Specifies the parameters of an instance to be added to the database
 #[derive(Debug)]
 pub struct InstanceInfo {
@@ -60,6 +85,7 @@ pub struct InstanceInfo {
     pub z: f32,
     pub texture_id: usize,
     pub color_multiplier: nalgebra::Vector4<f32>,
+    pub subtexture_info: Option<SubTextureInfo>,
 }
 
 /// Data shared across all sprite instances in a frame.
@@ -79,6 +105,7 @@ const FRAME_GLOBALS_STRUCT_SIZE: u64 = size_of::<FrameGlobals>() as u64;
 struct InstanceRecord {
     _model: nalgebra::Matrix4<f32>,
     _color: nalgebra::Vector4<f32>,
+    _subtexture_data: nalgebra::Vector4<f32>,
     _material_id: u32,
 }
 
@@ -421,15 +448,15 @@ impl SpriteDatabase {
         let pipeline = {
             let vert_shader = context
                 .borrow()
-                .load_shader_module("shaders/sprite.vert.spv")?;
+                .load_shader_module("shaders/sprite_vert.spv")?;
 
             let frag_shader = context
                 .borrow()
-                .load_shader_module("shaders/sprite.frag.spv")?;
+                .load_shader_module("shaders/sprite_frag.spv")?;
 
             let mut pb = GraphicsPipelineBuilder::default()
                 .set_layout(pipeline_layout)
-                .set_shaders(vert_shader, frag_shader)
+                .set_shaders(vert_shader, frag_shader, c"main", c"main")
                 .set_input_topology(vk::PrimitiveTopology::TRIANGLE_LIST)
                 .set_polygon_mode(vk::PolygonMode::FILL)
                 .set_cull_mode(vk::CullModeFlags::NONE, vk::FrontFace::CLOCKWISE)
@@ -473,10 +500,46 @@ impl SpriteDatabase {
 
     /// Adds a sprite instance to the databse
     pub fn add_instance(&mut self, aii: &InstanceInfo) {
+        // Check if the database can fit a new instance
         if self.occupancy == self.ci.max_sprites {
             log::warn!("Unable to add new sprite instance to full database. Ignoring request");
             return;
         }
+
+        // If we are adding a subtexture instance, make sure that
+        // the subtexture can fit inside the main texture.
+        let subtexture_data = match &aii.subtexture_info {
+            Some(sti) => {
+                let o_extent = self.uploaded_textures[aii.texture_id].get_image_extent();
+                let ow = o_extent.width;
+                let oh = o_extent.height;
+
+                let sx = sti.origin[0];
+                let sy = sti.origin[1];
+                let sw = sti.extent[0];
+                let sh = sti.extent[1];
+
+                let x_fits = sx < ow && (sx + sw) < ow;
+                let y_fits = sy < oh && (sy + sh) < oh;
+                let subimage_fits = x_fits && y_fits;
+
+                if !subimage_fits {
+                    log::warn!(
+                        "Requested subtexture is not contained within the main texture. Drawing the whole texture instead."
+                    );
+
+                    nalgebra::Vector4::new(1.0f32, 1.0f32, 0.0f32, 0.0f32)
+                } else {
+                    nalgebra::Vector4::new(
+                        (sw as f32) / (ow as f32),
+                        (sh as f32) / (oh as f32),
+                        (sx as f32) / (ow as f32),
+                        (sy as f32) / (oh as f32),
+                    )
+                }
+            }
+            None => nalgebra::Vector4::new(1.0f32, 1.0f32, 0.0f32, 0.0f32),
+        };
 
         let current_frame = self.context.borrow().current_frame;
 
@@ -492,7 +555,8 @@ impl SpriteDatabase {
         let record = InstanceRecord {
             _model: make_model_matrix(aii.position, aii.scale, aii.z),
             _color: aii.color_multiplier,
-            _material_id: 0,
+            _subtexture_data: subtexture_data,
+            _material_id: aii.texture_id as u32,
         };
 
         instance_records_slice[self.occupancy as usize] = record;
@@ -511,7 +575,9 @@ impl SpriteDatabase {
         let file = File::open(texture_file).map_err(|e| VulkanError::TextureIOError(e))?;
         let buf_reader = BufReader::new(file);
 
-        let decoder = png::Decoder::new(buf_reader);
+        let mut decoder = png::Decoder::new(buf_reader);
+        // Ensure output is always RGBA regardless of source format
+        decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::ALPHA);
         let mut reader = decoder
             .read_info()
             .map_err(|e| VulkanError::TextureDecodingError(e))?;

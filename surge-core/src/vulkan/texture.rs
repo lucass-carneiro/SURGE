@@ -91,6 +91,12 @@ impl Texture {
         self.image_view
     }
 
+    pub fn get_image_extent(&self) -> vk::Extent2D {
+        vk::Extent2D::default()
+            .width(self.image_extent.width)
+            .height(self.image_extent.height)
+    }
+
     pub fn immediate_upload_from_buffer(&self, src_buffer: &Buffer) -> Result<(), VulkanError> {
         self.context.borrow().cmd_immediate_begin()?;
 

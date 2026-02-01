@@ -18,5 +18,4 @@ void main() {
         ),
         uv
     ) * color;
-    //out_color = color;
 }
