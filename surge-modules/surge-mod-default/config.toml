@@ -20,5 +20,5 @@ b = 0.3
 a = 1.0
 
 [startup_app]
-app_folder = "target/debug/"
+app_folder = "."
 app_name = "surge_mod_default"

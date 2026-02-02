@@ -22,19 +22,13 @@ impl SurgeApp for AppDefault {
         surge_core::cli::init_env_logger();
         log::info!("Default app startup");
 
-        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
-            .unwrap();
-
-        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeanim.png")
-            .unwrap();
+        spd.upload_texture("assets/awesomeface.png").unwrap();
+        spd.upload_texture("assets/awesomeanim.png").unwrap();
     }
 
     fn on_swapchain_recreate(&self, spd: &mut SpriteDatabase) {
-        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeface.png")
-            .unwrap();
-
-        spd.upload_texture("surge-modules/surge-mod-default/assets/awesomeanim.png")
-            .unwrap();
+        spd.upload_texture("assets/awesomeface.png").unwrap();
+        spd.upload_texture("assets/awesomeanim.png").unwrap();
     }
 
     fn update(&self, dt: f32, spdb: &mut SpriteDatabase) {
