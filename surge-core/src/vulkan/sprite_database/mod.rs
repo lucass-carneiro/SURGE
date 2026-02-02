@@ -10,7 +10,7 @@ use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, slice, sync::Arc
 use vk_mem;
 
 /// Database blending mode
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum BlendingMode {
     None,
     Additive,
@@ -24,14 +24,14 @@ impl BlendingMode {
 }
 
 /// Texture filtering modes
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TextureFilteringMode {
     Nearest,
     Linear,
 }
 
 /// Texture anisotropic  filtering level
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TextureFilteringLevel {
     X0 = 0,
     X1 = 1,
@@ -42,7 +42,7 @@ pub enum TextureFilteringLevel {
 }
 
 /// Controls database creation
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct CreateInfo {
     pub blending_mode: BlendingMode,
     pub texture_filtering_mode: TextureFilteringMode,
@@ -705,6 +705,10 @@ impl SpriteDatabase {
         self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
 
         self.occupancy = 0;
+    }
+
+    pub fn get_create_info(&self) -> CreateInfo {
+        self.ci
     }
 }
 

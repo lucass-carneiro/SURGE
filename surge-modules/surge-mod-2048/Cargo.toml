@@ -1,0 +1,13 @@
+[package]
+name = "surge-mod-2048"
+version = "1.4.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4.28"
+nalgebra = "0.34.1"
+surge-core = { path = "../../surge-core" }
+winit = "0.30.12"
+
+[lib]
+crate-type = ["rlib", "dylib"]

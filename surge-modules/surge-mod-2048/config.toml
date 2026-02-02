@@ -1,0 +1,24 @@
+[window]
+name = "SURGE: 2048"
+windowed = true
+allow_resizes = false
+
+[resolution]
+width = 500
+height = 800
+
+[renderer]
+vsync = true
+msaa = true
+cap_fps = false
+fps_cap = 60
+
+[clear_color]
+r = 0.8784
+g = 0.8549
+b = 0.8196
+a = 1.0
+
+[startup_app]
+app_folder = "."
+app_name = "surge_mod_default"
