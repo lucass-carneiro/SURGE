@@ -1,7 +1,7 @@
 use crate::errors::AppError;
 use crate::vulkan::sprite_database::SpriteDatabase;
 use libloading::{Library, Symbol};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
@@ -22,25 +22,28 @@ impl Deref for LoadedApp {
     }
 }
 
+impl DerefMut for LoadedApp {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.app
+    }
+}
+
 /// Defines a SURGE application
 pub trait SurgeApp {
     /// Called when the application starts
-    fn on_load(&self, _: &mut SpriteDatabase) {}
+    fn on_load(&mut self, _: &mut SpriteDatabase) {}
 
     /// Called if the swapchain is recreated
     fn on_swapchain_recreate(&self, _: &mut SpriteDatabase) {}
 
     /// Update application state
-    fn update(&self, _: f32, _: &mut SpriteDatabase) {}
-
-    /// Records application rendering commands
-    fn draw(&self) {}
+    fn update(&mut self, _: f32, _: &mut SpriteDatabase) {}
 
     /// Called when the application recieves a keyboard event
-    fn keyboard_event(&self, _: DeviceId, _: KeyEvent, _: bool) {}
+    fn keyboard_event(&mut self, _: DeviceId, _: KeyEvent, _: bool) {}
 
     /// Called when the application recieves a mouse button event
-    fn mouse_button_event(&self, _: DeviceId, _: ElementState, _: MouseButton) {}
+    fn mouse_button_event(&mut self, _: DeviceId, _: ElementState, _: MouseButton) {}
 
     /// Called when the application recieves a mouse wheel event
     fn mouse_wheel_event(&self, _: DeviceId, _: MouseScrollDelta, _: TouchPhase) {}

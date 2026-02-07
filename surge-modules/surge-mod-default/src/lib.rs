@@ -18,7 +18,7 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
 }
 
 impl SurgeApp for AppDefault {
-    fn on_load(&self, spd: &mut SpriteDatabase) {
+    fn on_load(&mut self, spd: &mut SpriteDatabase) {
         surge_core::cli::init_env_logger();
         log::info!("Default app startup");
 
@@ -31,7 +31,7 @@ impl SurgeApp for AppDefault {
         spd.upload_texture("assets/awesomeanim.png").unwrap();
     }
 
-    fn update(&self, dt: f32, spdb: &mut SpriteDatabase) {
+    fn update(&mut self, dt: f32, spdb: &mut SpriteDatabase) {
         // Test depth buffer
         let mut aii = InstanceInfo {
             position: Vector2::from_element(0.0),
@@ -111,7 +111,7 @@ impl SurgeApp for AppDefault {
         });
     }
 
-    fn keyboard_event(&self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {
+    fn keyboard_event(&mut self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {
         log::info!(
             "Keyboard event: ID = {:?} event = {:?} synthetic = {}",
             device_id,
@@ -120,7 +120,12 @@ impl SurgeApp for AppDefault {
         );
     }
 
-    fn mouse_button_event(&self, device_id: DeviceId, state: ElementState, button: MouseButton) {
+    fn mouse_button_event(
+        &mut self,
+        device_id: DeviceId,
+        state: ElementState,
+        button: MouseButton,
+    ) {
         log::info!(
             "Mouse event: ID = {:?} event = {:?} button = {:?}",
             device_id,

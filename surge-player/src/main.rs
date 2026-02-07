@@ -101,10 +101,7 @@ impl ApplicationHandler for SurgeContext {
             .borrow()
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
-        // Call startup app draw
-        self.startup_app.draw();
-
-        //TODO: temporary
+        // Draw sprites
         self.sprite_database.as_mut().unwrap().draw();
 
         // End rendering
