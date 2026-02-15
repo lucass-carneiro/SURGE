@@ -60,7 +60,7 @@ impl App2048 {
         }
     }
 
-    pub(crate) fn reconstruct_board_row_major(&self) -> [[Option<usize>; 4]; 4] {
+    pub(crate) fn reconstruct_board(&self) -> [[Option<usize>; 4]; 4] {
         let mut board: [[Option<usize>; 4]; 4] = [
             [None, None, None, None],
             [None, None, None, None],
@@ -69,8 +69,8 @@ impl App2048 {
         ];
 
         for (idx, piece) in self.live_pieces.iter().enumerate() {
-            let (i, j) = (piece.get_c_slot()[0], piece.get_c_slot()[1]);
-            board[j][i] = Some(idx);
+            let c_slot = piece.get_c_slot();
+            board[c_slot[1]][c_slot[0]] = Some(idx);
         }
 
         board

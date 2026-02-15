@@ -155,14 +155,14 @@ impl SurgeApp for App2048 {
                 ..
             } => {
                 if self.board_idle() {
-                    // Update piece target positions
-                    self.set_move_target_right();
-
                     // Update game state queue
                     self.push_state(BoardState::Move(MoveDirection::Right));
                     self.push_state(BoardState::Resolve);
                     self.push_state(BoardState::Idle);
                     self.pop_state();
+
+                    // Update piece target positions
+                    self.set_move_target_right();
                 }
             }
             _ => return,

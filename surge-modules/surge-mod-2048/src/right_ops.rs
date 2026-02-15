@@ -3,13 +3,15 @@ use nalgebra::Vector2 as Vec2;
 
 impl App2048 {
     pub(crate) fn set_move_target_right(&mut self) {
-        let board = self.reconstruct_board_row_major();
+        let board = self.reconstruct_board();
 
         // Loop over board rows
         for row in board {
             let num_pieces = row.iter().filter_map(|&x| x).count();
 
             match num_pieces {
+                0 => continue,
+
                 1 => {
                     let idx_0 = row.iter().filter_map(|&x| x).nth(0).unwrap();
 
@@ -43,11 +45,12 @@ impl App2048 {
                     self.set_piece_move_target(idx_2, t_slot_2);
                 }
 
-                4 => return,
+                4 => continue,
 
-                _ => {
+                other => {
                     log::warn!(
-                        "Unrecognized number of pieces in board row. This should never have happened, and yet, it did. We can continue on, but things may become irrecoverable down the line."
+                        "Unrecognized number of pieces in board row: {}. This should never have happened, and yet, it did. We can continue on, but things may become irrecoverable down the line.",
+                        other
                     );
                 }
             }
