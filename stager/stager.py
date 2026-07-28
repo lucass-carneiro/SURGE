@@ -62,33 +62,6 @@ def make_staging(args):
         "config.toml"
     )
 
-    # Check if the shaders were built
-    src_shader_list = [
-        os.path.join(
-            "surge-core",
-            "src",
-            "vulkan",
-            "sprite_database",
-            "shaders",
-            "sprite_vert.spv"
-        ),
-        os.path.join(
-            "surge-core",
-            "src",
-            "vulkan",
-            "sprite_database",
-            "shaders",
-            "sprite_frag.spv"
-        )
-    ]
-
-    for shader in src_shader_list:
-        if not os.path.exists(shader):
-            LOG.error(
-                f"Core shader {shader} has not been built. Cannot proceed with staging"
-            )
-            exit(1)
-
     if not os.path.exists(src_module_config):
         LOG.error(f"No config file found for module {req_module}")
         exit(1)
@@ -144,16 +117,6 @@ def make_staging(args):
     )
 
     shutil.copy2(src_module_config, dst_module_config)
-
-    # Copy shaders
-    dst_shaders_folder = os.path.join(staging_folder, "shaders")
-    os.mkdir(dst_shaders_folder)
-
-    for src_shader in src_shader_list:
-        shutil.copy2(
-            src_shader,
-            os.path.join(dst_shaders_folder, os.path.basename(src_shader))
-        )
 
     # Copy assets
     src_assets_folder = os.path.join(

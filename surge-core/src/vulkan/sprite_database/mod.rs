@@ -446,13 +446,13 @@ impl SpriteDatabase {
 
         // Pipeline
         let pipeline = {
-            let vert_shader = context
-                .borrow()
-                .load_shader_module("shaders/sprite_vert.spv")?;
+            static SPRITE_VERT_SPV: &[u8] =
+                include_bytes!(concat!(env!("OUT_DIR"), "/sprite_vert.spv"));
+            static SPRITE_FRAG_SPV: &[u8] =
+                include_bytes!(concat!(env!("OUT_DIR"), "/sprite_frag.spv"));
 
-            let frag_shader = context
-                .borrow()
-                .load_shader_module("shaders/sprite_frag.spv")?;
+            let vert_shader = context.borrow().load_shader_module(SPRITE_VERT_SPV)?;
+            let frag_shader = context.borrow().load_shader_module(SPRITE_FRAG_SPV)?;
 
             let mut pb = GraphicsPipelineBuilder::default()
                 .set_layout(pipeline_layout)

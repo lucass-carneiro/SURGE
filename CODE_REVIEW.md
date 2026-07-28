@@ -71,7 +71,14 @@ used the safe `.color_attachment_formats(&[fmt])` setter instead of writing the 
 is used correctly elsewhere (`blending.p_attachments = &builder.blend_attachment`, where `builder`
 outlives the call), which makes this one easy to miss on re-read.
 
-### C2. A fresh clone cannot run — `.gitignore:5` vs `shaders/`
+### C2. ~~A fresh clone cannot run~~ — FIXED — `.gitignore:5` vs `shaders/`
+
+**Fixed.** `build.rs` now compiles the SPIR-V into Cargo's `OUT_DIR`, and
+`sprite_database/mod.rs` embeds it at compile time via
+`include_bytes!(concat!(env!("OUT_DIR"), "/sprite_vert.spv"))`. The shaders ship inside the
+binary — there is no `shaders/` directory, no symlinks, and no runtime file to be missing.
+`extra/ln.ps1` and the stager's shader-copy step were removed as dead weight. Original
+finding kept below for the record.
 
 ```
 $ git ls-files shaders/          # → 0 files

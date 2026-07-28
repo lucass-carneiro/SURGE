@@ -24,7 +24,7 @@ There are currently no tests anywhere in the workspace. If you add some, the usu
 The player resolves nearly everything relative to the process working directory, so **always run from the repo root** during development:
 
 - `config.toml` is read from CWD. It is **gitignored** — the checked-in copies live at `surge-modules/<module>/config.toml`, and the root one is a per-developer working copy (typically a module's config with `app_folder` repointed at `target/debug`).
-- SPIR-V is loaded from `shaders/sprite_vert.spv` and `shaders/sprite_frag.spv`. The repo-root `shaders/` directory holds **symlinks** into `surge-core/src/vulkan/sprite_database/shaders/`, where `build.rs` writes the compiled `.spv` (themselves gitignored). On Windows use `extra/ln.ps1 <src> <dst>` to recreate these links.
+- SPIR-V is **not** read from disk at runtime. `surge-core/build.rs` compiles `sprite_database/shaders/sprite.{vert,frag}` with `glslang` into its own Cargo `OUT_DIR`, and `sprite_database/mod.rs` pulls the bytes in at compile time with `include_bytes!(concat!(env!("OUT_DIR"), "/sprite_vert.spv"))`, so the SPIR-V ships inside `libsurge_core`/the player binary itself. There is no `shaders/` directory, no symlinks, and nothing for the stager to copy.
 - Module asset paths are whatever the module hardcodes. `surge-mod-2048` uses repo-root-relative paths (`surge-modules/surge-mod-2048/assets/...`), so it only runs correctly from the root in dev; staging flattens this to `assets/`.
 
 `stager/stager.py` produces a self-contained, CWD-correct release layout:
@@ -34,7 +34,7 @@ python3 stager/stager.py list
 python3 stager/stager.py stage surge-mod-2048 [-o]   # -> staging-surge-mod-2048/
 ```
 
-It requires `cargo build --release` to have run and must itself be invoked from the repo root. It copies the player binary, the module dylib, the module's own `config.toml`, `shaders/`, and `assets/`.
+It requires `cargo build --release` to have run and must itself be invoked from the repo root. It copies the player binary, the module dylib, the module's own `config.toml`, and `assets/` (shaders need no copy — they're embedded in the player binary).
 
 ### Feature flags
 

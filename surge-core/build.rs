@@ -1,3 +1,4 @@
+use std::env;
 use std::process::Command;
 
 fn glslang(src: &str, dst: &str) -> bool {
@@ -33,16 +34,21 @@ fn glslang(src: &str, dst: &str) -> bool {
 }
 
 fn main() {
+    let out_dir = env::var("OUT_DIR").unwrap();
+
+    println!("cargo::rerun-if-changed=src/vulkan/sprite_database/shaders/sprite.vert");
+    println!("cargo::rerun-if-changed=src/vulkan/sprite_database/shaders/sprite.frag");
+
     if !glslang(
         "src/vulkan/sprite_database/shaders/sprite.vert",
-        "src/vulkan/sprite_database/shaders/sprite_vert.spv",
+        &format!("{out_dir}/sprite_vert.spv"),
     ) {
         std::process::exit(1);
     }
 
     if !glslang(
         "src/vulkan/sprite_database/shaders/sprite.frag",
-        "src/vulkan/sprite_database/shaders/sprite_frag.spv",
+        &format!("{out_dir}/sprite_frag.spv"),
     ) {
         std::process::exit(1);
     }
