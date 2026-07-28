@@ -148,7 +148,17 @@ race on `HOST_ACCESS_SEQUENTIAL_WRITE` mapped memory, with no barrier or availab
 kind. Symptom: intermittent one-frame sprite corruption/flicker that is worse the faster you run. Fix is
 to hoist the fence wait above `app.update`.
 
-### C4. GPU-facing structs have unspecified field layout — `sprite_database/mod.rs:93-110`
+### C4. ~~GPU-facing structs have unspecified field layout~~ — FIXED — `sprite_database/mod.rs:93-110`
+
+**Fixed.** `FrameGlobals` now carries `#[repr(C)]`, and `InstanceRecord` was changed from `#[repr(align(16))]`
+to `#[repr(C, align(16))]`. Field order (and therefore offsets) is now guaranteed by the language instead
+of being an rustc-layout-algorithm coincidence. A new regression test,
+`sprite_database::tests::gpu_struct_layout_matches_glsl`, pins `size_of::<FrameGlobals>() == 128` and
+`size_of::<InstanceRecord>() == 112` / `align_of::<InstanceRecord>() == 16` against the std140/std430
+layout the shader expects (`sprite.vert:4-13`), so a future reordered or added field that desyncs Rust
+from GLSL now fails `cargo test` instead of failing silently. Verified with `cargo test -p surge-core` and
+a real run with validation layers active — no UBO/SSBO layout validation errors, same as before the change.
+Original finding kept below for the record.
 
 ```rust
 struct FrameGlobals { _view: Matrix4<f32>, _proj: Matrix4<f32> }          // no repr at all

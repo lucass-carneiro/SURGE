@@ -90,6 +90,7 @@ pub struct InstanceInfo {
 
 /// Data shared across all sprite instances in a frame.
 /// Provided via UBO.
+#[repr(C)]
 struct FrameGlobals {
     _view: nalgebra::Matrix4<f32>,
     _proj: nalgebra::Matrix4<f32>,
@@ -101,7 +102,7 @@ const FRAME_GLOBALS_STRUCT_SIZE: u64 = size_of::<FrameGlobals>() as u64;
 /// Provided via SSBO (needs to be 16 byte aligned)
 /// One entry per sprite
 /// Indexed by gl_InstanceID (or equivalent)
-#[repr(align(16))]
+#[repr(C, align(16))]
 struct InstanceRecord {
     _model: nalgebra::Matrix4<f32>,
     _color: nalgebra::Vector4<f32>,
@@ -870,5 +871,21 @@ mod tests {
 
         assert!(foreground_depth > background_depth);
         assert!(background_depth > backmost_depth);
+    }
+
+    /// `FrameGlobals` and `InstanceRecord` are written byte-for-byte into
+    /// buffers the shader reads under a fixed std140/std430 layout
+    /// (sprite.vert:4-13). This pins the Rust-side size/align to those
+    /// layouts so a reordered or added field is caught here instead of
+    /// silently desyncing from the GLSL.
+    #[test]
+    fn gpu_struct_layout_matches_glsl() {
+        // std140 uniform block: 2x mat4, each 64 bytes / 16-byte aligned.
+        assert_eq!(size_of::<FrameGlobals>(), 128);
+
+        // std430 array element: mat4 (64) + vec4 (16) + vec4 (16) + uint (4),
+        // padded up to the struct's own 16-byte alignment.
+        assert_eq!(size_of::<InstanceRecord>(), 112);
+        assert_eq!(std::mem::align_of::<InstanceRecord>(), 16);
     }
 }
