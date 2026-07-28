@@ -406,6 +406,8 @@ impl SpriteDatabase {
                     };
             }
 
+            frame_globals_ubo.flush()?;
+
             unsafe { context.borrow().device.update_descriptor_sets(&dsw, &[]) };
         }
 
@@ -624,6 +626,8 @@ impl SpriteDatabase {
 
         assert!(read_info.buffer_size() == image_size);
 
+        cpu_buffer.flush()?;
+
         // Allocate GPU texture
         let format = match read_info.bit_depth {
             png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
@@ -675,7 +679,7 @@ impl SpriteDatabase {
         Ok(())
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self) -> Result<(), VulkanError> {
         self.context
             .borrow()
             .cmd_bind_graphics_pipeline(self.pipeline);
@@ -687,6 +691,9 @@ impl SpriteDatabase {
         );
 
         let current_frame = self.context.borrow().current_frame;
+
+        self.instance_records_ssbos[current_frame].flush()?;
+
         let push_constant_data = PushConstants {
             instance_records_ssbo_address: self.instance_records_ssbo_addresses[current_frame],
         };
@@ -715,6 +722,8 @@ impl SpriteDatabase {
         self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
 
         self.occupancy = 0;
+
+        Ok(())
     }
 
     pub fn get_create_info(&self) -> CreateInfo {

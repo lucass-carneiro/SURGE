@@ -104,7 +104,7 @@ impl ApplicationHandler for SurgeContext {
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
         // Draw sprites
-        self.sprite_database.as_mut().unwrap().draw();
+        self.sprite_database.as_mut().unwrap().draw().unwrap();
 
         // End rendering
         self.vulkan_context

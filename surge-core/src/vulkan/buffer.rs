@@ -49,6 +49,17 @@ impl Buffer {
     pub fn get_allocation_info(&self) -> &vk_mem::AllocationInfo {
         &self.allocation_info
     }
+
+    /// Flushes the whole allocation's mapped memory range, making CPU writes visible to the
+    /// GPU. This is a no-op on `HOST_COHERENT` memory but essential otherwise, and VMA does
+    /// not guarantee coherent memory was actually obtained even when requested.
+    pub fn flush(&self) -> Result<(), VulkanError> {
+        self.context
+            .borrow()
+            .memory_allocator
+            .flush_allocation(&self.allocation, 0, vk::WHOLE_SIZE)
+            .map_err(|e| VulkanError::BufferFlushError(e))
+    }
 }
 
 impl Drop for Buffer {

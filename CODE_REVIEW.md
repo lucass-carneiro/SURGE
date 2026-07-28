@@ -421,7 +421,16 @@ that accepts arbitrary files, guarded by a comment claiming it is handled.
 
 Fix: match on `read_info.color_type` as well, and reject or convert anything that is not `Rgba`.
 
-### H12. Host-visible memory is written but never flushed — `buffer.rs`, `sprite_database/mod.rs`
+### H12. ~~Host-visible memory is written but never flushed~~ — FIXED — `buffer.rs`, `sprite_database/mod.rs`
+
+**Fixed.** Added `Buffer::flush()`, wrapping `vmaFlushAllocation` over the whole allocation (a no-op on
+coherent memory, essential otherwise) and returning the new `VulkanError::BufferFlushError` on failure. It
+is called after each of the three mapped writes: once after the one-time `FrameGlobals` UBO write in
+`SpriteDatabase::new`, once per texture in `upload_texture` right before the staging buffer is read by
+`immediate_upload_from_buffer`'s copy command, and once per frame at the top of `draw()` for the current
+frame's instance SSBO — a single flush covering every `add_instance` write made that frame, rather than
+one per call. `draw()` now returns `Result<(), VulkanError>` to propagate that; its sole caller in
+`main.rs` unwraps it, matching how every other fallible per-frame Vulkan call in that loop is handled.
 
 ```
 $ grep -rn "flush_allocation\|invalidate_allocation" --include=*.rs .

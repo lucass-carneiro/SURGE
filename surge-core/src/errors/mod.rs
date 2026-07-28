@@ -139,6 +139,9 @@ pub enum VulkanError {
     #[error("Unable to allocate buffer: {0}")]
     BufferAllocationError(ash::vk::Result),
 
+    #[error("Unable to flush buffer memory: {0}")]
+    BufferFlushError(ash::vk::Result),
+
     #[error("Unable to create image sampler: {0}")]
     SamplerCreationError(ash::vk::Result),
 
