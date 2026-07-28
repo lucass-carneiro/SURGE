@@ -97,7 +97,14 @@ The root cause is the design decision to make the runtime shader path a repo-roo
 `surge-core/src/`. Compiling into `OUT_DIR` and either embedding via `include_bytes!` or resolving
 relative to the executable removes the whole class.
 
-### C3. CPU writes the instance SSBO before waiting on its fence — `main.rs:73-85` + `ctx_swpc.rs:10-14`
+### C3. ~~CPU writes the instance SSBO before waiting on its fence~~ — FIXED — `main.rs:73-85` + `ctx_swpc.rs:10-14`
+
+**Fixed.** `about_to_wait` in `main.rs` now calls `request_swpc_img()` (which waits on
+`frame_fences[current_frame]`) *before* `app.update()`, instead of after. The CPU no longer
+overwrites `instance_records_ssbos[current_frame]` until the fence has confirmed the GPU is done
+reading it. `SurgeApp::update()`'s signature (`&mut self, dt: f32, spd: &mut SpriteDatabase`) never
+needed the swapchain image index, so moving the acquire earlier required no other changes. Original
+finding kept below for the record.
 
 The per-frame SSBO duplication is documented with exactly the right intent:
 
@@ -157,7 +164,15 @@ aborts the process or corrupts the GPU depending on whether the caller passed `S
 `texture_id` that indexes "upload order" with no handle type, no validation, and two different failure
 modes is the weakest part of the public API.
 
-### C6. The projection is OpenGL-convention: half the documented depth range is silently clipped — `sprite_database/mod.rs:757`
+### C6. ~~The projection is OpenGL-convention: half the documented depth range is silently clipped~~ — FIXED — `sprite_database/mod.rs:757`
+
+**Fixed.** `make_ortho_projection` now builds the projection matrix directly for Vulkan's `[0, 1]`
+NDC/depth convention instead of using `nalgebra::Matrix4::new_orthographic` (which emits the GL
+`[-1, 1]` convention). Composed with `make_view`'s camera, the full documented `z` range in `[0, 1]`
+now maps onto valid Vulkan depth `[0, 1]` instead of only the `[0, 0.5]` half. Two unit tests
+(`sprite_database/mod.rs` `tests` module) run the actual `proj * view * model` chain end-to-end and
+assert the full `z` range lands in bounds and preserves front-to-back ordering. Original finding kept
+below for the record.
 
 ```rust
 nalgebra::Matrix4::new_orthographic(0.0, width, 0.0, height, 0.0, 1.0)

@@ -68,14 +68,9 @@ impl ApplicationHandler for SurgeContext {
             self.recreate_swapchain = false;
         }
 
-        // Handle hot reloading
-        // Call startup app update
-        let dt = self.last_update_call_timer.elapsed().as_secs_f32();
-        self.startup_app
-            .update(dt, self.sprite_database.as_mut().unwrap());
-        self.last_update_call_timer = Instant::now();
-
-        // Acquire swapchain image
+        // Acquire swapchain image. This must happen (and wait on the frame's fence)
+        // before app.update(), since update() writes this frame's instance SSBO and
+        // the fence is what guarantees the GPU is done reading that same buffer.
         let mut swpc_img_data = self
             .vulkan_context
             .as_mut()
@@ -85,6 +80,13 @@ impl ApplicationHandler for SurgeContext {
             .unwrap();
 
         self.recreate_swapchain = swpc_img_data.suboptimal;
+
+        // Handle hot reloading
+        // Call startup app update
+        let dt = self.last_update_call_timer.elapsed().as_secs_f32();
+        self.startup_app
+            .update(dt, self.sprite_database.as_mut().unwrap());
+        self.last_update_call_timer = Instant::now();
 
         // Begin command recording
         self.vulkan_context
