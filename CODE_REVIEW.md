@@ -625,12 +625,17 @@ The two existing module configs are tracked only because they predate the rule. 
 `config.toml` is silently unstageable — `git add` refuses it without `-f` — while
 `stager.py` hard-exits if the file is missing. Anchor the pattern to `/config.toml`.
 
-**M17. Every resize re-reads twelve PNGs from disk inside the frame loop** — `main.rs:65-66` →
-`surge-mod-2048/src/lib.rs:72-74`. `on_swapchain_recreate` calls `load_image_assets`, which opens,
-decodes, and uploads all twelve files with a blocking fence per upload (**M12**), synchronously in
-`about_to_wait`. That is 12 file reads plus 12 full GPU stalls per recreate, and by **H13** at least one
-recreate happens on every launch. There is no texture cache and no way for a module to keep GPU resources
-across a rebuild.
+**M17. ~~Every resize re-reads twelve PNGs from disk inside the frame loop~~ — FIXED** — `main.rs:65-66` →
+`surge-mod-2048/src/lib.rs:72-74`. `on_swapchain_recreate` called `load_image_assets`, which opened,
+decoded, and uploaded all twelve files with a blocking fence per upload (**M12**), synchronously in
+`about_to_wait`. That was 12 file reads plus 12 full GPU stalls per recreate, and by **H13** at least one
+recreate happens on every launch. GPU re-upload is still unavoidable — `on_swapchain_recreate` rebuilds
+the `SpriteDatabase`, and with it every GPU texture, from scratch — but the disk read and PNG decode are
+not: `SpriteDatabase::upload_texture` is now split into `decode_texture_file` (pure CPU, returns a new
+`DecodedTexture`) and `upload_decoded_texture` (GPU upload from an already-decoded buffer).
+`surge-mod-2048`'s `App2048` decodes all twelve PNGs once in `new()`, caches the `DecodedTexture`s, and
+both `on_load`/`on_swapchain_recreate` now just re-upload from that cache — no re-reading or re-decoding
+on recreate.
 
 **M18. `load_from_dylib` has no branch outside Windows and Linux** — `app/mod.rs:56-65`. The
 `#[cfg(target_os = ...)]` block yields `()` on macOS/BSD, producing a confusing type error instead of a
@@ -777,9 +782,9 @@ the machine does not otherwise consider valid.
    texture budget from the instance budget.
 7. **H1** + **H2** — treat `OUT_OF_DATE`/`SUBOPTIMAL` as control flow, not error. This unblocks resize,
    fullscreen, and **H3**.
-8. **M17** — stop re-reading assets from disk inside the frame loop on every swapchain recreate.
+8. **M17** — ~~stop re-reading assets from disk inside the frame loop on every swapchain recreate~~ — FIXED.
    (**H13** and **M10**, the other two hats this item used to wear — the resolution being an input not an
-   output, and the recreate hook being `&mut self` — are both fixed.)
+   output, and the recreate hook being `&mut self` — are both fixed too.)
 9. **H8** — an asset-path resolution API in `surge-core` (executable-relative, with a dev fallback), which
    fixes both modules at once.
 10. **H10** — settle the module ABI before hot reloading is built on top of it.

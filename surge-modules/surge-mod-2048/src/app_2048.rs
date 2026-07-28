@@ -1,6 +1,7 @@
-use crate::{board_geometry::BoardGeometry, piece::Piece};
+use crate::{board_geometry::BoardGeometry, decode_image_assets, piece::Piece};
 use nalgebra::Vector2 as Vec2;
 use std::collections::VecDeque;
+use surge_core::vulkan::sprite_database::DecodedTexture;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum MoveDirection {
@@ -26,6 +27,10 @@ pub(crate) struct App2048 {
 
     // Live pieces on the board
     live_pieces: Vec<Piece>,
+
+    // Board/piece textures, decoded from disk once and re-uploaded to the GPU on every
+    // swapchain recreate (which rebuilds the SpriteDatabase from scratch)
+    cached_textures: Vec<DecodedTexture>,
 }
 
 impl App2048 {
@@ -50,7 +55,12 @@ impl App2048 {
             board_geometry,
             board_states,
             live_pieces,
+            cached_textures: decode_image_assets(),
         }
+    }
+
+    pub(crate) fn get_cached_textures(&self) -> &[DecodedTexture] {
+        &self.cached_textures
     }
 
     pub(crate) fn board_idle(&self) -> bool {

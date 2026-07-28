@@ -53,6 +53,16 @@ pub struct CreateInfo {
     pub window_height: f32,
 }
 
+/// A texture decoded to RGBA bytes, ready to upload to the GPU via
+/// `SpriteDatabase::upload_decoded_texture`. Produced by `SpriteDatabase::decode_texture_file`.
+#[derive(Debug, Clone)]
+pub struct DecodedTexture {
+    pub width: u32,
+    pub height: u32,
+    pub bit_depth: png::BitDepth,
+    pub rgba: Vec<u8>,
+}
+
 #[derive(Debug)]
 pub struct SubTextureInfo {
     pub origin: nalgebra::Vector2<u32>,
@@ -580,14 +590,11 @@ impl SpriteDatabase {
         self.occupancy += 1;
     }
 
-    pub fn upload_texture(&mut self, texture_file: &str) -> Result<(), VulkanError> {
-        // Only do this if the ammount of stored image records < database capacity
-        if self.uploaded_textures.len() == self.ci.max_textures as usize {
-            log::warn!("Unable to upload new texture to full database. Ignoring request");
-            return Ok(());
-        }
-
-        // Read image file and metadata
+    /// Reads and decodes a PNG file into an RGBA byte buffer, without touching the GPU.
+    /// Callers that re-upload the same texture across a swapchain recreate (see
+    /// `upload_decoded_texture`) should decode once and cache the result, rather than
+    /// calling this again on every recreate.
+    pub fn decode_texture_file(texture_file: &str) -> Result<DecodedTexture, VulkanError> {
         let file = File::open(texture_file).map_err(|e| VulkanError::TextureIOError(e))?;
         let buf_reader = BufReader::new(file);
 
@@ -608,6 +615,39 @@ impl SpriteDatabase {
         }
 
         let image_size = reader.output_buffer_size().unwrap();
+        let mut rgba = vec![0u8; image_size];
+
+        let read_info = reader
+            .next_frame(&mut rgba)
+            .map_err(|e| VulkanError::TextureDecodingError(e))?;
+
+        assert!(read_info.buffer_size() == image_size);
+
+        Ok(DecodedTexture {
+            width: read_info.width,
+            height: read_info.height,
+            bit_depth: read_info.bit_depth,
+            rgba,
+        })
+    }
+
+    pub fn upload_texture(&mut self, texture_file: &str) -> Result<(), VulkanError> {
+        let decoded = Self::decode_texture_file(texture_file)?;
+        self.upload_decoded_texture(&decoded)
+    }
+
+    /// Uploads an already-decoded texture to the GPU. Split out of `upload_texture` so
+    /// that callers who need to re-upload after a swapchain recreate (which rebuilds the
+    /// whole `SpriteDatabase`, GPU textures included) can cache the decode step instead of
+    /// re-reading and re-decoding the source file from disk every time.
+    pub fn upload_decoded_texture(&mut self, decoded: &DecodedTexture) -> Result<(), VulkanError> {
+        // Only do this if the ammount of stored image records < database capacity
+        if self.uploaded_textures.len() == self.ci.max_textures as usize {
+            log::warn!("Unable to upload new texture to full database. Ignoring request");
+            return Ok(());
+        }
+
+        let image_size = decoded.rgba.len();
 
         // Create CPU buffer
         let cpu_buffer = {
@@ -632,28 +672,17 @@ impl SpriteDatabase {
             )
         };
 
-        // Read image into CPU buffer
-        let read_info = reader
-            .next_frame(cpu_buffer_slice)
-            .map_err(|e| VulkanError::TextureDecodingError(e))?;
-
-        assert!(read_info.buffer_size() == image_size);
-
+        cpu_buffer_slice.copy_from_slice(&decoded.rgba);
         cpu_buffer.flush()?;
 
         // Allocate GPU texture
-        let format = match read_info.bit_depth {
+        let format = match decoded.bit_depth {
             png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
             png::BitDepth::Sixteen => vk::Format::R16G16B16A16_UNORM,
             other => return Err(VulkanError::UnsupportedTextureBitDepth(other)),
         };
 
-        let texture = Texture::new(
-            self.context.clone(),
-            read_info.width,
-            read_info.height,
-            format,
-        )?;
+        let texture = Texture::new(self.context.clone(), decoded.width, decoded.height, format)?;
 
         // Submit CPU to GPU buffer copy command
         texture.immediate_upload_from_buffer(&cpu_buffer)?;

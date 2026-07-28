@@ -3,7 +3,7 @@ use nalgebra::{Vector2 as Vec2, Vector4 as Vec4};
 
 use surge_core::{
     app::SurgeApp,
-    vulkan::sprite_database::{InstanceInfo, SpriteDatabase},
+    vulkan::sprite_database::{DecodedTexture, InstanceInfo, SpriteDatabase},
 };
 use winit::{
     event::{DeviceId, ElementState, KeyEvent, MouseButton},
@@ -23,7 +23,10 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
     Box::new(App2048::new())
 }
 
-fn load_image_assets(spdb: &mut SpriteDatabase) {
+/// Decodes every board/piece PNG from disk once. The result is cached by `App2048` so that
+/// `on_swapchain_recreate` (which rebuilds the `SpriteDatabase`, GPU textures included, from
+/// scratch) can re-upload without re-reading and re-decoding the files every time.
+pub(crate) fn decode_image_assets() -> Vec<DecodedTexture> {
     let image_asset_paths: [&'static str; 12] = [
         "surge-modules/surge-mod-2048/assets/board.png",
         "surge-modules/surge-mod-2048/assets/pieces_2.png",
@@ -39,8 +42,15 @@ fn load_image_assets(spdb: &mut SpriteDatabase) {
         "surge-modules/surge-mod-2048/assets/pieces_2048.png",
     ];
 
-    for asset_path in image_asset_paths {
-        spdb.upload_texture(asset_path).unwrap();
+    image_asset_paths
+        .iter()
+        .map(|asset_path| SpriteDatabase::decode_texture_file(asset_path).unwrap())
+        .collect()
+}
+
+fn upload_image_assets(spdb: &mut SpriteDatabase, textures: &[DecodedTexture]) {
+    for texture in textures {
+        spdb.upload_decoded_texture(texture).unwrap();
     }
 }
 
@@ -66,11 +76,11 @@ impl SurgeApp for App2048 {
     fn on_load(&mut self, spdb: &mut SpriteDatabase) {
         surge_core::cli::init_env_logger();
         log::info!("2048 startup");
-        load_image_assets(spdb);
+        upload_image_assets(spdb, self.get_cached_textures());
     }
 
     fn on_swapchain_recreate(&mut self, spdb: &mut SpriteDatabase) {
-        load_image_assets(spdb);
+        upload_image_assets(spdb, self.get_cached_textures());
     }
 
     fn update(&mut self, _: f32, spdb: &mut SpriteDatabase) {
