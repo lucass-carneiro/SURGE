@@ -251,7 +251,36 @@ Fix: build the ortho matrix for Vulkan's `[0, 1]` depth directly (or post-multip
 
 ## HIGH
 
-### H1. `ERROR_OUT_OF_DATE_KHR` is a panic, not a resize
+### H1. ~~`ERROR_OUT_OF_DATE_KHR` is a panic, not a resize~~ — FIXED — `ctx_swpc.rs`, `main.rs`
+
+**Fixed.** `request_swpc_img` now matches on the acquire result explicitly instead of funnelling every
+`VkResult` through `map_err` into a hard error: `Err(vk::Result::ERROR_OUT_OF_DATE_KHR)` returns `Ok(None)`,
+and the function's return type changed to `Result<Option<SwapchainImageData>, VulkanError>` to make that
+case impossible to ignore at the call site. `main.rs`'s `about_to_wait` matches on it — `None` sets
+`recreate_swapchain = true` and returns early, skipping `update`/draw/submit/present entirely for that
+tick, since there is no valid image to render into. The swapchain is rebuilt on the next tick and rendering
+resumes normally.
+
+`present_swpc` got the same treatment: it now returns `Result<bool, VulkanError>`, where `Ok(true)` means
+"out of date, recreate before the next frame." Since presentation happens after the command buffer is
+already submitted, there is no frame to skip — `current_frame` still advances normally — but the panic is
+gone and the signal reaches `main.rs` instead of being unwrapped into a crash.
+
+This also fixed **H2** (suboptimal-on-present was silently discarded): `main.rs` now accumulates with `|=`
+across both the acquire and present call sites —
+
+```rust
+self.recreate_swapchain |= swpc_img_data.suboptimal;   // from acquire
+…
+self.recreate_swapchain |= present_out_of_date || swpc_img_data.suboptimal;   // from present
+```
+
+— so a suboptimal or out-of-date result from *either* call now triggers recreation, instead of the
+present-time result being computed into a `&mut` parameter that was about to go out of scope unread.
+
+Verified with `cargo check --workspace` (clean).
+
+Original finding kept below for the record.
 
 `acquire_next_image` (`ctx_swpc.rs:26`) and `queue_present` (`ctx_swpc.rs:62`) map every `VkResult`
 failure into a `VulkanError`, which `main.rs:85` / `main.rs:136` `.unwrap()`. `ERROR_OUT_OF_DATE_KHR` is
@@ -260,7 +289,13 @@ on monitor changes, DPI changes, compositor restarts, and fullscreen transitions
 hard crash today. The `recreate_swapchain` machinery exists and is simply never reachable via the path
 that most commonly needs it.
 
-### H2. Suboptimal-on-present is silently discarded — `main.rs:87` vs `main.rs:135`
+### H2. ~~Suboptimal-on-present is silently discarded~~ — FIXED (as part of H1) — `main.rs`
+
+**Fixed.** See **H1** above — the same change that stopped `ERROR_OUT_OF_DATE_KHR` from panicking also
+made `main.rs` accumulate `recreate_swapchain` with `|=` from both the acquire-time and present-time
+suboptimal results, instead of overwriting it with only the acquire-time value.
+
+Original finding kept below for the record.
 
 ```rust
 self.recreate_swapchain = swpc_img_data.suboptimal;   // line 87: read from *acquire*

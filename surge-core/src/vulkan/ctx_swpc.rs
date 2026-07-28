@@ -3,7 +3,9 @@ use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;
 
 impl VulkanContext {
-    pub fn request_swpc_img(&mut self) -> Result<SwapchainImageData, VulkanError> {
+    /// Returns `Ok(None)` when the swapchain is out of date: there is no valid image to render
+    /// into, so the caller must skip the frame entirely and recreate the swapchain instead.
+    pub fn request_swpc_img(&mut self) -> Result<Option<SwapchainImageData>, VulkanError> {
         let timeout = 1000000000;
 
         // Wait frame fences
@@ -14,17 +16,20 @@ impl VulkanContext {
         }
 
         // Acquire next image
-        let (index, suboptimal) = unsafe {
-            self.swapchain_data
-                .swapchain_loader
-                .acquire_next_image(
-                    self.swapchain_data.swapchain,
-                    timeout,
-                    self.present_completed_sem[self.current_frame],
-                    vk::Fence::null(),
-                )
-                .map_err(|e| VulkanError::SwapchainAcquireError(e))
-        }?;
+        let acquire_result = unsafe {
+            self.swapchain_data.swapchain_loader.acquire_next_image(
+                self.swapchain_data.swapchain,
+                timeout,
+                self.present_completed_sem[self.current_frame],
+                vk::Fence::null(),
+            )
+        };
+
+        let (index, suboptimal) = match acquire_result {
+            Ok(v) => v,
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => return Ok(None),
+            Err(e) => return Err(VulkanError::SwapchainAcquireError(e)),
+        };
 
         // Store the image index for use by cmd_submit (render_finished_sem is indexed by image)
         self.current_image_index = index as usize;
@@ -37,13 +42,15 @@ impl VulkanContext {
                 .map_err(|e| VulkanError::FenceResetError(e))
         }?;
 
-        Ok(swpc_img_data)
+        Ok(Some(swpc_img_data))
     }
 
+    /// Returns `Ok(true)` when the swapchain is out of date and must be recreated before the
+    /// next frame; the current frame's GPU work has already been submitted either way.
     pub fn present_swpc(
         &mut self,
         swpc_img_data: &mut SwapchainImageData,
-    ) -> Result<(), VulkanError> {
+    ) -> Result<bool, VulkanError> {
         // render_finished_sem is indexed by image index because the presentation engine
         // holds the semaphore until this specific image is re-acquired
         let pi = vk::PresentInfoKHR {
@@ -55,16 +62,24 @@ impl VulkanContext {
             ..Default::default()
         };
 
-        swpc_img_data.suboptimal = unsafe {
+        let present_result = unsafe {
             self.swapchain_data
                 .swapchain_loader
                 .queue_present(self.graphics_queue, &pi)
-                .map_err(|e| VulkanError::SwapchainPresentError(self.current_frame, e))
-        }?;
+        };
+
+        let out_of_date = match present_result {
+            Ok(suboptimal) => {
+                swpc_img_data.suboptimal = suboptimal;
+                false
+            }
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => true,
+            Err(e) => return Err(VulkanError::SwapchainPresentError(self.current_frame, e)),
+        };
 
         self.current_frame = (self.current_frame + 1) % FRAMES_IN_FLIGHT;
 
-        Ok(())
+        Ok(out_of_date)
     }
 
     pub fn recreate_swapchain(&mut self, config: &EngineConfig) -> Result<(), VulkanError> {

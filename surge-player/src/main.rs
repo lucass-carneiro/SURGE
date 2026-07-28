@@ -72,15 +72,24 @@ impl ApplicationHandler for SurgeContext {
         // Acquire swapchain image. This must happen (and wait on the frame's fence)
         // before app.update(), since update() writes this frame's instance SSBO and
         // the fence is what guarantees the GPU is done reading that same buffer.
-        let mut swpc_img_data = self
+        let mut swpc_img_data = match self
             .vulkan_context
             .as_mut()
             .unwrap()
             .borrow_mut()
             .request_swpc_img()
-            .unwrap();
+            .unwrap()
+        {
+            Some(data) => data,
+            None => {
+                // Swapchain is out of date (e.g. resize, monitor/DPI change, compositor
+                // restart) - there is no valid image to render into this tick.
+                self.recreate_swapchain = true;
+                return;
+            }
+        };
 
-        self.recreate_swapchain = swpc_img_data.suboptimal;
+        self.recreate_swapchain |= swpc_img_data.suboptimal;
 
         // Handle hot reloading
         // Call startup app update
@@ -131,12 +140,15 @@ impl ApplicationHandler for SurgeContext {
             .unwrap();
 
         // Present
-        self.vulkan_context
+        let present_out_of_date = self
+            .vulkan_context
             .as_ref()
             .unwrap()
             .borrow_mut()
             .present_swpc(&mut swpc_img_data)
             .unwrap();
+
+        self.recreate_swapchain |= present_out_of_date || swpc_img_data.suboptimal;
 
         // Refresh HR key state
 
