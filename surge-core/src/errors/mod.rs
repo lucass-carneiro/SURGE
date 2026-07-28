@@ -159,4 +159,7 @@ pub enum VulkanError {
 
     #[error("Texture file has unsupported bit depth: {0:?}")]
     UnsupportedTextureBitDepth(png::BitDepth),
+
+    #[error("Texture file has unsupported color type: {0:?}. Only RGBA is supported")]
+    UnsupportedTextureColorType(png::ColorType),
 }

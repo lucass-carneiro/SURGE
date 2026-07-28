@@ -388,7 +388,12 @@ memory corruption rather than a load error. The duplicated-`log`-state workaroun
 reloading — the engine's stated purpose — will make this boundary much hotter, an `extern "C"`
 vtable-of-function-pointers ABI with an explicit version field is worth doing before, not after.
 
-### H11. Grayscale PNGs cause a GPU buffer over-read — `sprite_database/mod.rs:579-632`
+### H11. ~~Grayscale PNGs cause a GPU buffer over-read~~ — FIXED — `sprite_database/mod.rs:579-632`
+
+**Fixed.** `upload_texture` now checks `reader.output_color_type()` right after `read_info()`, before the
+staging buffer is even sized or allocated, and rejects the upload with the new
+`VulkanError::UnsupportedTextureColorType` if the decoder's actual output isn't `ColorType::Rgba` — closing
+the gap the `EXPAND | ALPHA` comment claimed was already closed.
 
 ```rust
 // Ensure output is always RGBA regardless of source format

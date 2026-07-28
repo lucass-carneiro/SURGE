@@ -583,6 +583,15 @@ impl SpriteDatabase {
             .read_info()
             .map_err(|e| VulkanError::TextureDecodingError(e))?;
 
+        // EXPAND only expands palette and sub-8-bit images; grayscale (with or without alpha)
+        // is not expanded to RGB(A), so the decoded output would be narrower than the RGBA
+        // upload the rest of this function assumes. Reject anything that isn't RGBA rather
+        // than over-reading the staging buffer into the GPU copy.
+        let (output_color_type, _) = reader.output_color_type();
+        if output_color_type != png::ColorType::Rgba {
+            return Err(VulkanError::UnsupportedTextureColorType(output_color_type));
+        }
+
         let image_size = reader.output_buffer_size().unwrap();
 
         // Create CPU buffer
