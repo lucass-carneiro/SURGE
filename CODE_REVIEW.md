@@ -614,7 +614,7 @@ emits 16-bit samples in **big-endian** order; `R16G16B16A16_UNORM` is interprete
 little-endian target each channel is byte-reversed. No shipped asset is 16-bit, so the branch has never
 run.
 
-**M16. `.gitignore`'s unanchored `config.toml` also ignores the module configs the stager requires.**
+**M16. ~~`.gitignore`'s unanchored `config.toml` also ignores the module configs the stager requires~~ — FIXED.**
 
 ```
 $ git check-ignore --no-index -v surge-modules/surge-mod-default/config.toml
@@ -769,19 +769,19 @@ the machine does not otherwise consider valid.
 
 ## Where I'd start
 
-1. **C2**, **H9**, **M16** — one `.gitignore` line each and two identifier fixes; without them the repo is
-   not buildable/runnable/extensible by anyone else.
-2. **C6** — fix the projection before any more modules encode a `z` convention against it. A unit test on
-   `make_ortho_projection` is three lines and closes the whole class.
-3. **C3** — move the fence wait above `app.update`. Small change, removes a real race.
-4. **C1**, **C4**, **H14** — use ash's safe `.color_attachment_formats()` setter; add `#[repr(C)]`; null the
-   swapchain handle. Three one-liners against genuine UB and a dead safety guard.
-5. **H11** + **H12** — match on `color_type`, and flush mapped writes. Both are small, both are
-   memory-correctness rather than style.
-6. **C5** + **M8** — give `upload_texture` a real handle type instead of a bare `usize` index, and split the
-   texture budget from the instance budget.
-7. **H1** + **H2** — treat `OUT_OF_DATE`/`SUBOPTIMAL` as control flow, not error. This unblocks resize,
-   fullscreen, and **H3**.
+1. **C2**, **H9**, **M16** — ~~one `.gitignore` line each and two identifier fixes; without them the repo is
+   not buildable/runnable/extensible by anyone else~~ — FIXED (all three).
+2. **C6** — ~~fix the projection before any more modules encode a `z` convention against it. A unit test on
+   `make_ortho_projection` is three lines and closes the whole class~~ — FIXED.
+3. **C3** — ~~move the fence wait above `app.update`. Small change, removes a real race~~ — FIXED.
+4. **C1**, **C4**, **H14** — ~~use ash's safe `.color_attachment_formats()` setter; add `#[repr(C)]`; null the
+   swapchain handle. Three one-liners against genuine UB and a dead safety guard~~ — FIXED (all three).
+5. **H11** + **H12** — ~~match on `color_type`, and flush mapped writes. Both are small, both are
+   memory-correctness rather than style~~ — FIXED (both).
+6. **C5** + **M8** — ~~give `upload_texture` a real handle type instead of a bare `usize` index, and split the
+   texture budget from the instance budget~~ — FIXED (both).
+7. **H1** + **H2** — ~~treat `OUT_OF_DATE`/`SUBOPTIMAL` as control flow, not error. This unblocks resize,
+   fullscreen, and **H3**~~ — FIXED (both; **H3** itself is still open, see below).
 8. **M17** — ~~stop re-reading assets from disk inside the frame loop on every swapchain recreate~~ — FIXED.
    (**H13** and **M10**, the other two hats this item used to wear — the resolution being an input not an
    output, and the recreate hook being `&mut self` — are both fixed too.)
