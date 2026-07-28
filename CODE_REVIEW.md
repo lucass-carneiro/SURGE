@@ -541,12 +541,11 @@ computed delta never reaches it (`update(&mut self, _: f32, ...)` in `lib.rs:76`
 in version control. Right now no two clones are guaranteed to build the same dependency graph, and
 `vk-mem`/`ash` are exactly the crates where that matters.
 
-**M8. `max_sprites` conflates two unrelated budgets** — `sprite_database/mod.rs:266, 316, 504, 569`. It
-caps live instances per frame *and* total uploaded textures, because they share the descriptor count.
-2048 uploads 12 textures against a hardcoded budget of 32 (`main.rs:57`), leaving 20 sprites for a 16-tile
-board plus background — with no headroom for the merge/spawn logic still to be written. Both limits fail
-by `log::warn!` and silent drop, which in a renderer means "sprites randomly disappear and the game keeps
-running".
+**M8. ~~`max_sprites` conflates two unrelated budgets~~ — FIXED — `sprite_database/mod.rs`, `main.rs`.
+`CreateInfo` now has an independent `max_textures: u32` field. The descriptor pool/set sizing for
+`SAMPLED_IMAGE` and the `upload_texture` capacity check use `max_textures`; the instance SSBO sizing and
+`add_instance` occupancy check keep using `max_sprites`. Both call sites in `main.rs` pass `max_sprites: 32,
+max_textures: 32`, preserving current numeric behavior while decoupling the mechanism for future tuning.
 
 **M9. `upload_texture` updates a live descriptor set** — `sprite_database/mod.rs:637-663`.
 `update_descriptor_sets` on `mat_desc_set` with no `UPDATE_AFTER_BIND` flag and no fence wait. Safe only

@@ -48,6 +48,7 @@ pub struct CreateInfo {
     pub texture_filtering_mode: TextureFilteringMode,
     pub texture_filtering_level: TextureFilteringLevel,
     pub max_sprites: u32,
+    pub max_textures: u32,
     pub window_width: f32,
     pub window_height: f32,
 }
@@ -264,7 +265,7 @@ impl SpriteDatabase {
                     .descriptor_count(1),
                 vk::DescriptorPoolSize::default()
                     .ty(DescriptorType::SAMPLED_IMAGE)
-                    .descriptor_count(ci.max_sprites),
+                    .descriptor_count(ci.max_textures),
             ];
 
             let dpci = vk::DescriptorPoolCreateInfo::default()
@@ -313,7 +314,7 @@ impl SpriteDatabase {
                 vk::DescriptorSetLayoutBinding {
                     binding: 1,
                     descriptor_type: vk::DescriptorType::SAMPLED_IMAGE,
-                    descriptor_count: ci.max_sprites,
+                    descriptor_count: ci.max_textures,
                     stage_flags: vk::ShaderStageFlags::FRAGMENT,
                     ..Default::default()
                 },
@@ -359,7 +360,7 @@ impl SpriteDatabase {
         }?[0];
 
         let mat_desc_set = {
-            let counts = [ci.max_sprites];
+            let counts = [ci.max_textures];
 
             let mut dsvdcai = vk::DescriptorSetVariableDescriptorCountAllocateInfo::default()
                 .descriptor_counts(&counts);
@@ -510,7 +511,7 @@ impl SpriteDatabase {
         }
 
         // Reject out-of-bounds texture_id before it reaches the GPU: an OOB index would
-        // either read an unwritten (PARTIALLY_BOUND) descriptor or, past max_sprites,
+        // either read an unwritten (PARTIALLY_BOUND) descriptor or, past max_textures,
         // fault the device outright.
         if aii.texture_id >= self.uploaded_textures.len() {
             log::warn!(
@@ -581,7 +582,7 @@ impl SpriteDatabase {
 
     pub fn upload_texture(&mut self, texture_file: &str) -> Result<(), VulkanError> {
         // Only do this if the ammount of stored image records < database capacity
-        if self.uploaded_textures.len() == self.ci.max_sprites as usize {
+        if self.uploaded_textures.len() == self.ci.max_textures as usize {
             log::warn!("Unable to upload new texture to full database. Ignoring request");
             return Ok(());
         }
