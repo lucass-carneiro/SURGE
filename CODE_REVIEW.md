@@ -179,7 +179,16 @@ this will not be noticed until it breaks.
 deliberate policy. The `_`-prefixed field names are the tell: the compiler considers every one of them
 dead because nothing in Rust ever reads them.
 
-### C5. `texture_id` is never bounds-checked — `sprite_database/mod.rs:502-565`
+### C5. ~~`texture_id` is never bounds-checked~~ — FIXED — `sprite_database/mod.rs:502-565`
+
+**Fixed.** `add_instance` now checks `aii.texture_id >= self.uploaded_textures.len()` up front and,
+on failure, logs a warning and drops the request — the same "ignore and warn" pattern already used a
+few lines down for a full database and for a subtexture that doesn't fit. Since `upload_texture` never
+lets `uploaded_textures.len()` exceed `ci.max_sprites`, this one check covers both failure modes: an
+index into unwritten `PARTIALLY_BOUND` descriptor space, and an out-of-bounds descriptor access past
+`max_sprites`. It also fixes the panic on the subtexture path, which indexed `uploaded_textures`
+directly before this check existed. `add_instance` keeps its `()` return type — no caller changes
+required. Original finding kept below for the record.
 
 `add_instance` writes `aii.texture_id as u32` straight into `_material_id`, which the fragment shader
 uses as `textures[nonuniformEXT(material)]` into a `max_sprites`-sized runtime array

@@ -509,6 +509,18 @@ impl SpriteDatabase {
             return;
         }
 
+        // Reject out-of-bounds texture_id before it reaches the GPU: an OOB index would
+        // either read an unwritten (PARTIALLY_BOUND) descriptor or, past max_sprites,
+        // fault the device outright.
+        if aii.texture_id >= self.uploaded_textures.len() {
+            log::warn!(
+                "texture_id {} is out of bounds ({} textures uploaded). Ignoring request",
+                aii.texture_id,
+                self.uploaded_textures.len()
+            );
+            return;
+        }
+
         // If we are adding a subtexture instance, make sure that
         // the subtexture can fit inside the main texture.
         let subtexture_data = match &aii.subtexture_info {
