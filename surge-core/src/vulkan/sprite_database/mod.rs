@@ -750,12 +750,29 @@ impl Drop for SpriteDatabase {
 /// Creates an orthographic projection for 2D rendering.
 /// It places the origin on upper left corner of the game window
 /// with +x pointing right, +y pointing down and +z pointing into
-/// The view frustum is normalized the 0.0 (near) to 1.0 (far) range
+/// the screen. Composed with `make_view`'s camera (eye at z = 1,
+/// looking at z = 0), a `z` passed to `add_instance` in `[0, 1]`
+/// maps to Vulkan NDC/depth `[0, 1]`, with `z = 0` frontmost
+/// (depth = 1) and `z = 1` backmost (depth = 0).
+///
+/// `nalgebra::Matrix4::new_orthographic` emits the GL convention
+/// (NDC z in `[-1, 1]`), which Vulkan does not clip-space-remap on
+/// its own — Vulkan's NDC/depth range is `[0, 1]` directly. Using
+/// the GL matrix as-is silently clips any z whose GL NDC z is
+/// negative. This builds the z row for Vulkan's convention directly
+/// instead.
 ///
 /// # Parameters:
-/// * `dims`: Screen dimensions.
+/// * `width`, `height`: Screen dimensions.
 pub fn make_ortho_projection(width: f32, height: f32) -> nalgebra::Matrix4<f32> {
-    nalgebra::Matrix4::new_orthographic(0.0f32, width, 0.0f32, height, 0.0f32, 1.0f32)
+    #[rustfmt::skip]
+    let proj = nalgebra::Matrix4::new(
+        2.0f32 / width, 0.0,             0.0, -1.0,
+        0.0,            2.0f32 / height, 0.0, -1.0,
+        0.0,            0.0,            -1.0,  0.0,
+        0.0,            0.0,             0.0,  1.0,
+    );
+    proj
 }
 
 /// Creates a view matrix for 2D rendering
@@ -780,4 +797,78 @@ pub fn make_model_matrix(
     nalgebra::Matrix4::identity()
         .append_nonuniform_scaling(&sc)
         .append_translation(&mv)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Runs a sprite's z through the same proj * view * model chain
+    /// the engine builds at draw time and returns the resulting
+    /// Vulkan NDC/depth z (post perspective-divide).
+    fn ndc_z(z: f32, width: f32, height: f32) -> f32 {
+        let model = make_model_matrix(
+            nalgebra::Vector2::new(0.0f32, 0.0f32),
+            nalgebra::Vector2::new(1.0f32, 1.0f32),
+            z,
+        );
+        let view = make_view(nalgebra::Vector2::from_element(0.0f32));
+        let proj = make_ortho_projection(width, height);
+
+        let clip = proj * view * model * nalgebra::Vector4::new(0.0f32, 0.0f32, 0.0f32, 1.0f32);
+
+        // Orthographic: w must stay 1, i.e. no perspective divide needed.
+        assert!(
+            (clip.w - 1.0f32).abs() < 1e-6,
+            "orthographic projection introduced a perspective divide: w = {}",
+            clip.w
+        );
+
+        clip.z
+    }
+
+    #[test]
+    fn full_z_range_lands_inside_vulkan_depth_bounds() {
+        let (width, height) = (500.0f32, 800.0f32);
+
+        // Documented range (CLAUDE.md, make_ortho_projection): z in [0, 1]
+        // must map onto Vulkan's valid NDC/depth range [0, 1] in full,
+        // not just the [0, 0.5] half the pre-fix GL-convention matrix
+        // produced (values above landed in negative NDC and were clipped).
+        for &(z, expected_depth) in &[
+            (0.00f32, 1.00f32),
+            (0.25f32, 0.75f32),
+            (0.50f32, 0.50f32),
+            (0.75f32, 0.25f32),
+            (1.00f32, 0.00f32),
+        ] {
+            let depth = ndc_z(z, width, height);
+
+            assert!(
+                (0.0..=1.0).contains(&depth),
+                "z = {z} produced depth {depth}, outside Vulkan's valid [0, 1] range \
+                 (would be clipped and never rendered)"
+            );
+            assert!(
+                (depth - expected_depth).abs() < 1e-5,
+                "z = {z}: expected depth {expected_depth}, got {depth}"
+            );
+        }
+    }
+
+    #[test]
+    fn smaller_world_z_draws_in_front() {
+        // GREATER_OR_EQUAL depth test + clear depth 0.0: a larger stored
+        // depth wins, so smaller world z (foreground, e.g. 2048 pieces at
+        // z = 0.0) must map to a larger depth than larger world z
+        // (background, e.g. the board at z = 0.5).
+        let (width, height) = (500.0f32, 800.0f32);
+
+        let foreground_depth = ndc_z(0.0, width, height);
+        let background_depth = ndc_z(0.5, width, height);
+        let backmost_depth = ndc_z(1.0, width, height);
+
+        assert!(foreground_depth > background_depth);
+        assert!(background_depth > backmost_depth);
+    }
 }
