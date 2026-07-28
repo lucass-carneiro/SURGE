@@ -26,7 +26,7 @@ impl SurgeApp for AppDefault {
         spd.upload_texture("assets/awesomeanim.png").unwrap();
     }
 
-    fn on_swapchain_recreate(&self, spd: &mut SpriteDatabase) {
+    fn on_swapchain_recreate(&mut self, spd: &mut SpriteDatabase) {
         spd.upload_texture("assets/awesomeface.png").unwrap();
         spd.upload_texture("assets/awesomeanim.png").unwrap();
     }
@@ -134,7 +134,12 @@ impl SurgeApp for AppDefault {
         );
     }
 
-    fn mouse_wheel_event(&self, device_id: DeviceId, delta: MouseScrollDelta, phase: TouchPhase) {
+    fn mouse_wheel_event(
+        &mut self,
+        device_id: DeviceId,
+        delta: MouseScrollDelta,
+        phase: TouchPhase,
+    ) {
         log::info!(
             "Mouse scroll event: ID = {:?} delta = {:?} phaase = {:?}",
             device_id,
@@ -143,7 +148,7 @@ impl SurgeApp for AppDefault {
         );
     }
 
-    fn on_unload(&self) {
+    fn on_unload(&mut self) {
         log::info!("Default app shutdown");
     }
 }

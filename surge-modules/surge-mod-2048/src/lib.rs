@@ -69,7 +69,7 @@ impl SurgeApp for App2048 {
         load_image_assets(spdb);
     }
 
-    fn on_swapchain_recreate(&self, spdb: &mut SpriteDatabase) {
+    fn on_swapchain_recreate(&mut self, spdb: &mut SpriteDatabase) {
         load_image_assets(spdb);
     }
 

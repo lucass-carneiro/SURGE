@@ -574,11 +574,11 @@ max_textures: 32`, preserving current numeric behavior while decoupling the mech
 because both call sites happen to run before any submission that binds the set. Nothing in the API says
 so, and it is a `pub fn`.
 
-**M10. `on_swapchain_recreate(&self, ...)` takes `&self`** — `app/mod.rs:37`. The player destroys and
-rebuilds the entire `SpriteDatabase` on recreate, which reassigns every `texture_id` in upload order — yet
-the module is handed an immutable receiver and cannot record the new mapping, nor the new resolution
-(**H13**). `mouse_wheel_event(&self)` and `on_unload(&self)` are likewise `&self` while their siblings are
-`&mut self`. Pick one.
+**M10. ~~`on_swapchain_recreate(&self, ...)` takes `&self`~~ — FIXED — `app/mod.rs`.
+**Fixed.** `on_swapchain_recreate`, `mouse_wheel_event`, and `on_unload` all now take `&mut self`, matching
+`on_load`/`update`/`keyboard_event`/`mouse_button_event`. Every call site in `main.rs` already runs inside a
+`&mut self` `ApplicationHandler` method, so this was a mechanical signature change with no borrow-checker
+fallout. Updated both implementors (`surge-mod-2048`, `surge-mod-default`) to match.
 
 **M11. The `errors` module is dead weight at the top level** — `main.rs` contains **29** `.unwrap()`
 calls. Forty-plus carefully written `thiserror` variants, and every call site in the player discards them.
@@ -777,9 +777,9 @@ the machine does not otherwise consider valid.
    texture budget from the instance budget.
 7. **H1** + **H2** — treat `OUT_OF_DATE`/`SUBOPTIMAL` as control flow, not error. This unblocks resize,
    fullscreen, and **H3**.
-8. **H13** + **M10** + **M17** — decide whether `config.resolution` is an input or an output, give modules a
-   `&mut self` recreate hook that reports the new extent, and stop re-reading assets from disk inside the
-   frame loop. These three are one design decision wearing three hats.
+8. **M17** — stop re-reading assets from disk inside the frame loop on every swapchain recreate.
+   (**H13** and **M10**, the other two hats this item used to wear — the resolution being an input not an
+   output, and the recreate hook being `&mut self` — are both fixed.)
 9. **H8** — an asset-path resolution API in `surge-core` (executable-relative, with a dev fallback), which
    fixes both modules at once.
 10. **H10** — settle the module ABI before hot reloading is built on top of it.

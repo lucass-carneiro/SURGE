@@ -34,7 +34,7 @@ pub trait SurgeApp {
     fn on_load(&mut self, _: &mut SpriteDatabase) {}
 
     /// Called if the swapchain is recreated
-    fn on_swapchain_recreate(&self, _: &mut SpriteDatabase) {}
+    fn on_swapchain_recreate(&mut self, _: &mut SpriteDatabase) {}
 
     /// Update application state
     fn update(&mut self, _: f32, _: &mut SpriteDatabase) {}
@@ -46,10 +46,10 @@ pub trait SurgeApp {
     fn mouse_button_event(&mut self, _: DeviceId, _: ElementState, _: MouseButton) {}
 
     /// Called when the application recieves a mouse wheel event
-    fn mouse_wheel_event(&self, _: DeviceId, _: MouseScrollDelta, _: TouchPhase) {}
+    fn mouse_wheel_event(&mut self, _: DeviceId, _: MouseScrollDelta, _: TouchPhase) {}
 
     /// Called when engin is about to exit, and the application is about to quit
-    fn on_unload(&self) {}
+    fn on_unload(&mut self) {}
 }
 
 pub fn load_from_dylib(dylib_folder: &str, dylib_name: &str) -> Result<LoadedApp, AppError> {
