@@ -489,32 +489,19 @@ essential on non-coherent memory. On a heap without `HOST_COHERENT` — entirely
 integrated parts, and under memory pressure when VMA falls back to a different type — every sprite the
 engine submits is invisible to the GPU. Nothing in the code checks which memory type it actually got.
 
-### H13. `Resized` destroys `config.resolution` — and it fires on every single launch — `main.rs:240-259`
+### H13. ~~`Resized` destroys `config.resolution` — and it fires on every single launch~~ — FIXED — `main.rs`
 
-`WindowEvent::Resized` writes the observed size back into `self.engine_config.resolution`, which is the
-authority for the depth image, the viewport, the scissor, and the ortho projection. The configured
-resolution is not a setting; it is a variable the window manager overwrites.
-
-This is not theoretical. A stock launch on the dev machine, straight from the run log:
-
-```
-[surge_player] Resizing window (500,800) -> (501,800)
-[surge_core::vulkan::ctx_swpc] Recreating swapchain
-[surge_core::vulkan::sprite_database] Creating sprite database
-… 12 textures re-uploaded …
-[surge_core::vulkan::sprite_database] Destroying sprite database
-```
-
-Every launch, before the first useful frame, the compositor hands back a size one pixel off, and the
-engine responds by tearing down and rebuilding the swapchain, the depth image, the descriptor pool, the
-pipeline, and all twelve textures. `.with_resizable(false)` does not prevent it.
-
-One pixel is harmless. Fractional scaling or a HiDPI output is not: `BoardGeometry` hardcodes 500×800-based
-pixel constants (`slot_dims = 121.0`, `x_slot_base = 15.0`, `y_slot_base = 315.0`, `piece_dims = 105.0`)
-while `add_board_sprite` scales the background to `get_create_info().window_*` — which now follows the
-*actual* surface. The board stretches and the pieces do not, so the tiles drift out of their slots. There
-is no API for a module to learn that the resolution changed (see **M10**: `on_swapchain_recreate` takes
-`&self`).
+**Fixed.** `WindowEvent::Resized` no longer writes the observed size into `self.engine_config.resolution`.
+`SurgeContext` gained a `last_window_size: PhysicalSize<u32>` field used only to dedup redundant resize
+events (skip recreation when the compositor resends a size that hasn't actually changed); it starts out
+seeded from the configured resolution. `config.resolution` itself is now write-once for the lifetime of the
+process — it stays the authority for the depth image, the viewport, the scissor, and the ortho projection,
+exactly as `create_swapchain` already expected, since that function clamps whatever width/height it's given
+to the surface's actual `min_image_extent`/`max_image_extent` anyway (`image.rs:24-31`). A genuine size
+change (e.g. the compositor handing back 500×800 → 501×800 on first launch) still sets
+`recreate_swapchain = true` and rebuilds the swapchain, but no longer corrupts the design resolution that
+`BoardGeometry`'s hardcoded 500×800 pixel constants and `add_board_sprite`'s `window_*` scaling both depend
+on — so the drift between the board background and the pieces described below no longer happens.
 
 ### H14. ~~`destroy_swapchain()`'s idempotency guard does not work~~ — FIXED — `ctx_new_drop.rs:174-192`
 

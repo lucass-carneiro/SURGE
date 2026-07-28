@@ -23,6 +23,11 @@ struct SurgeContext {
     last_update_call_timer: Instant,
     pause_rendering: bool,
     recreate_swapchain: bool,
+    // Tracks the actual observed window size, purely to dedup redundant Resized
+    // events. This is NOT the engine's configured resolution: config.resolution
+    // is a fixed design constant (depth image extent, ortho projection, module
+    // pixel math) and must never be overwritten by the window manager.
+    last_window_size: PhysicalSize<u32>,
 }
 
 impl ApplicationHandler for SurgeContext {
@@ -256,8 +261,8 @@ impl ApplicationHandler for SurgeContext {
             WindowEvent::Resized(size) => {
                 log::info!(
                     "Resizing window ({},{}) -> ({},{})",
-                    self.engine_config.resolution.width,
-                    self.engine_config.resolution.height,
+                    self.last_window_size.width,
+                    self.last_window_size.height,
                     size.width,
                     size.height
                 );
@@ -265,11 +270,13 @@ impl ApplicationHandler for SurgeContext {
                 if size.width == 0 || size.height == 0 {
                     log::info!("Pausing");
                     self.pause_rendering = true;
-                } else if size.width != self.engine_config.resolution.width
-                    || size.height != self.engine_config.resolution.height
-                {
-                    self.engine_config.resolution.width = size.width;
-                    self.engine_config.resolution.height = size.height;
+                } else if size != self.last_window_size {
+                    // The surface's actual extent changed (e.g. compositor-imposed
+                    // resize, DPI change), so the swapchain must be rebuilt. This does
+                    // NOT change engine_config.resolution: that stays the fixed design
+                    // resolution, and create_swapchain() clamps it to whatever the
+                    // surface capabilities actually allow.
+                    self.last_window_size = size;
                     self.recreate_swapchain = true;
                 }
             }
@@ -343,6 +350,11 @@ pub fn main() {
     /******************
      * Engine context *
      ******************/
+    let initial_size = PhysicalSize::new(
+        engine_config.resolution.width,
+        engine_config.resolution.height,
+    );
+
     let mut ctx = SurgeContext {
         window: None,
         vulkan_context: None,
@@ -353,6 +365,7 @@ pub fn main() {
         last_update_call_timer: Instant::now(),
         pause_rendering: false,
         recreate_swapchain: false,
+        last_window_size: initial_size,
     };
 
     /*************
