@@ -134,7 +134,7 @@ pub(super) fn build_instance(
 
 #[cfg(not(feature = "validation_layers"))]
 pub(super) fn build_instance(
-    entry: &Entry,
+    entry: &ash::Entry,
     extensions: &[*const i8],
 ) -> Result<ash::Instance, VulkanError> {
     log::info!("Creating Vulkan instance");

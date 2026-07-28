@@ -41,7 +41,7 @@ impl VulkanContext {
         let instance = instance::build_instance(&entry, &extensions, &layers)?;
 
         #[cfg(not(feature = "validation_layers"))]
-        let instance = build_instance(&entry, &extensions)?;
+        let instance = instance::build_instance(&entry, &extensions)?;
 
         #[cfg(feature = "validation_layers")]
         let (debug_utils, debug_messenger) = {

@@ -303,7 +303,12 @@ The two modules are mutually inconsistent about this: `surge-mod-default` uses `
 (dev-correct, staged-broken). Neither works in both layouts, and there is no asset-path API in
 `surge-core` to resolve it.
 
-### H9. `--no-default-features` does not compile — verified
+### H9. ~~`--no-default-features` does not compile~~ — FIXED
+
+**Fixed.** `ctx_new_drop.rs:44` now calls `instance::build_instance(...)` (was unqualified
+`build_instance(...)`), and `instance.rs:137` now takes `entry: &ash::Entry` (was bare `&Entry`).
+`cargo check -p surge-core --no-default-features` compiles clean. Original finding kept below for
+the record.
 
 ```
 $ cargo check -p surge-core --no-default-features
