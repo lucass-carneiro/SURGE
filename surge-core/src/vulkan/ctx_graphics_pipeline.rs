@@ -131,7 +131,6 @@ impl<'a> GraphicsPipelineBuilder<'a> {
     pub fn set_color_attachment_format(mut self, format: vk::Format) -> Self {
         self.color_attachment_format = format;
         self.render_info.color_attachment_count = 1;
-        self.render_info.p_color_attachment_formats = &self.color_attachment_format;
         self
     }
 
@@ -178,7 +177,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
 impl VulkanContext {
     pub fn create_graphics_pipeline(
         &self,
-        mut builder: GraphicsPipelineBuilder,
+        builder: GraphicsPipelineBuilder,
     ) -> Result<vk::Pipeline, VulkanError> {
         // Make viewport state from our stored viewport and scissor.
         // At the moment we wont support multiple viewports or scissors
@@ -212,6 +211,13 @@ impl VulkanContext {
             ..Default::default()
         };
 
+        // Bound to `builder.color_attachment_format`, which is stable for the rest of this
+        // call (builder is never moved again) via ash's safe setter, so the borrow checker
+        // - not just convention - guarantees this pointer stays valid.
+        let mut render_info = builder
+            .render_info
+            .color_attachment_formats(std::slice::from_ref(&builder.color_attachment_format));
+
         // Build the actual pipeline
         let pipeline_info = vk::GraphicsPipelineCreateInfo::default()
             .stages(builder.shader_stage_infos.as_slice())
@@ -224,7 +230,7 @@ impl VulkanContext {
             .depth_stencil_state(&builder.depth_info)
             .layout(builder.pipeline_layout)
             .dynamic_state(&dynamic_info)
-            .push_next(&mut builder.render_info);
+            .push_next(&mut render_info);
 
         let pipelines = unsafe {
             self.device

@@ -47,7 +47,28 @@ agree today. Most of what is below is latent, not currently firing.
 
 ## CRITICAL
 
-### C1. Dangling raw pointer in the pipeline builder — `ctx_graphics_pipeline.rs:131-136`
+### C1. ~~Dangling raw pointer in the pipeline builder~~ — FIXED — `ctx_graphics_pipeline.rs`
+
+**Fixed.** `set_color_attachment_format` no longer writes the raw pointer field at all — it now only
+stores the owned `vk::Format` value and bumps `color_attachment_count`. The pointer is constructed exactly
+once, in `create_graphics_pipeline`, right before the pipeline is created, via ash's safe
+`.color_attachment_formats(&[fmt])` setter bound to `builder.color_attachment_format`:
+
+```rust
+let mut render_info = builder
+    .render_info
+    .color_attachment_formats(std::slice::from_ref(&builder.color_attachment_format));
+```
+
+`builder` is a by-value parameter that is never moved again after this point in the function, so the
+pointer stays valid for the remainder of the call, through `push_next(&mut render_info)`. Because the
+safe setter ties the slice to `PipelineRenderingCreateInfo<'a>`'s lifetime parameter, the borrow checker
+now enforces this — the original bug (assigning the pointer inside the builder method, before the final
+move into `create_graphics_pipeline`) is no longer expressible without a compile error. Verified with
+`cargo check --workspace` (clean) and a real run with validation layers active: shader modules are
+created, the pipeline is built, and shader modules are unloaded with zero validation errors reported.
+
+Original finding kept below for the record.
 
 ```rust
 pub fn set_color_attachment_format(mut self, format: vk::Format) -> Self {
