@@ -1,6 +1,8 @@
 Cargo.lock
 target
 staging-*
-config.toml
+# Root config.toml is a per-developer working copy; module config.tomls
+# under surge-modules/*/ must stay trackable, hence the anchor.
+/config.toml
 *.spv
 __pycache__
