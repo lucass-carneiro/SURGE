@@ -181,10 +181,12 @@ impl VulkanContext {
                 for image_view in &self.swapchain_data.image_views {
                     self.device.destroy_image_view(*image_view, None);
                 }
+                self.swapchain_data.image_views.clear();
 
                 self.swapchain_data
                     .swapchain_loader
                     .destroy_swapchain(self.swapchain_data.swapchain, None);
+                self.swapchain_data.swapchain = vk::SwapchainKHR::null();
             }
         }
 

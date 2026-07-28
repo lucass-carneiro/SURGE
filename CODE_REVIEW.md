@@ -458,7 +458,11 @@ while `add_board_sprite` scales the background to `get_create_info().window_*` �
 is no API for a module to learn that the resolution changed (see **M10**: `on_swapchain_recreate` takes
 `&self`).
 
-### H14. `destroy_swapchain()`'s idempotency guard does not work — `ctx_new_drop.rs:174-192`
+### H14. ~~`destroy_swapchain()`'s idempotency guard does not work~~ — FIXED — `ctx_new_drop.rs:174-192`
+
+**Fixed.** `destroy_swapchain()` now clears `swapchain_data.image_views` and sets
+`swapchain_data.swapchain` back to `vk::SwapchainKHR::null()` after destroying them, so the null check at
+the top of the function is a real guard and a second call is a no-op instead of a double-free.
 
 ```rust
 if self.swapchain_data.swapchain != vk::SwapchainKHR::null() {
