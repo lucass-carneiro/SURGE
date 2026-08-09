@@ -10,6 +10,8 @@ use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDel
 const NUM_FRAMES: u32 = 25;
 const SECONDS_PER_FRAME: f32 = 1.0 / 20.0;
 
+const MODULE_NAME: &str = "surge-mod-default";
+
 pub struct AppDefault {}
 
 #[unsafe(no_mangle)]
@@ -17,18 +19,23 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
     Box::new(AppDefault {})
 }
 
+fn upload_assets(spd: &mut SpriteDatabase) {
+    for asset_name in ["awesomeface.png", "awesomeanim.png"] {
+        let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
+        spd.upload_texture(asset_path.to_str().unwrap()).unwrap();
+    }
+}
+
 impl SurgeApp for AppDefault {
     fn on_load(&mut self, spd: &mut SpriteDatabase) {
         surge_core::cli::init_env_logger();
         log::info!("Default app startup");
 
-        spd.upload_texture("assets/awesomeface.png").unwrap();
-        spd.upload_texture("assets/awesomeanim.png").unwrap();
+        upload_assets(spd);
     }
 
     fn on_swapchain_recreate(&mut self, spd: &mut SpriteDatabase) {
-        spd.upload_texture("assets/awesomeface.png").unwrap();
-        spd.upload_texture("assets/awesomeanim.png").unwrap();
+        upload_assets(spd);
     }
 
     fn update(&mut self, dt: f32, spdb: &mut SpriteDatabase) {

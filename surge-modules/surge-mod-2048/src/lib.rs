@@ -26,25 +26,30 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
 /// Decodes every board/piece PNG from disk once. The result is cached by `App2048` so that
 /// `on_swapchain_recreate` (which rebuilds the `SpriteDatabase`, GPU textures included, from
 /// scratch) can re-upload without re-reading and re-decoding the files every time.
+const MODULE_NAME: &str = "surge-mod-2048";
+
 pub(crate) fn decode_image_assets() -> Vec<DecodedTexture> {
-    let image_asset_paths: [&'static str; 12] = [
-        "surge-modules/surge-mod-2048/assets/board.png",
-        "surge-modules/surge-mod-2048/assets/pieces_2.png",
-        "surge-modules/surge-mod-2048/assets/pieces_4.png",
-        "surge-modules/surge-mod-2048/assets/pieces_8.png",
-        "surge-modules/surge-mod-2048/assets/pieces_16.png",
-        "surge-modules/surge-mod-2048/assets/pieces_32.png",
-        "surge-modules/surge-mod-2048/assets/pieces_64.png",
-        "surge-modules/surge-mod-2048/assets/pieces_128.png",
-        "surge-modules/surge-mod-2048/assets/pieces_256.png",
-        "surge-modules/surge-mod-2048/assets/pieces_512.png",
-        "surge-modules/surge-mod-2048/assets/pieces_1024.png",
-        "surge-modules/surge-mod-2048/assets/pieces_2048.png",
+    let image_asset_names: [&'static str; 12] = [
+        "board.png",
+        "pieces_2.png",
+        "pieces_4.png",
+        "pieces_8.png",
+        "pieces_16.png",
+        "pieces_32.png",
+        "pieces_64.png",
+        "pieces_128.png",
+        "pieces_256.png",
+        "pieces_512.png",
+        "pieces_1024.png",
+        "pieces_2048.png",
     ];
 
-    image_asset_paths
+    image_asset_names
         .iter()
-        .map(|asset_path| SpriteDatabase::decode_texture_file(asset_path).unwrap())
+        .map(|asset_name| {
+            let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
+            SpriteDatabase::decode_texture_file(asset_path.to_str().unwrap()).unwrap()
+        })
         .collect()
 }
 

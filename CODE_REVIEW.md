@@ -381,17 +381,21 @@ The "transfer queue" this engine selects on its own development hardware is the 
 family. Harmless only because both handles are discarded. There is also no "not found" signal — the struct
 defaults to `0`, so a device with no matching family silently yields family 0 instead of an error.
 
-### H8. The staged 2048 build cannot start — `surge-mod-2048/src/lib.rs:27-40` vs `stager/stager.py:151-166`
+### H8. ~~The staged 2048 build cannot start~~ — FIXED — `surge-mod-2048/src/lib.rs:27-40` vs `stager/stager.py:151-166`
 
-The module hardcodes `surge-modules/surge-mod-2048/assets/board.png`. The stager copies that tree to
-`staging-surge-mod-2048/assets/`. Nothing rewrites the path. `upload_texture(...).unwrap()` therefore
-panics on the first frame of every staged release build. The stager's entire purpose is producing a
-"self-contained, CWD-correct release layout" and it produces one that does not run.
+**Fixed.** Added `surge_core::assets::resolve_asset_path(module_name, relative_path)`: it tries
+`<executable_dir>/assets/<relative_path>` first (the layout `stager.py` produces) and, only if that
+doesn't exist, falls back to `surge-modules/<module_name>/assets/<relative_path>` relative to CWD (the
+dev layout, per the CWD contract). Both `surge-mod-2048` and `surge-mod-default` now hardcode bare asset
+file names and call this to build the actual path, instead of hardcoding one layout's path directly.
+Verified `stager.py stage surge-mod-2048 -o` still produces `staging-surge-mod-2048/assets/*.png` next to
+the copied `surge-player`/`libsurge_mod_2048.so`, which is exactly the layout the executable-relative
+branch resolves against.
 
-The two modules are mutually inconsistent about this: `surge-mod-default` uses `assets/awesomeface.png`
-(staged-correct, **dev-broken** — verified, there is no `assets/` at repo root), 2048 uses repo-root paths
-(dev-correct, staged-broken). Neither works in both layouts, and there is no asset-path API in
-`surge-core` to resolve it.
+The two modules were mutually inconsistent about this: `surge-mod-default` used `assets/awesomeface.png`
+(staged-correct, **dev-broken** — verified, there is no `assets/` at repo root), 2048 used repo-root paths
+(dev-correct, staged-broken). Neither worked in both layouts, which is what motivated a shared API in
+`surge-core` instead of a fix local to one module.
 
 ### H9. ~~`--no-default-features` does not compile~~ — FIXED
 
@@ -785,6 +789,6 @@ the machine does not otherwise consider valid.
 8. **M17** — ~~stop re-reading assets from disk inside the frame loop on every swapchain recreate~~ — FIXED.
    (**H13** and **M10**, the other two hats this item used to wear — the resolution being an input not an
    output, and the recreate hook being `&mut self` — are both fixed too.)
-9. **H8** — an asset-path resolution API in `surge-core` (executable-relative, with a dev fallback), which
-   fixes both modules at once.
+9. **H8** — ~~an asset-path resolution API in `surge-core` (executable-relative, with a dev fallback), which
+   fixes both modules at once~~ — FIXED.
 10. **H10** — settle the module ABI before hot reloading is built on top of it.
