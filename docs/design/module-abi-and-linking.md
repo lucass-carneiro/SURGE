@@ -2056,7 +2056,7 @@ player.)*
   `cargo check -p surge-sdk` resolves the package at all (Q79) — that is what catches the one mistake this
   step can actually make, a crate created on disk but never added to `[workspace] members`, which
   `cargo check --workspace` would silently skip rather than fail on.
-- **1.2.** Move the six plain-data types (`BlendingMode`, `TextureFilteringMode`, `TextureFilteringLevel`,
+- **1.2.** **[DONE]** Move the six plain-data types (`BlendingMode`, `TextureFilteringMode`, `TextureFilteringLevel`,
   `CreateInfo`, `SubTextureInfo`, `InstanceInfo`) from `surge-core::vulkan::sprite_database` into
   `surge-sdk`, adding `#[derive(Serialize, Deserialize)]` — **and `Clone, Copy` to `InstanceInfo` and
   `SubTextureInfo`, which have neither today** (Q68; the other four already derive both). This is not
