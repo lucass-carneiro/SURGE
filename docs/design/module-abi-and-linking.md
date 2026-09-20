@@ -2092,7 +2092,7 @@ player.)*
   needs no explicit enabling in `surge-core/Cargo.toml` — Cargo's feature unification turns it on
   workspace-wide once anything enables it, which `surge-sdk` now does.) Test: compile gate + smoke test on
   both modules, unchanged.
-- **1.4.** Define `SpriteCanvas` and `CanvasError` in `surge-sdk` (additive; nothing implements or calls
+- **1.4.** **[DONE]** Define `SpriteCanvas` and `CanvasError` in `surge-sdk` (additive; nothing implements or calls
   either yet) — the trait verbatim as written under "`surge-sdk`" above, three methods, no more (Q69: that
   definition is now pinned in the design section rather than left as "`add_instance`, `upload_texture`,
   `get_create_info`, ...", so this step is transcription, not design). Include the doc-comment on
