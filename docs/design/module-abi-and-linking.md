@@ -2556,7 +2556,7 @@ Q21.)*
 
 ### Phase 4 — Release mode
 
-- **4.1.** Extract `surge-player`'s run loop into a `[lib]` target: move `SurgeContext`/the
+- **4.1.** **[DONE]** Extract `surge-player`'s run loop into a `[lib]` target: move `SurgeContext`/the
   `ApplicationHandler` impl into `surge-player/src/lib.rs`, expose `pub fn run(app: Box<dyn SurgeApp>,
   config: EngineConfig)`; `surge-player`'s own `main.rs` (the dev binary) becomes `RemoteApp` setup +
   `run(Box::new(remote_app), config)`. **What must *not* move is as load-bearing as what does** (Q71):
@@ -2596,6 +2596,13 @@ Q21.)*
   lands, the same trace-through Q29 did for `libloading`. Test: compile gate + smoke test (dev mode
   unaffected by a re-export-shimmed move, same as 1.3's), plus confirm the logo and log output still appear
   now that `run()`, not `main()`, emits them.
+  *(Verified: compile gate, then `cargo run -p surge-player` for a few seconds — logo and `SURGE Debug`
+  lines appear, emitted by `run()`, and `ps` shows no leftover player or module process. Full window
+  interaction (sprites, input, resize, close) not exercised this session. **One consequence of Q62's move
+  worth knowing:** `main()` now parses the config and spawns the module *before* `run()` installs the
+  logger, so `log::` calls from `parse_config`'s error paths land nowhere in dev mode — the
+  `.unwrap()` panic message still carries the same error, so nothing is lost, only the formatted line.
+  `RemoteApp::new` logs nothing on its startup path. Release binaries in 4.2 share the same ordering.)*
 - **4.2.** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
   dependency gated by a `release-bin` feature, a `src/bin/release.rs` —
   ```rust

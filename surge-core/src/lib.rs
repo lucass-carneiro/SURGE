@@ -1,4 +1,4 @@
 pub mod cli;
-pub mod config;
+pub use surge_sdk::config;
 pub mod errors;
 pub mod vulkan;

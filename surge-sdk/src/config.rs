@@ -1,9 +1,22 @@
-use crate::errors::ConfigError;
 use log;
 use serde::Deserialize;
 use std::fs;
+use std::io;
 use std::path::Path;
+use thiserror::Error;
 use toml;
+
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error("Unable to load SURGE configuration file {name}: {io_error}")]
+    IoError { name: String, io_error: io::Error },
+
+    #[error("Unable to parse SURGE configuration file {name}")]
+    ParseError {
+        name: String,
+        error: toml::de::Error,
+    },
+}
 
 #[derive(Debug, Deserialize)]
 pub struct WindowConfig {

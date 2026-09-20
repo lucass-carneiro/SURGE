@@ -1,18 +1,6 @@
-use std::io;
 use thiserror::Error;
-use toml;
 
-#[derive(Debug, Error)]
-pub enum ConfigError {
-    #[error("Unable to load SURGE configuration file {name}: {io_error}")]
-    IoError { name: String, io_error: io::Error },
-
-    #[error("Unable to parse SURGE configuration file {name}")]
-    ParseError {
-        name: String,
-        error: toml::de::Error,
-    },
-}
+pub use surge_sdk::config::ConfigError;
 
 #[derive(Debug, Error)]
 pub enum VulkanError {

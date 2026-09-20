@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use surge_core::config::StartupAppConfig;
+use surge_sdk::config::StartupAppConfig;
 use surge_sdk::{
     CanvasOps, InputEvent, KeyEvent, Request, Response, SpriteCanvas, SurgeApp, WIRE_VERSION,
     read_message,

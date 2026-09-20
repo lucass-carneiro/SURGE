@@ -1,6 +1,7 @@
 mod app;
 mod assets;
 mod canvas;
+pub mod config;
 mod dev;
 mod input;
 mod logging;
