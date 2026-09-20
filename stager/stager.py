@@ -47,11 +47,7 @@ def make_staging(args):
         )
         exit(1)
 
-    # Check if the player has been built in release mode
-    if not common.player_release_binary_exists():
-        exit(1)
-
-    # Check if the requested module has been built in release mode
+    # Check if the requested module has been built as a release binary
     if not common.module_release_binary_exists(req_module):
         exit(1)
 
@@ -78,37 +74,13 @@ def make_staging(args):
 
     os.mkdir(staging_folder)
 
-    # Copy Module
-    mod_lib_name = common.make_lib_name(req_module)
+    # Copy the module's self-contained release binary (player loop linked in, no separate player)
+    release_bin_name = common.make_release_bin_name(req_module)
 
-    src_module_lib = os.path.join(
-        "target",
-        "release",
-        mod_lib_name
+    shutil.copy2(
+        os.path.join("target", "release", release_bin_name),
+        os.path.join(staging_folder, release_bin_name)
     )
-
-    dst_module_lib = os.path.join(
-        staging_folder,
-        mod_lib_name
-    )
-
-    shutil.copy2(src_module_lib, dst_module_lib)
-
-    # Copy Player
-    player_exe_name = common.make_exe_name("surge-player")
-
-    src_player_exe = os.path.join(
-        "target",
-        "release",
-        player_exe_name
-    )
-
-    dst_player_exe = os.path.join(
-        staging_folder,
-        player_exe_name
-    )
-
-    shutil.copy2(src_player_exe, dst_player_exe)
 
     # Copy config file
     dst_module_config = os.path.join(

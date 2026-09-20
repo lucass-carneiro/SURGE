@@ -42,15 +42,6 @@ def cwd_is_surge_root():
     return True
 
 
-def make_lib_name(basename: str):
-    _basename = str.replace(basename, "-", "_")
-
-    if os.name == "nt":
-        return f"{_basename}.dll"
-    elif os.name == "posix":
-        return f"lib{_basename}.so"
-
-
 def make_exe_name(basename: str):
     if os.name == "nt":
         return f"{basename}.exe"
@@ -58,32 +49,17 @@ def make_exe_name(basename: str):
         return basename
 
 
+def make_release_bin_name(module_name: str):
+    # The release [[bin]] is named after the library name (underscores), plus "_release"
+    return make_exe_name(f"{str.replace(module_name, '-', '_')}_release")
+
+
 def module_release_binary_exists(module_name: str):
-    release_folder = os.path.join("target", "release")
+    bin_path = os.path.join("target", "release", make_release_bin_name(module_name))
 
-    mod_lib_name = make_lib_name(module_name)
-    mod_lib_path = os.path.join(release_folder, mod_lib_name)
-
-    if not os.path.exists(mod_lib_path):
+    if not os.path.exists(bin_path):
         LOG.error(
-            f"{module_name} has not been built in release mode. Make sure that the module is inside the  \"surge-modules\" folder and build it with \"cargo build --release\""
-        )
-        return False
-
-    return True
-
-
-def player_release_binary_exists():
-    release_folder = os.path.join("target", "release")
-    player_base_name = "surge-player"
-
-    player_name = make_exe_name(player_base_name)
-
-    player_path = os.path.join(release_folder, player_name)
-
-    if not os.path.exists(player_path):
-        LOG.error(
-            f"The SURGE player has not been built in release mode. Make sure to build it with \"cargo build --release\""
+            f"{module_name} has not been built as a release binary. Make sure that the module is inside the \"surge-modules\" folder and build it with \"cargo build --release --features release-bin\""
         )
         return False
 

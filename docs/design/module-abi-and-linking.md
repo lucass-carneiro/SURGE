@@ -2645,12 +2645,19 @@ Q21.)*
 
 ### Phase 5 — Shippability cleanup
 
-- **5.1.** Rewrite `stager/stager.py` (flagged, not designed, by resolved open question 7): stage a single
+- **5.1.** **[DONE]** Rewrite `stager/stager.py` (flagged, not designed, by resolved open question 7): stage a single
   per-module release binary (`target/release/<module>_release`, per 4.2's explicit `[[bin]] name` — Q59) +
   its `config.toml` + `assets/`, not a player-exe-plus-`.so` pair. Test:
   `python3 stager/stager.py stage surge-mod-2048`, run the staged binary from a directory other than the
   repo root, confirm assets resolve (exercises `resolve_asset_path`'s staged-path branch, now keyed off the
   *module's* `current_exe()` per the behavior change noted under Q32).
+  *(Verified: `cargo build --release --features release-bin` then `stager.py stage surge-mod-2048 -o` yields
+  `surge_mod_2048_release` + `config.toml` + `assets/` and nothing else. The staged copy, run from a
+  directory outside the repo, loads all textures via the `<exe_dir>/assets` branch and runs until killed,
+  no panic. **`config.toml` is still read from CWD** (`release.rs` calls `parse_config("config.toml")`), so
+  "run from another directory" means CWD = the staging folder; launching it from elsewhere panics with
+  `IoError` on `config.toml`. The stager now checks only for the module's `_release` binary and its
+  error message points at `--features release-bin`; `make_lib_name` and the player-binary check are gone.)*
 - **5.2.** Delete the now-fully-superseded `hot_reloading` feature flag from any leftover
   `surge-player/Cargo.toml` reference if 3.1–3.4 didn't already remove it (Q21). Sweep `CLAUDE.md`'s "Build
   & run" and "Frame lifecycle" sections for now-inaccurate statements (`load_from_dylib`, the `dlopen` ABI
