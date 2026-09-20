@@ -2425,7 +2425,7 @@ module or doesn't.)*
   `Default app startup` / `2048 startup` logged once each. **Not yet observed:** `Default app shutdown` —
   SIGINT does not go through a window close, and no tool was available to close the window from the
   shell, so the Q65 shutdown round trip still needs one manual window-close run.)*
-- **3.4.** Cutover complete: delete the `SURGE_DEV_LOADER` branch and default `main()` to the `process` path
+- **3.4.** **[DONE]** Cutover complete: delete the `SURGE_DEV_LOADER` branch and default `main()` to the `process` path
   unconditionally; delete `surge-core/src/app/mod.rs` (`LoadedApp`, `load_from_dylib`), `AppError` and
   `ModuleError` from `surge-core/src/errors/mod.rs` (Q29 — `ModuleError` was already fully dead before this
   doc), and the `libloading` dependency from `surge-core/Cargo.toml`. The `StartupApp` enum from 3.1 (Q43)
@@ -2451,6 +2451,14 @@ module or doesn't.)*
   vacuously today and would keep passing if the dependency were still there), and `nm` on a statically
   linked binary depends on whether the linker happened to garbage-collect unreferenced sections. The
   `cargo tree` assertion tests the actual claim — the dependency edge is gone — deterministically.
+  *(As built: `SURGE_DEV_LOADER`, `StartupApp`, `surge-core/src/app/mod.rs`, `pub mod app;`, `AppError`,
+  `ModuleError` and the `libloading` dependency are gone; `surge-player` imports `surge_sdk::SurgeApp` and
+  `startup_app` is `Box<dyn SurgeApp>`. On non-Linux `main()` now panics, since the process loader is
+  Linux-only. The `no_mangle` attributes were left alone. **The `cargo tree -p surge-core | grep libloading`
+  assertion as written cannot pass:** `libloading 0.8.9` is still a transitive dependency via `ash` (and
+  `winit`'s `dlib`). The check that holds is that `cargo tree -p surge-core --depth 1` no longer lists it —
+  the direct edge, i.e. the `0.9` copy this step removes, is gone. Smoke tests with the env var unset:
+  both modules ran as exactly one child while open and none after, each logging its startup line.)*
 - **3.5.** Add `fn reload(&mut self) -> bool { false }` to `SurgeApp` (default no-op; Q45), overridden by
   `RemoteApp::reload` to run the inherent `RemoteApp::reload()` sequence from 2.6 and unconditionally return
   `true`. That sequence also sets `RemoteApp`'s `pending_on_load` flag once the re-handshake succeeds, and

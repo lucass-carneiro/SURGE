@@ -5,15 +5,14 @@ mod proc;
 #[allow(dead_code)]
 mod remote_app;
 
-use sc::app::SurgeApp;
 use sc::vulkan::{VulkanContext, sprite_database as spd};
 use std::{
     cell::RefCell,
-    ops::{Deref, DerefMut},
     sync::Arc,
     time::{Duration, Instant},
 };
 use surge_core::{self as sc};
+use surge_sdk::SurgeApp;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -21,33 +20,6 @@ use winit::{
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     window::{Fullscreen, Window, WindowId},
 };
-
-/// Temporary (Q43): holds whichever loader `SURGE_DEV_LOADER` selected until the `dlopen` path is
-/// deleted at 3.4, at which point `SurgeContext.startup_app` becomes a plain `Box<dyn SurgeApp>`.
-enum StartupApp {
-    Dylib(sc::app::LoadedApp),
-    Remote(Box<dyn SurgeApp>),
-}
-
-impl Deref for StartupApp {
-    type Target = dyn SurgeApp;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            StartupApp::Dylib(app) => &**app,
-            StartupApp::Remote(app) => &**app,
-        }
-    }
-}
-
-impl DerefMut for StartupApp {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        match self {
-            StartupApp::Dylib(app) => &mut **app,
-            StartupApp::Remote(app) => &mut **app,
-        }
-    }
-}
 
 /// Spawns the module binary named by `config` as a child process and connects to it.
 #[cfg(target_os = "linux")]
@@ -60,7 +32,7 @@ struct SurgeContext {
     vulkan_context: Option<Arc<RefCell<VulkanContext>>>,
     sprite_database: Option<spd::SpriteDatabase>,
     engine_config: sc::config::EngineConfig,
-    startup_app: StartupApp,
+    startup_app: Box<dyn SurgeApp>,
     frame_timer: Instant,
     last_update_call_timer: Instant,
     pause_rendering: bool,
@@ -386,26 +358,11 @@ pub fn main() {
     // Parse config
     let engine_config = sc::config::parse_config("config.toml").unwrap();
 
-    // Load startup app: `SURGE_DEV_LOADER=process` spawns it as a child process, anything else
-    // keeps loading it as a dynamic library.
-    let startup_app = if std::env::var("SURGE_DEV_LOADER").is_ok_and(|v| v == "process") {
-        #[cfg(target_os = "linux")]
-        {
-            StartupApp::Remote(spawn_and_connect(&engine_config.startup_app).unwrap())
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            panic!("SURGE_DEV_LOADER=process is only supported on Linux");
-        }
-    } else {
-        StartupApp::Dylib(
-            surge_core::app::load_from_dylib(
-                &engine_config.startup_app.app_folder,
-                &engine_config.startup_app.app_name,
-            )
-            .unwrap(),
-        )
-    };
+    // Load startup app: spawned as a child process and driven over IPC.
+    #[cfg(target_os = "linux")]
+    let startup_app = spawn_and_connect(&engine_config.startup_app).unwrap();
+    #[cfg(not(target_os = "linux"))]
+    let startup_app: Box<dyn SurgeApp> = panic!("the module process loader is only supported on Linux");
 
     /*******************
      * Init event loop *
