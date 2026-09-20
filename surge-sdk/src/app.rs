@@ -24,4 +24,11 @@ pub trait SurgeApp {
 
     /// Called when engin is about to exit, and the application is about to quit
     fn on_unload(&mut self) {}
+
+    /// Replaces the running module with a fresh instance of itself. Returns `true` if the player
+    /// must rebuild its canvas and swapchain afterwards, since the new module has uploaded
+    /// nothing yet. Apps that cannot be reloaded keep the default.
+    fn reload(&mut self) -> bool {
+        false
+    }
 }

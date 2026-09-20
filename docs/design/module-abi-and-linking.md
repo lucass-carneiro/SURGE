@@ -2459,7 +2459,7 @@ module or doesn't.)*
   `winit`'s `dlib`). The check that holds is that `cargo tree -p surge-core --depth 1` no longer lists it —
   the direct edge, i.e. the `0.9` copy this step removes, is gone. Smoke tests with the env var unset:
   both modules ran as exactly one child while open and none after, each logging its startup line.)*
-- **3.5.** Add `fn reload(&mut self) -> bool { false }` to `SurgeApp` (default no-op; Q45), overridden by
+- **3.5.** **[DONE]** Add `fn reload(&mut self) -> bool { false }` to `SurgeApp` (default no-op; Q45), overridden by
   `RemoteApp::reload` to run the inherent `RemoteApp::reload()` sequence from 2.6 and unconditionally return
   `true`. That sequence also sets `RemoteApp`'s `pending_on_load` flag once the re-handshake succeeds, and
   `RemoteApp::on_swapchain_recreate` consumes it by sending `Request::OnLoad { create_info }` instead of
@@ -2485,6 +2485,15 @@ module or doesn't.)*
   (Q46). Q22's flag is still needed — it's just that nothing in this plan, including this step, exercises
   the race it exists for; that only happens once a real, necessarily-async trigger (file watcher or
   similar) replaces F5, which is explicitly out of this doc's scope.
+  *(As built: F5 is swallowed entirely in `window_event` — press acts, release and key repeats are dropped
+  without reaching the module — and the reload only fires on a non-repeat press. `RemoteApp`'s trait
+  `reload` logs an inherent-`reload` failure and still returns `true`, so the player rebuilds its canvas
+  even when the respawn failed; `on_swapchain_recreate` leaves `pending_on_load` set while the app is
+  faulted, so the retry still opens with `OnLoad`. The `#[allow(dead_code)]` on `mod remote_app` is gone;
+  `is_faulted` carries its own until 3.6. Only the compile gate and an F5-less smoke test were run —
+  one child while open, none after; **the F5 checks themselves (`OnLoad` as the fresh child's first
+  request, differing pid, no texture-cap warning) are not yet observed**, since no tool was available to
+  send a keypress to the window.)*
 - **3.6.** Surface the crash state (Q11's policy, Q66's mechanism — the last unbuilt requirement in the dev
   design, and the one three earlier steps route failures into as if it already existed). Add the second
   default method to `SurgeApp` in `surge-sdk`, `fn is_faulted(&self) -> bool { false }`, overridden by

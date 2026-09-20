@@ -55,6 +55,9 @@ pub struct RemoteApp {
     /// transport failure in that window is the player's own doing, not a module crash, so
     /// `fault` ignores it.
     reload_in_progress: bool,
+    /// Set by a successful `reload`: the respawned module has never seen `OnLoad`, so the next
+    /// `on_swapchain_recreate` sends that instead.
+    pending_on_load: bool,
 }
 
 impl RemoteApp {
@@ -75,6 +78,7 @@ impl RemoteApp {
             pending_input: Vec::new(),
             faulted: false,
             reload_in_progress: false,
+            pending_on_load: false,
         })
     }
 
@@ -97,6 +101,7 @@ impl RemoteApp {
                 self.stream = stream;
                 self.pending_input.clear();
                 self.faulted = false;
+                self.pending_on_load = true;
                 Ok(())
             }
             Err(e) => {
@@ -106,6 +111,8 @@ impl RemoteApp {
         }
     }
 
+    // No caller until 3.6.
+    #[allow(dead_code)]
     pub fn is_faulted(&self) -> bool {
         self.faulted
     }
@@ -172,7 +179,14 @@ impl SurgeApp for RemoteApp {
 
     fn on_swapchain_recreate(&mut self, canvas: &mut dyn SpriteCanvas) {
         let create_info = canvas.get_create_info();
-        self.turn(Request::OnSwapchainRecreate { create_info }, canvas);
+        // A faulted app must keep the flag: `turn` sends nothing, and the retry still needs it.
+        let request = if self.pending_on_load && !self.faulted {
+            self.pending_on_load = false;
+            Request::OnLoad { create_info }
+        } else {
+            Request::OnSwapchainRecreate { create_info }
+        };
+        self.turn(request, canvas);
     }
 
     fn update(&mut self, dt: f32, canvas: &mut dyn SpriteCanvas) {
@@ -201,6 +215,15 @@ impl SurgeApp for RemoteApp {
             self.pending_input
                 .push(InputEvent::MouseWheel { delta, phase });
         }
+    }
+
+    /// Always asks the player to rebuild its canvas, even if the respawn failed: the failure is
+    /// recorded as a fault, and the rebuilt canvas is simply never drawn to.
+    fn reload(&mut self) -> bool {
+        if let Err(e) = RemoteApp::reload(self) {
+            log::error!("reload failed: {e}");
+        }
+        true
     }
 
     /// Asks the module to shut down, then reaps it — escalating to `SIGTERM`/`SIGKILL` if it does

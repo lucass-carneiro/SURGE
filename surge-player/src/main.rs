@@ -1,8 +1,6 @@
 #[cfg(unix)]
 mod proc;
-// `reload`/`is_faulted` have no caller until 3.5.
 #[cfg(target_os = "linux")]
-#[allow(dead_code)]
 mod remote_app;
 
 use sc::vulkan::{VulkanContext, sprite_database as spd};
@@ -16,8 +14,9 @@ use surge_sdk::SurgeApp;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
-    event::WindowEvent,
+    event::{ElementState, WindowEvent},
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
     window::{Fullscreen, Window, WindowId},
 };
 
@@ -311,6 +310,15 @@ impl ApplicationHandler for SurgeContext {
                 event,
                 is_synthetic,
             } => {
+                // Throwaway dev reload key: handled here, never forwarded to the module.
+                if event.physical_key == PhysicalKey::Code(KeyCode::F5) {
+                    if event.state == ElementState::Pressed && !event.repeat {
+                        log::info!("Reloading module");
+                        self.recreate_swapchain |= self.startup_app.reload();
+                    }
+                    return;
+                }
+
                 // winit's KeyEvent is not constructible outside winit, so the module
                 // interface takes the SDK's mirror of its public fields.
                 let event = surge_sdk::KeyEvent {
