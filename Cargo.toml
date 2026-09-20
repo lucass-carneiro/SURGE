@@ -2,6 +2,7 @@
 resolver  = "3"
 members = [
     "surge-core",
+    "surge-sdk",
     "surge-modules/*",
     "surge-player", 
 ]

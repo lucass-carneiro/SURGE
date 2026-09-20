@@ -2050,7 +2050,7 @@ player.)*
 
 ### Phase 1 — `surge-sdk` exists; `SpriteCanvas`/`KeyEvent` land; still single-process, still `dlopen`
 
-- **1.1.** Create the `surge-sdk` crate: `Cargo.toml`, an empty `lib.rs`. Add `"surge-sdk"` to
+- **1.1.** **[DONE]** Create the `surge-sdk` crate: `Cargo.toml`, an empty `lib.rs`. Add `"surge-sdk"` to
   `[workspace] members` explicitly — it is a root-level crate like `surge-core`/`surge-player`, not under
   `surge-modules/*`, so the existing glob does not pick it up. Test: compile gate, plus confirm
   `cargo check -p surge-sdk` resolves the package at all (Q79) — that is what catches the one mistake this
