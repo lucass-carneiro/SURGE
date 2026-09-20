@@ -2235,7 +2235,7 @@ indefinitely without being in a half-migrated state.)*
   returns the cached value with no I/O of any kind — the whole point of Q27's push-not-pull fix, and
   currently asserted nowhere.
   Test: `cargo test -p surge-sdk`.
-- **2.3.** Implement `run_dev_module`'s dispatch loop as two layers, not one — a deliberate testability fix
+- **2.3.** **[DONE]** Implement `run_dev_module`'s dispatch loop as two layers, not one — a deliberate testability fix
   over what earlier passes implied. A private, non-diverging `fn drive(app: &mut dyn SurgeApp, socket: impl
   Read + Write) -> io::Result<()>` does the actual handshake/dispatch/reply loop and returns `Ok(())` after
   `Shutdown`/`ShutdownAck`; the public `pub fn run_dev_module(app: Box<dyn SurgeApp>) -> !` is a thin
@@ -2354,8 +2354,10 @@ module or doesn't.)*
 - **3.2.** Move `init_env_logger`/`resolve_asset_path` from `surge-core::cli`/`surge-core::assets` to
   `surge-sdk` (Q32) — this becomes load-bearing exactly here, not before: it's the first point a module
   needs them *without* a `surge-core` dependency. This is also the first thing `surge-sdk` needs `env_logger`/
-  `log` for, so this commit adds `env_logger = "0.11.8"`/`log = "0.4.28"` to `surge-sdk/Cargo.toml` (Q49b —
-  `init_env_logger`'s body calls both directly; neither was ever assigned to a step before now).
+  `log` for, so this commit adds `env_logger = "0.11.8"` to `surge-sdk/Cargo.toml` (Q49b —
+  `init_env_logger`'s body calls both directly; neither was ever assigned to a step before now). `log =
+  "0.4.28"` is *not* added here: it landed a step earlier, at 2.3, because `drive()`'s per-request
+  `log::debug!` (Q76) is the first `surge-sdk` code to call it.
   `surge-core::cli::print_logo` stays in `surge-core` (only `surge-player::main` calls it; not a module
   concern). This move also breaks `surge-player`'s *own* logger init (Q42) — `surge-player/src/main.rs:332`
   calls `sc::cli::init_env_logger()` for the player itself, and that function no longer exists in `surge-core`

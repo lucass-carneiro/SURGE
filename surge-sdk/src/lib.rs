@@ -1,5 +1,6 @@
 mod app;
 mod canvas;
+mod dev;
 mod input;
 mod proxy;
 mod sprite;
@@ -11,6 +12,7 @@ pub use winit;
 
 pub use app::SurgeApp;
 pub use canvas::{CanvasError, SpriteCanvas};
+pub use dev::run_dev_module;
 pub use input::KeyEvent;
 pub use proxy::CanvasProxy;
 pub use wire::{
