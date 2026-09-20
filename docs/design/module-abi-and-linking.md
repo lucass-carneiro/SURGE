@@ -2219,7 +2219,7 @@ indefinitely without being in a half-migrated state.)*
   `pub const WIRE_VERSION: u16` in `surge-sdk`, sent by `run_dev_module` and checked by `RemoteApp`, so
   neither side hardcodes a literal and a mismatch is impossible to introduce by editing only one crate
   (Q73e). Test: `cargo test -p surge-sdk`.
-- **2.2.** Add the dev-mode `SpriteCanvas` implementor to `surge-sdk`: buffers `add_instance`/
+- **2.2.** **[DONE]** Add the dev-mode `SpriteCanvas` implementor to `surge-sdk`: buffers `add_instance`/
   `upload_texture` calls, drains them into a `CanvasOps`, and answers `get_create_info()` from a cached
   `CreateInfo` (Q27's push-not-pull fix) rather than any round trip. `upload_texture` returns a
   **cumulative** upload index, reset only when a new `CreateInfo` is cached — not this turn's buffer
