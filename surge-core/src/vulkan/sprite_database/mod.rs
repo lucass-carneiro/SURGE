@@ -631,7 +631,9 @@ impl SpriteDatabase {
         })
     }
 
-    pub fn upload_texture(&mut self, texture_file: &str) -> Result<(), VulkanError> {
+    /// Returns the new texture's index in upload order, i.e. the `texture_id` to use in
+    /// `InstanceInfo`. Fails with `TextureDatabaseFull` once `max_textures` are uploaded.
+    pub fn upload_texture(&mut self, texture_file: &str) -> Result<usize, VulkanError> {
         let decoded = Self::decode_texture_file(texture_file)?;
         self.upload_decoded_texture(&decoded)
     }
@@ -640,11 +642,15 @@ impl SpriteDatabase {
     /// that callers who need to re-upload after a swapchain recreate (which rebuilds the
     /// whole `SpriteDatabase`, GPU textures included) can cache the decode step instead of
     /// re-reading and re-decoding the source file from disk every time.
-    pub fn upload_decoded_texture(&mut self, decoded: &DecodedTexture) -> Result<(), VulkanError> {
+    ///
+    /// Returns the new texture's index in upload order (see `upload_texture`).
+    pub fn upload_decoded_texture(
+        &mut self,
+        decoded: &DecodedTexture,
+    ) -> Result<usize, VulkanError> {
         // Only do this if the ammount of stored image records < database capacity
         if self.uploaded_textures.len() == self.ci.max_textures as usize {
-            log::warn!("Unable to upload new texture to full database. Ignoring request");
-            return Ok(());
+            return Err(VulkanError::TextureDatabaseFull);
         }
 
         let image_size = decoded.rgba.len();
@@ -688,6 +694,7 @@ impl SpriteDatabase {
         texture.immediate_upload_from_buffer(&cpu_buffer)?;
 
         // Add GPU image record to database
+        let texture_id = self.uploaded_textures.len();
         self.uploaded_textures.push(texture);
 
         // Update texture descriptor.
@@ -718,7 +725,7 @@ impl SpriteDatabase {
             };
         }
 
-        Ok(())
+        Ok(texture_id)
     }
 
     pub fn draw(&mut self) -> Result<(), VulkanError> {

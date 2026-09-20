@@ -2023,7 +2023,7 @@ Q38) process-isolation cutover.
   compile gate alone cannot fail here, since deleting an unused dependency compiles either way; the
   `cargo tree` assertion is the only thing that actually distinguishes "removed" from "still there but
   unused," which is precisely this step's deliverable).
-- **0.2.** Fix `SpriteDatabase::upload_texture`/`upload_decoded_texture`'s return type: `Result<(),
+- **0.2.** **[DONE]** Fix `SpriteDatabase::upload_texture`/`upload_decoded_texture`'s return type: `Result<(),
   VulkanError>` → `Result<usize, VulkanError>`, a real `Err` once `max_textures` is hit instead of a
   silently-successful `Ok(())` (Q17's source-level fix). The new failure needs a `VulkanError` variant of
   its own (Q48) — `TextureDatabaseFull` (no payload; `self.ci.max_textures` is already known at the call

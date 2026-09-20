@@ -165,4 +165,7 @@ pub enum VulkanError {
 
     #[error("Texture file has unsupported color type: {0:?}. Only RGBA is supported")]
     UnsupportedTextureColorType(png::ColorType),
+
+    #[error("Unable to upload texture: the texture database is full")]
+    TextureDatabaseFull,
 }
