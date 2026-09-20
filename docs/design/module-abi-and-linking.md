@@ -2627,45 +2627,15 @@ Q21.)*
   window screenshots): sprites and text draw correctly (background, title, board, tiles); all four arrow
   keys reach the module (`Board merge <dir>` lines); F5 recreates the swapchain and `SpriteDatabase` and
   every texture re-uploads and renders; closing the window delivers `Shutdown`, exits in ~150 ms with no
-  panic and no surviving process. **Two items remain unexercised:** an actual *resize* — the window is
+  panic and no surviving process. **One item remains unexercised:** an actual *resize* — the window is
   hardcoded non-resizable and the size hints (500×800 min = max) make the window manager refuse a client
-  resize request, so the F5 rebuild stands in for it as the same code path — and a mouse click.)*
-- **4.2.** **[DONE]** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
-  dependency gated by a `release-bin` feature, a `src/bin/release.rs` —
-  ```rust
-  fn main() {
-      let config = surge_sdk::config::parse_config("config.toml").unwrap();
-      surge_player::run(surge_mod_2048::surge_register_app(), config);
-  }
-  ```
-  (substituting the crate name per module; `config` now resolves per 4.1's move, Q54 — `release.rs` has no
-  `surge-core` dependency to reach `EngineConfig`/`parse_config` through otherwise) with
-  `required-features = ["release-bin"]` — same reason as 3.2's `dev.rs` (Q53): `App2048::new()` directly
-  is unreachable from a separate `[[bin]]` crate, `surge_register_app()` isn't. The `[[bin]]` table carries
-  an explicit `name = "surge_mod_2048_release"` (`surge_mod_default_release` for the other module) alongside
-  its `path` and `required-features` (Q59): an unnamed `src/bin/release.rs` in both crates collides at
-  `target/release/release` exactly as the dev binaries would, and the staged artifact needs a name that says
-  which game it is. Test: compile gate on the dev target (must **not** pull in `surge-player`/`ash`/`vk-mem`
-  — check with `cargo tree -p surge-mod-2048` with no features enabled) + `cargo build -p surge-mod-2048
-  --features release-bin --release` + running the produced binary directly (no player process, no
-  `config.toml` env-var games) against the module's own `config.toml`; confirm the logo/log output appears,
-  which is what proves Q62's move into `run()` actually reaches this path. Also confirm the release goal
-  itself rather than assuming it (Q71): `ps` shows no child process, and
-  `nm -C target/release/surge_mod_2048_release | grep -Ei 'remote_app|postcard|UnixStream|prctl'` comes
-  back empty — the binary links `surge_player`'s `[lib]`, and 4.1's target rule is what keeps the IPC
-  machinery out of it. (`libc`/`postcard` are still *built* as dependencies of `surge-player`; the claim
-  under test is that no reachable code in this binary uses them, not that Cargo skipped compiling them.)
-  *(Verified: `cargo check --workspace` passes; `cargo tree -p surge-mod-2048` shows no `surge-player`,
-  `surge-core`, `ash` or `vk-mem`; `cargo build --release --features release-bin` produces both
-  `*_release` binaries. Both run with the logo and `SURGE Debug` lines emitted by `run()`, no panic, and
-  no child process. The `nm` grep is **not** literally empty: it matches
-  `UnixStream::connect::<PathBuf>`, which comes from winit's Wayland/X11 connection code, not from
-  SURGE — no `remote_app`, `postcard` or `prctl` symbol, and no `surge_sdk`/`surge_player` symbol, appears
-  in the binary. Tighten the grep to `remote_app|postcard|prctl` in future runs. **Asset paths still
-  follow the dev CWD contract:** `surge-mod-2048` and `surge-mod-default` both panic on
-  `upload_texture` when run from their own module directory, because their asset paths are
-  repo-root-relative in dev; they run cleanly from the repo root. Staged relative-path behavior is 5.1's
-  job.)*
+  resize request, so the F5 rebuild stands in for it as the same code path. **Mouse clicks were observed
+  by hand:** a synthetic click cannot be injected on this KDE/Wayland desktop (XWayland follows the real
+  cursor and ignores XTest motion and `XWarpPointer`; `uinput` needs root), so the player ran on
+  X11/XWayland and the user clicked in the window. Left and right presses and releases each arrive as
+  `Mouse event: … Pressed/Released … Left/Right` lines from the module, through the player, the IPC round
+  trip and `drive()`, with no panic or fault afterwards. Extra clicks in the log came from earlier
+  injection attempts that were evidently queued and delivered once the real pointer entered the window.)*
 
 *(**Milestone D**: release mode exists — a single self-contained binary per module, no `dlopen`, no IPC, no
 `libloading` — and dev mode is unaffected.)*
