@@ -1,16 +1,10 @@
 //! Dev-mode `SurgeApp`: the module runs as a child process and this type forwards the trait's
-//! calls to it over a Unix socket (Linux only — the abstract socket namespace has no equivalent
-//! elsewhere). The module-side counterpart is `surge_sdk::run_dev_module`.
+//! calls to it over a TCP loopback socket (127.0.0.1, OS-assigned port). The module-side
+//! counterpart is `surge_sdk::run_dev_module`.
 
 use std::{
     io::{self, Read},
-    os::{
-        linux::net::SocketAddrExt,
-        unix::{
-            net::{SocketAddr, UnixListener, UnixStream},
-            process::CommandExt,
-        },
-    },
+    net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Child, Command},
     thread,
@@ -19,10 +13,10 @@ use std::{
 
 use surge_sdk::config::StartupAppConfig;
 use surge_sdk::{
-    CanvasOps, InputEvent, KeyEvent, Request, Response, SpriteCanvas, SurgeApp, WIRE_VERSION,
     read_message,
     winit::event::{DeviceId, ElementState, MouseButton, MouseScrollDelta, TouchPhase},
-    write_message,
+    write_message, CanvasOps, InputEvent, KeyEvent, Request, Response, SpriteCanvas, SurgeApp,
+    WIRE_VERSION,
 };
 
 use crate::proc;
@@ -40,12 +34,14 @@ const EXIT_GRACE: Duration = Duration::from_millis(500);
 const TERM_GRACE: Duration = Duration::from_secs(2);
 
 pub struct RemoteApp {
-    // Kept for the lifetime of the app so a respawn can reuse the same socket name.
-    listener: UnixListener,
-    socket_name: String,
+    // Kept for the lifetime of the app so a respawn can reuse the same port.
+    listener: TcpListener,
+    // Kept for the lifetime of the app so a respawn can reuse the same death-guard mechanism
+    // (e.g. the same Windows Job Object).
+    death_guard: proc::DeathGuard,
     module_path: PathBuf,
     child: Child,
-    stream: UnixStream,
+    stream: TcpStream,
     /// Input received since the last `Request::Frame`, drained into the next one.
     pending_input: Vec<InputEvent>,
     /// Set when the module stops answering correctly. Every `SurgeApp` method is a no-op from
@@ -66,12 +62,12 @@ impl RemoteApp {
     /// `WIRE_VERSION`.
     pub fn new(config: &StartupAppConfig) -> io::Result<Self> {
         let module_path = resolve_module_path(config)?;
-        let socket_name = format!("surge-{}", std::process::id());
-        let listener = UnixListener::bind_addr(&SocketAddr::from_abstract_name(&socket_name)?)?;
-        let (child, stream) = launch(&listener, &socket_name, &module_path)?;
+        let listener = TcpListener::bind(("127.0.0.1", 0))?;
+        let death_guard = proc::DeathGuard::new()?;
+        let (child, stream) = launch(&listener, &death_guard, &module_path)?;
         Ok(Self {
             listener,
-            socket_name,
+            death_guard,
             module_path,
             child,
             stream,
@@ -92,7 +88,7 @@ impl RemoteApp {
     pub fn reload(&mut self) -> io::Result<()> {
         self.reload_in_progress = true;
         stop_child(&mut self.child);
-        let result = launch(&self.listener, &self.socket_name, &self.module_path);
+        let result = launch(&self.listener, &self.death_guard, &self.module_path);
         self.reload_in_progress = false;
 
         match result {
@@ -259,21 +255,24 @@ fn resolve_module_path(config: &StartupAppConfig) -> io::Result<PathBuf> {
 /// Spawns the module, accepts its connection, and checks its handshake. On any failure the child
 /// is stopped before returning, so nothing is left running.
 fn launch(
-    listener: &UnixListener,
-    socket_name: &str,
+    listener: &TcpListener,
+    death_guard: &proc::DeathGuard,
     module_path: &Path,
-) -> io::Result<(Child, UnixStream)> {
+) -> io::Result<(Child, TcpStream)> {
+    let port = listener.local_addr()?.port();
     let mut command = Command::new(module_path);
-    command.arg(socket_name);
-    // SAFETY: `set_pdeathsig` only calls `prctl`, which is async-signal-safe as `pre_exec`
-    // requires.
-    unsafe { command.pre_exec(proc::set_pdeathsig) };
+    command.arg(port.to_string());
+    death_guard.configure(&mut command);
     let mut child = command.spawn().map_err(|e| {
         io::Error::new(
             e.kind(),
             format!("spawning {} failed: {e}", module_path.display()),
         )
     })?;
+    if let Err(e) = death_guard.attach(&child) {
+        stop_child(&mut child);
+        return Err(e);
+    }
 
     match connect(listener, &mut child) {
         Ok(stream) => Ok((child, stream)),
@@ -284,7 +283,7 @@ fn launch(
     }
 }
 
-fn connect(listener: &UnixListener, child: &mut Child) -> io::Result<UnixStream> {
+fn connect(listener: &TcpListener, child: &mut Child) -> io::Result<TcpStream> {
     let deadline = Instant::now() + CONNECT_TIMEOUT;
     listener.set_nonblocking(true)?;
     let stream = loop {
@@ -311,6 +310,10 @@ fn connect(listener: &UnixListener, child: &mut Child) -> io::Result<UnixStream>
     };
     listener.set_nonblocking(false)?;
     stream.set_nonblocking(false)?;
+    // Loopback TCP defaults to Nagle's algorithm, which can hold a small write for tens of
+    // milliseconds waiting for more data to coalesce with — fatal to a per-frame blocking round
+    // trip. `SpriteCanvas`-sized messages are exactly the "many small writes" case Nagle targets.
+    stream.set_nodelay(true)?;
     stream.set_read_timeout(Some(STALL_LOG_INTERVAL))?;
 
     match read_response(
@@ -332,7 +335,7 @@ fn connect(listener: &UnixListener, child: &mut Child) -> io::Result<UnixStream>
 /// Reads one `Response`. A read timeout is a stall: it is logged and the read continues, until
 /// `limit` (if any) runs out, which is reported as `TimedOut`. Only EOF or a transport error
 /// otherwise fails.
-fn read_response(stream: &UnixStream, limit: Option<Duration>) -> io::Result<Response> {
+fn read_response(stream: &TcpStream, limit: Option<Duration>) -> io::Result<Response> {
     read_message(StallReader {
         stream,
         started: Instant::now(),
@@ -343,7 +346,7 @@ fn read_response(stream: &UnixStream, limit: Option<Duration>) -> io::Result<Res
 /// Retries timed-out reads under the `read_exact` inside `read_message`, so a stall that lands
 /// mid-frame does not drop the bytes read so far and desynchronize the stream.
 struct StallReader<'a> {
-    stream: &'a UnixStream,
+    stream: &'a TcpStream,
     started: Instant,
     deadline: Option<Instant>,
 }

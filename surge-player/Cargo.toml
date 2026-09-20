@@ -5,8 +5,18 @@ edition = "2024"
 
 
 [dependencies]
-libc = "0.2"
 log = "0.4.28"
 surge-core = { path = "../surge-core" }
 surge-sdk = { path = "../surge-sdk" }
 winit = "0.30.12"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_JobObjects",
+    "Win32_System_Threading",
+] }

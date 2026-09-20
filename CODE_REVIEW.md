@@ -803,4 +803,4 @@ the machine does not otherwise consider valid.
    output, and the recreate hook being `&mut self` — are both fixed too.)
 9. **H8** — ~~an asset-path resolution API in `surge-core` (executable-relative, with a dev fallback), which
    fixes both modules at once~~ — FIXED.
-10. **H10** — settle the module ABI before hot reloading is built on top of it.
+10. **H10** — ~~settle the module ABI before hot reloading is built on top of it~~.

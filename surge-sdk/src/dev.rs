@@ -5,11 +5,12 @@ use winit::event::DeviceId;
 use crate::{
     app::SurgeApp,
     proxy::CanvasProxy,
-    wire::{InputEvent, Request, Response, WIRE_VERSION, read_message, write_message},
+    wire::{read_message, write_message, InputEvent, Request, Response, WIRE_VERSION},
 };
 
-/// The module-side entry point in dev mode: connect to the player's socket (named by `argv[1]`),
-/// then serve its requests until `Shutdown`. Every module's dev `main()` is a call to this.
+/// The module-side entry point in dev mode: connect to the player's TCP loopback socket (port
+/// given as `argv[1]`), then serve its requests until `Shutdown`. Every module's dev `main()` is a
+/// call to this.
 ///
 /// Exits the process instead of returning, so the module's own teardown never races the player's
 /// reap: `on_unload` has already run by the time `drive` returns `Ok`.
@@ -24,28 +25,26 @@ pub fn run_dev_module(mut app: Box<dyn SurgeApp>) -> ! {
     std::process::exit(code)
 }
 
-#[cfg(target_os = "linux")]
-fn connect() -> io::Result<std::os::unix::net::UnixStream> {
-    use std::os::{
-        linux::net::SocketAddrExt,
-        unix::net::{SocketAddr, UnixStream},
-    };
+fn connect() -> io::Result<std::net::TcpStream> {
+    use std::net::TcpStream;
 
-    let name = std::env::args().nth(1).ok_or_else(|| {
+    let arg = std::env::args().nth(1).ok_or_else(|| {
         io::Error::new(
             io::ErrorKind::InvalidInput,
-            "missing socket name (argv[1]); dev modules are spawned by surge-player",
+            "missing port (argv[1]); dev modules are spawned by surge-player",
         )
     })?;
-    UnixStream::connect_addr(&SocketAddr::from_abstract_name(name)?)
-}
-
-#[cfg(not(target_os = "linux"))]
-fn connect() -> io::Result<std::os::unix::net::UnixStream> {
-    Err(io::Error::new(
-        io::ErrorKind::Unsupported,
-        "dev-mode IPC needs Linux's abstract socket namespace",
-    ))
+    let port: u16 = arg.parse().map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("invalid port {arg:?}: {e}"),
+        )
+    })?;
+    let stream = TcpStream::connect(("127.0.0.1", port))?;
+    // Matches the player side: a per-frame blocking round trip cannot tolerate Nagle's algorithm
+    // holding a small write back.
+    stream.set_nodelay(true)?;
+    Ok(stream)
 }
 
 /// Handshake, then answer one `Request` at a time until `Shutdown`.
@@ -139,7 +138,10 @@ fn variant_name(request: &Request) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use std::{os::unix::net::UnixStream, thread};
+    use std::{
+        net::{TcpListener, TcpStream},
+        thread,
+    };
 
     use winit::{
         event::{ElementState, MouseButton, MouseScrollDelta, TouchPhase},
@@ -211,8 +213,10 @@ mod tests {
         }
 
         fn keyboard_event(&mut self, _: DeviceId, event: KeyEvent, is_synthetic: bool) {
-            self.log
-                .push(format!("keyboard {:?} synthetic={is_synthetic}", event.state));
+            self.log.push(format!(
+                "keyboard {:?} synthetic={is_synthetic}",
+                event.state
+            ));
         }
 
         fn mouse_button_event(&mut self, _: DeviceId, state: ElementState, button: MouseButton) {
@@ -228,19 +232,29 @@ mod tests {
         }
     }
 
+    /// A connected pair of loopback `TcpStream`s, standing in for `UnixStream::pair()` (not
+    /// available cross-platform) since `drive` only needs something `Read + Write`.
+    fn tcp_pair() -> (TcpStream, TcpStream) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let connecting = thread::spawn(move || TcpStream::connect(addr).unwrap());
+        let (accepted, _) = listener.accept().unwrap();
+        (accepted, connecting.join().unwrap())
+    }
+
     /// Runs `script` on a second thread as the player, against `drive()` on this one. Returns
     /// whatever the script returns, plus `drive`'s own result.
     fn run_against<T: Send + 'static>(
         app: &mut dyn SurgeApp,
-        script: impl FnOnce(UnixStream) -> T + Send + 'static,
+        script: impl FnOnce(TcpStream) -> T + Send + 'static,
     ) -> (io::Result<()>, T) {
-        let (module_end, player_end) = UnixStream::pair().unwrap();
+        let (module_end, player_end) = tcp_pair();
         let player = thread::spawn(move || script(player_end));
         let result = drive(app, module_end);
         (result, player.join().unwrap())
     }
 
-    fn round_trip(player: &mut UnixStream, request: &Request) -> Response {
+    fn round_trip(player: &mut TcpStream, request: &Request) -> Response {
         write_message(&mut *player, request).unwrap();
         read_message(&mut *player).unwrap()
     }

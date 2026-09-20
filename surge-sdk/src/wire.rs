@@ -1,6 +1,6 @@
 use std::io::{self, Read, Write};
 
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, TouchPhase};
 
 use crate::{
@@ -21,9 +21,16 @@ const MAX_FRAME_LEN: u32 = 64 * 1024 * 1024;
 pub enum Request {
     // `create_info` is pushed rather than pulled: the module has no way to ask the player anything
     // mid-turn.
-    OnLoad { create_info: CreateInfo },
-    OnSwapchainRecreate { create_info: CreateInfo },
-    Frame { dt: f32, input_events: Vec<InputEvent> },
+    OnLoad {
+        create_info: CreateInfo,
+    },
+    OnSwapchainRecreate {
+        create_info: CreateInfo,
+    },
+    Frame {
+        dt: f32,
+        input_events: Vec<InputEvent>,
+    },
     Shutdown,
 }
 
@@ -31,7 +38,9 @@ pub enum Request {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Response {
     /// Sent unprompted by the module right after connecting.
-    Handshake { wire_version: u16 },
+    Handshake {
+        wire_version: u16,
+    },
     /// Reply to `OnLoad`, `OnSwapchainRecreate` and `Frame` alike.
     CanvasOps(CanvasOps),
     ShutdownAck,
@@ -97,12 +106,14 @@ pub fn read_message<T: DeserializeOwned>(mut r: impl Read) -> io::Result<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::os::unix::net::UnixStream;
+    use std::net::{TcpListener, TcpStream};
 
     use winit::keyboard::{Key, KeyCode, KeyLocation, NamedKey, PhysicalKey};
 
     use super::*;
-    use crate::sprite::{BlendingMode, SubTextureInfo, TextureFilteringLevel, TextureFilteringMode};
+    use crate::sprite::{
+        BlendingMode, SubTextureInfo, TextureFilteringLevel, TextureFilteringMode,
+    };
 
     fn create_info() -> CreateInfo {
         CreateInfo {
@@ -214,9 +225,19 @@ mod tests {
         all_responses().iter().for_each(assert_round_trips);
     }
 
+    /// A connected pair of loopback `TcpStream`s, standing in for `UnixStream::pair()` (not
+    /// available cross-platform).
+    fn tcp_pair() -> (TcpStream, TcpStream) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let addr = listener.local_addr().unwrap();
+        let connecting = std::thread::spawn(move || TcpStream::connect(addr).unwrap());
+        let (accepted, _) = listener.accept().unwrap();
+        (accepted, connecting.join().unwrap())
+    }
+
     #[test]
-    fn framing_holds_message_boundaries_over_a_unix_stream() {
-        let (mut tx, mut rx) = UnixStream::pair().unwrap();
+    fn framing_holds_message_boundaries_over_a_tcp_stream() {
+        let (mut tx, mut rx) = tcp_pair();
         let requests = all_requests();
 
         // Written back to back with no reads in between: only the length prefix can keep the
