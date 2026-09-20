@@ -2554,8 +2554,14 @@ module or doesn't.)*
   and no module process survives. **Case 4 deviates:** the mismatch is
   caught inside `RemoteApp::new`, so a stale module binary at *startup* panics `main()` with the
   `InvalidData` message rather than opening a window in the crash state; only a mismatch on an F5 reload
-  faults gracefully. **Still unobserved:** the fault-frame blank
-  below (no screenshot tool). A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
+  faults gracefully. **The fault-frame blank was observed, and it is not the freeze the step describes:**
+  a compositor screenshot (`spectacle`) after a `kill -9` shows the window as the flat clear colour with
+  the `— MODULE CRASHED` title, not the last game frame — six of six runs, and F5 then restores the
+  board. (Capture caveat: `import -window` on an XWayland Vulkan window returns a *stale* image once it
+  has read a given swapchain, so it showed the pre-crash frame in any run that captured before the kill;
+  use the compositor path for anything after a present.) So "the last presented image stays on screen"
+  holds literally — the last presented image *is* the blank — but the user sees an empty window, not a
+  frozen game. A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
   that one frame must still be submitted and presented — with no instances, i.e. blank — before the
   next `about_to_wait` freezes; every frame after it is skipped as specified.)*
 
@@ -2612,7 +2618,14 @@ Q21.)*
   worth knowing:** `main()` now parses the config and spawns the module *before* `run()` installs the
   logger, so `log::` calls from `parse_config`'s error paths land nowhere in dev mode — the
   `.unwrap()` panic message still carries the same error, so nothing is lost, only the formatted line.
-  `RemoteApp::new` logs nothing on its startup path. Release binaries in 4.2 share the same ordering.)*
+  `RemoteApp::new` logs nothing on its startup path. Release binaries in 4.2 share the same ordering.
+  **The window interaction was exercised in a later session** (dev binary on X11/XWayland, XTest input,
+  window screenshots): sprites and text draw correctly (background, title, board, tiles); all four arrow
+  keys reach the module (`Board merge <dir>` lines); F5 recreates the swapchain and `SpriteDatabase` and
+  every texture re-uploads and renders; closing the window delivers `Shutdown`, exits in ~150 ms with no
+  panic and no surviving process. **Two items remain unexercised:** an actual *resize* — the window is
+  hardcoded non-resizable and the size hints (500×800 min = max) make the window manager refuse a client
+  resize request, so the F5 rebuild stands in for it as the same code path — and a mouse click.)*
 - **4.2.** **[DONE]** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
   dependency gated by a `release-bin` feature, a `src/bin/release.rs` —
   ```rust
