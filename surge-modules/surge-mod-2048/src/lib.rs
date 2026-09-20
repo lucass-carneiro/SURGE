@@ -1,13 +1,11 @@
 use log;
-use nalgebra::{Vector2 as Vec2, Vector4 as Vec4};
-
-use surge_core::{
-    app::SurgeApp,
-    vulkan::sprite_database::{DecodedTexture, InstanceInfo, SpriteDatabase},
-};
-use winit::{
-    event::{DeviceId, ElementState, KeyEvent, MouseButton},
-    keyboard::{KeyCode, PhysicalKey},
+use surge_sdk::{
+    InstanceInfo, SpriteCanvas, SurgeApp,
+    nalgebra::{Vector2 as Vec2, Vector4 as Vec4},
+    winit::{
+        event::{DeviceId, ElementState, KeyEvent, MouseButton},
+        keyboard::{KeyCode, PhysicalKey},
+    },
 };
 
 mod app_2048;
@@ -23,12 +21,9 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
     Box::new(App2048::new())
 }
 
-/// Decodes every board/piece PNG from disk once. The result is cached by `App2048` so that
-/// `on_swapchain_recreate` (which rebuilds the `SpriteDatabase`, GPU textures included, from
-/// scratch) can re-upload without re-reading and re-decoding the files every time.
 const MODULE_NAME: &str = "surge-mod-2048";
 
-pub(crate) fn decode_image_assets() -> Vec<DecodedTexture> {
+fn upload_board_assets(canvas: &mut dyn SpriteCanvas) {
     let image_asset_names: [&'static str; 12] = [
         "board.png",
         "pieces_2.png",
@@ -44,22 +39,13 @@ pub(crate) fn decode_image_assets() -> Vec<DecodedTexture> {
         "pieces_2048.png",
     ];
 
-    image_asset_names
-        .iter()
-        .map(|asset_name| {
-            let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
-            SpriteDatabase::decode_texture_file(asset_path.to_str().unwrap()).unwrap()
-        })
-        .collect()
-}
-
-fn upload_image_assets(spdb: &mut SpriteDatabase, textures: &[DecodedTexture]) {
-    for texture in textures {
-        spdb.upload_decoded_texture(texture).unwrap();
+    for asset_name in image_asset_names {
+        let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
+        canvas.upload_texture(asset_path.to_str().unwrap()).unwrap();
     }
 }
 
-fn add_board_sprite(spdb: &mut SpriteDatabase, bg: &BoardGeometry) {
+fn add_board_sprite(spdb: &mut dyn SpriteCanvas, bg: &BoardGeometry) {
     let scale = Vec2::new(
         spdb.get_create_info().window_width,
         spdb.get_create_info().window_height,
@@ -78,17 +64,17 @@ fn add_board_sprite(spdb: &mut SpriteDatabase, bg: &BoardGeometry) {
 }
 
 impl SurgeApp for App2048 {
-    fn on_load(&mut self, spdb: &mut SpriteDatabase) {
+    fn on_load(&mut self, spdb: &mut dyn SpriteCanvas) {
         surge_core::cli::init_env_logger();
         log::info!("2048 startup");
-        upload_image_assets(spdb, self.get_cached_textures());
+        upload_board_assets(spdb);
     }
 
-    fn on_swapchain_recreate(&mut self, spdb: &mut SpriteDatabase) {
-        upload_image_assets(spdb, self.get_cached_textures());
+    fn on_swapchain_recreate(&mut self, spdb: &mut dyn SpriteCanvas) {
+        upload_board_assets(spdb);
     }
 
-    fn update(&mut self, _: f32, spdb: &mut SpriteDatabase) {
+    fn update(&mut self, _: f32, spdb: &mut dyn SpriteCanvas) {
         // Add sprites
         add_board_sprite(spdb, self.get_board_geometry());
 

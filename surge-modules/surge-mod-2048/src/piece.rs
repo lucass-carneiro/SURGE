@@ -1,5 +1,5 @@
 use crate::{InstanceInfo, board_geometry::BoardGeometry};
-use nalgebra::{Vector2 as Vec2, Vector4 as Vec4};
+use surge_sdk::nalgebra::{Vector2 as Vec2, Vector4 as Vec4};
 use rand::Rng;
 
 #[derive(Debug, PartialEq, Clone, Copy)]

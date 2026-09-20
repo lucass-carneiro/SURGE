@@ -1,11 +1,10 @@
 use log;
-use nalgebra::{Vector2, Vector4};
 use std::cell::RefCell;
-use surge_core::{
-    app::SurgeApp,
-    vulkan::sprite_database::{InstanceInfo, SpriteDatabase, SubTextureInfo},
+use surge_sdk::{
+    InstanceInfo, SpriteCanvas, SubTextureInfo, SurgeApp,
+    nalgebra::{Vector2, Vector4},
+    winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase},
 };
-use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
 
 const NUM_FRAMES: u32 = 25;
 const SECONDS_PER_FRAME: f32 = 1.0 / 20.0;
@@ -19,26 +18,26 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
     Box::new(AppDefault {})
 }
 
-fn upload_assets(spd: &mut SpriteDatabase) {
+fn upload_assets(canvas: &mut dyn SpriteCanvas) {
     for asset_name in ["awesomeface.png", "awesomeanim.png"] {
         let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
-        spd.upload_texture(asset_path.to_str().unwrap()).unwrap();
+        canvas.upload_texture(asset_path.to_str().unwrap()).unwrap();
     }
 }
 
 impl SurgeApp for AppDefault {
-    fn on_load(&mut self, spd: &mut SpriteDatabase) {
+    fn on_load(&mut self, canvas: &mut dyn SpriteCanvas) {
         surge_core::cli::init_env_logger();
         log::info!("Default app startup");
 
-        upload_assets(spd);
+        upload_assets(canvas);
     }
 
-    fn on_swapchain_recreate(&mut self, spd: &mut SpriteDatabase) {
-        upload_assets(spd);
+    fn on_swapchain_recreate(&mut self, canvas: &mut dyn SpriteCanvas) {
+        upload_assets(canvas);
     }
 
-    fn update(&mut self, dt: f32, spdb: &mut SpriteDatabase) {
+    fn update(&mut self, dt: f32, spdb: &mut dyn SpriteCanvas) {
         // Test depth buffer
         let mut aii = InstanceInfo {
             position: Vector2::from_element(0.0),
@@ -91,8 +90,8 @@ impl SurgeApp for AppDefault {
 
         let frame_subtexture = FRAME_COUNTER.with_borrow(|fc| {
             SubTextureInfo::default()
-                .origin(nalgebra::Vector2::new(2 + fc * (498 + 2), 2))
-                .extent(nalgebra::Vector2::from_element(498))
+                .origin(surge_sdk::nalgebra::Vector2::new(2 + fc * (498 + 2), 2))
+                .extent(surge_sdk::nalgebra::Vector2::from_element(498))
         });
 
         let anim_ii = InstanceInfo {

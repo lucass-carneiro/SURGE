@@ -1,4 +1,4 @@
-use nalgebra::Vector2 as Vec2;
+use surge_sdk::nalgebra::Vector2 as Vec2;
 
 pub(crate) struct BoardGeometry {
     piece_z: f32,

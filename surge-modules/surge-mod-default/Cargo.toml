@@ -5,9 +5,8 @@ edition = "2024"
 
 [dependencies]
 log = "0.4.28"
-nalgebra = "0.34.1"
 surge-core = { path = "../../surge-core" }
-winit = "0.30.12"
+surge-sdk = { path = "../../surge-sdk" }
 
 [lib]
 crate-type = ["rlib", "dylib"]

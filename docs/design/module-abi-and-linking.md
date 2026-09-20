@@ -2112,7 +2112,7 @@ player.)*
   1.6's sprites draw and its textures survive a resize, this impl is correct. Keeping 1.5 separate is still
   right (it isolates the orphan-rule/`From` question), but it is a commit whose own gate cannot fail for
   the reason it exists.
-- **1.6.** Move the `SurgeApp` trait definition to `surge-sdk`, **and** retype `on_load`/
+- **1.6.** **[DONE]** Move the `SurgeApp` trait definition to `surge-sdk`, **and** retype `on_load`/
   `on_swapchain_recreate`/`update` to take `&mut dyn SpriteCanvas` instead of `&mut SpriteDatabase`, in the
   same commit — pass 7 originally split these into 1.6 (relocation, "signatures unchanged") and 1.7
   (retyping), but that split doesn't compile: `surge-core` already depends on `surge-sdk` as of 1.3, so a
@@ -2169,7 +2169,8 @@ player.)*
   `decode_image_assets`/`cached_textures` are gone in this same commit, and no `SpriteCanvas` method takes a
   `DecodedTexture` anyway. In its place, a new `fn upload_board_assets(canvas: &mut dyn SpriteCanvas)` loops
   over the same 12 filename literals `decode_image_assets` used to hardcode (`"board.png"` through
-  `"pieces_2048.png"`), calling `surge_sdk::resolve_asset_path(MODULE_NAME, name)` then
+  `"pieces_2048.png"`), calling `surge_core::assets::resolve_asset_path(MODULE_NAME, name)` (not
+  `surge_sdk::` — that function doesn't move until 3.2, per Q32) then
   `canvas.upload_texture(path.to_str().unwrap())` per name; `on_load`/`on_swapchain_recreate` call
   `upload_board_assets(spdb)` where they used to call `upload_image_assets(spdb, self.get_cached_textures())`.
   The `DecodedTexture` cleanup spans two files, not one (Q64b): `lib.rs`'s `use surge_core::{...}` block and

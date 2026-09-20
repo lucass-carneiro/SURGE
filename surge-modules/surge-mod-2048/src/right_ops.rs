@@ -1,5 +1,5 @@
 use super::App2048;
-use nalgebra::Vector2 as Vec2;
+use surge_sdk::nalgebra::Vector2 as Vec2;
 
 impl App2048 {
     pub(crate) fn set_move_target_right(&mut self) {
