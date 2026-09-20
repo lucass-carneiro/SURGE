@@ -1,7 +1,10 @@
-// Not called until 2.5/2.6 wire it into RemoteApp.
+// Neither is constructed from `main()` until 3.1.
 #[cfg(unix)]
 #[allow(dead_code)]
 mod proc;
+#[cfg(target_os = "linux")]
+#[allow(dead_code)]
+mod remote_app;
 
 use sc::vulkan::{VulkanContext, sprite_database as spd};
 use std::{

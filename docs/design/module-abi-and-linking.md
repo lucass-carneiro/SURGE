@@ -2278,7 +2278,7 @@ indefinitely without being in a half-migrated state.)*
   `surge_mod_*` process survives in `ps`) — a one-line test for the one guarantee this function exists to
   provide. Same for `terminate`: SIGTERM itself is exercised by 3.5's F5 reload, but the
   `SIGKILL`-after-timeout escalation is not, and that too is named in 3.6 (Q75).
-- **2.5.** Build `RemoteApp` in `surge-player` — as a module of the **binary** target (`mod remote_app;`
+- **2.5.** **[DONE]** Build `RemoteApp` in `surge-player` — as a module of the **binary** target (`mod remote_app;`
   declared from `main.rs`), never of a library target, which is what keeps it out of every release binary
   once 4.1 creates one (Q71). It binds the abstract-namespace `UnixListener` (Q23) before
   spawning, resolves the module binary as `Path::new(app_folder).join(app_name)` from the
