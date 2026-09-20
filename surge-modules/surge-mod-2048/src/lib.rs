@@ -40,7 +40,7 @@ fn upload_board_assets(canvas: &mut dyn SpriteCanvas) {
     ];
 
     for asset_name in image_asset_names {
-        let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
+        let asset_path = surge_sdk::resolve_asset_path(MODULE_NAME, asset_name);
         canvas.upload_texture(asset_path.to_str().unwrap()).unwrap();
     }
 }
@@ -65,7 +65,6 @@ fn add_board_sprite(spdb: &mut dyn SpriteCanvas, bg: &BoardGeometry) {
 
 impl SurgeApp for App2048 {
     fn on_load(&mut self, spdb: &mut dyn SpriteCanvas) {
-        surge_core::cli::init_env_logger();
         log::info!("2048 startup");
         upload_board_assets(spdb);
     }

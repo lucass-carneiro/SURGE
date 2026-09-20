@@ -71,7 +71,7 @@ Note the config's `app_name` uses the **library** name with underscores (`surge_
 
 `LoadedApp` holds `app: Box<dyn SurgeApp>` **before** `_library: Library` — field order is load-bearing, since the trait object's vtable lives in the library and must be dropped first. Preserve it.
 
-Modules call `surge_core::cli::init_env_logger()` themselves in `on_load`; each dylib has its own `log` crate state.
+Modules call `surge_sdk::init_env_logger()` themselves in `on_load` (except `surge-mod-2048`, ported to a dev binary that initializes logging once in `src/bin/dev.rs`); each dylib has its own `log` crate state.
 
 `surge-player` also has a direct `path` dependency on `surge-mod-default`, which is vestigial — module loading is entirely dynamic.
 

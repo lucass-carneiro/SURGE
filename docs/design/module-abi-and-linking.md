@@ -2360,7 +2360,7 @@ module or doesn't.)*
   `RemoteApp` is Linux-only. The `#[allow(dead_code)]` on `mod proc` is gone; the one on `mod remote_app`
   stays until 3.5 gives `reload`/`is_faulted` a caller. The window smoke test was not run in this
   change — only the compile gate.)*
-- **3.2.** Move `init_env_logger`/`resolve_asset_path` from `surge-core::cli`/`surge-core::assets` to
+- **3.2.** **[DONE]** Move `init_env_logger`/`resolve_asset_path` from `surge-core::cli`/`surge-core::assets` to
   `surge-sdk` (Q32) — this becomes load-bearing exactly here, not before: it's the first point a module
   needs them *without* a `surge-core` dependency. This is also the first thing `surge-sdk` needs `env_logger`/
   `log` for, so this commit adds `env_logger = "0.11.8"` to `surge-sdk/Cargo.toml` (Q49b —
@@ -2400,6 +2400,12 @@ module or doesn't.)*
   of the IPC path (this is also where 2.5's deferred integration risk actually gets resolved); confirm the
   log banner prints exactly once, not twice, and that `ps` shows exactly one `surge_mod_2048` child while
   the window is open and none after it closes.
+  *(As built: `surge-player` already had its `surge-sdk` dependency from 2.x, so only the call site changed.
+  `surge-core` also dropped its `env_logger` dependency, since `init_env_logger` was its only user.
+  `surge-mod-default` is still a `dlopen`ed dylib until 3.3, so its two call sites were repointed to
+  `surge_sdk::` here purely to keep it compiling; its `on_load` still calls `init_env_logger()` for now.
+  The smoke test ran with the process loader and a SIGINT after ~8s rather than a window close: one
+  `surge_mod_2048` child while open, none after, `2048 startup` and the `OnLoad` request logged once.)*
 - **3.3.** Port `surge-mod-default` the same way — `AppDefault {}` is already a `pub` unit struct directly in
   `lib.rs`, so `surge_mod_default::surge_register_app()` (Q53, for consistency with 2048's entry point) works
   the same way without ever having hit the visibility problem 3.2 traced through; `on_load`'s own

@@ -381,7 +381,7 @@ pub fn main() {
     /*********************
      * Parse config file *
      *********************/
-    sc::cli::init_env_logger();
+    surge_sdk::init_env_logger();
 
     // Parse config
     let engine_config = sc::config::parse_config("config.toml").unwrap();

@@ -20,14 +20,14 @@ pub fn surge_register_app() -> Box<dyn SurgeApp> {
 
 fn upload_assets(canvas: &mut dyn SpriteCanvas) {
     for asset_name in ["awesomeface.png", "awesomeanim.png"] {
-        let asset_path = surge_core::assets::resolve_asset_path(MODULE_NAME, asset_name);
+        let asset_path = surge_sdk::resolve_asset_path(MODULE_NAME, asset_name);
         canvas.upload_texture(asset_path.to_str().unwrap()).unwrap();
     }
 }
 
 impl SurgeApp for AppDefault {
     fn on_load(&mut self, canvas: &mut dyn SpriteCanvas) {
-        surge_core::cli::init_env_logger();
+        surge_sdk::init_env_logger();
         log::info!("Default app startup");
 
         upload_assets(canvas);

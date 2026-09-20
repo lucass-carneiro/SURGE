@@ -1,33 +1,3 @@
-use std::io::Write;
-
-pub fn init_env_logger() {
-    use env_logger::Builder;
-    use log::LevelFilter;
-
-    let mut builder = Builder::from_default_env();
-    builder.filter_level(LevelFilter::Debug);
-
-    builder.format(|buf, record| {
-        let banner = match record.level() {
-            log::Level::Error => "\x1b[1m\x1b[31mSURGE Error\x1b[m",
-            log::Level::Warn => "\x1b[1m\x1b[33mSURGE Warning\x1b[m",
-            log::Level::Info => "\x1b[1m\x1b[32mSURGE Info\x1b[m",
-            log::Level::Debug => "\x1b[1m\x1b[34mSURGE Debug\x1b[m",
-            log::Level::Trace => "\x1b[1m\x1b[34mSURGE Trace\x1b[m",
-        };
-
-        writeln!(
-            buf,
-            "\x1b[36m[{}]\x1b[m {}: {}",
-            record.module_path().unwrap_or("unknown"),
-            banner,
-            record.args()
-        )
-    });
-
-    builder.init();
-}
-
 pub fn print_logo() {
     let logo = r"    d888888o.   8 8888      88 8 888888888o.        ,o888888o.    8 8888888888
   .`8888:' `88. 8 8888      88 8 8888    `88.      8888     `88.  8 8888
