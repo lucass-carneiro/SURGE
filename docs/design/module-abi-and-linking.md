@@ -2084,7 +2084,7 @@ player.)*
   today, not about to become stale here — this commit is simply a convenient, already-nearby place to fix
   it (1.2 is already touching `surge-sdk`'s own first test), not the cause of the inaccuracy. Test: `cargo
   test -p surge-sdk`.
-- **1.3.** `surge-core` takes a `path` dependency on `surge-sdk`; the six local definitions in
+- **1.3.** **[DONE]** `surge-core` takes a `path` dependency on `surge-sdk`; the six local definitions in
   `sprite_database/mod.rs` become `pub use surge_sdk::{BlendingMode, TextureFilteringMode,
   TextureFilteringLevel, CreateInfo, SubTextureInfo, InstanceInfo};`. This is a pure compatibility-shim
   commit: `surge_core::vulkan::sprite_database::InstanceInfo` still resolves to the same path for existing

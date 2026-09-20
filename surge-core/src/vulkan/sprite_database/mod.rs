@@ -9,49 +9,10 @@ use png;
 use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, slice, sync::Arc};
 use vk_mem;
 
-/// Database blending mode
-#[derive(Debug, Clone, Copy)]
-pub enum BlendingMode {
-    None,
-    Additive,
-    Alpha,
-}
-
-impl BlendingMode {
-    pub fn default() -> Self {
-        BlendingMode::Alpha
-    }
-}
-
-/// Texture filtering modes
-#[derive(Debug, Clone, Copy)]
-pub enum TextureFilteringMode {
-    Nearest,
-    Linear,
-}
-
-/// Texture anisotropic  filtering level
-#[derive(Debug, Clone, Copy)]
-pub enum TextureFilteringLevel {
-    X0 = 0,
-    X1 = 1,
-    X2 = 2,
-    X4 = 4,
-    X8 = 8,
-    X16 = 16,
-}
-
-/// Controls database creation
-#[derive(Debug, Clone, Copy)]
-pub struct CreateInfo {
-    pub blending_mode: BlendingMode,
-    pub texture_filtering_mode: TextureFilteringMode,
-    pub texture_filtering_level: TextureFilteringLevel,
-    pub max_sprites: u32,
-    pub max_textures: u32,
-    pub window_width: f32,
-    pub window_height: f32,
-}
+pub use surge_sdk::{
+    BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
+    TextureFilteringMode,
+};
 
 /// A texture decoded to RGBA bytes, ready to upload to the GPU via
 /// `SpriteDatabase::upload_decoded_texture`. Produced by `SpriteDatabase::decode_texture_file`.
@@ -61,42 +22,6 @@ pub struct DecodedTexture {
     pub height: u32,
     pub bit_depth: png::BitDepth,
     pub rgba: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub struct SubTextureInfo {
-    pub origin: nalgebra::Vector2<u32>,
-    pub extent: nalgebra::Vector2<u32>,
-}
-
-impl SubTextureInfo {
-    pub fn default() -> Self {
-        SubTextureInfo {
-            origin: nalgebra::Vector2::from_element(0),
-            extent: nalgebra::Vector2::from_element(0),
-        }
-    }
-
-    pub fn origin(mut self, origin: nalgebra::Vector2<u32>) -> Self {
-        self.origin = origin;
-        self
-    }
-
-    pub fn extent(mut self, extent: nalgebra::Vector2<u32>) -> Self {
-        self.extent = extent;
-        self
-    }
-}
-
-/// Specifies the parameters of an instance to be added to the database
-#[derive(Debug)]
-pub struct InstanceInfo {
-    pub position: nalgebra::Vector2<f32>,
-    pub scale: nalgebra::Vector2<f32>,
-    pub z: f32,
-    pub texture_id: usize,
-    pub color_multiplier: nalgebra::Vector4<f32>,
-    pub subtexture_info: Option<SubTextureInfo>,
 }
 
 /// Data shared across all sprite instances in a frame.
