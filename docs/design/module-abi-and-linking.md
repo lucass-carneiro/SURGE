@@ -2663,7 +2663,8 @@ Q21.)*
   `CLAUDE.md` as ground truth throughout. Test (Q79 — pass 7–13 gave this step none at all, and "it's only
   docs" is exactly how a stale `hot_reloading` feature or a leftover `load_from_dylib` reference survives):
   compile gate, plus `grep -rn "hot_reloading\|load_from_dylib\|libloading\|libsurge_mod" --include=*.toml
-  --include=*.md --include=*.rs .` returning nothing outside this design doc's own history sections. A grep
+  --include=*.md --include=*.rs --exclude=CODE_REVIEW.md .` returning nothing outside this design doc's own
+  history sections. A grep
   that must come back empty is a real test — it fails when the sweep was incomplete, which is the only way
   this commit can be wrong.
   *(Verified: `cargo check --workspace` and `cargo check --workspace --features release-bin` clean. The
@@ -2672,9 +2673,13 @@ Q21.)*
   state` placeholder comments in `surge-player/src/lib.rs`. `CLAUDE.md` is rewritten for the four-crate
   layout (`surge-sdk` added), the dev-spawn/IPC and release-binary entry points, F5 reload and the
   crashed-module freeze, `release-bin`, `resolve_asset_path`, the stager's actual output, and the tests
-  that now exist. **The grep is not literally empty:** it still hits `CODE_REVIEW.md`, a point-in-time
+  that now exist. **The grep is not literally empty:** it still hit `CODE_REVIEW.md`, a point-in-time
   review of commit `b265e28` that quotes the old code by design, and this doc's own history sections
-  (the allowed exception). `CODE_REVIEW.md` was left alone rather than rewritten.)*
+  (the allowed exception). **Resolved afterwards:** `CODE_REVIEW.md` keeps its quotes — rewriting them
+  would falsify the review — but the three findings the ABI work actually fixed are now marked so under
+  that file's own convention (H10, M18 and the `hot_reloading` bullet), H8 carries a note that the stager
+  it describes was rewritten in 5.1, and the test above excludes that file explicitly rather than
+  tolerating stray hits.)*
 
 ## Self-critique / risks
 

@@ -390,7 +390,9 @@ dev layout, per the CWD contract). Both `surge-mod-2048` and `surge-mod-default`
 file names and call this to build the actual path, instead of hardcoding one layout's path directly.
 Verified `stager.py stage surge-mod-2048 -o` still produces `staging-surge-mod-2048/assets/*.png` next to
 the copied `surge-player`/`libsurge_mod_2048.so`, which is exactly the layout the executable-relative
-branch resolves against.
+branch resolves against. *(Layout note: `stager.py` was later rewritten (step 5.1) to stage a single
+`<module>_release` binary plus `config.toml` and `assets/`; there is no player-plus-`.so` pair any more, and
+the executable-relative branch now resolves against that module binary.)*
 
 The two modules were mutually inconsistent about this: `surge-mod-default` used `assets/awesomeface.png`
 (staged-correct, **dev-broken** — verified, there is no `assets/` at repo root), 2048 used repo-root paths
@@ -416,7 +418,14 @@ The non-validation build has evidently never been compiled. Since `validation_la
 **there is currently no way to build a release binary without validation layers** — you ship the debug
 messenger to end users.
 
-### H10. Two statically-linked copies of `surge-core` and `std` in one process
+### H10. ~~Two statically-linked copies of `surge-core` and `std` in one process~~ — FIXED — `docs/design/module-abi-and-linking.md`
+
+**Fixed.** The `dlopen` boundary is gone, not patched. Modules are plain `rlib`s that never link
+`surge-core`; in dev mode a module is a separate process that talks to `surge-player` over a
+version-checked (`WIRE_VERSION`) `postcard` socket protocol, and in release mode the module and the player
+are one binary with one copy of every type. There is no `extern "Rust"` symbol, no shared `Arc<RefCell<…>>`
+or `Box<dyn SurgeApp>` crossing an ABI, and no per-module logger workaround for a shared-state problem
+(each dev process legitimately has its own `log` state). The finding below describes the pre-fix design.
 
 ```
 $ ldd target/debug/libsurge_mod_2048.so
@@ -641,7 +650,9 @@ not: `SpriteDatabase::upload_texture` is now split into `decode_texture_file` (p
 both `on_load`/`on_swapchain_recreate` now just re-upload from that cache — no re-reading or re-decoding
 on recreate.
 
-**M18. `load_from_dylib` has no branch outside Windows and Linux** — `app/mod.rs:56-65`. The
+**M18. ~~`load_from_dylib` has no branch outside Windows and Linux~~ — FIXED (moot) — `app/mod.rs:56-65`.
+`load_from_dylib` and the whole `dlopen` loader were deleted by the module ABI plan (see **H10**). Original
+finding: the
 `#[cfg(target_os = ...)]` block yields `()` on macOS/BSD, producing a confusing type error instead of a
 `compile_error!` naming the unsupported platform.
 
@@ -713,8 +724,9 @@ line. Demoted from HIGH accordingly, and flagged as a reminder that "validation 
 - **`README.md` is entirely wrong** — it documents the C++/CMake/vcpkg incarnation: `SURGE_*` flags,
   submodules, OpenGL, a `SCOMP` tool that does not exist. Only "Philosophy" survives. It is the first thing
   anyone reads.
-- **`surge-player/hot_reloading`** is a declared feature with two `//` placeholder comments and no
-  implementation, for the capability the README calls the engine's reason to exist.
+- **~~`surge-player/hot_reloading`~~ — FIXED.** The feature flag and its two placeholder comments are deleted
+  (step 5.2 of the module ABI plan). Original finding: a declared feature with two `//` placeholder
+  comments and no implementation, for the capability the README calls the engine's reason to exist.
 - **No `old_swapchain`** passed on recreate (`ctx_swpc.rs:96`); the old one is destroyed first,
   guaranteeing a visible hitch on a path that, per **H13**, runs at least once every launch.
 - **VMA `vulkan_api_version` never set** (`command.rs:77-78`), so VMA defaults to 1.0 semantics on a 1.3
