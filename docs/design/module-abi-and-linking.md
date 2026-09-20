@@ -2340,7 +2340,7 @@ module or doesn't.)*
 
 ### Phase 3 — Cutover: `dlopen` → spawn+IPC, module by module (Q38's scaffolding)
 
-- **3.1.** Add the temporary `SURGE_DEV_LOADER` branch to `surge-player::main()` (Q38): unset/anything but
+- **3.1.** **[DONE]** Add the temporary `SURGE_DEV_LOADER` branch to `surge-player::main()` (Q38): unset/anything but
   `process` keeps `load_from_dylib`; `process` selects a new `spawn_and_connect(&engine_config.startup_app)`
   path constructing a `RemoteApp`. Since `main()` must build `ctx.startup_app` from *either* branch and a
   struct field can't hold two different concrete types, this step also introduces the temporary
@@ -2355,6 +2355,11 @@ module or doesn't.)*
   it already covered `LoadedApp`. Nothing can select `process` successfully yet. Test: compile gate + smoke
   test with the variable unset (unchanged behavior, still `dlopen`, now routed through
   `StartupApp::Dylib(...)`).
+  *(As built: `spawn_and_connect` is a small `#[cfg(target_os = "linux")]` fn in `main.rs` wrapping
+  `RemoteApp::new`; on other targets `SURGE_DEV_LOADER=process` panics with an explicit message, since
+  `RemoteApp` is Linux-only. The `#[allow(dead_code)]` on `mod proc` is gone; the one on `mod remote_app`
+  stays until 3.5 gives `reload`/`is_faulted` a caller. The window smoke test was not run in this
+  change — only the compile gate.)*
 - **3.2.** Move `init_env_logger`/`resolve_asset_path` from `surge-core::cli`/`surge-core::assets` to
   `surge-sdk` (Q32) — this becomes load-bearing exactly here, not before: it's the first point a module
   needs them *without* a `surge-core` dependency. This is also the first thing `surge-sdk` needs `env_logger`/
