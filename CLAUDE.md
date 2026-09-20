@@ -74,7 +74,7 @@ Because dev-mode modules are separate processes, each has its own `log` state �
 `ApplicationHandler` maps onto the engine loop:
 
 - `resumed` → create window, `VulkanContext::new`, `SpriteDatabase::new`, then `app.on_load(spd)`.
-- `about_to_wait` → the whole frame: if the module `is_faulted()`, return immediately (window frozen); otherwise optional swapchain recreation, `app.update(dt, spd)`, acquire image, `cmd_begin` → `cmd_render_begin` → `spd.draw()` → `cmd_render_end` → `cmd_end` → `cmd_submit` → `present_swpc`, then a manual FPS-cap sleep (only when `vsync = false` and `cap_fps = true`).
+- `about_to_wait` → the whole frame: if the module `is_faulted()`, return immediately (window frozen); otherwise optional swapchain recreation, acquire image (this must precede `update`, which writes that frame's instance SSBO), `app.update(dt, spd)` — if that call leaves the module faulted the frame is dropped there, unpresented, so the window keeps the last good image — then `cmd_begin` → `cmd_render_begin` → `spd.draw()` → `cmd_render_end` → `cmd_end` → `cmd_submit` → `present_swpc`, then a manual FPS-cap sleep (only when `vsync = false` and `cap_fps = true`).
 - F5 (in `window_event`) → `app.reload()`; a `true` return schedules a swapchain recreate, whose `on_swapchain_recreate` re-uploads textures into the fresh database.
 - `exiting` → `app.on_unload()`, then **`destroy_swapchain()` explicitly**, because winit drops the surface before the `VulkanContext` would otherwise be dropped.
 

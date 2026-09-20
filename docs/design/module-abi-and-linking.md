@@ -2554,16 +2554,20 @@ module or doesn't.)*
   and no module process survives. **Case 4 deviates:** the mismatch is
   caught inside `RemoteApp::new`, so a stale module binary at *startup* panics `main()` with the
   `InvalidData` message rather than opening a window in the crash state; only a mismatch on an F5 reload
-  faults gracefully. **The fault-frame blank was observed, and it is not the freeze the step describes:**
-  a compositor screenshot (`spectacle`) after a `kill -9` shows the window as the flat clear colour with
-  the `— MODULE CRASHED` title, not the last game frame — six of six runs, and F5 then restores the
-  board. (Capture caveat: `import -window` on an XWayland Vulkan window returns a *stale* image once it
-  has read a given swapchain, so it showed the pre-crash frame in any run that captured before the kill;
-  use the compositor path for anything after a present.) So "the last presented image stays on screen"
-  holds literally — the last presented image *is* the blank — but the user sees an empty window, not a
-  frozen game. A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
-  that one frame must still be submitted and presented — with no instances, i.e. blank — before the
-  next `about_to_wait` freezes; every frame after it is skipped as specified.)*
+  faults gracefully. **The fault-frame blank was observed, then fixed.** As first built, a compositor screenshot
+  (`spectacle`) after a `kill -9` showed the window as the flat clear colour with the `— MODULE CRASHED`
+  title, not the last game frame — six of six runs. A fault is discovered inside `update()`, after the
+  acquire has reset the frame's fence, and the original code still submitted and presented that frame with
+  no instances, so the "frozen" window froze on a blank. **Fix:** `about_to_wait` returns right after
+  `update()` when `is_faulted()` is set, before recording, submitting or presenting. The acquired image,
+  its semaphore and the reset fence are abandoned rather than unwound, which is safe because the only exit
+  from the fault is F5, whose `reload` always schedules a swapchain recreate, and
+  `recreate_swapchain` runs `device_wait_idle` and rebuilds every fence and semaphore. Re-verified with
+  the compositor path: three crash/F5 cycles each freeze on the real game frame under the crashed title,
+  the F5 after each restores rendering with one module process, and the validation layers report nothing.
+  (Capture caveat: `import -window` on an XWayland Vulkan window returns a *stale* image once it has read
+  a given swapchain, so it showed the pre-crash frame in any run that captured before the kill; use the
+  compositor path for anything after a present.)*
 
 *(**Milestone C**: dev mode is exactly what this doc specifies, fully live, fully proven by hand, with zero
 permanent scaffolding left over — every lifecycle hook delivered, reload working, and both failure

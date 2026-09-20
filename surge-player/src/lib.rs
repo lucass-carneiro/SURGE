@@ -125,6 +125,14 @@ impl ApplicationHandler for SurgeContext {
             .update(dt, self.sprite_database.as_mut().unwrap());
         self.last_update_call_timer = Instant::now();
 
+        // A fault is only discovered inside `update()`, i.e. after the acquire above. Presenting
+        // this frame would replace the last good image with an empty one, so drop it instead: the
+        // acquired image, its semaphore and the reset fence are all discarded by the swapchain
+        // recreate that the reload clearing this fault always schedules.
+        if self.startup_app.is_faulted() {
+            return;
+        }
+
         // Begin command recording
         self.vulkan_context
             .as_ref()
