@@ -1,3 +1,8 @@
+// Not called until 2.5/2.6 wire it into RemoteApp.
+#[cfg(unix)]
+#[allow(dead_code)]
+mod proc;
+
 use sc::vulkan::{VulkanContext, sprite_database as spd};
 use std::{
     cell::RefCell,

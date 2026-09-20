@@ -5,6 +5,7 @@ edition = "2024"
 
 
 [dependencies]
+libc = "0.2"
 log = "0.4.28"
 surge-core = { path = "../surge-core" }
 surge-sdk = { path = "../surge-sdk" }

@@ -2265,7 +2265,7 @@ indefinitely without being in a half-migrated state.)*
   `update` is called (Q81b — the ordering is a stated protocol property, and a `drive()` that replays
   events after `update` passes every other assertion while making a keypress land one frame late). Test:
   `cargo test -p surge-sdk`.
-- **2.4.** Add `surge-player/src/proc.rs`: `set_pdeathsig()` (`libc::prctl(PR_SET_PDEATHSIG, ...)`, Q18) and
+- **2.4.** **[DONE]** Add `surge-player/src/proc.rs`: `set_pdeathsig()` (`libc::prctl(PR_SET_PDEATHSIG, ...)`, Q18) and
   `terminate(pid)` (`libc::kill(pid, libc::SIGTERM)`/`nix::sys::signal::kill`, Q30) as free functions, not
   yet called from anywhere. Add the `libc`/`nix` dependency to `surge-player/Cargo.toml`. Test: compile
   gate only — there is no meaningful unit test for `PR_SET_PDEATHSIG` short of a real process pair.
