@@ -1,9 +1,9 @@
 use log;
 use std::cell::RefCell;
 use surge_sdk::{
-    InstanceInfo, SpriteCanvas, SubTextureInfo, SurgeApp,
+    InstanceInfo, KeyEvent, SpriteCanvas, SubTextureInfo, SurgeApp,
     nalgebra::{Vector2, Vector4},
-    winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase},
+    winit::event::{DeviceId, ElementState, MouseButton, MouseScrollDelta, TouchPhase},
 };
 
 const NUM_FRAMES: u32 = 25;

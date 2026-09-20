@@ -2185,7 +2185,7 @@ player.)*
   `upload_assets` is genuinely just a retype — it never touched `DecodedTexture`). Test: compile gate + smoke
   test, **both modules explicitly** — this is the first commit that changes what either module actually does
   at runtime; watch 2048's textures reload correctly on a resize.
-- **1.7.** Add the `surge_sdk::KeyEvent` mirror struct (Q35's field list, plus `Debug` — both modules'
+- **1.7.** **[DONE]** Add the `surge_sdk::KeyEvent` mirror struct (Q35's field list, plus `Debug` — both modules'
   `keyboard_event` bodies currently `log::info!("{:?}", event)` or pattern-match fields by name, and the
   mirror's field names match winit's exactly, so pattern matches like `surge-mod-2048/src/lib.rs:126-132`
   need no change beyond the `use` line). Retype `keyboard_event` to take it; `surge-player/main.rs`

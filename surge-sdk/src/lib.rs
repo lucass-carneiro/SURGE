@@ -1,5 +1,6 @@
 mod app;
 mod canvas;
+mod input;
 mod sprite;
 
 // Re-exported so modules take exactly the versions the `SurgeApp` trait is written against.
@@ -8,6 +9,7 @@ pub use winit;
 
 pub use app::SurgeApp;
 pub use canvas::{CanvasError, SpriteCanvas};
+pub use input::KeyEvent;
 pub use sprite::{
     BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
     TextureFilteringMode,

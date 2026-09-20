@@ -1,6 +1,6 @@
-use winit::event::{DeviceId, ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase};
+use winit::event::{DeviceId, ElementState, MouseButton, MouseScrollDelta, TouchPhase};
 
-use crate::canvas::SpriteCanvas;
+use crate::{canvas::SpriteCanvas, input::KeyEvent};
 
 /// Defines a SURGE application
 pub trait SurgeApp {

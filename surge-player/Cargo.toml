@@ -7,6 +7,7 @@ edition = "2024"
 [dependencies]
 log = "0.4.28"
 surge-core = { path = "../surge-core" }
+surge-sdk = { path = "../surge-sdk" }
 winit = "0.30.12"
 
 [features]

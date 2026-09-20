@@ -297,6 +297,16 @@ impl ApplicationHandler for SurgeContext {
                 event,
                 is_synthetic,
             } => {
+                // winit's KeyEvent is not constructible outside winit, so the module
+                // interface takes the SDK's mirror of its public fields.
+                let event = surge_sdk::KeyEvent {
+                    physical_key: event.physical_key,
+                    logical_key: event.logical_key,
+                    text: event.text.map(|text| text.to_string()),
+                    location: event.location,
+                    state: event.state,
+                    repeat: event.repeat,
+                };
                 self.startup_app
                     .keyboard_event(device_id, event, is_synthetic);
             }

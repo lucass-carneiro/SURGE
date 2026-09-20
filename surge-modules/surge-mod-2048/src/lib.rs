@@ -1,9 +1,9 @@
 use log;
 use surge_sdk::{
-    InstanceInfo, SpriteCanvas, SurgeApp,
+    InstanceInfo, KeyEvent, SpriteCanvas, SurgeApp,
     nalgebra::{Vector2 as Vec2, Vector4 as Vec4},
     winit::{
-        event::{DeviceId, ElementState, KeyEvent, MouseButton},
+        event::{DeviceId, ElementState, MouseButton},
         keyboard::{KeyCode, PhysicalKey},
     },
 };
