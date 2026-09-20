@@ -13,6 +13,7 @@ pub use surge_sdk::{
     BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
     TextureFilteringMode,
 };
+use surge_sdk::{CanvasError, SpriteCanvas};
 
 /// A texture decoded to RGBA bytes, ready to upload to the GPU via
 /// `SpriteDatabase::upload_decoded_texture`. Produced by `SpriteDatabase::decode_texture_file`.
@@ -702,6 +703,20 @@ impl SpriteDatabase {
 
     pub fn get_create_info(&self) -> CreateInfo {
         self.ci
+    }
+}
+
+impl SpriteCanvas for SpriteDatabase {
+    fn add_instance(&mut self, aii: &InstanceInfo) {
+        SpriteDatabase::add_instance(self, aii)
+    }
+
+    fn upload_texture(&mut self, texture_file: &str) -> Result<usize, CanvasError> {
+        Ok(SpriteDatabase::upload_texture(self, texture_file)?)
+    }
+
+    fn get_create_info(&self) -> CreateInfo {
+        SpriteDatabase::get_create_info(self)
     }
 }
 

@@ -169,3 +169,9 @@ pub enum VulkanError {
     #[error("Unable to upload texture: the texture database is full")]
     TextureDatabaseFull,
 }
+
+impl From<VulkanError> for surge_sdk::CanvasError {
+    fn from(error: VulkanError) -> Self {
+        surge_sdk::CanvasError::new(error.to_string())
+    }
+}

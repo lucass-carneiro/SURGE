@@ -2101,7 +2101,7 @@ player.)*
   commit that adds a trait nothing implements or calls, and the compile gate does check the one property
   that matters here (object safety: `&mut dyn SpriteCanvas` must be nameable, which 1.6 depends on and
   Q33's spike already proved). First behavioral proof: 1.6's smoke test (Q80).
-- **1.5.** `impl SpriteCanvas for SpriteDatabase` in `surge-core`, plus `impl From<VulkanError> for
+- **1.5.** **[DONE]** `impl SpriteCanvas for SpriteDatabase` in `surge-core`, plus `impl From<VulkanError> for
   CanvasError` (Q34's resolved simple form — plain `From`, `?` at the call site, no hand-rolled
   `.map_err`). Additive; nothing calls through the trait yet. Test: compile gate — and this is the step in
   Phase 1 where that is weakest, worth flagging rather than glossing (Q80): the impl is three forwarding
