@@ -119,7 +119,6 @@ impl ApplicationHandler for SurgeContext {
 
         self.recreate_swapchain |= swpc_img_data.suboptimal;
 
-        // Handle hot reloading
         // Call startup app update
         let dt = self.last_update_call_timer.elapsed().as_secs_f32();
         self.startup_app
@@ -177,8 +176,6 @@ impl ApplicationHandler for SurgeContext {
             .unwrap();
 
         self.recreate_swapchain |= present_out_of_date || swpc_img_data.suboptimal;
-
-        // Refresh HR key state
 
         // FPS Cap.
         let desired_frame_time = 1.0 / (self.engine_config.renderer.fps_cap as f64);

@@ -2658,7 +2658,7 @@ Q21.)*
   "run from another directory" means CWD = the staging folder; launching it from elsewhere panics with
   `IoError` on `config.toml`. The stager now checks only for the module's `_release` binary and its
   error message points at `--features release-bin`; `make_lib_name` and the player-binary check are gone.)*
-- **5.2.** Delete the now-fully-superseded `hot_reloading` feature flag from any leftover
+- **5.2.** **[DONE]** Delete the now-fully-superseded `hot_reloading` feature flag from any leftover
   `surge-player/Cargo.toml` reference if 3.1–3.4 didn't already remove it (Q21). Sweep `CLAUDE.md`'s "Build
   & run" and "Frame lifecycle" sections for now-inaccurate statements (`load_from_dylib`, the `dlopen` ABI
   description, the CWD contract's `libsurge_mod_*.so` mention, the stale "no tests" line 1.2 already
@@ -2669,6 +2669,15 @@ Q21.)*
   --include=*.md --include=*.rs .` returning nothing outside this design doc's own history sections. A grep
   that must come back empty is a real test — it fails when the sweep was incomplete, which is the only way
   this commit can be wrong.
+  *(Verified: `cargo check --workspace` and `cargo check --workspace --features release-bin` clean. The
+  `hot_reloading` feature — the only leftover, in `surge-player/Cargo.toml`, along with its now-empty
+  `[features]` table — is deleted, as are the two stale `// Handle hot reloading` / `// Refresh HR key
+  state` placeholder comments in `surge-player/src/lib.rs`. `CLAUDE.md` is rewritten for the four-crate
+  layout (`surge-sdk` added), the dev-spawn/IPC and release-binary entry points, F5 reload and the
+  crashed-module freeze, `release-bin`, `resolve_asset_path`, the stager's actual output, and the tests
+  that now exist. **The grep is not literally empty:** it still hits `CODE_REVIEW.md`, a point-in-time
+  review of commit `b265e28` that quotes the old code by design, and this doc's own history sections
+  (the allowed exception). `CODE_REVIEW.md` was left alone rather than rewritten.)*
 
 ## Self-critique / risks
 
