@@ -2317,7 +2317,7 @@ indefinitely without being in a half-migrated state.)*
   is visible immediately as wrong geometry); the fault flag and the stall/fault distinction at 3.6, cases
   1 and 5. Nothing here stays unverified indefinitely — but nothing here is verified for four commits
   either, which is the price of building the machinery additively and is worth paying with eyes open.
-- **2.6.** Wire `set_pdeathsig`/`terminate` and the `reload_in_progress` flag (Q22) into `RemoteApp`'s
+- **2.6.** **[DONE]** Wire `set_pdeathsig`/`terminate` and the `reload_in_progress` flag (Q22) into `RemoteApp`'s
   spawn/kill/reload methods (the inherent `RemoteApp::reload()`, not yet called from anywhere). One
   `SIGTERM` → bounded wait → `SIGKILL` → `Child::wait` helper serves both callers — reload and 2.5's
   shutdown path — rather than two near-identical sequences (Q30's warning about reaching for
@@ -2327,7 +2327,11 @@ indefinitely without being in a half-migrated state.)*
   (`set_pdeathsig`, and the `SIGKILL` escalation this step's helper implements) — Q80. (The `SurgeApp::reload() -> bool` trait method that lets generic code — `SurgeContext`,
   operating only on `Box<dyn SurgeApp>`/`StartupApp` — actually reach this is added at 3.5, per Q45, once
   the F5 keybind is what first needs it; adding it here would be premature; noted now so it isn't missed
-  later.)
+  later.) *(As built: 2.5 already wired `set_pdeathsig` and the shared `stop_child` helper, so this step
+added `reload_in_progress` — consulted by `fault()` — and `RemoteApp::reload() -> io::Result<()>`, which
+leaves the app faulted on a failed respawn so F5 can retry. `stop_child` now returns early if the child
+has already exited, so a crashed or already-reaped child is never signalled by a possibly reused pid.
+`pending_on_load` stays in 3.5, per Q60.)*
 
 *(**Milestone B**: the entire dev-mode machinery exists, is additive, and compiles — the full lifecycle
 (`OnLoad` → `Frame` → `Shutdown`), the framing, the proxy's counters, the stall/fault distinction, and the

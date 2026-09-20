@@ -51,6 +51,10 @@ pub struct RemoteApp {
     /// Set when the module stops answering correctly. Every `SurgeApp` method is a no-op from
     /// then on.
     faulted: bool,
+    /// True while `reload` is tearing the old module down and bringing the new one up. A
+    /// transport failure in that window is the player's own doing, not a module crash, so
+    /// `fault` ignores it.
+    reload_in_progress: bool,
 }
 
 impl RemoteApp {
@@ -70,7 +74,36 @@ impl RemoteApp {
             stream,
             pending_input: Vec::new(),
             faulted: false,
+            reload_in_progress: false,
         })
+    }
+
+    /// Replaces the module process with a freshly spawned one: stops the current child,
+    /// relaunches from the same path (so a rebuilt binary is picked up), and re-handshakes. On
+    /// success clears `faulted`, which makes this the only way out of the crash state. On failure
+    /// the app stays faulted and the error is returned; calling `reload` again retries.
+    ///
+    /// The new module has received no `Request` yet and the caller's canvas still holds the old
+    /// module's textures, so the caller must rebuild the canvas and send `OnLoad` next.
+    pub fn reload(&mut self) -> io::Result<()> {
+        self.reload_in_progress = true;
+        stop_child(&mut self.child);
+        let result = launch(&self.listener, &self.socket_name, &self.module_path);
+        self.reload_in_progress = false;
+
+        match result {
+            Ok((child, stream)) => {
+                self.child = child;
+                self.stream = stream;
+                self.pending_input.clear();
+                self.faulted = false;
+                Ok(())
+            }
+            Err(e) => {
+                self.fault(format_args!("reload failed: {e}"));
+                Err(e)
+            }
+        }
     }
 
     pub fn is_faulted(&self) -> bool {
@@ -78,6 +111,10 @@ impl RemoteApp {
     }
 
     fn fault(&mut self, reason: impl std::fmt::Display) {
+        if self.reload_in_progress {
+            log::debug!("ignoring failure during reload: {reason}");
+            return;
+        }
         if !self.faulted {
             log::error!("module faulted: {reason}");
         }
@@ -334,7 +371,13 @@ fn wait_exit(child: &mut Child, timeout: Duration) -> io::Result<Option<std::pro
 
 /// `SIGTERM`, a bounded wait, then `SIGKILL`, and always a final `wait` so no zombie is left.
 /// `Child::kill` alone would skip straight to `SIGKILL` and deny the module its own teardown.
+/// Shared by shutdown, reload, and failed launches.
 fn stop_child(child: &mut Child) {
+    // Already exited (e.g. crashed, or stopped by an earlier call): reap it and stop, since
+    // signalling a reaped pid could hit an unrelated process that reused it.
+    if let Ok(Some(_)) = child.try_wait() {
+        return;
+    }
     if let Err(e) = proc::terminate(child.id()) {
         log::warn!("SIGTERM to module failed: {e}");
     }
