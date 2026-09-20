@@ -2490,10 +2490,14 @@ module or doesn't.)*
   `reload` logs an inherent-`reload` failure and still returns `true`, so the player rebuilds its canvas
   even when the respawn failed; `on_swapchain_recreate` leaves `pending_on_load` set while the app is
   faulted, so the retry still opens with `OnLoad`. The `#[allow(dead_code)]` on `mod remote_app` is gone;
-  `is_faulted` carries its own until 3.6. Only the compile gate and an F5-less smoke test were run —
-  one child while open, none after; **the F5 checks themselves (`OnLoad` as the fresh child's first
-  request, differing pid, no texture-cap warning) are not yet observed**, since no tool was available to
-  send a keypress to the window.)*
+  `is_faulted` carries its own until 3.6. Compile gate and an F5-less smoke test were run first — one
+  child while open, none after. **The F5 checks were observed in a later session**, by running the player
+  on X11/XWayland (`WAYLAND_DISPLAY` unset) and injecting the keypress with XTest (`XSetInputFocus` on
+  the window, then `XTestFakeKeyEvent` F5): after F5 the log shows `Reloading module` then `request:
+  OnLoad` from the fresh child, and no `OnSwapchainRecreate` after the initial one; `pgrep -x` shows one
+  module process before and after, with a different pid (55685 → 55758); and seven successive F5 presses
+  produced seven `Reloading module`/`OnLoad` pairs and no warning of any kind, so the Q14 database
+  rebuild holds under repetition.)*
 - **3.6.** **[DONE]** Surface the crash state (Q11's policy, Q66's mechanism — the last unbuilt requirement in the dev
   design, and the one three earlier steps route failures into as if it already existed). Add the second
   default method to `SurgeApp` in `surge-sdk`, `fn is_faulted(&self) -> bool { false }`, overridden by
@@ -2537,15 +2541,21 @@ module or doesn't.)*
   with its `#[allow(dead_code)]`. `about_to_wait` gates on it before the pause check and tracks the
   transition in a `crash_shown` field on `SurgeContext`, which also reverts the title once a reload clears
   the fault. `exiting()` needed no change: `RemoteApp::on_unload` already skips the wire when faulted.
-  Cases run by hand: **1** (one `module faulted` and one `module crashed` line, no respawn — F5 recovery
-  not observed, no tool available to send a keypress), **2** (no surviving module), **5** (five stall
-  lines, no fault, rendering resumed after `SIGCONT`), **6** (the upload failure faults with the
-  `TextureDatabaseFull` reason). **Not run:** case 3, since closing the window needs input this session
-  could not send, and `SIGTERM` to the player skips `exiting()`. **Case 4 deviates:** the mismatch is
+  Cases run by hand: **1** (one `module faulted` and one `module crashed` line, no respawn), **2** (no
+  surviving module), **5** (five stall lines, no fault, rendering resumed after `SIGCONT`), **6** (the
+  upload failure faults with the `TextureDatabaseFull` reason). **Case 3 and case 1's recovery were run
+  in a later session** with the input tooling described under 3.5 (X11/XWayland, XTest keypress,
+  `WM_DELETE_WINDOW` for closing, `xprop` for the title). Case 1: after `kill -9` the title reads
+  `SURGE: 2048 — MODULE CRASHED`, and after F5 it reverts to `SURGE: 2048` with a fresh child whose first
+  request is `OnLoad` (the killed child stays a zombie until that reload reaps it, so `pgrep` still lists
+  its pid in between). Case 3, with a temporary `signal(SIGTERM, SIG_IGN)` + sleep loop in `drive()`'s
+  `Shutdown` arm (reverted): closing the window logs `no ShutdownAck from module: timed out` then
+  `module ignored SIGTERM for 2s; sending SIGKILL`, the player exits about 4.2 s after the close request,
+  and no module process survives. **Case 4 deviates:** the mismatch is
   caught inside `RemoteApp::new`, so a stale module binary at *startup* panics `main()` with the
   `InvalidData` message rather than opening a window in the crash state; only a mismatch on an F5 reload
-  faults gracefully. Also unobserved: the window title (no tool to read it) and the fault-frame blank
-  below. A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
+  faults gracefully. **Still unobserved:** the fault-frame blank
+  below (no screenshot tool). A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
   that one frame must still be submitted and presented — with no instances, i.e. blank — before the
   next `about_to_wait` freezes; every frame after it is skipped as specified.)*
 
