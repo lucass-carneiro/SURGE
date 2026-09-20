@@ -2201,7 +2201,7 @@ indefinitely without being in a half-migrated state.)*
 
 ### Phase 2 — Dev-mode IPC machinery, built additively (nothing wired into `main()` yet)
 
-- **2.1.** Define `Request`/`Response`/`CanvasOps`/`InputEvent` in `surge-sdk` per "Message shape" above
+- **2.1.** **[DONE]** Define `Request`/`Response`/`CanvasOps`/`InputEvent` in `surge-sdk` per "Message shape" above
   (no `DeviceId` field, per Q19); `postcard` is already a dependency since 1.2 (Q48). Two prerequisites this
   step covers that pass 7 left unstated (Q48): add `#[derive(Serialize, Deserialize)]` to the
   `surge_sdk::KeyEvent` struct from 1.7 (only `Debug` until now — this is the first point anything needs it
