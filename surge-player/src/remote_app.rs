@@ -111,12 +111,6 @@ impl RemoteApp {
         }
     }
 
-    // No caller until 3.6.
-    #[allow(dead_code)]
-    pub fn is_faulted(&self) -> bool {
-        self.faulted
-    }
-
     fn fault(&mut self, reason: impl std::fmt::Display) {
         if self.reload_in_progress {
             log::debug!("ignoring failure during reload: {reason}");
@@ -224,6 +218,10 @@ impl SurgeApp for RemoteApp {
             log::error!("reload failed: {e}");
         }
         true
+    }
+
+    fn is_faulted(&self) -> bool {
+        self.faulted
     }
 
     /// Asks the module to shut down, then reaps it — escalating to `SIGTERM`/`SIGKILL` if it does

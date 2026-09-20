@@ -36,6 +36,9 @@ struct SurgeContext {
     last_update_call_timer: Instant,
     pause_rendering: bool,
     recreate_swapchain: bool,
+    /// Whether the window title currently carries the crash suffix, so the transition into and
+    /// out of the faulted state is acted on once rather than every frame.
+    crash_shown: bool,
     // Tracks the actual observed window size, purely to dedup redundant Resized
     // events. This is NOT the engine's configured resolution: config.resolution
     // is a fixed design constant (depth image extent, ortho projection, module
@@ -51,6 +54,24 @@ impl ApplicationHandler for SurgeContext {
 
     /// Game loop body
     fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+        // A faulted module freezes the window on its last presented frame: nothing is acquired,
+        // drawn or presented until a reload clears the fault.
+        let faulted = self.startup_app.is_faulted();
+        if faulted != self.crash_shown {
+            self.crash_shown = faulted;
+            let mut title = self.engine_config.window.name.clone();
+            if faulted {
+                log::error!("module crashed; frames are suspended until it is reloaded (F5)");
+                title.push_str(" — MODULE CRASHED");
+            }
+            if let Some(window) = &self.window {
+                window.set_title(&title);
+            }
+        }
+        if faulted {
+            return;
+        }
+
         // Stop rendering if minimized
         if self.pause_rendering {
             return;
@@ -396,6 +417,7 @@ pub fn main() {
         last_update_call_timer: Instant::now(),
         pause_rendering: false,
         recreate_swapchain: false,
+        crash_shown: false,
         last_window_size: initial_size,
     };
 

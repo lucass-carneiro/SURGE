@@ -31,4 +31,10 @@ pub trait SurgeApp {
     fn reload(&mut self) -> bool {
         false
     }
+
+    /// Whether the app has stopped working and can only be recovered by `reload`. The player
+    /// stops running frames while this is `true`. Apps that cannot fault keep the default.
+    fn is_faulted(&self) -> bool {
+        false
+    }
 }

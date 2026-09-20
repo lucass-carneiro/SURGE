@@ -2494,7 +2494,7 @@ module or doesn't.)*
   one child while open, none after; **the F5 checks themselves (`OnLoad` as the fresh child's first
   request, differing pid, no texture-cap warning) are not yet observed**, since no tool was available to
   send a keypress to the window.)*
-- **3.6.** Surface the crash state (Q11's policy, Q66's mechanism — the last unbuilt requirement in the dev
+- **3.6.** **[DONE]** Surface the crash state (Q11's policy, Q66's mechanism — the last unbuilt requirement in the dev
   design, and the one three earlier steps route failures into as if it already existed). Add the second
   default method to `SurgeApp` in `surge-sdk`, `fn is_faulted(&self) -> bool { false }`, overridden by
   `RemoteApp` to report the `faulted` flag 2.5 already sets. `SurgeContext::about_to_wait` checks it first
@@ -2533,6 +2533,21 @@ module or doesn't.)*
      it was written): run with `max_textures` temporarily lowered below the module's asset count (e.g. 4)
      and confirm the failing `texture_uploads` entry routes into the same crash state rather than a partial
      upload or a silently wrong texture.
+  *(As built: `is_faulted` is a trait method in `surge-sdk` and `RemoteApp`'s inherent one is gone, along
+  with its `#[allow(dead_code)]`. `about_to_wait` gates on it before the pause check and tracks the
+  transition in a `crash_shown` field on `SurgeContext`, which also reverts the title once a reload clears
+  the fault. `exiting()` needed no change: `RemoteApp::on_unload` already skips the wire when faulted.
+  Cases run by hand: **1** (one `module faulted` and one `module crashed` line, no respawn — F5 recovery
+  not observed, no tool available to send a keypress), **2** (no surviving module), **5** (five stall
+  lines, no fault, rendering resumed after `SIGCONT`), **6** (the upload failure faults with the
+  `TextureDatabaseFull` reason). **Not run:** case 3, since closing the window needs input this session
+  could not send, and `SIGTERM` to the player skips `exiting()`. **Case 4 deviates:** the mismatch is
+  caught inside `RemoteApp::new`, so a stale module binary at *startup* panics `main()` with the
+  `InvalidData` message rather than opening a window in the crash state; only a mismatch on an F5 reload
+  faults gracefully. Also unobserved: the window title (no tool to read it) and the fault-frame blank
+  below. A fault is discovered inside `update()`, after the frame's fence was reset by the acquire, so
+  that one frame must still be submitted and presented — with no instances, i.e. blank — before the
+  next `about_to_wait` freezes; every frame after it is skipped as specified.)*
 
 *(**Milestone C**: dev mode is exactly what this doc specifies, fully live, fully proven by hand, with zero
 permanent scaffolding left over — every lifecycle hook delivered, reload working, and both failure
