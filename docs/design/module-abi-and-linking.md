@@ -2603,7 +2603,7 @@ Q21.)*
   logger, so `log::` calls from `parse_config`'s error paths land nowhere in dev mode — the
   `.unwrap()` panic message still carries the same error, so nothing is lost, only the formatted line.
   `RemoteApp::new` logs nothing on its startup path. Release binaries in 4.2 share the same ordering.)*
-- **4.2.** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
+- **4.2.** **[DONE]** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
   dependency gated by a `release-bin` feature, a `src/bin/release.rs` —
   ```rust
   fn main() {
@@ -2628,6 +2628,17 @@ Q21.)*
   back empty — the binary links `surge_player`'s `[lib]`, and 4.1's target rule is what keeps the IPC
   machinery out of it. (`libc`/`postcard` are still *built* as dependencies of `surge-player`; the claim
   under test is that no reachable code in this binary uses them, not that Cargo skipped compiling them.)
+  *(Verified: `cargo check --workspace` passes; `cargo tree -p surge-mod-2048` shows no `surge-player`,
+  `surge-core`, `ash` or `vk-mem`; `cargo build --release --features release-bin` produces both
+  `*_release` binaries. Both run with the logo and `SURGE Debug` lines emitted by `run()`, no panic, and
+  no child process. The `nm` grep is **not** literally empty: it matches
+  `UnixStream::connect::<PathBuf>`, which comes from winit's Wayland/X11 connection code, not from
+  SURGE — no `remote_app`, `postcard` or `prctl` symbol, and no `surge_sdk`/`surge_player` symbol, appears
+  in the binary. Tighten the grep to `remote_app|postcard|prctl` in future runs. **Asset paths still
+  follow the dev CWD contract:** `surge-mod-2048` and `surge-mod-default` both panic on
+  `upload_texture` when run from their own module directory, because their asset paths are
+  repo-root-relative in dev; they run cleanly from the repo root. Staged relative-path behavior is 5.1's
+  job.)*
 
 *(**Milestone D**: release mode exists — a single self-contained binary per module, no `dlopen`, no IPC, no
 `libloading` — and dev mode is unaffected.)*

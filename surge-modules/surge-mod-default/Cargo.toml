@@ -5,7 +5,11 @@ edition = "2024"
 
 [dependencies]
 log = "0.4.28"
+surge-player = { path = "../../surge-player", optional = true }
 surge-sdk = { path = "../../surge-sdk" }
+
+[features]
+release-bin = ["dep:surge-player"]
 
 [lib]
 crate-type = ["rlib"]
@@ -13,3 +17,8 @@ crate-type = ["rlib"]
 [[bin]]
 name = "surge_mod_default"
 path = "src/bin/dev.rs"
+
+[[bin]]
+name = "surge_mod_default_release"
+path = "src/bin/release.rs"
+required-features = ["release-bin"]
