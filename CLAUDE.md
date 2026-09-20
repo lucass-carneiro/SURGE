@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **`README.md` is stale.** It documents a previous C++/CMake/vcpkg incarnation of SURGE (OpenGL, `SURGE_*` CMake flags, submodules). None of that applies: this is now a Rust workspace using Vulkan via `ash`. Only the "Philosophy" section (player / core / modules split) still describes the design. Do not follow the README's build instructions.
 
+## Workflow rules
+
+These apply to every change, not just plan steps:
+
+- **Suggest a commit message; never commit.** After finishing a change, give a suggested commit message of exactly two short sentences: the first summarizes *what changed*, the second *why*. Do not run `git commit` — the user commits.
+- **Mark finished plan steps as done.** When a step of the implementation plan in `docs/design/module-abi-and-linking.md` is completed, mark it `**[DONE]**` right after its number in that doc, in the same change as the step's code. An unmarked step is still open.
+
 ## Build & run
 
 Requires `glslang` on `PATH` (from the Vulkan SDK) — `surge-core/build.rs` shells out to it and hard-fails the build if it is missing or the GLSL does not compile.

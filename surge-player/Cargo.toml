@@ -7,7 +7,6 @@ edition = "2024"
 [dependencies]
 log = "0.4.28"
 surge-core = { path = "../surge-core" }
-surge-mod-default = { path = "../surge-modules/surge-mod-default"}
 winit = "0.30.12"
 
 [features]

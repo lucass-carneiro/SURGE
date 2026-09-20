@@ -1,34 +1,53 @@
 # Module ABI & Linking Model
 
-**Status:** Resolved (pass 8) — pass 7 turned the design into a commit-by-commit sequence; pass 8 is the
-harsh-critic pass that checks *that sequence itself* for soundness (does step N actually compile given
-what step N-1 left behind?), rather than checking the design's prose against the codebase again. It found
-one sequencing bug severe enough to break the doc's own central architectural invariant — open question 41:
-step 1.6 as pass 7 wrote it asks `surge-sdk` to host `SurgeApp` with a `&mut SpriteDatabase` parameter
-*after* step 1.3 has already given `surge-core` a dependency on `surge-sdk`, which is a Cargo dependency
-cycle, not just an awkward intermediate state; fixed by forcing 1.6 and pass 7's 1.7 into one commit, the
-same way pass 7 itself already forced Q36's fix into 1.7. It also found four more commit-sequencing gaps
-of the same shape — a step assumes machinery (a Cargo dependency, a trait method, a value's source) that no
-step actually adds (open questions 42–45, 47–48) — and one honesty gap: the throwaway F5 reload trigger
-pass 7 specified (Q40) cannot actually exercise the race condition Q22's fix was built for, because it fires
-synchronously on the same thread as the blocked read it would need to race (open question 46). All eight are
-resolved below with concrete fixes folded back into "Implementation plan." Pass 7's own paragraph, below, is
-left as written; pass 6's is dropped per this doc's own convention of keeping only the immediately-preceding
-pass's status paragraph as history (its content lives on in "Open questions" and "Self-critique" regardless).
+**Status:** Resolved (pass 14) — pass 13 asked whether every behavior this design specifies has a commit
+that builds it. Pass 14 asks the mirror question it named as the next one worth asking: **does every commit
+have a test that could actually fail, and does that test observe the thing the commit was for?** Not "is a
+test named" (several steps name one) but "if the implementer got this step wrong in the most likely way,
+which test goes red." It found eight gaps, none overlapping items 1–73. **Open question 74** is the
+sharpest: `PR_SET_PDEATHSIG` (Q18) is exercised by nothing — the only scenario that triggers it is the
+player dying *without* running `exiting()`, and no test in the plan ever kills the player, so the orphan
+guard could be a no-op (a wrong `prctl` argument, a `pre_exec` that never runs) and every step would still
+pass. **Open question 75** is the same shape for the escalation branches: F5 exercises `SIGTERM` on a module
+that exits promptly, and nothing ever exercises the `SIGKILL`-after-timeout or `ShutdownAck`-timeout paths
+those sequences exist for. **Open question 77** covers two more never-run paths — the handshake-version
+mismatch and Q67's stall-vs-fault distinction — both of which turn out to be *cheaply* testable by a trick
+this doc hadn't noticed: the module is a separate file on disk, so rebuilding only one side of the socket
+(`cargo build -p surge-player` after bumping `WIRE_VERSION`) produces a genuinely mismatched pair, which is
+the real-world failure the handshake exists for rather than artificial injection. **Open question 76** fixes
+the one place the plan admits its own test can't distinguish right from wrong (Q60's `pending_on_load`,
+which 3.5 concedes both real modules hide) with one `log::debug!` line. **Open question 78** is
+cross-cutting: the compile gate is `check` + `build` and never `test`, so from 1.2 onward every suite this
+plan creates can silently regress in any later commit. **Open questions 79–81** cover four steps with no
+stated test at all, five "compile gate only" steps that never say where their behavior is first proven, and
+three test-precision gaps. All are resolved below with fixes folded back into the steps they affect. Pass
+13's own paragraph, below, is left as written; pass 12's is dropped per this doc's convention of keeping
+only the immediately-preceding pass's status paragraph as history.
 
-**Status (pass 7):** Resolved — the design itself is unchanged in substance since pass 6; pass 7 turned it
-into a commit-by-commit implementation sequence (see "Implementation plan" below) and, in the process of
-checking that sequence against every real call site rather than just the ones earlier passes had already
-grepped, found one more concrete gap the design had no answer for (open question 36: `surge-mod-2048`
-calls three `SpriteDatabase` methods — `decode_texture_file`/`upload_decoded_texture`/`DecodedTexture` —
-that don't exist anywhere in `SpriteCanvas` or the Q26 type migration, and structurally can't). It also
-surfaced four implementation-scoped decisions with no single objectively-correct answer, put to the user
-directly rather than picked unilaterally: how a module's release `[[bin]]` target gets its `surge-player`
-dependency without dragging Vulkan into dev builds (open question 37), how the dlopen→process cutover gets
-staged without one all-at-once commit (open question 38), where the module learns its IPC socket name
-(open question 39), and whether the reload machinery gets even one throwaway way to be manually exercised
-given its real trigger is out of this doc's scope (open question 40). All four are resolved with the
-user's answers recorded alongside them.
+**Status (pass 13):** Resolved — pass 12 asked what the build and the OS actually *produce and name* at each
+step. Pass 13 asks the complementary question, aimed at the implementation plan rather than the prose:
+**does every behavior this doc specifies have a commit that builds it, and can that commit's stated test
+actually observe it?** Not "does step N compile given steps 1..N-1" (pass 8's question) but "if an
+implementer executed all 20 steps faithfully, which sentences of this design would still be unimplemented
+at the end." It found nine gaps, none overlapping items 1–64. **Open question 66** is the most serious:
+Q11's crash-state path is *referenced* by three separate steps (2.5's `texture_uploads` failure routing,
+2.6's `reload_in_progress` check, Q17's part 2) and *implemented* by none — a design requirement with no
+commit, invisible to every smoke test in the plan. **Open question 65** is the same shape one lifecycle
+call over: no step on either side of the socket implements `Request::Shutdown`/`ShutdownAck`, so
+`on_unload` — which `surge-player`'s `exiting()` calls today and `surge-mod-default` actually logs from —
+is silently never delivered to a module process after the Phase 3 cutover. **Open questions 68 and 70** are
+compile-blocking: `InstanceInfo`/`SubTextureInfo` derive `Debug` only, so 2.2's proxy cannot buffer one
+(verified by compiling the fix — `Clone, Copy` derive cleanly over their `nalgebra` fields), and 3.4
+deletes the file whose `pub use` two crates are importing `SurgeApp` through without repointing either.
+**Open question 71** turns Q20's own release-mode argument on the crate Q20 exempted: release binaries
+depend on `surge-player`, which is where 2.4/2.5 put `RemoteApp` and the socket/spawn/signal code — the
+identical "IPC machinery compiled into a release binary" objection Q20 used to keep that code *out* of
+`surge-core`. **Open questions 67, 69, 72, 73** cover Q10's never-assigned stall logging (and its collision
+with crash detection), the `SpriteCanvas` method list this doc has named for eleven passes without ever
+writing down, module-binary path resolution and the dev `config.toml` value it needs, and three smaller
+precision gaps. All are resolved below with fixes folded back into the sections and steps they affect.
+(Pass 12's own paragraph was retained here through pass 13 and dropped by pass 14's trim, per this doc's
+convention of keeping only the immediately-preceding pass's status paragraph as history.)
 
 **Origin:** CODE_REVIEW.md H10 ("Two statically-linked copies of `surge-core` and `std` in one
 process"). What started as "give the module entry point a versioned, `extern "C"` ABI" grew into this
@@ -174,8 +193,52 @@ mode" below).
 - **Module discovery / config schema.** Today `[startup_app] app_folder`/`app_name` resolve to
   `dlopen("lib{app_name}.so")` (`surge_core::app::load_from_dylib`). They're reinterpreted here, not
   replaced: `app_folder`/`app_name` resolve to the standalone module binary's path instead
-  (`{app_folder}/{app_name}`, no `lib`/`.so` decoration) — same `[startup_app]` shape in both dev and
-  release, only the resolution logic behind it changes.
+  (`{app_folder}/{app_name}`, no `lib`/`.so` decoration) — same `[startup_app]` shape in dev as today, only
+  the resolution logic behind it changes. (In *release* mode nothing resolves `[startup_app]` at all: the
+  module is the binary, statically linked. The keys stay in the shipped `config.toml` as inert leftovers
+  rather than being removed, since `EngineConfig`'s serde struct requires the table to be present — see
+  open question 64c.)
+  - **This only works if the module's dev binary is actually named `{app_name}`** (open question 59,
+    resolved). Cargo names a binary target after its *source file*, not its package, so an unadorned
+    `src/bin/dev.rs` in both module crates produces `target/debug/dev` twice — an output-filename collision
+    (verified by running it: `cargo build --workspace` warns, builds both, and leaves whichever linked last
+    at that path), and a path no `app_name` in either checked-in `config.toml` (`surge_mod_2048`,
+    `surge_mod_default`) names. Every module crate therefore declares its binaries explicitly, with the dev
+    one's name matching its `app_name` exactly:
+    ```toml
+    [[bin]]
+    name = "surge_mod_2048"          # == [startup_app] app_name; file stays src/bin/dev.rs
+    path = "src/bin/dev.rs"
+
+    [[bin]]
+    name = "surge_mod_2048_release"  # release mode; see "Release mode" below
+    path = "src/bin/release.rs"
+    required-features = ["release-bin"]
+    ```
+    A `[[bin]]` whose name equals the package's `[lib]` name is legal — **verified by building it** rather
+    than by analogy (open question 73d): a throwaway package named `surge-mod-2048`, with
+    `crate-type = ["rlib"]`, a lib target named `surge_mod_2048`, and the two `[[bin]]` tables above, builds
+    clean and emits `target/debug/surge_mod_2048` alongside `libsurge_mod_2048.rlib` — no name-collision
+    diagnostic, since the two targets are different kinds with different output filenames. (The analogy
+    passes 1–12 used for this — "it's exactly what `src/main.rs` + `src/lib.rs` produces by default" — is
+    actually false for a hyphenated package: the default bin is named after the *package*
+    (`surge-mod-2048`), the lib after its underscored form (`surge_mod_2048`), so the default arrangement
+    never produces the same-name case at all. The conclusion holds; the reasoning offered for it did not.)
+    The same spike confirmed `required-features = ["release-bin"]` behaves as Phase 4 assumes: a plain
+    `cargo build` emits only the dev binary, and the release one appears only under
+    `cargo build -p <pkg> --features release-bin`.
+  - **Who resolves the path, and what the dev `config.toml` has to say** (open question 72, resolved).
+    Resolution moves from `surge_core::app::load_from_dylib` (deleted at step 3.4) to `RemoteApp`'s
+    constructor in `surge-player`, which takes the parsed `StartupAppConfig` and builds
+    `Path::new(app_folder).join(app_name)` — no `lib` prefix, no extension, canonicalized so a missing or
+    non-executable file fails loudly at spawn time with the resolved path in the message, rather than as an
+    opaque `Command::spawn` `ENOENT`. Both checked-in module configs currently say `app_folder = "."`
+    (checked: `surge-modules/*/config.toml`), which was already only meaningful for the staged layout and
+    is inert in release mode regardless (Q64c). Dev runs therefore need the root working copy of
+    `config.toml` — gitignored, per-developer, per `CLAUDE.md`'s CWD contract — to carry
+    `app_folder = "target/debug"`, exactly as it already must today to find `libsurge_mod_2048.so`. The
+    contract that changes is the *filename* under that folder (`surge_mod_2048`, not
+    `libsurge_mod_2048.so`), not the folder itself; the checked-in copies need no edit.
 - **IPC channel**, established right after spawn. Player → module carries `dt` and the frame's input
   events each turn; module → player carries the instances the module wants drawn this frame (small,
   fixed-shape — at most `max_sprites` = 32 `InstanceInfo`-shaped records) plus any texture-upload
@@ -234,8 +297,9 @@ mode" below).
     }
 
     struct CanvasOps {
-        /// Asset paths, in call order — texture_id is this call's position in the sequence,
-        /// exactly as SpriteDatabase::upload_texture is positional today (see open question 17).
+        /// Asset paths, in call order. texture_id is the proxy's *cumulative* upload counter, not
+        /// this vec's index — the two coincide only when the canvas was freshly built at the start
+        /// of the turn (see open questions 17 and 63).
         texture_uploads: Vec<String>,
         /// Empty in practice for OnLoad/OnSwapchainRecreate, populated for Frame.
         instances: Vec<surge_sdk::InstanceInfo>,
@@ -275,6 +339,20 @@ mode" below).
     then the steady-state `Request::Frame` loop, then `Request::Shutdown` on exit — the player waits
     briefly for `Response::ShutdownAck` before falling back to the same `SIGTERM`-then-`SIGKILL` sequence
     reload already uses, so a hung module on shutdown can't hang player exit.
+  - **What `Shutdown` actually carries on each side** (open question 65, resolved, added pass 13). Q16
+    folded `on_unload` into `Shutdown`/`ShutdownAck` rather than giving it its own round trip, but no
+    later pass ever said which code calls `SurgeApp::on_unload` afterwards, and neither side's step in
+    "Implementation plan" built it. Pinned down: `RemoteApp`'s own `SurgeApp::on_unload` impl is what
+    sends `Request::Shutdown` (it is the one trait method `surge-player`'s `exiting()` already calls, per
+    `surge-player/src/main.rs:237`), and `surge_sdk::run_dev_module`'s `drive()` loop calls the concrete
+    app's `on_unload()` on receiving `Shutdown`, *then* replies `ShutdownAck`, then returns. Both halves
+    are needed for the hook to survive the cutover at all: `surge-mod-default::on_unload` logs
+    "Default app shutdown" today (`lib.rs:158-160`), so its disappearance from a dev-mode run is the
+    cheap, concrete observable that this path works. The player's wait for `ShutdownAck` is a bounded
+    `UnixStream::set_read_timeout` (no new dependency; `std` covers it), after which it escalates
+    `SIGTERM` → wait → `SIGKILL` and reaps with `Child::wait` so `exiting()` leaves no zombie. A
+    `RemoteApp` already in the fault state (open question 66) skips the wire entirely and goes straight
+    to the reap.
   - **`texture_id` handshake** (open question 17, resolved). Traced to the root cause: this was never
     really an IPC problem. `SpriteDatabase::upload_decoded_texture` (`surge-core/src/vulkan/
     sprite_database/mod.rs:643`) already returns `Ok(())` — not the assigned index — even in today's
@@ -282,9 +360,15 @@ mode" below).
     `uploaded_textures.len() == max_textures`. Neither existing module reads the return value for an ID
     anyway — `AppDefault`/`App2048` both hardcode `texture_id` as a literal matching upload order, i.e.
     they already trust positional prediction, not a returned value. So the dev-mode `SpriteCanvas` proxy
-    doing the same (assigning `texture_id` as this call's position in `CanvasOps.texture_uploads`, no
-    round trip, no ack) is not a new assumption — it's the existing one, carried across a process
-    boundary unchanged. Two changes make the desync case safe instead of silent:
+    doing the same (predicting `texture_id` locally, no round trip, no ack) is not a new assumption — it's
+    the existing one, carried across a process boundary unchanged. **What the proxy counts, precisely**
+    (open question 63, added pass 12): a *cumulative* upload counter for the life of the connection, reset
+    only when it caches a new `CreateInfo` off a `Request::OnLoad`/`OnSwapchainRecreate` — which are exactly
+    the two points the player has just rebuilt its `SpriteDatabase` from scratch, and therefore the only
+    two points the real database's own index restarts at zero. Counting per-call instead (this vec's index)
+    silently diverges from the release backend's return value for any upload made from `update()` on a
+    canvas that already holds textures — legal under the trait, done by neither module today, and
+    undetectable at the boundary. Two more changes make the desync case safe instead of silent:
     1. **Fix the source bug alongside this work:** `upload_texture`/`upload_decoded_texture` change to
        `Result<usize, VulkanError>`, returning the real assigned index on success and a genuine `Err`
        (not a silently-successful `Ok(())`) once the database is full. Worth doing regardless of this
@@ -300,6 +384,20 @@ mode" below).
   freshly-built binary, reconnect the socket. No `dlclose`, nothing to leak — the OS reclaims the whole
   child process's address space, TLS segment included, on exit. This resolves Problem #1 by construction
   instead of by convention or a "never `dlclose`, leak forever" workaround.
+  - **The respawned child must still receive `Request::OnLoad` first, and the reload path as specified
+    never sends one** (open question 60, resolved, added pass 12). `RemoteApp::reload()`'s signature
+    (Q45) is `fn reload(&mut self) -> bool` — no canvas argument — so it cannot itself send an `OnLoad`,
+    whose `create_info` field must come from `canvas.get_create_info()` per Q44. All it can do is return
+    `true`, which sets `SurgeContext.recreate_swapchain`, which one turn later rebuilds the
+    `SpriteDatabase` (Q14) and calls `on_swapchain_recreate` — so the fresh process's *first ever*
+    request would be `OnSwapchainRecreate`, and it would never see `OnLoad` at all. Fix, no new wire
+    message and no signature change: `RemoteApp::reload()` sets an internal `pending_on_load` flag after
+    the re-handshake succeeds, and `RemoteApp::on_swapchain_recreate` checks it — if set, it sends
+    `Request::OnLoad { create_info }` (built from the canvas it was just handed, exactly as
+    `RemoteApp::on_load` does) instead of `Request::OnSwapchainRecreate`, and clears the flag. The
+    delivery is guaranteed: `reload()` returning `true` is what forces that very call. This keeps
+    "`OnLoad` is always the first `Request` a module process receives" true for respawned children as
+    well as the first one, which is what both the connect sequence below and Q14's own wording assume.
   - **Reload racing an in-flight, blocked `Request::Frame`** (open question 22, resolved). Q10's
     backpressure policy is synchronous blocking: the player's main thread can be sitting in a blocked
     socket read waiting on a `Response` at the exact moment a reload trigger fires. Killing the child at
@@ -334,6 +432,39 @@ mode" below).
     doesn't exit promptly" silently degrades to "always hard-kill immediately" on every reload, not just
     the timeout case. `libc::kill(pid, libc::SIGTERM)`/`nix::sys::signal::kill` (the same crate this
     bullet already pulls in) covers both needs.
+- **Crash state, concretely** (open question 66, resolved, added pass 13). Q11 settled the *policy* — a
+  connection that dies outside a deliberate reload stops the player driving that module, logs loudly, and
+  looks visibly different from reload churn — and three separate steps then routed failures into it
+  ("the Q11 crash path") as though it were existing machinery. It is not: nothing in this doc says what
+  holds the state, how `SurgeContext` learns about it, or what "visibly different" means in an engine with
+  no text rendering. Pinned down, reusing Q45's own pattern (a default `SurgeApp` method) rather than
+  inventing a second mechanism:
+  - `RemoteApp` gains a `faulted: bool`. It is set — and cleared only by a successful `reload()` — when a
+    socket read or write fails while `reload_in_progress` is false (Q22's flag is what distinguishes the
+    two), when the handshake's `wire_version` mismatches, or when applying a `CanvasOps.texture_uploads`
+    entry returns `Err` (Q17's part 2). Every `SurgeApp` method on a faulted `RemoteApp` becomes a no-op
+    that touches neither the socket nor the canvas.
+  - `SurgeApp` gains a second default method, `fn is_faulted(&self) -> bool { false }`, overridden only by
+    `RemoteApp`. This is how `SurgeContext` — which only ever holds a `Box<dyn SurgeApp>` — sees the state
+    at all, exactly as `reload()` is how it reaches the reload sequence. Release-mode in-process apps
+    inherit the default and are never faulted, so the release path pays one never-taken branch per frame.
+  - `SurgeContext` checks it at the top of `about_to_wait` and, on the transition into it, logs one loud
+    `log::error!`, appends a `— MODULE CRASHED` suffix to the window title (`Window::set_title`, the only
+    on-screen channel this engine has without a text renderer — deliberately not a new rendering feature),
+    and from then on returns early from the frame without acquiring, drawing, or presenting. The last
+    presented image stays on screen: that *is* "freeze last frame," and it costs no new machinery.
+  - Recovery is F5 (Q40) and only F5 — never an automatic respawn, per Q11. `reload()` on a faulted
+    `RemoteApp` runs the ordinary kill/respawn/reconnect sequence, clears `faulted` and the title suffix on
+    a successful re-handshake, and returns `true` so the `SpriteDatabase` rebuild (Q14) happens as usual.
+- **Making a blocked player visible** (open question 67, resolved, added pass 13). Q10 chose "block, but log
+  loudly when blocked" and no step ever built the logging half. It is not free-standing: the natural
+  implementation — a bounded `set_read_timeout` on the socket, logging `waiting on module response — Nms and
+  counting` each time it expires and then reading again — is the same read path Q66's fault detection
+  watches, so the two have to agree on one rule: `ErrorKind::WouldBlock`/`TimedOut` is a *stall* (log, retry,
+  stay connected), and only `Ok(0)`/EOF or a genuine transport error is a *fault*. Conflating them turns
+  every module paused under a debugger into a spurious crash state. Both rules live in the single
+  `read_response`/`write_request` helper pair `RemoteApp` uses for every round trip, not scattered per call
+  site.
 
 ### Release mode (default; no *runtime-selectable* feature flag)
 
@@ -354,6 +485,31 @@ killed. See Q37 for why Cargo forces this and why it's the least-bad option amon
   `SpriteDatabase` directly — no IPC proxy in this path.
 - `config.toml` and `assets/` remain external files read at runtime, unchanged from today (see resolved
   open question 5, below) — not embedded into the binary.
+- **`run()` owns process-wide startup, not just the loop** (open question 62, resolved, added pass 12).
+  `init_env_logger()` and `print_logo()` are called from `surge-player`'s `main()` today; a release
+  binary never runs that `main()`, so as earlier passes scoped Phase 4 a shipped game would come up with
+  no logger installed at all (every `log::` call in `surge-core` and in the module silently discarded)
+  and no logo. Both calls move *into* `run()`, which is the one entry point both modes share, and come
+  *out* of `surge-player`'s dev `main()` in the same commit — duplicating rather than moving them would
+  reproduce Q51's double-init panic exactly, one crate over (`env_logger::Builder::init()` can only
+  succeed once per process). Dev-mode module *processes* keep their own `init_env_logger()` call in
+  `src/bin/dev.rs` — separate process, separate global logger state, no conflict.
+- **The IPC machinery must not follow `run()` into the `[lib]` target** (open question 71, resolved, added
+  pass 13). Q20 kept `RemoteApp` and the socket/spawn code out of `surge-core` with an explicit argument:
+  `surge-core` links into every release binary, so hosting them there would statically compile `postcard`
+  and the spawn/socket machinery into games that never use it, contradicting this section's own "no IPC ...
+  compiled in" goal. Under the final shape, release binaries depend on **`surge-player`** — the crate those
+  types actually landed in — so the identical objection applies one crate over, and no pass had noticed.
+  The fix needs no crate split and no feature flag, only a rule about *which target* owns them:
+  `RemoteApp`, `proc.rs`, and the wire helpers stay modules of `surge-player`'s **`[[bin]]`** target,
+  declared from `main.rs`, and never move into `src/lib.rs` during the Phase 4 extraction. A `mod` declared
+  in `main.rs` compiles only into the binary crate, so `surge_player::run` — the whole of what a release
+  binary links — carries none of it. What remains is honest but small, and worth stating rather than
+  claiming a cleanliness the design does not have: `libc` and `postcard` stay in `surge-player`'s
+  `[dependencies]` (Cargo has no per-target dependency scoping — the same limitation Q37 already hit), so a
+  release build still *compiles* those crates even though no code path in the release binary reaches them.
+  "No IPC compiled in" is therefore true of the linked binary's reachable code, not of the dependency
+  graph's build cost.
 
 This means today's `surge-player::main`/`SurgeContext` (`surge-player/src/main.rs`) needs to stop being
 `surge-player`-the-binary's private implementation and become a reusable library entry point. Correction
@@ -466,7 +622,15 @@ Concretely, `surge-sdk` should define:
   `Debug`-only today — since `CanvasOps.instances: Vec<InstanceInfo>` (see "Message shape") has to cross
   `postcard`, and their `nalgebra::Vector2`/`Vector4` fields need nalgebra's `serde-serialize` Cargo
   feature enabled wherever `surge-sdk` depends on nalgebra (checked: not enabled anywhere in the
-  workspace today). `surge-core` depends on `surge-sdk` for these — consistent with the dependency
+  workspace today). **`InstanceInfo` and `SubTextureInfo` also gain `Clone, Copy`** (open question 68,
+  resolved, added pass 13) — not tidiness, a compile requirement the wire design creates:
+  `add_instance(&mut self, aii: &InstanceInfo)` takes a *reference* (unchanged, that's today's signature),
+  so the dev-mode proxy has no way to push the value into its own `Vec<InstanceInfo>` buffer without
+  duplicating it, and `Serialize` grants nothing of the kind. Verified by compiling the fix against this
+  workspace's pinned nalgebra rather than assuming it: `#[derive(Debug, Clone, Copy)]` builds on both
+  structs, since every field — `Vector2<f32>`, `Vector4<f32>`, `Vector2<u32>`, `f32`, `usize`,
+  `Option<SubTextureInfo>` — is itself `Copy`. The other four types are already `Clone, Copy` today and
+  need no change. `surge-core` depends on `surge-sdk` for these — consistent with the dependency
   direction open question 20 already established, just extended past the one `SpriteCanvas` impl to
   cover the types the wire format actually carries. One more consequence worth flagging: every module
   (`surge-mod-2048/Cargo.toml`, `surge-mod-default/Cargo.toml`) currently declares its own separate
@@ -475,7 +639,27 @@ Concretely, `surge-sdk` should define:
   Vector2::new(...), .. }` literal only compiles against `surge_sdk::InstanceInfo` if the module's own
   `Vector2` is the *same* monomorphized type as `surge-sdk`'s. Modules should drop their own `nalgebra`
   dependency and use `surge_sdk`'s re-exported math types exclusively, so a future version bump can't
-  silently produce two incompatible `Vector2` types at the `InstanceInfo` boundary.
+  silently produce two incompatible `Vector2` types at the `InstanceInfo` boundary. **Pass 9 note (open
+  question 52):** this paragraph named the bug and the fix but the fix had no concrete shape and no assigned
+  commit, so it didn't actually happen anywhere in "Implementation plan" below. Resolved: `surge-sdk` does
+  `pub use nalgebra;` (the whole crate, not a curated re-export list — nothing to maintain as `nalgebra`'s own
+  surface grows), so module code becomes `use surge_sdk::nalgebra::{Vector2, Vector4};` and both modules'
+  `Cargo.toml`s lose their own direct `nalgebra` line. See step 1.6, the point each module first gains a
+  `surge-sdk` dependency and is already touching every `InstanceInfo`/`SubTextureInfo` call site regardless.
+  **Pass 12 note (open question 61):** `winit` needs the identical treatment, and pass 9–11 all missed it
+  while looking straight at the `nalgebra` version-skew argument. Both modules declare their own
+  `winit = "0.30.12"` (checked, both `Cargo.toml`s) and name winit types in their `SurgeApp` impls'
+  signatures (`DeviceId`, `ElementState`, `MouseButton`, `MouseScrollDelta`, `TouchPhase`) and inside their
+  bodies (`surge-mod-2048` pattern-matches `PhysicalKey::Code(KeyCode::ArrowUp)`), against a trait that
+  lives in `surge-sdk` and names winit types in those same positions — the exact "only type-checks because
+  the version strings happen to match" shape Q52 named. Exposure *grows* at 1.7, not shrinks: the
+  `surge_sdk::KeyEvent` mirror's own fields are `winit::keyboard::{PhysicalKey, Key, KeyLocation}` /
+  `winit::event::ElementState`, so a module destructuring a `surge_sdk::KeyEvent` matches its own `winit`'s
+  types against `surge-sdk`'s. Fix, symmetric to the `nalgebra` one: `surge-sdk` also does `pub use winit;`,
+  modules drop their own `winit` line and import `use surge_sdk::winit::{...}`, in the same step (1.6) for
+  the same reason. `surge-player` keeps its own direct `winit` dependency — it needs the event loop and
+  window types, which are no part of `surge-sdk`'s surface, and it is not the crate exchanging these types
+  across a boundary the SDK owns.
 - **A `CanvasError` type, owned by `surge-sdk`** (open question 28, resolved) — an opaque,
   message-carrying error, not a reuse of `surge-core`'s `VulkanError`. `SpriteCanvas::upload_texture`
   has to be fallible (see open question 17's fix to the underlying `SpriteDatabase` method), but
@@ -503,8 +687,36 @@ Concretely, `surge-sdk` should define:
   through open question 11's crash path instead of back through this `Result`. The same trait method is
   genuinely fallible under the release backend and unconditionally `Ok` under the dev backend — callers
   shouldn't treat the two as equivalent, and that's worth a doc comment on the trait method itself.
-- A `SpriteCanvas`-shaped trait covering the module-facing instance API (`add_instance`,
-  `upload_texture`, `get_create_info`, ...), with two backends:
+- A `SpriteCanvas` trait covering the module-facing instance API. Passes 1–12 wrote this as
+  "`add_instance`, `upload_texture`, `get_create_info`, ..." and never resolved the ellipsis — the same
+  gap Q35 closed for `KeyEvent`. Pinned down here (open question 69, resolved, added pass 13), taken
+  from `SpriteDatabase`'s actual current signatures rather than invented:
+  ```rust
+  pub trait SpriteCanvas {
+      /// Queue one sprite for this frame. Occupancy resets after every draw, exactly as
+      /// `SpriteDatabase::add_instance` behaves today — a sprite not re-added disappears.
+      fn add_instance(&mut self, aii: &InstanceInfo);
+
+      /// Upload a PNG by path and return its assigned `texture_id`.
+      ///
+      /// Fallibility is asymmetric between backends: `SpriteDatabase` genuinely fails once
+      /// `max_textures` is reached, while the dev-mode proxy is fire-and-forget and can only ever
+      /// return `Ok` — a real dev-mode failure surfaces player-side, after this call returned, and
+      /// is routed through the crash path (Q11/Q17) instead of back through this `Result`.
+      fn upload_texture(&mut self, texture_file: &str) -> Result<usize, CanvasError>;
+
+      /// The `CreateInfo` the canvas was built with. By value, matching
+      /// `SpriteDatabase::get_create_info` (`CreateInfo` is `Copy`); the dev proxy answers from its
+      /// cached copy with no round trip (Q27).
+      fn get_create_info(&self) -> CreateInfo;
+  }
+  ```
+  That is the complete surface: it is exactly the three methods the two real modules call on their
+  `SpriteDatabase` parameter (checked across both modules' sources), and nothing more. `draw()` is
+  deliberately absent — `SurgeContext` owns the concrete `SpriteDatabase` and calls `draw()` on it
+  directly; no module has ever called it. `decode_texture_file`/`upload_decoded_texture`/`DecodedTexture`
+  are absent for the reason Q36 gives. Object safety was compile-checked in pass 6's spike (Q33). Two
+  backends:
   - `SpriteDatabase` directly, for release-mode in-process modules.
   - An IPC-proxy type, for dev-mode child-process modules, that buffers `add_instance`/`upload_texture`
     calls locally through the callback and flushes them as one `CanvasOps` response at the end (see
@@ -536,7 +748,22 @@ Concretely, `surge-sdk` should define:
   resolves correctly without any explicit fix: `std::process::Command` inherits the parent's CWD by
   default, this doc never overrides it, so a spawned module process's CWD is the player's CWD (the repo
   root, per the existing CWD contract) — worth flagging so that assumption doesn't get silently broken by
-  a future `.current_dir(...)` addition to the spawn call.
+  a future `.current_dir(...)` addition to the spawn call. **Pass 9 note (open questions 49, 51):**
+  `init_env_logger`'s body depends on `env_logger`/`log` directly, so its move needs those two added to
+  `surge-sdk/Cargo.toml` (not previously assigned to any step), and both real modules already call it once
+  themselves from inside `on_load` today — that call has to come *out* once `src/bin/dev.rs` starts calling
+  it once per process at startup instead, or the module's own logger init runs twice and panics. See step 3.2.
+- **Config parsing** (open question 54, resolved, added pass 10): `surge-core/src/config/mod.rs`
+  (`EngineConfig` and friends, `parse_config`) and `ConfigError` move here too, on the same "no Vulkan
+  coupling, module-shaped consumer needs it" grounds as the two items above — except the consumer that
+  needs it isn't a dev-mode module (no module ever sees `EngineConfig` in this design, in either mode; only
+  the player interprets `config.toml`) but the *release* `[[bin]]` target's own `main()`, which has to
+  produce the `EngineConfig` value `surge_player::run` takes as its second argument and, unlike
+  `surge-player`'s dev binary, has no `surge-core` dependency to get it from. `surge-core` re-exports both
+  (`pub use surge_sdk::config;` in place of today's `pub mod config;`, plus a `pub use` for `ConfigError`)
+  so nothing inside `surge-core` itself or `surge-player`'s existing `sc::config::parse_config` call needs
+  to change. See step 4.1, where this is assigned — it has no reason to move earlier than Phase 4, since
+  nothing before it needs a module to see `EngineConfig` at all.
 
 Modules depend on `surge-sdk`, not `surge-core`, in both modes; `surge-core` keeps everything
 (`VulkanContext`, window setup, the real `SpriteDatabase`) and only `surge-player` depends on it
@@ -611,7 +838,50 @@ acyclic-dependency invariant (41: step 1.6 as pass 7 wrote it can't compile), a 
 field's type; 44: a value's source), a missing trait hook the throwaway F5 keybind (Q40) needs to work at
 all (45), an honesty gap about what that same keybind can and can't prove once 45 lets it run (46), and two
 more "assumes machinery no step adds" gaps in the Phase 2 IPC plumbing (47: wire framing; 48: two Cargo
-dependency/feature nits). All 48 items are now resolved.
+dependency/feature nits). Pass 9 pushed the same "assumes machinery no step adds" check one level further —
+against the actual current source of the files each step names, not just the steps around it — and found two
+more instances of it in Cargo dependency wiring the not-yet-created `surge-sdk` crate needs (49) and in the
+free helper functions both real modules route their retyped trait methods through (50); one instance of a
+step's own stated action ("swap the dependency") leaving old call sites behind unconverted, one of which is a
+latent panic, not just a compile error (51); one instance of the design prescribing its own fix for a bug it
+found and then never assigning that fix to a step (52); and one visibility mismatch between the plan's literal
+example code and `surge-mod-2048`'s actual current privacy modifiers that `surge-mod-default` happens not to
+share (53). Pass 10 checked two more things no earlier pass had checked: whether Phase 4's release binary can
+actually produce every value the code it calls requires, not just whether the values it names are spelled
+correctly (54 — it can't, `EngineConfig` is unreachable from a module crate as this doc currently scopes each
+crate's dependencies), and whether a factual claim the plan makes about the *current* state of the repository
+(as opposed to a claim about what a step needs to add to it) is actually true against that repository (55 —
+it isn't; the workspace already has tests, contrary to both this plan's step 1.2 and `CLAUDE.md`'s own current
+text). Pass 11 checked two things neither of those: whether a step's own "add crate X" instruction actually
+resolves the specific functions/derives that step's own code calls, verified against X's real `[features]`
+table rather than assumed from its name (56, 57 — `postcard`'s `use-std` and `serde`'s `derive` are both
+off by default and neither step 1.2 nor step 4.1's `thiserror` omission was ever checked against a real
+`Cargo.toml`), and whether two fixes bundled into one commit actually agree with each other once combined,
+not just each individually sound (58 — Q50 and Q36, both folded into step 1.6, contradict each other for
+`upload_image_assets`). Pass 12 asked what the build and the OS actually *produce and name* at each step,
+rather than what source each step compiles, and found the first item since Q54 that would derail an
+implementer mid-phase (59 — Cargo names binaries after files, so both modules' dev binaries collide at
+`target/debug/dev` and neither matches the `app_name` the player resolves; verified by running Cargo, not by
+reading it), one lifecycle call the reload path never delivers (60), one crate the SDK re-export fix
+skipped even though its exposure is identical and growing (61 — `winit`, next to Q52's `nalgebra`), one
+process-wide startup call no release binary ever makes (62), one trait method whose two backends return
+different values for the same call sequence (63), and three smaller precision gaps (64). Pass 13 turned
+the question on the plan as a whole rather than on any step: not "does step N compile given 1..N-1" (pass
+8) or "does step N name real things" (passes 9–12), but "if all of it were executed faithfully, which
+sentences of this design would still be unimplemented at the end." That found two requirements with no
+commit at all — the shutdown round trip (65) and Q11's crash path (66), the latter referenced by three
+steps as though it existed — plus Q10's unassigned stall logging and its collision with crash detection
+(67), two compile-blocking omissions (68: missing `Clone`/`Copy` on the wire's own payload types; 70: a
+deleted re-export two crates import through), the trait this doc has named for eleven passes without ever
+defining (69), the release goal violated one crate over from where Q20 defended it (71), unowned binary-path
+resolution and the dev config value the smoke tests silently depend on (72), and five smaller precision
+gaps (73). Pass 14 asked the mirror of pass 13's question — not "does every behavior have a commit" but
+"does every commit have a test that could actually fail" — and found four code paths no test in the plan
+ever executes (74: `PR_SET_PDEATHSIG`; 75: the `SIGKILL`/`ShutdownAck` timeout escalations; 77: handshake
+mismatch and the stall-vs-fault rule), one fix the plan itself admitted was unobservable and left that way
+(76), a gate that never ran the suites the plan authors (78), four steps with no stated test at all (79),
+five steps that deferred verification without naming where it lands (80), and three test-precision gaps
+(81). All 81 items are now resolved.
 
 ### Resolved
 
@@ -707,7 +977,10 @@ dependency/feature nits). All 48 items are now resolved.
     Dev mode above). Turned out not to be a new IPC problem: `SpriteDatabase::upload_decoded_texture`
     already returns `Ok(())` instead of the assigned index and silently no-ops past `max_textures` in
     today's single-process code, and neither existing module reads a returned ID — both already hardcode
-    `texture_id` from upload order. Fix at the source instead of adding wire-protocol reconciliation:
+    `texture_id` from upload order. **Pass 12 correction (Q63):** the dev proxy's prediction is a
+    *cumulative* counter reset at each `CreateInfo` push, not this turn's buffer index — as originally
+    worded it disagreed with the release backend's return value for any upload outside
+    `on_load`/`on_swapchain_recreate`. Fix at the source instead of adding wire-protocol reconciliation:
     (a) `upload_texture` changes to `Result<usize, VulkanError>` with a real `Err` on overflow instead of
     a silently-successful `Ok(())`; (b) the player treats any `CanvasOps.texture_uploads` failure as a
     module fault, routed through the same crash-state path open question 11 already defines for a dead
@@ -1091,7 +1364,10 @@ dependency/feature nits). All 48 items are now resolved.
     through the same interface every other lifecycle method already goes through, keeping "the run loop
     only ever deals in `Box<dyn SurgeApp>`" true for this method too, not a special case. This is additive
     to `SurgeApp` (a new *default* method), so it doesn't reopen anything 1.6/1.7 already settled about that
-    trait's other signatures.
+    trait's other signatures. **Pass 12 note (Q60):** this signature is kept, but it has a consequence this
+    item didn't trace — with no canvas argument, `reload()` cannot send the `Request::OnLoad` the connect
+    sequence requires of a freshly-connected child, so the respawned module would only ever see
+    `OnSwapchainRecreate`. See Q60 for the `pending_on_load` fix, which leaves `reload()`'s signature alone.
 46. **The F5 trigger, once 45 makes it work, still can't exercise the race Q22's fix is for** — resolved
     (an honesty fix, not a mechanism fix). Q22 added a `reload_in_progress` flag because a reload's
     `SIGTERM` could land *while the main thread is blocked* inside the socket read `Request::Frame`
@@ -1135,16 +1411,597 @@ dependency/feature nits). All 48 items are now resolved.
     `max_textures` is hit" but never named — is called `VulkanError::TextureDatabaseFull` below, so the fix
     has an unambiguous shape rather than being left for an implementer to invent.)
 
-## Implementation plan (pass 7, sequencing corrected pass 8)
+### Added in pass 9
 
-The workspace has no test suite (per `CLAUDE.md`) and no CI gate beyond the compiler, so "tested" below
-means one of two things, named once here and referenced by name after: **the compile gate**
-(`cargo check --workspace`, then `cargo build --workspace` — every commit must pass both; a commit that
+49. **`surge-sdk`'s own `Cargo.toml` never gains the dependencies the plan's later steps assume it already
+    has** — resolved. Two separate omissions, same shape as Q48's Cargo-nit pair, caught by actually reading
+    `surge-core/Cargo.toml` and the real module `Cargo.toml`s rather than assuming a crate that doesn't exist
+    yet will pick up whatever it needs. (a) Step 1.6 relocates the `SurgeApp` trait to `surge-sdk` and keeps
+    `keyboard_event`/`mouse_button_event`/`mouse_wheel_event` naming `winit::event::{DeviceId, ElementState,
+    MouseButton, MouseScrollDelta, TouchPhase}` (and, until 1.7 lands, `winit::event::KeyEvent` itself)
+    directly in the trait signature — but no step adds a plain `winit` dependency to `surge-sdk/Cargo.toml`
+    before that; 1.1 only creates an empty crate and 1.2 only adds `serde`/`nalgebra`/`postcard`. `cargo check
+    -p surge-sdk` fails at 1.6 on an unresolved `winit` path, not because the design is wrong (Q33's spike
+    already proved `sdk-spike` needs, and has, exactly this dependency) but because no commit was ever
+    assigned to add it. (b) Step 3.2 relocates `init_env_logger` (`surge-core::cli`) to `surge-sdk`, but that
+    function's body calls `env_logger::Builder`/`log::LevelFilter`/`log::Level` directly (checked against
+    `surge-core/src/cli/mod.rs`), and neither `env_logger` nor `log` is ever added to `surge-sdk/Cargo.toml`
+    by any step — same failure mode, one phase later. Fix: 1.6 adds `winit = "0.30.12"` (matching the version
+    every other crate in the workspace pins) to `surge-sdk/Cargo.toml` in the same commit it first names a
+    `winit` type; 3.2 adds `env_logger = "0.11.8"`/`log = "0.4.28"` (the same versions `surge-core/Cargo.toml`
+    already pins) to `surge-sdk/Cargo.toml` in the same commit it moves `init_env_logger`'s body over.
+50. **Step 1.6 retypes the three `SurgeApp` methods but not the free helper functions both real modules
+    route those methods' `&mut SpriteDatabase` argument through** — resolved. Checked directly against the
+    actual source, not the trait definition alone: `surge-mod-2048/src/lib.rs`'s
+    `upload_image_assets(spdb: &mut SpriteDatabase, textures: &[DecodedTexture])` and
+    `add_board_sprite(spdb: &mut SpriteDatabase, bg: &BoardGeometry)`, and `surge-mod-default/src/lib.rs`'s
+    `upload_assets(spd: &mut SpriteDatabase)`, are ordinary free functions — not trait methods — called from
+    inside `on_load`/`on_swapchain_recreate`/`update` with the trait method's own parameter passed straight
+    through (e.g. `upload_image_assets(spdb, self.get_cached_textures())` inside
+    `on_load(&mut self, spdb: &mut SpriteDatabase)`). Once 1.6 retypes `on_load`'s parameter to `&mut dyn
+    SpriteCanvas`, every one of these call sites passes a `&mut dyn SpriteCanvas` value to a function whose
+    signature still reads `&mut SpriteDatabase` — a type mismatch, not a coercion (unsized coercion only
+    applies at the call site itself, concrete-to-`dyn`, not through an intermediate function boundary). 1.6's
+    own text ("their `impl SurgeApp for ...` blocks change the ... three method signatures") describes exactly
+    the part of each module that *doesn't* need to change and is silent on the part that does. Fix: 1.6's
+    per-module change list grows to include retyping these three helper functions' parameter to `&mut dyn
+    SpriteCanvas` too — mechanical, no logic change, same commit (splitting it out would leave 1.6 not
+    compiling in between, the same shape of problem Q36's fold-in already established for this exact commit).
+51. **Step 3.2 leaves a redundant, panic-inducing `init_env_logger()` call behind in both modules, and
+    doesn't sweep their other remaining `surge_core::`-qualified call sites** — resolved. Both real modules
+    already call the logger-init function directly from inside `on_load` today — `surge_core::
+    cli::init_env_logger()` at `surge-mod-2048/src/lib.rs:82` and `surge-mod-default/src/lib.rs:31` (this is
+    literally the behavior `CLAUDE.md`'s "Module ABI" section describes: "Modules call
+    `surge_core::cli::init_env_logger()` themselves in `on_load`"). 3.2 adds a *second*, new call to the same
+    (now-relocated) function in each module's `src/bin/dev.rs::main()`, ahead of `run_dev_module`, but never
+    removes the original one inside `on_load` — so a normal dev-mode run calls `init_env_logger()` twice in
+    the same process (once at process startup, once when the player's `Request::OnLoad` round-trips through
+    to `on_load`). `env_logger::Builder::init()` calls through to `log::set_boxed_logger`, which can only
+    succeed once per process; the second call panics — this would surface immediately on the very first smoke
+    test 3.2 itself specifies, not as a latent bug, but it's still a real gap in what the step's text says to
+    do. On top of that: once 3.2 removes the `surge-core` dependency from a module's `Cargo.toml` ("swap the
+    `surge-core` dependency for `surge-sdk` only"), *every* remaining `surge_core::`-qualified path anywhere
+    in that module's source stops resolving, not just the two named functions — concretely, `surge-mod-2048`'s
+    post-1.6 `on_load`/`on_swapchain_recreate` bodies and `surge-mod-default`'s `upload_assets` still call
+    `surge_core::assets::resolve_asset_path(...)` (Q32 doesn't move that call site until 3.2 itself), so the
+    dependency swap and the call-site rewrite have to land in the same commit or the module doesn't compile in
+    between. Fix: 3.2's per-module work item grows two clauses: delete the `init_env_logger()` call from
+    inside `on_load` entirely (init now happens exactly once, in `src/bin/dev.rs`'s `main()`, before
+    `run_dev_module` is ever called — `on_load` no longer needs to know logging exists), and rewrite every
+    remaining `surge_core::`-qualified path in the module's source (`resolve_asset_path` being the only other
+    one, per the grep already done for this open question) to `surge_sdk::`, in the same commit as the
+    `Cargo.toml` swap.
+52. **The design's own fix for the `nalgebra` version-skew risk it identified is never assigned a step, and
+    `surge-sdk`'s promised "math re-exports" are never given a shape** — resolved. The `surge-sdk` section
+    (see the `InstanceInfo`/`SubTextureInfo` bullet) already names the bug precisely: both modules declare
+    their own `nalgebra = "0.34.1"` dependency rather than sourcing it through `surge-sdk`, which "only
+    type-checks today because the version string happens to match everywhere," and a future bump could
+    silently produce two incompatible `Vector2` types at the `InstanceInfo` boundary — and it prescribes the
+    fix in the same breath ("Modules should drop their own `nalgebra` dependency and use `surge_sdk`'s
+    re-exported math types exclusively"). It's also named as one of `surge-sdk`'s scoped responsibilities in
+    the very next subsection's own header ("Asset-path helpers, logger init, math re-exports"). But nothing
+    after that ever says what `surge_sdk`'s math re-export actually looks like, and no step in the
+    Implementation plan removes either module's own `nalgebra` line from its `Cargo.toml` or repoints its `use
+    nalgebra::...` imports — the bug this doc identified in its own review survives this doc's own
+    implementation plan untouched. Fix: `surge-sdk` re-exports the whole crate (`pub use nalgebra;` — the
+    simplest option, and one that needs no curation as `nalgebra`'s own API surface grows) so module code
+    becomes `use surge_sdk::nalgebra::{Vector2, Vector4};` rather than a separate direct dependency; 1.6 (the
+    step where each module first gains a `surge-sdk` path dependency and already has to touch every
+    `InstanceInfo`/`SubTextureInfo`-constructing call site for the `SpriteCanvas` retyping) is where the
+    `nalgebra` line comes out of both modules' `Cargo.toml`s and their `use nalgebra::...` imports become `use
+    surge_sdk::nalgebra::...` — no later step touches these call sites again, so doing it any later would mean
+    revisiting already-finished code for no reason.
+53. **`surge-mod-2048`'s `App2048` is crate-private, so the plan's own example code for its dev entry point
+    doesn't compile — an asymmetry the plan's shared wording hides** — resolved. Checked directly against the
+    current source: `surge-mod-2048/src/lib.rs` declares `mod app_2048;` (private — no `pub`), and
+    `app_2048.rs` declares `pub(crate) struct App2048` with a `pub(crate) fn new(...)`. A `src/bin/*.rs` file
+    in the same Cargo package is compiled as a separate crate that depends on the package's `[lib]` target the
+    way an external crate would — `pub(crate)` items are invisible to it, same as to any other crate, and a
+    private `mod` compounds that. So 3.2's literal text for `surge-mod-2048/src/bin/dev.rs` —
+    `surge_sdk::run_dev_module(Box::new(App2048::new()))` — doesn't compile: neither `app_2048` nor
+    `App2048::new` is reachable from outside the library crate. The same problem recurs, unstated, at 4.2's
+    `src/bin/release.rs`. `surge-mod-default` doesn't share this problem — `AppDefault` is declared `pub
+    struct AppDefault {}` directly in `lib.rs` — which is exactly why nobody hit this reading the doc's shared
+    "every module's dev `main()` is one line" framing (Q24) against only the module whose visibility happens
+    to already work. Fix, and the minimal one: neither entry point needs to name the concrete app type at all.
+    Both modules already export `#[unsafe(no_mangle)] pub fn surge_register_app() -> Box<dyn SurgeApp>` — a
+    fully public function returning exactly the `Box<dyn SurgeApp>` both `run_dev_module` and (at 4.2)
+    `surge_player::run` want. 3.2 and 4.2's example code become
+    `surge_sdk::run_dev_module(surge_mod_2048::surge_register_app())` and
+    `surge_player::run(surge_mod_2048::surge_register_app(), config)` respectively (substituting the crate
+    name per module) — zero visibility changes to either module's internals, and it keeps the one entry point
+    uniform across both real modules instead of two different constructions that happen to both compile for
+    different reasons. Related cleanup, not a blocker: once 3.4 deletes `load_from_dylib` (the only caller
+    that ever needed `surge_register_app` to be an `unsafe(no_mangle)`, dynamically-resolved symbol), the
+    attribute itself becomes vestigial — worth a one-line mention in 3.4's own text so a future pass doesn't
+    have to re-discover it, the same way Q29 traced `AppError`/`libloading` through to their actual dead end
+    instead of leaving it implicit.
+
+### Added in pass 10
+
+54. **The release `[[bin]]` target has no way to obtain the `EngineConfig` value `run()` requires** —
+    resolved. 4.2's example code is `surge_player::run(surge_mod_2048::surge_register_app(), config)`, and
+    4.1 fixes `run`'s signature as `pub fn run(app: Box<dyn SurgeApp>, config: EngineConfig)` — but no step
+    anywhere says where `release.rs`'s `config` local comes from, and checked against the actual crate
+    graph this doc specifies, there's no legal way for it to exist. `EngineConfig`, `parse_config`, and
+    `ConfigError` are defined in `surge-core/src/config/mod.rs` and `surge-core/src/errors/mod.rs` today;
+    `surge-player`'s own dev binary can call `sc::config::parse_config("config.toml")` because it has always
+    depended on `surge-core` directly and keeps doing so under this design. `release.rs`, however, is a
+    `[[bin]]` target living on the *module's own* package, and this doc is explicit throughout ("Modules
+    depend on `surge-sdk`, not `surge-core`, in both modes") that a module crate never gets a `surge-core`
+    dependency in either mode — 4.2 only ever gives it `surge-sdk` (always) and `surge-player` (optional,
+    behind `release-bin`, for `run()` itself). Cargo's dependency rules don't let a crate name a
+    transitive dependency it hasn't listed directly, so `release.rs` can no more write
+    `surge_core::config::parse_config(...)` than it could write `surge_core::vulkan::...` — and
+    `surge-player` doesn't re-export `config` either, so going through it isn't an option as specified.
+    This is the same "step N assumes machinery no step actually adds" shape pass 8 and 9 kept finding, just
+    aimed somewhere neither pass's own method happened to check: pass 7 checked call sites a module's
+    `impl SurgeApp` makes, pass 8 checked step-to-step Cargo-graph sequencing, pass 9 checked `surge-sdk`'s
+    own `Cargo.toml` and two modules' visibility modifiers — none of the three asked "can the thing calling
+    `run()` actually produce every argument `run()`'s own signature demands." Fix, in the same spirit as
+    Q26/Q32 (both already moved Vulkan-free, module-needed pieces of `surge-core` into `surge-sdk`):
+    `config`'s entire module (`WindowConfig`, `ResolutionConfig`, `RendererConfig`, `ClearColorConfig`,
+    `StartupAppConfig`, `EngineConfig`, `parse_config`) and `ConfigError` (its only other caller, checked —
+    `grep -rn ConfigError` turns up nothing outside `config/mod.rs` and its own definition in
+    `errors/mod.rs`) move to `surge-sdk` wholesale; neither touches `ash`/`vk-mem`/anything Vulkan-shaped
+    (checked directly — `config/mod.rs`'s only non-`std` imports are `serde`, `toml`, and `log`, all either
+    already a `surge-sdk` dependency by this point in the plan or a one-line addition: `log` is already
+    there since 3.2 (Q49b), `toml = "0.9.8"` — matching `surge-core/Cargo.toml`'s pin — is new). `surge-core`
+    keeps working unchanged: `surge-core/src/lib.rs`'s `pub mod config;` becomes `pub use surge_sdk::config;`,
+    the same pure compatibility-shim move step 1.3 already used for the six plain-data types, so all four
+    existing `use crate::{config::EngineConfig, ...}` call sites inside `surge-core`'s Vulkan layer
+    (`image.rs`, `ctx_swpc.rs`, `ctx_command.rs`, `ctx_new_drop.rs` — checked, that's the complete list) need
+    no edits at all. `errors/mod.rs` loses `ConfigError`'s definition the same way (a `pub use
+    surge_sdk::config::ConfigError;`, or wherever pass 10's fix lands it, standing in for the deleted local
+    enum). `surge-player`'s own dev binary needs no change either — `sc::config::parse_config` still resolves,
+    now through the re-export, exactly as `sc::vulkan::sprite_database::InstanceInfo` already does since 1.3.
+    `release.rs` becomes `let config = surge_sdk::config::parse_config("config.toml").unwrap();
+    surge_player::run(surge_mod_2048::surge_register_app(), config);` — two lines, no crate `release.rs`
+    doesn't already have access to. Since nothing before Phase 4 needs a module process to see `EngineConfig`
+    at all (dev-mode modules never touch it — the player alone interprets `config.toml`, per this doc
+    throughout), this move has no reason to land earlier than the step that first needs it; see 4.1 below,
+    which is where it's now assigned, matching this doc's own established practice (3.2's `init_env_logger`
+    move, 1.4's `SpriteCanvas` definition) of landing a relocation exactly where it becomes load-bearing, not
+    earlier.
+55. **Step 1.2's "first test anywhere in the workspace" claim, and Phase 5.2's "the stale 'no tests' line 1.2
+    already touched," are both false today, independent of this doc** — resolved. Checked directly against
+    `surge-core/src/vulkan/sprite_database/mod.rs` rather than against `CLAUDE.md`'s summary of it (the same
+    category of check Q49/Q53 ran, just aimed at a claim about the repository's *current* state rather than a
+    claim about what a future step needs to add): that file already carries a `#[cfg(test)] mod tests` block
+    with three tests — `full_z_range_lands_inside_vulkan_depth_bounds`, `smaller_world_z_draws_in_front`,
+    `gpu_struct_layout_matches_glsl` — added in a commit unrelated to this doc, well before this design's
+    first pass. `CLAUDE.md`'s "There are currently no tests anywhere in the workspace" line is therefore
+    already stale *today*, not a claim step 1.2 would be the first to falsify, and step 1.2's own new test
+    (in `surge-sdk`, round-tripping `InstanceInfo` through `postcard`) is at best the first test *outside*
+    `sprite_database/mod.rs`, not the first test in the workspace. No compile-blocking consequence — the
+    existing three tests exercise `make_model_matrix`/`make_view`/`make_ortho_projection` and two `#[repr]`
+    struct sizes, none of which step 1.2 or 0.2 touches — this is a prose-accuracy fix, not a sequencing one.
+    Fix: 1.2's text is corrected below to stop claiming a "first test in the workspace," and to fix
+    `CLAUDE.md`'s line as an already-overdue correction this commit happens to be well-placed to make (it's
+    already touching `surge-sdk`'s own new test), not as a side effect of newly making the line stale.
+
+### Added in pass 11
+
+56. **Step 1.2 adds `postcard` and `serde` to `surge-sdk/Cargo.toml` by name only, missing the feature flags
+    both crates need for what 1.2's own code actually calls** — resolved. Checked directly against the real
+    `[features]` tables of both crates (`postcard 1.1.3`, `serde 1.0.228`, both present in this machine's
+    local registry cache — not assumed from memory or from how other crates in this workspace happen to use
+    them). Two separate omissions, same shape as Q48/Q49's Cargo-dependency nits, just aimed at feature flags
+    instead of whole dependencies: (a) `postcard::to_stdvec` — which 1.2's own `#[test]` calls directly to
+    round-trip an `InstanceInfo` — is behind `#[cfg(feature = "use-std")]`, and postcard's `default =
+    ["heapless-cas"]` does not include `use-std`; without it, `to_stdvec` simply doesn't exist as far as the
+    compiler is concerned. (b) `#[derive(Serialize, Deserialize)]`, applied to every one of 1.2's own six
+    moved types (`BlendingMode`, `TextureFilteringMode`, `TextureFilteringLevel`, `CreateInfo`,
+    `SubTextureInfo`, `InstanceInfo`), needs serde's `derive` feature — serde's `default = ["std"]` does not
+    include it either. `surge-core/Cargo.toml` already gets this right for its own `serde` line (`serde = {
+    version = "1.0.228", features = ["derive"] }`), which is exactly why nobody hit this reading the doc
+    against the one crate that already works — the same blind spot Q53 named for `surge-mod-2048` vs.
+    `surge-mod-default`'s visibility, just recurring here for Cargo features instead of `pub`/`pub(crate)`.
+    Neither gap is downstream noise: `cargo check -p surge-sdk` (and `cargo test -p surge-sdk`) fails at 1.2
+    itself, the very first commit that gives `surge-sdk` any real content — not at 2.1 or later, where a
+    reader might expect wire-format bugs to surface first. `postcard::from_bytes` (also used by 1.2's test)
+    is *not* feature-gated — checked directly, it carries no `#[cfg]` at all — so it needs no fix; only the
+    serialize half and the derive macros do. Fix: 1.2's dependency line becomes `serde = { version =
+    "1.0.228", features = ["derive"] }` (verbatim what `surge-core/Cargo.toml` already uses) and `postcard =
+    { version = "1.1.3", features = ["use-std"] }`. Landing the feature here, on `surge-sdk`'s single
+    `postcard` dependency line, is also sufficient for every later use of `postcard` in this doc (2.1's
+    `write_message`/`read_message` framing helpers, the full `Request`/`Response` wire types) — a Cargo
+    feature is a property of the dependency edge, not of each individual call site, so nothing downstream
+    needs its own fix once this one lands.
+57. **Step 4.1 moves `ConfigError` into `surge-sdk` without adding the dependency it derives from** —
+    resolved. 4.1's text adds `toml = "0.9.8"` to `surge-sdk/Cargo.toml` for the moved `config` module
+    ("`log` is already there since 3.2") but never mentions `thiserror` — checked directly against
+    `surge-core/src/errors/mod.rs`'s current `ConfigError` definition, it's `#[derive(Debug, Error)]` against
+    `thiserror::Error`, exactly like every other error enum in that file (`AppError`, `ModuleError`,
+    `VulkanError`). `thiserror` is a `surge-core`-only dependency today — checked, `grep -rn thiserror
+    **/Cargo.toml` across the workspace turns up nothing else — and nothing before 4.1 ever adds it to
+    `surge-sdk`. Without it, `cargo check -p surge-sdk` fails at 4.1 the moment `ConfigError`'s own derive is
+    compiled, the same failure shape as Q49's `winit`/`env_logger` omissions and Q56 above, just one more
+    dependency edge nobody happened to check against the type actually being moved. Fix: 4.1 also adds
+    `thiserror = "2.0.17"` (matching `surge-core/Cargo.toml`'s existing pin) to `surge-sdk/Cargo.toml`, in the
+    same commit that adds `toml`.
+58. **Step 1.6 bundles two individually-correct fixes (Q50, Q36) that contradict each other for one specific
+    function** — resolved. Q50's fix, as written, lists three helper functions that "also have to retype
+    their parameter to `&mut dyn SpriteCanvas`... mechanical, no logic change, same commit":
+    `upload_image_assets`/`add_board_sprite` (`surge-mod-2048`) and `upload_assets` (`surge-mod-default`). But
+    the same step 1.6 also bundles in Q36's fix, which retires `surge-mod-2048`'s `DecodedTexture`-based
+    decode cache outright — deletes `cached_textures` (`app_2048.rs`), deletes `decode_image_assets`
+    (`lib.rs`), and has `on_load`/`on_swapchain_recreate` call `SpriteCanvas::upload_texture(path)` directly
+    per asset name instead. `upload_image_assets`'s own signature is `(spdb: &mut SpriteDatabase, textures:
+    &[DecodedTexture])` — checked directly against `surge-mod-2048/src/lib.rs`'s current source — and once
+    Q36's half of this same commit removes `decode_image_assets`/`cached_textures`, nothing in the module
+    produces a `&[DecodedTexture]` for it to receive, and `SpriteCanvas` (per its own sketched surface —
+    `add_instance`, `upload_texture`, `get_create_info`) has no method that accepts one either: it only takes
+    an asset-path string. "Retype the parameter, mechanical, no logic change" is simply wrong for this one
+    function — it doesn't survive this commit in any form, retyped or otherwise, and an implementer following
+    Q50's literal text would try to keep a signature naming a type (`DecodedTexture`) the same commit's own
+    Q36 clause just stopped importing. `add_board_sprite` and `surge-mod-default`'s `upload_assets` are
+    unaffected by this correction — neither touches `DecodedTexture`, so Q50's "mechanical, no logic change"
+    description already holds for both exactly as written. Fix: strike `upload_image_assets` from the "just
+    retype" list. In its place — pinned down here rather than left for an implementer to invent, this doc's
+    own established practice (e.g. Q35's `KeyEvent` field list) — 1.6 adds a small replacement helper,
+    `fn upload_board_assets(canvas: &mut dyn SpriteCanvas)`, looping over the same 12 filename literals
+    `decode_image_assets` used to hardcode (`"board.png"` through `"pieces_2048.png"`), calling
+    `surge_sdk::resolve_asset_path(MODULE_NAME, name)` then `canvas.upload_texture(path.to_str().unwrap())`
+    per name — replacing the `upload_image_assets(spdb, self.get_cached_textures())` call in both `on_load`
+    and `on_swapchain_recreate`. This is Q36's fix stated precisely enough to implement rather than a new
+    decision; Q36 already established the "no `SpriteCanvas` method does what `upload_decoded_texture` did"
+    reasoning, this item only traces that reasoning through to the specific helper function Q50 had
+    (incorrectly) assumed would keep its shape.
+
+### Added in pass 12
+
+59. **Cargo names binaries after their source file, so both modules' dev binaries are `target/debug/dev` —
+    and neither is the path `[startup_app] app_name` resolves to** — resolved. The only item in this doc so
+    far checked by *running* the build tool rather than reading source: a throwaway two-package workspace,
+    each package with a `src/bin/dev.rs` and no `[[bin]]` table, was built with `cargo build --workspace`.
+    Result: `warning: output filename collision at target/debug/dev ... the bin target 'dev' in package
+    'mod-b' has the same output filename as the bin target 'dev' in package 'mod-a' ... this may become a
+    hard error in the future`, both compile, and the file left at that path is whichever linked last
+    (confirmed by running it). Steps 3.2 and 3.3 give `surge-mod-2048` and `surge-mod-default` exactly this
+    shape, and 4.2 repeats it for `src/bin/release.rs` → `target/release/release`. Two distinct
+    consequences, either one enough to stop an implementer: (a) 3.3's own smoke test
+    (`SURGE_DEV_LOADER=process` with `config.toml` pointed at `surge_mod_default`) would spawn whichever
+    module's binary happened to link last — a *silently wrong module*, not a build failure, and 3.2's test
+    passing is no protection since it runs before the collision exists; (b) the doc's own resolution rule,
+    `{app_folder}/{app_name}` with "no `lib`/`.so` decoration", resolves against the real checked-in
+    configs to `surge_mod_2048`/`surge_mod_default` (checked: both `surge-modules/*/config.toml`), and
+    nothing in the plan ever produces a file by either name. Neither passes 7–11's step-sequencing checks
+    nor their source checks could see this — it isn't a property of any source file, it's a property of
+    what Cargo emits and what the player then `exec`s. Fix: every module crate declares explicit `[[bin]]`
+    tables (see "Module discovery / config schema" above for the literal TOML) — the dev binary named
+    exactly its `app_name` (`surge_mod_2048`, `surge_mod_default`), the release one suffixed
+    `_release`, both with an explicit `path` so the source files keep their descriptive
+    `src/bin/dev.rs`/`release.rs` names. A `[[bin]]` sharing the package's `[lib]` name is legal (it's the
+    default `src/main.rs` + `src/lib.rs` arrangement), so nothing else has to be renamed.
+60. **After a reload, the respawned module process never receives `Request::OnLoad`** — resolved. Q45 fixed
+    "how does a keypress reach `RemoteApp::reload()`" with a default `fn reload(&mut self) -> bool` on
+    `SurgeApp`, and Q14 requires the player's `SpriteDatabase` to be rebuilt on every reload — but tracing
+    the two through the actual sequence (F5 in `window_event` → `reload()` → `recreate_swapchain = true` →
+    next `about_to_wait` rebuilds the database → `on_swapchain_recreate`) shows the fresh child's first
+    ever `Request` is `OnSwapchainRecreate`. It cannot be `OnLoad`: `reload()` takes no canvas, and per Q44
+    a `create_info` can only come from `canvas.get_create_info()`. That contradicts the connect sequence's
+    own "on a match, the player proceeds with `Request::OnLoad`" and Q14's "before replaying the fresh
+    module's `on_load`" — a module doing genuine one-time init in `on_load` (the ordinary reading of that
+    hook) comes back half-initialized after every reload. It is invisible to 3.5's smoke test for the same
+    reason Q46 flagged there: both real modules happen to do the same asset upload in both hooks, so 2048's
+    board redraws correctly and nothing looks wrong. This is the Q58 class again — Q44, Q45 and Q14 are
+    each individually correct, and their *composition* is what fails. Fix: a `pending_on_load` flag inside
+    `RemoteApp`, set when `reload()`'s re-handshake succeeds and consumed by the next
+    `on_swapchain_recreate` (guaranteed to be called, since `reload()` returning `true` is what schedules
+    it), which sends `Request::OnLoad { create_info }` in place of `Request::OnSwapchainRecreate`. No new
+    wire message, no signature change, no module-side change; see the "Reload" bullet under Dev mode and
+    step 3.5.
+61. **Q52's version-skew fix was applied to `nalgebra` and not to `winit`, whose exposure is identical and
+    grows at 1.7** — resolved. Both modules declare their own `winit = "0.30.12"` alongside the `nalgebra`
+    line Q52 removes (checked, both `Cargo.toml`s), and both name winit types directly in `SurgeApp` method
+    signatures (`DeviceId`, `ElementState`, `MouseButton`, `MouseScrollDelta`, `TouchPhase`) implemented
+    against a trait `surge-sdk` owns — the same "compiles only because the version strings happen to match
+    everywhere" situation, one crate over. It gets worse at 1.7 rather than better: `surge_sdk::KeyEvent`'s
+    fields are themselves `winit::keyboard::{PhysicalKey, Key, KeyLocation}` and
+    `winit::event::ElementState`, and `surge-mod-2048` destructures exactly those
+    (`PhysicalKey::Code(KeyCode::ArrowUp)`, `lib.rs:126-132`). Three passes stared at the `nalgebra`
+    paragraph without asking whether the argument generalizes to the other shared external crate in the same
+    `Cargo.toml`. Fix: `surge-sdk` adds `pub use winit;` next to `pub use nalgebra;`, both modules drop their
+    own `winit` dependency line and switch to `use surge_sdk::winit::{...}` — same commit as the `nalgebra`
+    switch (1.6), which is already rewriting those `use` lines. `surge-player` keeps its own `winit`
+    dependency: it needs `EventLoop`/`Window`/`ApplicationHandler`, none of which `surge-sdk` re-exports as
+    part of its module-facing surface.
+62. **No release binary ever initializes a logger or prints the logo** — resolved. `init_env_logger()` and
+    `print_logo()` are called from `surge-player`'s `main()` (`main.rs:327,332`, verified). 4.1 turns that
+    `main()` into the *dev* binary's entry point and 4.2's release `main()` is two lines — `parse_config`
+    plus `surge_player::run(...)` — so a shipped game installs no logger at all: every `log::error!` in
+    `surge-core`'s Vulkan layer, and every `log::info!` in the module, is silently discarded, and today's
+    staged player behavior (logo + logs) regresses with nothing in the plan noting it. Q42 traced this same
+    call site through the Q32 *move* and fixed where it points; nobody asked which binaries still *reach*
+    it once `main.rs` stops being the only entry point. Fix: both calls move into `surge_player::run()`
+    itself, the entry point both modes share, and out of `surge-player`'s dev `main()` in the same commit
+    (4.1) — moved, never duplicated, since a second `env_logger::Builder::init()` in one process panics,
+    which is precisely Q51's failure one crate over. `print_logo` staying in `surge-core` (3.2's decision)
+    still holds: `run()` lives in `surge-player`, which depends on `surge-core` directly.
+63. **The dev proxy's `texture_id` counter restarts per call while the real backend's index accumulates** —
+    resolved. `SpriteCanvas::upload_texture` returns `Result<usize, CanvasError>` (Q17/Q28), documented as
+    "the assigned index." Under the release backend that is `SpriteDatabase`'s cumulative
+    `uploaded_textures` position; under the dev proxy, as worded through pass 11 ("this call's position in
+    `CanvasOps.texture_uploads`"), it restarts at 0 on every turn. The two agree only when the canvas held
+    no textures at the start of the call. Both real modules upload solely from
+    `on_load`/`on_swapchain_recreate`, which the player always calls against a freshly-built database, so
+    the divergence is latent today — but the trait permits uploading from `update()`, nothing warns, and
+    the failure is a wrong sprite silently drawn, not an error. Fix: the proxy keeps a cumulative counter
+    for the life of the connection and resets it only when it caches a new `CreateInfo` off
+    `Request::OnLoad`/`OnSwapchainRecreate` — exactly the two moments the player rebuilds the database, so
+    the two backends agree by construction rather than by module convention. Folded into the "`texture_id`
+    handshake" bullet, the `CanvasOps` doc comment, and step 2.2.
+64. **Three smaller precision gaps** — resolved. (a) **`surge-core`'s `serde` and `toml` dependencies go
+    dead and no step removes them.** After 1.2 moves the six plain-data types and 4.1 moves `config`/
+    `ConfigError`, `surge-core`'s only `use serde` (`config/mod.rs:3`) and only `use toml`
+    (`config/mod.rs`, `errors/mod.rs`) are gone — checked by grep, there is no other user in the crate.
+    Not compile-blocking, but it is exactly the trace-through Q29 did for `libloading`, left undone for the
+    two dependencies Phase 4 orphans; 4.1 removes both lines. (b) **1.6's `DecodedTexture` cleanup names one
+    import, and there are two files.** Q36/Q58 say `surge-mod-2048` drops "the `DecodedTexture` import" —
+    the type is imported in `lib.rs`'s `use surge_core::{...}` block *and* separately at
+    `app_2048.rs:4`, and `app_2048.rs` additionally imports `decode_image_assets` from the crate root
+    (`use crate::{..., decode_image_assets, ...}`), initializes `cached_textures: decode_image_assets()`
+    inside `App2048::new()`, and exposes a `get_cached_textures()` accessor whose only callers are the two
+    `upload_image_assets` call sites Q58 deletes. All of it goes in 1.6; spelled out so an implementer
+    doesn't remove one import, keep the accessor, and be left with a field that no longer exists. (c)
+    **"Same `[startup_app]` shape in both dev and release" overstates what release does with it.** A
+    release binary is its own module — it never resolves `app_folder`/`app_name` at all. The keys stay in
+    the shipped `config.toml` regardless, because `EngineConfig` deserializes `[startup_app]` as a
+    non-optional field (checked, `StartupAppConfig` is a plain required member) and `parse_config` would
+    fail without it; the prose above is corrected to say inert-but-required rather than
+    resolved-differently.
+
+### Added in pass 13
+
+65. **No step on either side implements `Request::Shutdown`, so `on_unload` is silently never delivered
+    again** — resolved. Q16 folded `on_unload` into `Shutdown`/`ShutdownAck` in pass 3 and every later pass
+    treated that as settled *design*, which it was — but the question this pass asks is which commit
+    *builds* it, and the answer was none. 2.3's `drive()` is described as returning "after
+    `Shutdown`/`ShutdownAck`" without ever calling `app.on_unload()`; 2.5's `RemoteApp` lists
+    `on_load`/`on_swapchain_recreate`/`update` and the three buffered input methods and simply omits
+    `on_unload` from its impl; nothing anywhere sends the `Request`. The result is not a compile error —
+    `on_unload` has a default empty body on the trait, and `surge-player`'s `exiting()` keeps calling it on
+    a `RemoteApp` that does nothing with it — so the cutover would silently drop a lifecycle hook that
+    works today. It is observable, cheaply: `surge-mod-default::on_unload` logs "Default app shutdown"
+    (`lib.rs:158-160`, checked), and that line would just stop appearing. Fix: the player half
+    (`RemoteApp::on_unload` sends `Shutdown`, waits for `ShutdownAck` under a bounded read timeout, then
+    escalates `SIGTERM`/`SIGKILL` and reaps) lands in 2.5; the module half (`drive()` calls
+    `app.on_unload()` before replying `ShutdownAck`) lands in 2.3, with the scripted test extended to cover
+    the arm; 3.3's smoke test watches for the log line, and the "standard smoke test" definition gains it
+    from that point on. Same class as Q52 — a decision the design made correctly and the plan never
+    assigned — but reached by a different question: not "was the fix given a shape" but "was the fix given
+    a commit."
+66. **Q11's crash-state path is referenced by three steps and implemented by none** — resolved, and the
+    most serious item this pass found. "Routes to the Q11 crash path" appears in 2.5 (a `texture_uploads`
+    failure), in Q17's part 2, and implicitly in 2.6/Q22 (the `reload_in_progress` check exists precisely
+    to decide whether to *take* that path) — but Q11 itself resolved a *policy* ("stop driving the module,
+    log loudly, make it visibly different from reload churn, e.g. freeze last frame + on-screen/log
+    indicator"), never a mechanism, and no step builds one. Three concrete things were missing, each of
+    which an implementer would otherwise have had to invent mid-phase: (a) *where the state lives* —
+    `RemoteApp`, as a `faulted: bool` set on non-reload transport failure, handshake mismatch, or upload
+    failure, making every subsequent trait method a no-op; (b) *how `SurgeContext` learns about it* — it
+    holds only a `Box<dyn SurgeApp>` and cannot downcast, the same wall Q45 hit for `reload()`, so the
+    answer is the same: a second default trait method, `fn is_faulted(&self) -> bool { false }`; (c) *what
+    "visibly different" means in an engine with no text rendering* — `Window::set_title` gaining a
+    `— MODULE CRASHED` suffix, plus skipping acquire/draw/present entirely so the last presented image
+    stays on screen, which is what "freeze last frame" reduces to when nothing new is submitted. Recovery
+    is F5 only, never an automatic respawn (Q11's own requirement). Fix: new step 3.6, placed after 3.5 so
+    it can reuse the F5 keybind as its recovery test, with the flag itself introduced at 2.5 where the
+    failures are actually detected. Its test is the first in this plan to deliberately break something
+    (`kill -9` the child) rather than confirm a happy path.
+67. **Q10's "loud logging while blocked" was never assigned either, and it collides with Q66's fault
+    detection** — resolved. Q10 chose blocking backpressure "paired with clear, loud debug logging when the
+    player is blocked waiting on the module," and no step mentions it. The reason it matters more than a
+    missing log line: implementing it requires a read *timeout*, and a timeout produces exactly the kind of
+    error return (`WouldBlock`/`TimedOut`) that Q66's fault detection watches the same call for. Built
+    naively, either the stall logging never fires (blocking read, no timeout) or every slow module trips
+    the crash state (timeout treated as EOF). Fix: one rule, stated once, in the single
+    `write_request`/`read_response` helper pair — `WouldBlock`/`TimedOut` is a stall (log with elapsed ms,
+    retry, stay connected); `Ok(0)`/EOF or a transport error is a fault. Folded into 2.5 alongside Q66's
+    flag, since both are properties of that same helper.
+68. **`InstanceInfo`/`SubTextureInfo` derive `Debug` only, so 2.2's proxy cannot buffer them** — resolved,
+    compile-blocking. Checked against the real definitions
+    (`surge-core/src/vulkan/sprite_database/mod.rs:67,93`): both are `#[derive(Debug)]`, nothing more.
+    1.2 adds `Serialize`/`Deserialize` and stops there — but `SpriteCanvas::add_instance` takes
+    `&InstanceInfo` (unchanged from today's signature, deliberately), and 2.2's dev proxy has to put that
+    value into its own `Vec<InstanceInfo>` to drain later, which needs `Clone`/`Copy` and gets nothing of
+    the kind from a serde derive. `cargo check -p surge-sdk` fails at 2.2. This is Q56's shape (a derive
+    that isn't there) aimed at the standard library's traits rather than a Cargo feature table. Fix: 1.2
+    adds `Clone, Copy` to both, verified by actually compiling `#[derive(Debug, Clone, Copy)]` on both
+    structs against this workspace's pinned `nalgebra` (every field — `Vector2<f32>`, `Vector4<f32>`,
+    `Vector2<u32>`, `f32`, `usize`, `Option<SubTextureInfo>` — is `Copy`, so the stricter derive is
+    available and there is no reason to settle for `Clone` alone). The other four moved types already
+    derive both today.
+69. **`SpriteCanvas`'s method list was never written down** — resolved. Eleven passes wrote it as
+    "`add_instance`, `upload_texture`, `get_create_info`, ...", ellipsis included, and step 1.4 says
+    "Define `SpriteCanvas` and `CanvasError`" with no signatures — leaving the one trait every module
+    programs against, both backends implement, and the whole dev/release symmetry rests on, to be
+    reconstructed at implementation time. Exactly the gap Q35 closed for `KeyEvent`, still open for the
+    more central type. Fix: the trait is now written out in full under "`surge-sdk`" above, transcribed
+    from `SpriteDatabase`'s actual signatures — three methods, `get_create_info` returning `CreateInfo` by
+    value (it is `Copy`, and that is what `SpriteDatabase::get_create_info` already does), `upload_texture`
+    returning `Result<usize, CanvasError>` per Q17/Q28. The ellipsis resolves to *nothing*: those three are
+    the complete set of methods either real module calls on its canvas parameter. `draw()` is deliberately
+    excluded — `SurgeContext` owns the concrete database and calls it directly, no module ever has.
+70. **3.4 deletes the file two crates import `SurgeApp` through** — resolved, compile-blocking. 1.6 leaves
+    `surge-core/src/app/mod.rs` as a `pub use surge_sdk::SurgeApp;` re-export; 3.1 (checked against
+    `surge-player/src/main.rs`, which today never names the trait at all, reaching it only through
+    `LoadedApp`'s `Deref`) makes `surge-player` name it for the first time, necessarily through
+    `sc::app::SurgeApp` since `surge-player` has no `surge-sdk` dependency until 3.2. 3.4 then says
+    "delete `surge-core/src/app/mod.rs`" without repointing that import — and without dropping
+    `pub mod app;` from `surge-core/src/lib.rs` (checked: it is line 1), which alone is a hard error, not a
+    dead-code warning. Fix: both clauses fold into 3.4, which by then has the `surge-sdk` dependency 3.2
+    added to reach `surge_sdk::SurgeApp` directly.
+71. **Release binaries link the crate that hosts the IPC machinery — Q20's own objection, one crate over**
+    — resolved. Q20 refused to put `RemoteApp`/the socket code in `surge-core` with an explicit argument:
+    "every release binary — which always links `surge-core` as a plain `rlib` — would statically compile in
+    `postcard` and the socket/spawn machinery it never uses, contradicting this doc's own 'no IPC ...
+    compiled in' release goal." It then placed that code in `surge-player` — and Phase 4 makes every
+    release binary depend on `surge-player` for `run()`. The argument transfers verbatim and no pass
+    noticed, because Q20 was reasoning about `surge-core`'s dependency edge at a point (pass 4) when
+    `surge-player` had no `[lib]` target for a module to depend on at all. Fix, needing neither a crate
+    split nor a feature flag: `RemoteApp`, `proc.rs`, and the wire helpers are modules of `surge-player`'s
+    **`[[bin]]`** target (declared from `main.rs`) and never move into `src/lib.rs` at 4.1 — a `mod`
+    declared in `main.rs` compiles only into the binary crate, so `surge_player::run` carries none of it.
+    Stated honestly rather than overclaimed: `libc` and `postcard` remain in `surge-player`'s
+    `[dependencies]` and are therefore still *compiled* for a release build (Cargo has no per-target
+    dependency scoping — the same limitation Q37 hit), so the goal holds for the linked binary's reachable
+    code, not for the build graph. 4.1 states the rule; 4.2 checks it with `nm`.
+72. **Nothing owns module-binary path resolution, and no step says what the dev `config.toml` must contain**
+    — resolved. The design says `app_folder`/`app_name` resolve to `{app_folder}/{app_name}` with no
+    `lib`/`.so` decoration, and Q59 made sure a file by that name exists — but the code that *performs*
+    that join was `load_from_dylib`, which 3.4 deletes, and no step assigns the replacement to anything.
+    2.5 says `RemoteApp` "spawns the module binary" without saying how it knows which one, and 3.1's
+    `spawn_and_connect(&engine_config.startup_app)` is the only hint. Second half, checked against the
+    real files: both `surge-modules/*/config.toml` say `app_folder = "."`, so a dev run following 3.2's
+    test instructions verbatim would look for `./surge_mod_2048` and fail — the root working copy needs
+    `app_folder = "target/debug"`, which is already true today for the `.so` and stays true for the
+    binary, but is nowhere written down in a plan whose smoke tests depend on it. Fix: resolution is
+    `RemoteApp`'s constructor (canonicalizing, failing loudly with the resolved path), stated in "Module
+    discovery / config schema" and in 2.5; 3.2's test line now says exactly which `config.toml` to use and
+    what to set `app_folder` to.
+73. **Five smaller precision gaps** — resolved. (a) **The `nalgebra` re-export switch misses two
+    fully-qualified call sites.** Q52/Q61 have both modules drop their own `nalgebra`/`winit` lines at 1.6
+    and rewrite their `use` statements, but `surge-mod-default/src/lib.rs:94-95` writes
+    `nalgebra::Vector2::new(...)` inline, bypassing its own `use` line — the module doesn't compile after
+    the dependency comes out unless those two are rewritten too (the sweep-every-qualified-path shape Q51
+    established for `surge_core::`, arriving a phase earlier). Folded into 1.6, along with both modules'
+    `use surge_core::app::SurgeApp` → `use surge_sdk::SurgeApp`. (b) **A doc comment outlives the code it
+    documents.** `surge-mod-2048/src/lib.rs:26-28` documents the decode cache but sits above
+    `const MODULE_NAME`, not above `decode_image_assets`, so Q36/Q58/Q64b's deletion list leaves it in
+    place describing behavior the module no longer has. Added to 1.6's list. (c) **0.2 changes a behavior,
+    not just a type.** Both modules `.unwrap()` the upload result, so "a real `Err` once `max_textures` is
+    hit" turns a `log::warn!` into a module panic between 0.2 and the Phase 3 cutover (after which the
+    same failure lands player-side and routes through Q66). Intended — the old behavior silently drew the
+    wrong texture — but worth naming in the step rather than discovering. (d) **The justification for
+    naming a `[[bin]]` after the `[lib]` was wrong even though the conclusion was right.** Q59 argued it
+    "is exactly what `src/main.rs` + `src/lib.rs` produces by default"; for a hyphenated package it is not
+    (the default bin takes the *package* name, `surge-mod-2048`, the lib its underscored form). Checked by
+    building it: a package with `crate-type = ["rlib"]` and an explicit `[[bin]] name = "surge_mod_2048"`
+    compiles clean and emits both `target/debug/surge_mod_2048` and `libsurge_mod_2048.rlib`, and
+    `required-features` gates the release bin exactly as Phase 4 assumes. Conclusion kept, reasoning
+    replaced. (e) **The handshake constant had no home.** `Response::Handshake { wire_version }` is
+    compared by the player against a value the module sends, and no step declares either — inviting two
+    literals in two crates. 2.1 now declares `pub const WIRE_VERSION: u16` in `surge-sdk`, which both
+    sides use.
+
+### Added in pass 14
+
+74. **`PR_SET_PDEATHSIG` is verified by nothing in the plan** — resolved, and the clearest instance of the
+    shape this pass looked for: a step that names a test, passes it, and still proves nothing about its own
+    deliverable. 2.4 builds `set_pdeathsig` and defers "functional verification ... to 2.6/3.x"; 2.6 wires
+    it in with a compile gate; 3.2's and 3.5's smoke tests check `ps` for orphans — but only after a *clean*
+    exit, which reaps the child through Q65's shutdown sequence and looks byte-identical whether
+    `set_pdeathsig` works or is a no-op. Grep-checked across the whole plan: the only `kill` in any test
+    targets the *child* (3.6 case 1), never the player. So a wrong `prctl` argument, a `pre_exec` closure
+    that silently fails, or the call being dropped in a refactor would sail through every step and surface
+    the first time a developer's player panicked — the exact scenario Q18 added it for. Fix: 3.6 case 2,
+    `kill -9` the player and assert no surviving `surge_mod_*` in `ps`. One line, and it is the only test of
+    that guarantee anywhere.
+75. **Only the happy branch of the kill sequence is ever exercised** — resolved. F5 (3.5) does send
+    `SIGTERM` to a live module, which is real coverage, so this is narrower than Q74 but the same species:
+    both the `SIGKILL`-after-timeout escalation (Q30) and the `ShutdownAck`-timeout fallback (Q65) only run
+    against a module that *doesn't* exit promptly, and every module in every test exits promptly. An
+    implementation that sends `SIGTERM` and then simply waits forever — or one that never starts the timer —
+    passes 3.5, 3.3, and every smoke test in the plan, and hangs the player the first time a module
+    deadlocks, which is precisely when a developer most needs the player to exit. Fix: 3.6 case 3, a
+    temporary `loop {}` in `drive()`'s `Shutdown` arm, module rebuilt alone. Cheap because the module is a
+    separate binary: no player rebuild, no scaffolding, revert when done.
+76. **Q60's `pending_on_load` fix is unobservable, and 3.5 says so without fixing it** — resolved. 3.5's own
+    text concedes "both real modules do the same work in either hook, so the smoke test below cannot
+    distinguish the two" — an honest statement of a test that cannot fail, left standing as if nothing could
+    be done. Something can: the module process has its own stdout, and `drive()` is the one place every
+    `Request` arrives. Fix: `drive()` logs each received variant at debug level (2.3), so a reload prints
+    `OnLoad` from the fresh child if Q60's flag works and `OnSwapchainRecreate` if it doesn't, and 3.5's
+    test reads that line. Worth generalizing beyond this instance: in a two-process design, "the other
+    process's log" is the cheapest assertion surface available, and this plan had not used it once. It is
+    also the reason case 4 in 3.6 can check a handshake rejection at all.
+77. **Two more never-executed paths — handshake mismatch and the stall/fault distinction** — resolved.
+    Neither has a test in any step: a `wire_version` mismatch (the entire justification for having a
+    handshake) and Q67's rule that `WouldBlock`/`TimedOut` means "stall, keep waiting" while EOF means
+    "fault." The second is the likelier bug of the two — one `if err.is_err()` in 2.5's read helper collapses
+    them, and the symptom is a module that crashes the session whenever it is slow or paused in a debugger,
+    which is a dev-mode-only failure that no rendering test would attribute to the socket layer. Both turn
+    out to be cheap, and the first is not even injection: rebuilding *only* `surge-player` after bumping
+    `WIRE_VERSION` leaves a genuinely stale module binary on disk — the actual production failure this
+    handshake was designed to catch, reproduced by doing less work rather than more. The second is
+    `kill -STOP` / `kill -CONT`. Fix: 3.6 cases 4 and 5.
+78. **The compile gate never runs the tests the plan writes** — resolved. "Tested" was defined as
+    `cargo check --workspace` + `cargo build --workspace`, with `cargo test` named only inside the four steps
+    that author suites (1.2, 2.1, 2.2, 2.3). Every commit from 2.4 onward could therefore break framing,
+    proxy-counter, or dispatch-loop tests and still pass its own stated gate — not hypothetical here, since
+    3.2, 3.5, and 4.1 all edit `surge-sdk` again after its suites exist. Fix: the compile gate becomes
+    `check` + `build` + `cargo test --workspace`, checked to be cheap and dependency-free (the three
+    pre-existing `surge-core` tests are pure math/layout — no device, no window). Also worth stating once,
+    which the plan never did: what the gate structurally *cannot* cover is anything needing a live
+    `VkInstance` or a real child process, which is why the smoke tests and 3.6's cases exist and why five
+    steps legitimately cannot do better than a compile gate (Q80).
+79. **Four steps state no test at all** — resolved. 0.1, 0.2, 1.1, and 5.2 have no `Test:` clause anywhere
+    in their text (checked mechanically, not by eye). Three of the four are not merely unstated but
+    *unfalsifiable by the compile gate they implicitly rely on*: deleting an unused dependency (0.1)
+    compiles identically whether or not it happened, a crate created but never added to `[workspace] members`
+    (1.1) is skipped rather than failed by `--workspace`, and a documentation sweep (5.2) has no compile
+    consequence whatsoever. Each gets an assertion that can actually go red — `cargo tree | grep` for 0.1,
+    an explicit `cargo check -p surge-sdk` for 1.1, a must-be-empty `grep -rn` for 5.2. 0.2 is the different
+    case: its success path is covered by the standard smoke test, but its new failure branch needs a live
+    device and a full database, so it is genuinely unverifiable until 3.6 case 6 — five phases later. That
+    is now stated in the step rather than left to chance.
+80. **"Compile gate only" never said where the behavior is first proven** — resolved. Five steps (1.4, 1.5,
+    2.4, 2.5, 2.6) build things no test at that commit can exercise, and only 2.5 acknowledged it. Silence
+    made the other four read as though a compile gate were sufficient, when for 1.5 in particular it is
+    conspicuously not: three forwarding methods where a swapped argument or a dropped index compiles
+    perfectly and is caught only by 1.6's real-GPU smoke test one commit later. Fix: each of the five now
+    names the step and the observable that first proves it (1.4 → 1.6; 1.5 → 1.6; 2.4 → 3.6 cases 2–3;
+    2.5 → 3.2/3.3/3.6; 2.6 → 3.5/3.6). Deferral is fine and often unavoidable in a plan that builds
+    machinery additively; unlabelled deferral is what lets a step ship unverified permanently, which is how
+    Q74 happened.
+81. **Three test-precision gaps** — resolved. (a) **2.2's proxy test covers half of Q63's rule.** It asserts
+    the counter *continues* across drains but never that it *resets* when a new `CreateInfo` is cached — and
+    a proxy that never resets passes the stated case while diverging from the real backend on every reload,
+    which is the bug Q63 exists to prevent. A third case (`get_create_info` answered from cache, no I/O) is
+    likewise unasserted anywhere despite being Q27's whole point. Both added. (b) **2.3's test doesn't
+    assert dispatch order.** "Replay `input_events` in wire order, then call `update`" is a protocol
+    property; a `drive()` that replays after `update` satisfies every stated assertion and silently delays
+    every keypress by a frame. Assertion added. (c) **3.4's `ldd`/`nm` check for `libloading` is the wrong
+    instrument.** `ldd` cannot show it (it is a statically linked rlib, so that half of the check has always
+    passed vacuously and would keep passing with the dependency intact), and `nm` depends on linker section
+    garbage collection. `cargo tree -p surge-core | grep libloading` tests the actual claim — the edge is
+    gone — and fails deterministically when it isn't.
+
+## Implementation plan (pass 7, sequencing corrected pass 8, dependency/visibility gaps closed pass 9, config-plumbing gap closed pass 10, build-output/lifecycle gaps closed pass 12, unimplemented-requirement gaps closed pass 13)
+
+The workspace has no CI gate beyond the compiler and, `CLAUDE.md` notwithstanding, only a handful of tests
+today (`surge-core/src/vulkan/sprite_database/mod.rs`'s three — see Q55), none of which any step below
+depends on or perturbs, so "tested" below means one of two things, named once here and referenced by name
+after: **the compile gate**
+(`cargo check --workspace`, then `cargo build --workspace`, **then `cargo test --workspace`** — every
+commit must pass all three; a commit that
 doesn't is not a valid stopping point, full stop) and the **standard smoke test** (`cargo run -p
 surge-player` from the repo root; confirm the window opens, the active module's sprites draw as expected,
 a keypress/mouse click still logs or acts as before, a resize triggers `on_swapchain_recreate` without a
 visible glitch, and closing the window exits cleanly with no orphaned process left in `ps`). Individual
-steps note only how they *differ* from these two defaults.
+steps note only how they *differ* from these two defaults. From step 3.3 on, the standard smoke test gains
+one more line to watch for, since it is the cheapest observable proof that the shutdown round trip (Q65)
+survived the cutover: `surge-mod-default`'s `on_unload` logs `Default app shutdown` on window close, and
+its absence means `Request::Shutdown` never reached the module.
+
+**Progress convention:** a step that has been implemented and passed its stated test is marked
+**`[DONE]`** immediately after its number. An unmarked step is still open.
+
+**Why `cargo test --workspace` is part of the gate and not just of the four steps that write tests**
+(Q78, added pass 14): as pass 7–13 wrote it, the gate was `check` + `build`, and `cargo test` appeared only
+in the four steps that author a suite (1.2, 2.1, 2.2, 2.3). Every commit after 2.3 could therefore break
+one of those suites and still pass its own stated test — which is not hypothetical for this plan
+specifically: 2.2's proxy and 2.1's framing helpers live in the same crate and get edited again at 3.2
+(module port), 3.5 (`pending_on_load`), and 4.1 (config move). A suite nobody re-runs is documentation, not
+a gate. Running the whole workspace's tests is cheap here (three `surge-core` unit tests, no GPU or window
+needed — checked: they exercise matrix math and `#[repr]` sizes — plus whatever `surge-sdk` has accumulated),
+so there is no reason to scope it per-crate. **What the gate still cannot cover, stated once:** anything
+needing a live `VkInstance` (every `SpriteDatabase` method with a real device behind it) and anything needing
+a real child process. Those are what the smoke tests and the fault-injection cases below are for, and every
+step whose deliverable falls into that category now names the later step that first proves it, rather than
+leaving "compile gate only" to imply nothing more was possible (Q80).
 
 **The one finding that reshapes the whole sequence:** the design bundles two independent risks —
 retyping `SurgeApp` (`&mut dyn SpriteCanvas`, the `KeyEvent` mirror) and moving modules into a separate
@@ -1160,8 +2017,12 @@ Q38) process-isolation cutover.
 
 ### Phase 0 — Preliminaries (zero design risk, unblocked today)
 
-- **0.1.** Delete the vestigial `surge-player` → `surge-mod-default` path dependency (Q25).
+- **0.1.** **[DONE]** Delete the vestigial `surge-player` → `surge-mod-default` path dependency (Q25).
   `surge-player/Cargo.toml` only; `main.rs` never references the crate, so this is a one-line removal.
+  Test: compile gate + `cargo tree -p surge-player | grep surge-mod-default` returns nothing (Q79 — the
+  compile gate alone cannot fail here, since deleting an unused dependency compiles either way; the
+  `cargo tree` assertion is the only thing that actually distinguishes "removed" from "still there but
+  unused," which is precisely this step's deliverable).
 - **0.2.** Fix `SpriteDatabase::upload_texture`/`upload_decoded_texture`'s return type: `Result<(),
   VulkanError>` → `Result<usize, VulkanError>`, a real `Err` once `max_textures` is hit instead of a
   silently-successful `Ok(())` (Q17's source-level fix). The new failure needs a `VulkanError` variant of
@@ -1169,7 +2030,20 @@ Q38) process-isolation cutover.
   site if a message wants it). `surge-core` only — no module call-site changes needed, since both modules
   currently `.unwrap()` the result as a bare statement and discarding a `usize` compiles identically to
   discarding a `()`. This is explicitly flagged in "Self-critique / risks" above as worth landing as its
-  own fix regardless of the rest of this doc; Phase 0 is where that happens.
+  own fix regardless of the rest of this doc; Phase 0 is where that happens. **One behavior change worth
+  naming rather than discovering** (Q73c): because both modules `.unwrap()` that result, a full database
+  stops being a `log::warn!` and becomes a module-side panic from this commit until the Phase 3 cutover,
+  after which the same failure arrives player-side and routes through the crash path instead (Q17's part
+  2, Q66). That is the intent — the old behavior was a silent wrong-texture bug — but it is a real change
+  in what "32 textures uploaded" does, not a pure refactor. Neither module comes close to the cap today
+  (12 and 2), so nothing in the plan's own smoke tests can hit it. Test: compile gate + standard smoke test
+  on both modules (proves the *success* path still returns and that the new `usize` didn't break either
+  module's `.unwrap()` site). **The new failure branch is not verifiable here and this step should not
+  pretend otherwise** (Q79): reaching it needs a full `SpriteDatabase`, which needs a live device, which
+  rules out a unit test — and both modules stay far under the cap. It is first exercised at **3.6**, whose
+  lowered-`max_textures` case is the only place in this plan where an upload actually fails. That is a real
+  gap of five phases between writing a branch and running it; naming the step that closes it is the honest
+  alternative to leaving it unverified forever.
 
 *(Milestone: workspace still behaves exactly as today; both changes are invisible to a user running the
 player.)*
@@ -1178,15 +2052,38 @@ player.)*
 
 - **1.1.** Create the `surge-sdk` crate: `Cargo.toml`, an empty `lib.rs`. Add `"surge-sdk"` to
   `[workspace] members` explicitly — it is a root-level crate like `surge-core`/`surge-player`, not under
-  `surge-modules/*`, so the existing glob does not pick it up.
+  `surge-modules/*`, so the existing glob does not pick it up. Test: compile gate, plus confirm
+  `cargo check -p surge-sdk` resolves the package at all (Q79) — that is what catches the one mistake this
+  step can actually make, a crate created on disk but never added to `[workspace] members`, which
+  `cargo check --workspace` would silently skip rather than fail on.
 - **1.2.** Move the six plain-data types (`BlendingMode`, `TextureFilteringMode`, `TextureFilteringLevel`,
   `CreateInfo`, `SubTextureInfo`, `InstanceInfo`) from `surge-core::vulkan::sprite_database` into
-  `surge-sdk`, adding `#[derive(Serialize, Deserialize)]`; add `serde`, `nalgebra` (with `serde-serialize`),
+  `surge-sdk`, adding `#[derive(Serialize, Deserialize)]` — **and `Clone, Copy` to `InstanceInfo` and
+  `SubTextureInfo`, which have neither today** (Q68; the other four already derive both). This is not
+  cosmetic and not deferrable to the step that needs it: 2.2's dev proxy buffers instances handed to it as
+  `&InstanceInfo` into a `Vec<InstanceInfo>`, which no amount of `Serialize` makes possible, and 1.2 is the
+  one commit that writes these `#[derive]` lines at all. Verified by compiling both structs with
+  `#[derive(Debug, Clone, Copy)]` against this workspace's pinned nalgebra — every field is `Copy`, so the
+  derive is accepted. Add `serde`, `nalgebra` (with `serde-serialize`),
   and `postcard` to `surge-sdk/Cargo.toml` (Q48 — `postcard` is used by this step's own test below, so it
-  belongs here, not re-introduced at 2.1 as pass 7 had it). Add one `#[test]` round-tripping an `InstanceInfo` (with a
-  `Some(SubTextureInfo)`) through `postcard::to_stdvec`/`from_bytes` — this is the first test anywhere in
-  the workspace; `CLAUDE.md`'s "There are currently no tests anywhere in the workspace" line goes stale
-  starting here and should be updated in the same commit. Test: `cargo test -p surge-sdk`.
+  belongs here, not re-introduced at 2.1 as pass 7 had it). **Both new dependencies need explicit feature
+  flags, not just their bare crate names** (Q56, checked against postcard 1.1.3's and serde 1.0.228's actual
+  `[features]` tables): `serde = { version = "1.0.228", features = ["derive"] }` — `derive` is off by
+  `serde`'s own default (`default = ["std"]`), and every one of this step's six types needs it for
+  `#[derive(Serialize, Deserialize)]` to exist at all — and `postcard = { version = "1.1.3", features =
+  ["use-std"] }` — `postcard::to_stdvec`, used by this step's own test below, is behind `#[cfg(feature =
+  "use-std")]`, off by postcard's own default (`default = ["heapless-cas"]`). Without both, `cargo check -p
+  surge-sdk` fails on this commit itself. (`postcard::from_bytes`, also used below, is not feature-gated and
+  needs no fix.) Add one `#[test]` round-tripping an `InstanceInfo` (with a
+  `Some(SubTextureInfo)`) through `postcard::to_stdvec`/`from_bytes` — the first test in `surge-sdk`, but
+  **not**, contrary to earlier drafts of this step, the first test in the workspace (Q55):
+  `surge-core/src/vulkan/sprite_database/mod.rs` already has three
+  (`full_z_range_lands_inside_vulkan_depth_bounds`, `smaller_world_z_draws_in_front`,
+  `gpu_struct_layout_matches_glsl`), predating this doc entirely.
+  `CLAUDE.md`'s "There are currently no tests anywhere in the workspace" line is therefore already stale
+  today, not about to become stale here — this commit is simply a convenient, already-nearby place to fix
+  it (1.2 is already touching `surge-sdk`'s own first test), not the cause of the inaccuracy. Test: `cargo
+  test -p surge-sdk`.
 - **1.3.** `surge-core` takes a `path` dependency on `surge-sdk`; the six local definitions in
   `sprite_database/mod.rs` become `pub use surge_sdk::{BlendingMode, TextureFilteringMode,
   TextureFilteringLevel, CreateInfo, SubTextureInfo, InstanceInfo};`. This is a pure compatibility-shim
@@ -1196,12 +2093,25 @@ player.)*
   workspace-wide once anything enables it, which `surge-sdk` now does.) Test: compile gate + smoke test on
   both modules, unchanged.
 - **1.4.** Define `SpriteCanvas` and `CanvasError` in `surge-sdk` (additive; nothing implements or calls
-  either yet). Include the doc-comment on `upload_texture` about the dev/release fallibility asymmetry (Q28)
-  now, while the reasoning is fresh — it costs nothing to write before the dev backend exists. Test: compile
-  gate.
+  either yet) — the trait verbatim as written under "`surge-sdk`" above, three methods, no more (Q69: that
+  definition is now pinned in the design section rather than left as "`add_instance`, `upload_texture`,
+  `get_create_info`, ...", so this step is transcription, not design). Include the doc-comment on
+  `upload_texture` about the dev/release fallibility asymmetry (Q28) now, while the reasoning is fresh — it
+  costs nothing to write before the dev backend exists. Test: compile gate — genuinely all there is for a
+  commit that adds a trait nothing implements or calls, and the compile gate does check the one property
+  that matters here (object safety: `&mut dyn SpriteCanvas` must be nameable, which 1.6 depends on and
+  Q33's spike already proved). First behavioral proof: 1.6's smoke test (Q80).
 - **1.5.** `impl SpriteCanvas for SpriteDatabase` in `surge-core`, plus `impl From<VulkanError> for
   CanvasError` (Q34's resolved simple form — plain `From`, `?` at the call site, no hand-rolled
-  `.map_err`). Additive; nothing calls through the trait yet. Test: compile gate.
+  `.map_err`). Additive; nothing calls through the trait yet. Test: compile gate — and this is the step in
+  Phase 1 where that is weakest, worth flagging rather than glossing (Q80): the impl is three forwarding
+  methods, and a forwarding mistake (wrong argument, index dropped, `get_create_info` returning a stale
+  value) compiles perfectly. No unit test can cover it either — every method needs a live
+  `SpriteDatabase`, which needs a device. First behavioral proof is **1.6**'s smoke test, one commit later,
+  where both modules start calling every one of these three methods through the trait on a real GPU; if
+  1.6's sprites draw and its textures survive a resize, this impl is correct. Keeping 1.5 separate is still
+  right (it isolates the orphan-rule/`From` question), but it is a commit whose own gate cannot fail for
+  the reason it exists.
 - **1.6.** Move the `SurgeApp` trait definition to `surge-sdk`, **and** retype `on_load`/
   `on_swapchain_recreate`/`update` to take `&mut dyn SpriteCanvas` instead of `&mut SpriteDatabase`, in the
   same commit — pass 7 originally split these into 1.6 (relocation, "signatures unchanged") and 1.7
@@ -1211,21 +2121,69 @@ player.)*
   KeyEvent`/`DeviceId`/`ElementState`/`MouseButton`/`MouseScrollDelta`/`TouchPhase` **do** stay unchanged in
   this commit, unaffected by Q41 — `winit` is an ordinary external dependency, not a workspace member, so
   naming those types in `surge-sdk` carries no cycle risk; only the `SpriteDatabase`-shaped parameters were
-  ever actually forced to move together. `surge-core::app::mod.rs` does `pub use surge_sdk::SurgeApp;`;
+  ever actually forced to move together. This step is also the first thing in `surge-sdk` to *name* a `winit`
+  type, so it adds `winit = "0.30.12"` to `surge-sdk/Cargo.toml` in the same commit (Q49a) — pass 7/8 never
+  assigned that dependency to a step. `surge-core::app::mod.rs` does `pub use surge_sdk::SurgeApp;`;
   `LoadedApp`/`load_from_dylib` are otherwise untouched (their `Box<dyn SurgeApp>` field doesn't care what
   the trait's methods take). Both modules' `Cargo.toml`s gain a `surge-sdk` path dependency (alongside
   their existing `surge-core` one — not yet removed); their `impl SurgeApp for ...` blocks change the `use`
-  line and the three method signatures. `surge-player/main.rs`'s call sites need no cast — `&mut
-  SpriteDatabase` coerces to `&mut dyn SpriteCanvas` at the call site (an ordinary unsized coercion).
-  **Bundled into this same commit** (see resolved open question 36): `surge-mod-2048` drops its
-  `cached_textures` field, `decode_image_assets`, and the `DecodedTexture` import, and calls
-  `SpriteCanvas::upload_texture(path)` directly per asset name from both `on_load` and
-  `on_swapchain_recreate` — this is a forced consequence of the signature change (there is no `SpriteCanvas`
-  method that does what `upload_decoded_texture` did), not optional cleanup, so splitting it into its own
-  commit would leave this one not actually compiling in between. `surge-mod-default`'s body needs no
-  equivalent change (it already calls `upload_texture(path)` directly). Test: compile gate + smoke test,
-  **both modules explicitly** — this is the first commit that changes what either module actually does at
-  runtime; watch 2048's textures reload correctly on a resize.
+  line and the three method signatures. **The three method signatures are not the whole story** (Q50): both
+  modules route each method's `&mut SpriteDatabase` argument straight through to a free helper function
+  before touching it — `surge-mod-2048/src/lib.rs`'s `upload_image_assets(spdb: &mut SpriteDatabase, ...)`
+  and `add_board_sprite(spdb: &mut SpriteDatabase, ...)`, `surge-mod-default/src/lib.rs`'s
+  `upload_assets(spd: &mut SpriteDatabase)` — and `add_board_sprite`/`upload_assets` have to retype their
+  parameter to `&mut dyn SpriteCanvas` in this same commit, or the (now `&mut dyn SpriteCanvas`-typed) call
+  sites inside `on_load`/`on_swapchain_recreate`/`update` stop type-checking against them.
+  `surge-player/main.rs`'s call sites need no cast — `&mut SpriteDatabase` coerces to `&mut dyn SpriteCanvas`
+  at the call site (an ordinary unsized coercion), but that coercion happens once, at the outermost call from
+  `surge-player` into `on_load`/etc.; it does not propagate through a module's own further function calls,
+  which is exactly why those need retyping by hand instead. **`upload_image_assets` is not in that "just
+  retype" set** (Q58 — Q50's original wording put it there, contradicting the paragraph below): it doesn't
+  survive this commit at all, retyped or otherwise; see the `DecodedTexture` paragraph below, where it's
+  replaced outright, not retyped. **Also bundled into this same commit** (Q52): both modules drop their
+  own direct `nalgebra = "0.34.1"` dependency and switch `use nalgebra::...` to `use surge_sdk::nalgebra::...`
+  — `surge-sdk` re-exports the crate wholesale (`pub use nalgebra;`, added alongside the `winit` dependency
+  above) — since this commit is already touching every `InstanceInfo`/`SubTextureInfo`-constructing call site
+  for the `SpriteCanvas` retyping regardless, and leaving each module on its own separate `nalgebra` line is
+  the version-skew risk the `surge-sdk` section already flags. **`winit` gets the identical treatment in this
+  same commit** (Q61): `surge-sdk` also does `pub use winit;`, both modules drop their own `winit = "0.30.12"`
+  line, and their `use winit::event::{...}`/`use winit::keyboard::{...}` become `use surge_sdk::winit::...` —
+  the trait they implement now names winit types from `surge-sdk`'s copy, so a module matching them against
+  its own separately-declared copy type-checks only as long as the two version strings keep agreeing. This
+  matters more after 1.7, not less: `surge_sdk::KeyEvent`'s own fields are winit types. **Both re-export
+  switches have to catch fully-qualified paths, not just `use` lines** (Q73a): `surge-mod-default`'s
+  `update` body writes `nalgebra::Vector2::new(...)` inline twice (`lib.rs:94-95`) rather than going
+  through its `use` line, so dropping the crate's own `nalgebra` dependency without rewriting those two
+  call sites to `surge_sdk::nalgebra::Vector2` leaves the module not compiling — the same
+  sweep-every-qualified-path shape Q51 fixed for `surge_core::` at 3.2, arriving one step and one crate
+  earlier. Both modules' `use surge_core::app::SurgeApp` also becomes `use surge_sdk::SurgeApp` here (the
+  `surge-core` re-export would keep working, but the modules already gain their `surge-sdk` dependency in
+  this commit and 3.2 would otherwise have to touch the line again). **Bundled into this same commit** (see resolved
+  open question 36): `surge-mod-2048` drops its `cached_textures` field, `decode_image_assets`, and the
+  `DecodedTexture` import, and calls `SpriteCanvas::upload_texture(path)` directly per asset name from both
+  `on_load` and `on_swapchain_recreate` — this is a forced consequence of the signature change (there is no
+  `SpriteCanvas` method that does what `upload_decoded_texture` did), not optional cleanup, so splitting it
+  into its own commit would leave this one not actually compiling in between. **Concretely** (Q58, since Q36
+  named the reasoning but not the replacement's exact shape): `upload_image_assets` is deleted, not retyped —
+  its own second parameter, `textures: &[DecodedTexture]`, has nothing left to produce it once
+  `decode_image_assets`/`cached_textures` are gone in this same commit, and no `SpriteCanvas` method takes a
+  `DecodedTexture` anyway. In its place, a new `fn upload_board_assets(canvas: &mut dyn SpriteCanvas)` loops
+  over the same 12 filename literals `decode_image_assets` used to hardcode (`"board.png"` through
+  `"pieces_2048.png"`), calling `surge_sdk::resolve_asset_path(MODULE_NAME, name)` then
+  `canvas.upload_texture(path.to_str().unwrap())` per name; `on_load`/`on_swapchain_recreate` call
+  `upload_board_assets(spdb)` where they used to call `upload_image_assets(spdb, self.get_cached_textures())`.
+  The `DecodedTexture` cleanup spans two files, not one (Q64b): `lib.rs`'s `use surge_core::{...}` block and
+  `app_2048.rs:4`'s separate `use surge_core::vulkan::sprite_database::DecodedTexture;` both go, along with
+  `app_2048.rs`'s `use crate::{..., decode_image_assets, ...}` import, the `cached_textures:
+  decode_image_assets()` initializer inside `App2048::new()`, and the now-callerless `get_cached_textures()`
+  accessor. The doc comment at `lib.rs:26-28` ("Decodes every board/piece PNG from disk once. The result is
+  cached by `App2048` ...") describes the retired cache and is orphaned by this same deletion — it sits
+  above `const MODULE_NAME`, not above the function it documents, so it survives the deletion silently and
+  then describes behavior the module no longer has (Q73b). It goes too.
+  `surge-mod-default`'s body needs no equivalent change (it already calls `upload_texture(path)` directly, and
+  `upload_assets` is genuinely just a retype — it never touched `DecodedTexture`). Test: compile gate + smoke
+  test, **both modules explicitly** — this is the first commit that changes what either module actually does
+  at runtime; watch 2048's textures reload correctly on a resize.
 - **1.7.** Add the `surge_sdk::KeyEvent` mirror struct (Q35's field list, plus `Debug` — both modules'
   `keyboard_event` bodies currently `log::info!("{:?}", event)` or pattern-match fields by name, and the
   mirror's field names match winit's exactly, so pattern matches like `surge-mod-2048/src/lib.rs:126-132`
@@ -1256,12 +2214,26 @@ indefinitely without being in a half-migrated state.)*
   instance of every `Request`/`Response` variant through `postcard` directly, plus a second `#[test]` that
   writes several back-to-back frames through `write_message` over a real `UnixStream::pair()` and reads them
   back through `read_message`, confirming the length-prefix framing — not just serialization — actually
-  holds a stream boundary. Test: `cargo test -p surge-sdk`.
+  holds a stream boundary. This step also declares the one constant the handshake compares against —
+  `pub const WIRE_VERSION: u16` in `surge-sdk`, sent by `run_dev_module` and checked by `RemoteApp`, so
+  neither side hardcodes a literal and a mismatch is impossible to introduce by editing only one crate
+  (Q73e). Test: `cargo test -p surge-sdk`.
 - **2.2.** Add the dev-mode `SpriteCanvas` implementor to `surge-sdk`: buffers `add_instance`/
   `upload_texture` calls, drains them into a `CanvasOps`, and answers `get_create_info()` from a cached
-  `CreateInfo` (Q27's push-not-pull fix) rather than any round trip. Pure data structure — no socket
-  I/O — so it's fully unit-testable without a process or even a `UnixStream`: push N calls, drain, assert
-  the resulting `CanvasOps`. Test: `cargo test -p surge-sdk`.
+  `CreateInfo` (Q27's push-not-pull fix) rather than any round trip. `upload_texture` returns a
+  **cumulative** upload index, reset only when a new `CreateInfo` is cached — not this turn's buffer
+  position (Q63): the player rebuilds its `SpriteDatabase` exactly at the two points a `CreateInfo` arrives,
+  so a counter reset there matches the real backend's index in every case, while a per-call index matches
+  only when the module uploads nothing outside `on_load`/`on_swapchain_recreate`. Pure data structure — no
+  socket I/O — so it's fully unit-testable without a process or even a `UnixStream`: push N calls, drain,
+  assert the resulting `CanvasOps`; include one case that uploads, drains, then uploads again without an
+  intervening `CreateInfo` and asserts the second call's returned index continues from the first, **and one
+  that asserts the counter *does* reset when a new `CreateInfo` is cached** (Q81a — the stated case only
+  covers half of Q63's rule, and a proxy that never resets passes it while diverging from the real backend
+  on every reload, which is the exact bug Q63 was written about). Add a third asserting `get_create_info()`
+  returns the cached value with no I/O of any kind — the whole point of Q27's push-not-pull fix, and
+  currently asserted nowhere.
+  Test: `cargo test -p surge-sdk`.
 - **2.3.** Implement `run_dev_module`'s dispatch loop as two layers, not one — a deliberate testability fix
   over what earlier passes implied. A private, non-diverging `fn drive(app: &mut dyn SurgeApp, socket: impl
   Read + Write) -> io::Result<()>` does the actual handshake/dispatch/reply loop and returns `Ok(())` after
@@ -1272,15 +2244,47 @@ indefinitely without being in a half-migrated state.)*
   be untestable short of spawning a real subprocess per test. With the split, a `#[test]` uses
   `UnixStream::pair()` (an in-process, kernel-backed socket pair — no subprocess, no real spawn) to drive
   `drive()` against a scripted sequence of `Request`s from a second thread standing in for the player, and
-  asserts the `Response`s it gets back. Test: `cargo test -p surge-sdk`.
+  asserts the `Response`s it gets back. **What `drive()` does per variant, spelled out** — the loop is this
+  step's entire deliverable and pass 7–12 only ever described three of its four arms: `OnLoad`/
+  `OnSwapchainRecreate` cache the pushed `create_info` into the 2.2 proxy (resetting its upload counter,
+  per Q63), call the matching `SurgeApp` method with the proxy as `&mut dyn SpriteCanvas`, and reply
+  `CanvasOps`; `Frame` replays `input_events` in wire order into `keyboard_event`/`mouse_button_event`/
+  `mouse_wheel_event` (reconstructing `DeviceId::dummy()`, per Q19) *before* calling `update(dt, canvas)`,
+  then replies `CanvasOps`; **`Shutdown` calls `app.on_unload()`, replies `ShutdownAck`, and returns
+  `Ok(())`** (Q65 — without this the trait's own shutdown hook is simply never invoked in dev mode again,
+  a regression no compile error catches and no smoke test notices unless it is looking for
+  `surge-mod-default`'s shutdown log line). `drive()` also emits one `log::debug!` naming each `Request`
+  variant it receives, before dispatching it (Q76) — three words of code that turn the module process's
+  own log into a transcript of the protocol, which is what makes 3.5's F5 test able to check that a
+  respawned child receives `OnLoad` rather than `OnSwapchainRecreate`. Without it, Q60's entire fix is
+  unobservable by anything in this plan, as 3.5 itself concedes: both real modules do identical work in
+  both hooks. The scripted `#[test]` covers all four arms, ending with
+  `Shutdown` and asserting both the `ShutdownAck` and that `drive` returned; it also asserts that a
+  `Frame` carrying input events dispatches them into the app's handlers **in wire order and before**
+  `update` is called (Q81b — the ordering is a stated protocol property, and a `drive()` that replays
+  events after `update` passes every other assertion while making a keypress land one frame late). Test:
+  `cargo test -p surge-sdk`.
 - **2.4.** Add `surge-player/src/proc.rs`: `set_pdeathsig()` (`libc::prctl(PR_SET_PDEATHSIG, ...)`, Q18) and
   `terminate(pid)` (`libc::kill(pid, libc::SIGTERM)`/`nix::sys::signal::kill`, Q30) as free functions, not
   yet called from anywhere. Add the `libc`/`nix` dependency to `surge-player/Cargo.toml`. Test: compile
-  gate only — there is no meaningful unit test for `PR_SET_PDEATHSIG` short of a real process pair;
-  functional verification is deferred to 2.6/3.x once it's wired in.
-- **2.5.** Build `RemoteApp` in `surge-player`: binds the abstract-namespace `UnixListener` (Q23) before
-  spawning, spawns the module binary via `Command` (socket name as `argv[1]`, `pre_exec` calling
-  `set_pdeathsig`), accepts the connection, validates the unprompted `Response::Handshake`, and implements
+  gate only — there is no meaningful unit test for `PR_SET_PDEATHSIG` short of a real process pair.
+  **But "deferred to 2.6/3.x," as passes 7–13 left it, deferred it to nowhere** (Q74): the only situation
+  `PR_SET_PDEATHSIG` exists for is the player dying *without* running `exiting()`, and no test anywhere in
+  this plan ever kills the player — every smoke test closes the window, which is the clean path that
+  reaps the child through Q65's shutdown sequence and would look identical if `set_pdeathsig` were a
+  no-op. A wrong `prctl` argument, a `pre_exec` closure that never runs, an error swallowed at spawn: all
+  invisible. Its verification is now a named case in **3.6** (`kill -9` the *player*, then confirm no
+  `surge_mod_*` process survives in `ps`) — a one-line test for the one guarantee this function exists to
+  provide. Same for `terminate`: SIGTERM itself is exercised by 3.5's F5 reload, but the
+  `SIGKILL`-after-timeout escalation is not, and that too is named in 3.6 (Q75).
+- **2.5.** Build `RemoteApp` in `surge-player` — as a module of the **binary** target (`mod remote_app;`
+  declared from `main.rs`), never of a library target, which is what keeps it out of every release binary
+  once 4.1 creates one (Q71). It binds the abstract-namespace `UnixListener` (Q23) before
+  spawning, resolves the module binary as `Path::new(app_folder).join(app_name)` from the
+  `StartupAppConfig` it is handed — no `lib` prefix, no extension, canonicalized so a missing file fails
+  with the resolved path in the message (Q72) — spawns it via `Command` (socket name as `argv[1]`,
+  `pre_exec` calling `set_pdeathsig`), accepts the connection, validates the unprompted
+  `Response::Handshake` against `surge_sdk::WIRE_VERSION`, and implements
   `SurgeApp` — `on_load`/`on_swapchain_recreate`/`update` round-trip a `Request` and apply the returned
   `CanvasOps` against the real `&mut dyn SpriteCanvas` it was given (texture uploads first, in order, then
   instances — a `texture_uploads` failure mid-sequence stops processing and routes to the Q11 crash path,
@@ -1289,21 +2293,45 @@ indefinitely without being in a half-migrated state.)*
   `Request::OnLoad`/`Request::OnSwapchainRecreate` (Q44) comes from `canvas.get_create_info()` — called on
   the same real `&mut dyn SpriteCanvas` argument `on_load`/`on_swapchain_recreate` were just handed, before
   sending the `Request` — not a new value `RemoteApp` computes or caches itself; `SurgeContext` already
-  constructed that canvas with the right `CreateInfo` before calling through. Not yet constructed from
-  `main()`. Test: compile gate only — there is deliberately no throwaway fixture binary built just to
+  constructed that canvas with the right `CreateInfo` before calling through. **Three more pieces belong
+  in this commit, since all three are properties of the same round-trip helpers rather than separable
+  features:** (a) `RemoteApp::on_unload` sends `Request::Shutdown`, waits for `ShutdownAck` under a bounded
+  `set_read_timeout`, then escalates through 2.6's `terminate` and reaps with `Child::wait` (Q65 — this is
+  the player half of the shutdown round trip; the module half landed at 2.3); (b) every round trip goes
+  through one `write_request`/`read_response` pair that treats `WouldBlock`/`TimedOut` as a *stall* —
+  `log::warn!("waiting on module response — {}ms and counting")`, then read again — and only EOF or a
+  transport error as a *fault*, which is Q10's never-implemented logging half and the distinction Q67
+  requires it to keep (conflating the two would turn a debugger-paused module into a phantom crash); (c)
+  the `faulted: bool` those helpers set, which for now only makes subsequent methods no-op and logs loudly
+  — surfacing it to `SurgeContext` needs a trait hook that doesn't exist until 3.6, and adding the flag
+  earlier than its consumer keeps each commit compiling without a forward reference. Not yet constructed
+  from `main()`. Test: compile gate only — there is deliberately no throwaway fixture binary built just to
   integration-test this in isolation; the first real end-to-end exercise of `RemoteApp` is 3.2, against a
   real module. This is an accepted, named risk, not an oversight: Phase 2 proves the protocol's *types* and
   the dispatch loop's *logic* (2.1–2.3) in isolation, but proves nothing about the actual spawn/socket/kill
-  mechanics until a real process is on the other end.
+  mechanics until a real process is on the other end. **Where each piece of this commit is first actually
+  proven** (Q80), since "compile gate only" otherwise hides that this is the largest untested commit in the
+  plan: the spawn/connect/handshake path at 3.2; the shutdown round trip at 3.3 (the `Default app shutdown`
+  log line); the `create_info` push at 3.2 (2048 draws its board using `get_create_info`, so a wrong value
+  is visible immediately as wrong geometry); the fault flag and the stall/fault distinction at 3.6, cases
+  1 and 5. Nothing here stays unverified indefinitely — but nothing here is verified for four commits
+  either, which is the price of building the machinery additively and is worth paying with eyes open.
 - **2.6.** Wire `set_pdeathsig`/`terminate` and the `reload_in_progress` flag (Q22) into `RemoteApp`'s
-  spawn/kill/reload methods (the inherent `RemoteApp::reload()`, not yet called from anywhere). Test:
-  compile gate. (The `SurgeApp::reload() -> bool` trait method that lets generic code — `SurgeContext`,
+  spawn/kill/reload methods (the inherent `RemoteApp::reload()`, not yet called from anywhere). One
+  `SIGTERM` → bounded wait → `SIGKILL` → `Child::wait` helper serves both callers — reload and 2.5's
+  shutdown path — rather than two near-identical sequences (Q30's warning about reaching for
+  `Child::kill()` applies to both equally). `reload()` also clears `faulted` on a successful re-handshake,
+  which is what makes F5 the recovery path Q11 requires instead of an auto-respawn. Test:
+  compile gate; first proven at 3.5 (the reload sequence end to end, via F5) and 3.6 cases 2 and 3
+  (`set_pdeathsig`, and the `SIGKILL` escalation this step's helper implements) — Q80. (The `SurgeApp::reload() -> bool` trait method that lets generic code — `SurgeContext`,
   operating only on `Box<dyn SurgeApp>`/`StartupApp` — actually reach this is added at 3.5, per Q45, once
   the F5 keybind is what first needs it; adding it here would be premature; noted now so it isn't missed
   later.)
 
-*(**Milestone B**: the entire dev-mode machinery exists, is additive, and compiles — but it is unproven
-end-to-end. Phase 3 is where it either works against a real module or doesn't.)*
+*(**Milestone B**: the entire dev-mode machinery exists, is additive, and compiles — the full lifecycle
+(`OnLoad` → `Frame` → `Shutdown`), the framing, the proxy's counters, the stall/fault distinction, and the
+spawn/kill primitives — but it is unproven end-to-end. Phase 3 is where it either works against a real
+module or doesn't.)*
 
 ### Phase 3 — Cutover: `dlopen` → spawn+IPC, module by module (Q38's scaffolding)
 
@@ -1312,7 +2340,11 @@ end-to-end. Phase 3 is where it either works against a real module or doesn't.)*
   path constructing a `RemoteApp`. Since `main()` must build `ctx.startup_app` from *either* branch and a
   struct field can't hold two different concrete types, this step also introduces the temporary
   `StartupApp` enum (Q43): `enum StartupApp { Dylib(sc::app::LoadedApp), Remote(Box<dyn SurgeApp>) }`, with
-  hand-written `Deref`/`DerefMut` to `dyn SurgeApp` (a two-arm `match`), and `SurgeContext.startup_app`'s
+  hand-written `Deref`/`DerefMut` to `dyn SurgeApp` (a two-arm `match`). This is the first line of
+  `surge-player` to *name* `SurgeApp` (today's `main.rs` only reaches the trait's methods through
+  `LoadedApp`'s `Deref`, never naming it — checked), and `surge-player` has no `surge-sdk` dependency until
+  3.2, so the import here is `sc::app::SurgeApp`, resolving through the re-export 1.6 left in place; 3.4
+  repoints it when that re-export is deleted (Q70). `SurgeContext.startup_app`'s
   type changes from `sc::app::LoadedApp` (`surge-player/src/main.rs:21`) to `StartupApp` — every existing
   `self.startup_app.<method>(...)` call site is unaffected, since deref coercion covers the enum exactly as
   it already covered `LoadedApp`. Nothing can select `process` successfully yet. Test: compile gate + smoke
@@ -1320,38 +2352,100 @@ end-to-end. Phase 3 is where it either works against a real module or doesn't.)*
   `StartupApp::Dylib(...)`).
 - **3.2.** Move `init_env_logger`/`resolve_asset_path` from `surge-core::cli`/`surge-core::assets` to
   `surge-sdk` (Q32) — this becomes load-bearing exactly here, not before: it's the first point a module
-  needs them *without* a `surge-core` dependency. `surge-core::cli::print_logo` stays in `surge-core` (only
-  `surge-player::main` calls it; not a module concern). This move also breaks `surge-player`'s *own* logger
-  init (Q42) — `surge-player/src/main.rs:332` calls `sc::cli::init_env_logger()` for the player itself, and
-  that function no longer exists in `surge-core` once this step lands — so this same commit adds a direct
-  `surge-sdk` path dependency to `surge-player/Cargo.toml` and changes that call site to
-  `surge_sdk::init_env_logger()`. Port `surge-mod-2048`: add `src/bin/dev.rs` (`surge_sdk::init_env_logger();
-  surge_sdk::run_dev_module(Box::new(App2048::new()));`), drop the `dylib`
-  crate-type (keep `rlib`, needed by the eventual release `[[bin]]` target), swap the `surge-core`
-  dependency for `surge-sdk` only. Test: compile gate + `SURGE_DEV_LOADER=process cargo run -p surge-player`
-  with `config.toml` pointed at `surge_mod_2048` — full smoke test, this is the first real end-to-end proof
-  of the IPC path (this is also where 2.5's deferred integration risk actually gets resolved).
-- **3.3.** Port `surge-mod-default` the same way. Test: compile gate + `SURGE_DEV_LOADER=process` smoke test
-  with `config.toml` pointed at `surge_mod_default`.
+  needs them *without* a `surge-core` dependency. This is also the first thing `surge-sdk` needs `env_logger`/
+  `log` for, so this commit adds `env_logger = "0.11.8"`/`log = "0.4.28"` to `surge-sdk/Cargo.toml` (Q49b —
+  `init_env_logger`'s body calls both directly; neither was ever assigned to a step before now).
+  `surge-core::cli::print_logo` stays in `surge-core` (only `surge-player::main` calls it; not a module
+  concern). This move also breaks `surge-player`'s *own* logger init (Q42) — `surge-player/src/main.rs:332`
+  calls `sc::cli::init_env_logger()` for the player itself, and that function no longer exists in `surge-core`
+  once this step lands — so this same commit adds a direct `surge-sdk` path dependency to
+  `surge-player/Cargo.toml` and changes that call site to `surge_sdk::init_env_logger()`. Port
+  `surge-mod-2048`: add `src/bin/dev.rs` (`surge_sdk::init_env_logger();
+  surge_sdk::run_dev_module(surge_mod_2048::surge_register_app());`) **with an explicit `[[bin]] name =
+  "surge_mod_2048", path = "src/bin/dev.rs"` table** (Q59 — Cargo would otherwise name it after the file,
+  producing `target/debug/dev`: a path no `app_name` resolves to, and one that collides with
+  `surge-mod-default`'s identically-named binary at 3.3, silently leaving whichever linked last), drop the
+  `dylib` crate-type (keep `rlib`, needed by the eventual release `[[bin]]` target), swap the `surge-core`
+  dependency for `surge-sdk` only. **The dependency swap is not the whole story** (Q51): `App2048::on_load` already calls
+  `surge_core::cli::init_env_logger()` directly (`lib.rs:82`, matching `CLAUDE.md`'s documented "modules call
+  `init_env_logger()` themselves in `on_load`" behavior) — left in place (even renamed to
+  `surge_sdk::init_env_logger()`), `dev.rs`'s new call at process startup and the old one inside `on_load`
+  both fire in the same process, and `env_logger::Builder::init()`'s second call panics (`log`'s global logger
+  can only be set once). This same commit deletes that call from `on_load` entirely — logging is now
+  initialized exactly once, in `dev.rs`'s `main()`, before `run_dev_module` runs — and sweeps every other
+  remaining `surge_core::`-qualified path in the module's source over to `surge_sdk::` (`resolve_asset_path`,
+  called from `on_load`/`on_swapchain_recreate`'s post-Q36 bodies), since the `surge-core` dependency this
+  commit removes was the only thing making any of them resolve. **The entry point doesn't name the concrete
+  app type** (Q53): `App2048` is `pub(crate)` inside a private `mod app_2048;` (`lib.rs`), so `App2048::new()`
+  is unreachable from a separate `[[bin]]` crate in the same package — `src/bin/dev.rs` instead calls the
+  already-`pub`, already-`#[unsafe(no_mangle)]` `surge_mod_2048::surge_register_app() -> Box<dyn SurgeApp>`
+  every module already exports, which needs no visibility changes and keeps both modules' entry points
+  constructed the same way. Test: compile gate + `SURGE_DEV_LOADER=process cargo run -p surge-player`
+  with the root `config.toml` copied from `surge-modules/surge-mod-2048/config.toml` and its `app_folder`
+  set to `target/debug` (Q72 — the checked-in copies say `app_folder = "."`, and what changed in this
+  commit is the *filename* the player looks for under that folder: `surge_mod_2048`, no `lib` prefix, no
+  `.so`) — full smoke test, this is the first real end-to-end proof
+  of the IPC path (this is also where 2.5's deferred integration risk actually gets resolved); confirm the
+  log banner prints exactly once, not twice, and that `ps` shows exactly one `surge_mod_2048` child while
+  the window is open and none after it closes.
+- **3.3.** Port `surge-mod-default` the same way — `AppDefault {}` is already a `pub` unit struct directly in
+  `lib.rs`, so `surge_mod_default::surge_register_app()` (Q53, for consistency with 2048's entry point) works
+  the same way without ever having hit the visibility problem 3.2 traced through; `on_load`'s own
+  `init_env_logger()` call (`lib.rs:31`) is deleted the same way, for the same reason (Q51), and its
+  `[[bin]]` table names the binary `surge_mod_default` (Q59 — this is the commit where a shared `dev` name
+  would start colliding with 3.2's, so the explicit name has to be in place on both). Test: compile gate +
+  `SURGE_DEV_LOADER=process` smoke test with `config.toml` pointed at `surge_mod_default`, **then re-run
+  3.2's 2048 smoke test unchanged** — a passing 2048 run before this commit proves nothing about a
+  colliding binary name introduced by it. This is also the first step whose smoke test can observe the
+  shutdown round trip (Q65): `surge-mod-default` is the module with an `on_unload` body, so closing the
+  window must print `Default app shutdown` — from the *child* process — before the player exits. Its
+  absence means `Request::Shutdown` isn't being sent or isn't being dispatched, which nothing else in the
+  plan would catch.
 - **3.4.** Cutover complete: delete the `SURGE_DEV_LOADER` branch and default `main()` to the `process` path
   unconditionally; delete `surge-core/src/app/mod.rs` (`LoadedApp`, `load_from_dylib`), `AppError` and
   `ModuleError` from `surge-core/src/errors/mod.rs` (Q29 — `ModuleError` was already fully dead before this
   doc), and the `libloading` dependency from `surge-core/Cargo.toml`. The `StartupApp` enum from 3.1 (Q43)
   has nothing left to hold in its `Dylib` arm, so it collapses too: `SurgeContext.startup_app` becomes plain
-  `Box<dyn SurgeApp>`, `StartupApp` itself is deleted. This is where the "Release mode" section's "swapping
+  `Box<dyn SurgeApp>`, `StartupApp` itself is deleted. **Deleting that file takes two `use` sites and a
+  module declaration with it** (Q70): `surge-core/src/app/mod.rs` is not only `LoadedApp`/`load_from_dylib`
+  — since 1.6 it is also the `pub use surge_sdk::SurgeApp;` re-export that both modules imported through
+  until 1.6 repointed them, and that `surge-player` still imports through as of 3.1. So this commit also
+  drops `pub mod app;` from `surge-core/src/lib.rs` (otherwise the crate names a module whose file no
+  longer exists — a hard error, not a warning) and changes `surge-player`'s `sc::app::SurgeApp` import to
+  `surge_sdk::SurgeApp`, using the direct dependency 3.2 added. This is where the "Release mode" section's "swapping
   the `startup_app` field's type... is a small, mechanical change" claim actually finishes landing — not at
-  4.1, which is pure code motion by the time it runs. Test: compile gate + smoke test both
-  modules (swap `config.toml`'s `app_name` between them), confirm `ldd`/`nm` show no `libloading` symbol
-  left in either `surge-core` or `surge-player`.
+  4.1, which is pure code motion by the time it runs. Small trace-through worth doing here rather than leaving
+  implicit (Q53): `load_from_dylib` was the only caller that ever needed `surge_register_app` to be an
+  `#[unsafe(no_mangle)]`, dynamically-resolved symbol; both modules keep calling it as an ordinary `pub fn`
+  from their `dev.rs`/(4.2's) `release.rs` binaries, so the attribute is vestigial from this commit on —
+  harmless to leave (an unused `no_mangle` export costs nothing at runtime), fine to drop in the same commit
+  if touching that line anyway, not worth its own commit either way. Test: compile gate + smoke test both
+  modules (swap `config.toml`'s `app_name` between them), and assert the dependency is gone with
+  `cargo tree -p surge-core | grep libloading` returning nothing (Q81c). Pass 7–13 specified an
+  `ldd`/`nm` symbol check here; `ldd` is simply the wrong tool (`libloading` is a Rust rlib, statically
+  linked — it was never going to appear as a shared-object dependency, so that half of the check passes
+  vacuously today and would keep passing if the dependency were still there), and `nm` on a statically
+  linked binary depends on whether the linker happened to garbage-collect unreferenced sections. The
+  `cargo tree` assertion tests the actual claim — the dependency edge is gone — deterministically.
 - **3.5.** Add `fn reload(&mut self) -> bool { false }` to `SurgeApp` (default no-op; Q45), overridden by
   `RemoteApp::reload` to run the inherent `RemoteApp::reload()` sequence from 2.6 and unconditionally return
-  `true`. Add the throwaway F5 reload keybind (Q40) in `surge-player`'s dev binary: `SurgeContext`'s
+  `true`. That sequence also sets `RemoteApp`'s `pending_on_load` flag once the re-handshake succeeds, and
+  `RemoteApp::on_swapchain_recreate` consumes it by sending `Request::OnLoad { create_info }` instead of
+  `Request::OnSwapchainRecreate` (Q60) — without it the respawned child's first ever request is
+  `OnSwapchainRecreate` and it never receives `OnLoad` at all, contradicting both the connect sequence and
+  Q14. Both real modules do the same work in either hook, so *the rendered result* cannot distinguish the
+  two — but the module's own log can, now that 2.3's `drive()` names each `Request` it receives (Q76): a
+  correct reload prints `OnLoad` from the fresh child, a broken one prints `OnSwapchainRecreate`, and the
+  smoke test below reads that line instead of asserting an invariant it cannot see. That is the difference
+  between a test that documents Q60's fix and one that can fail if the fix is missing. Add the throwaway F5 reload keybind (Q40) in `surge-player`'s dev binary: `SurgeContext`'s
   `WindowEvent::KeyboardInput` arm (`surge-player/src/main.rs:295-300`) special-cases F5 before forwarding
   to the module — `self.recreate_swapchain |= self.startup_app.reload();` instead of calling
   `keyboard_event`, so F5 never reaches the module's own key handler and the Q14 rebuild-on-reload path
   (which only `SurgeContext` can trigger, via that same flag) actually fires. Test: smoke test — press F5
-  mid-session against `surge-mod-2048`, confirm the board re-renders with no leftover child process (`ps`
-  before/after) and no texture-cap warning after several presses (proves the Q14 `SpriteDatabase`
+  mid-session against `surge-mod-2048`, confirm the board re-renders, that the fresh child's log shows
+  `OnLoad` and not `OnSwapchainRecreate` as its first request (Q60/Q76), that `ps` shows exactly one
+  module process before and after (a *different* pid — same count, so a leaked child and a failed respawn
+  are distinguishable), and no texture-cap warning after several presses (proves the Q14 `SpriteDatabase`
   rebuild-on-reload fix). This proves kill/respawn/reconnect/rebuild work in the ordinary, non-racing case —
   it is **not** proof that `reload_in_progress` (Q22) is correct: F5 is handled in `window_event`, the
   blocked `Request::Frame` read happens in `about_to_wait`, and winit calls these sequentially on one
@@ -1359,28 +2453,118 @@ end-to-end. Phase 3 is where it either works against a real module or doesn't.)*
   (Q46). Q22's flag is still needed — it's just that nothing in this plan, including this step, exercises
   the race it exists for; that only happens once a real, necessarily-async trigger (file watcher or
   similar) replaces F5, which is explicitly out of this doc's scope.
+- **3.6.** Surface the crash state (Q11's policy, Q66's mechanism — the last unbuilt requirement in the dev
+  design, and the one three earlier steps route failures into as if it already existed). Add the second
+  default method to `SurgeApp` in `surge-sdk`, `fn is_faulted(&self) -> bool { false }`, overridden by
+  `RemoteApp` to report the `faulted` flag 2.5 already sets. `SurgeContext::about_to_wait` checks it first
+  thing: on the transition into it, one `log::error!`, `window.set_title` gains a `— MODULE CRASHED`
+  suffix, and every subsequent frame returns early without acquiring, drawing, or presenting, so the last
+  presented image stays on screen. `exiting()` on a faulted app skips the wire and goes straight to the
+  reap (Q65). Additive to the trait, same shape as 3.5's `reload()`, so release-mode apps inherit the
+  default and never fault. Test: this step carries the plan's fault-injection cases, because it is the
+  first commit where a failure has anywhere to be *displayed* — and because five earlier steps wrote code
+  whose failure branches nothing else ever runs (Q74, Q75, Q77, and 0.2's overflow `Err`). Each case is a
+  few seconds of work and each can fail:
+  1. **Child dies** (Q66): `kill -9` the child from another shell. The player logs loudly *once* (not once
+     per frame), retitles the window, freezes on the last frame rather than blanking or panicking, and does
+     not respawn anything; F5 then brings the module back and reverts the title — the only recovery path
+     Q11 allows.
+  2. **Player dies** (Q74, the case nothing in passes 7–13 ever ran): `kill -9` the *player*. Confirm
+     `ps` shows no surviving `surge_mod_*` process. This is the sole test of `PR_SET_PDEATHSIG`; without
+     it, 2.4's `set_pdeathsig` could be a silent no-op through every other step in this plan.
+  3. **Module ignores `SIGTERM`** (Q75): rebuild the module dev binary with a temporary `loop {}` (or a
+     long sleep) in `drive()`'s `Shutdown` arm, then close the window. The player must still exit within
+     the bounded wait, having escalated to `SIGKILL`, leaving no orphan. Revert the patch after. This is
+     the only exercise of the escalation branch — F5 and normal shutdown both hit a module that exits
+     promptly, where a "SIGTERM, then give up" implementation would look identical.
+  4. **Version mismatch** (Q77): bump `WIRE_VERSION` in `surge-sdk` and rebuild **only the player**
+     (`cargo build -p surge-player`). The module binary already on disk still carries the old constant, so
+     the pair genuinely disagrees — this is not artificial injection but exactly the real-world case the
+     handshake exists for (a stale module binary after a protocol change). Confirm the player refuses to
+     send `OnLoad`, enters the same crash state as case 1, and says so; then rebuild the module and
+     confirm recovery.
+  5. **Module stalls without dying** (Q77, and the one case that must *not* fault): `kill -STOP` the
+     child. The player logs `waiting on module response — Nms and counting` repeatedly and stays
+     connected — no crash state, no title change. `kill -CONT` and confirm it resumes rendering. This is
+     the single test that distinguishes Q67's stall rule from Q66's fault rule; conflating them is the
+     likeliest implementation error in 2.5's read helper and nothing else would catch it.
+  6. **Upload failure** (Q17's part 2, and the first execution of 0.2's `Err` branch — five phases after
+     it was written): run with `max_textures` temporarily lowered below the module's asset count (e.g. 4)
+     and confirm the failing `texture_uploads` entry routes into the same crash state rather than a partial
+     upload or a silently wrong texture.
 
 *(**Milestone C**: dev mode is exactly what this doc specifies, fully live, fully proven by hand, with zero
-permanent scaffolding left over. `surge-player`'s binary has exactly one behavior, per Q21.)*
+permanent scaffolding left over — every lifecycle hook delivered, reload working, and both failure
+policies (stall, crash) visible rather than silent. `surge-player`'s binary has exactly one behavior, per
+Q21.)*
 
 ### Phase 4 — Release mode
 
 - **4.1.** Extract `surge-player`'s run loop into a `[lib]` target: move `SurgeContext`/the
   `ApplicationHandler` impl into `surge-player/src/lib.rs`, expose `pub fn run(app: Box<dyn SurgeApp>,
   config: EngineConfig)`; `surge-player`'s own `main.rs` (the dev binary) becomes `RemoteApp` setup +
-  `run(Box::new(remote_app), config)`. `SurgeContext.startup_app` is already plain `Box<dyn SurgeApp>` by
+  `run(Box::new(remote_app), config)`. **What must *not* move is as load-bearing as what does** (Q71):
+  `mod remote_app;` and `mod proc;` stay declared from `main.rs`, so they compile into the binary crate
+  only. Every release binary links this new `[lib]`, and moving the socket/spawn/signal code into it would
+  compile the whole IPC machinery into shipped games — the identical objection Q20 used to keep that code
+  out of `surge-core`, one crate over. The `[lib]`'s only knowledge of dev mode after this step is the two
+  default `SurgeApp` methods (`reload`, `is_faulted`) it calls through the trait, which is exactly the
+  point of their being trait methods. **`run()` also takes over process-wide startup** (Q62): the
+  `sc::cli::print_logo()` and `init_env_logger()` calls at `main.rs:327,332` move *into* `run()` and out of
+  `main.rs` — moved, not copied, since a second `env_logger::Builder::init()` in one process panics (Q51's
+  failure, one crate over). Without this, 4.2's release binary — which never runs `surge-player`'s `main()`
+  — ships with no logger installed and every `log::` call in `surge-core` and the module silently dropped. `SurgeContext.startup_app` is already plain `Box<dyn SurgeApp>` by
   this point (the `StartupApp` scaffolding collapsed at 3.4, per Q43) — this step is pure code motion (move
   the struct/impl, wrap the existing logic in a function signature), not where that retyping happens; earlier
   drafts of this doc described it that way, which is corrected in "Release mode" above. Doing this *after*
   Phase 3 rather than alongside it means the extraction is a mechanical move of already-proven code, not
-  extraction-and-protocol-swap at once. Test: compile gate + smoke test (dev mode must behave identically
-  after a pure code-motion refactor).
+  extraction-and-protocol-swap at once. **Also in this commit** (Q54): move `surge-core/src/config/mod.rs`
+  (`WindowConfig`/`ResolutionConfig`/`RendererConfig`/`ClearColorConfig`/`StartupAppConfig`/`EngineConfig`/
+  `parse_config`) and `ConfigError` (`surge-core/src/errors/mod.rs`, `config/mod.rs`'s only other caller) to
+  `surge-sdk` wholesale, adding `toml = "0.9.8"` to `surge-sdk/Cargo.toml` (`log` is already there since
+  3.2). **`ConfigError` also needs `thiserror`, not just `toml`** (Q57): checked directly against
+  `surge-core/src/errors/mod.rs`'s current definition, `ConfigError` is `#[derive(Debug, Error)]` against
+  `thiserror::Error`, same as every other error enum in that file — `thiserror` is a `surge-core`-only
+  dependency today (nowhere else in the workspace), and nothing before this step ever adds it to `surge-sdk`.
+  This same commit therefore also adds `thiserror = "2.0.17"` (matching `surge-core/Cargo.toml`'s pin) to
+  `surge-sdk/Cargo.toml`, alongside `toml`. This is a prerequisite for 4.2 below, not an independent cleanup —
+  nothing before Phase 4 needs a module to see `EngineConfig` at all, but 4.2's release `[[bin]]` target does,
+  and it can't reach `surge-core`'s copy (module crates never depend on `surge-core` in this design, in either
+  mode). `surge-core/src/lib.rs`'s `pub mod config;` becomes `pub use surge_sdk::config;` and `errors/mod.rs`'s
+  local `ConfigError` becomes a `pub use surge_sdk::config::ConfigError;` — the same pure compatibility-shim
+  pattern 1.3 already used for the six plain-data types, so the four existing `use crate::{config::
+  EngineConfig, ...}` sites in `surge-core`'s Vulkan layer (`image.rs`, `ctx_swpc.rs`, `ctx_command.rs`,
+  `ctx_new_drop.rs`) and `surge-player`'s own `sc::config::parse_config` call need no edits. This commit
+  also **removes `serde` and `toml` from `surge-core/Cargo.toml`** (Q64a): `config/mod.rs` was the crate's
+  only `use serde`, and `config/mod.rs` plus `ConfigError` its only `use toml` — both dead once this move
+  lands, the same trace-through Q29 did for `libloading`. Test: compile gate + smoke test (dev mode
+  unaffected by a re-export-shimmed move, same as 1.3's), plus confirm the logo and log output still appear
+  now that `run()`, not `main()`, emits them.
 - **4.2.** Per module, add the release `[[bin]]` target per Q37: `surge-player` as an `optional = true`
-  dependency gated by a `release-bin` feature, a `src/bin/release.rs` (`surge_player::run(Box::new(...),
-  config)`) with `required-features = ["release-bin"]`. Test: compile gate on the dev target (must **not**
-  pull in `surge-player`/`ash`/`vk-mem` — check with `cargo tree -p surge-mod-2048` with no features
-  enabled) + `cargo build -p surge-mod-2048 --features release-bin --release` + running the produced binary
-  directly (no player process, no `config.toml` env-var games) against the module's own `config.toml`.
+  dependency gated by a `release-bin` feature, a `src/bin/release.rs` —
+  ```rust
+  fn main() {
+      let config = surge_sdk::config::parse_config("config.toml").unwrap();
+      surge_player::run(surge_mod_2048::surge_register_app(), config);
+  }
+  ```
+  (substituting the crate name per module; `config` now resolves per 4.1's move, Q54 — `release.rs` has no
+  `surge-core` dependency to reach `EngineConfig`/`parse_config` through otherwise) with
+  `required-features = ["release-bin"]` — same reason as 3.2's `dev.rs` (Q53): `App2048::new()` directly
+  is unreachable from a separate `[[bin]]` crate, `surge_register_app()` isn't. The `[[bin]]` table carries
+  an explicit `name = "surge_mod_2048_release"` (`surge_mod_default_release` for the other module) alongside
+  its `path` and `required-features` (Q59): an unnamed `src/bin/release.rs` in both crates collides at
+  `target/release/release` exactly as the dev binaries would, and the staged artifact needs a name that says
+  which game it is. Test: compile gate on the dev target (must **not** pull in `surge-player`/`ash`/`vk-mem`
+  — check with `cargo tree -p surge-mod-2048` with no features enabled) + `cargo build -p surge-mod-2048
+  --features release-bin --release` + running the produced binary directly (no player process, no
+  `config.toml` env-var games) against the module's own `config.toml`; confirm the logo/log output appears,
+  which is what proves Q62's move into `run()` actually reaches this path. Also confirm the release goal
+  itself rather than assuming it (Q71): `ps` shows no child process, and
+  `nm -C target/release/surge_mod_2048_release | grep -Ei 'remote_app|postcard|UnixStream|prctl'` comes
+  back empty — the binary links `surge_player`'s `[lib]`, and 4.1's target rule is what keeps the IPC
+  machinery out of it. (`libc`/`postcard` are still *built* as dependencies of `surge-player`; the claim
+  under test is that no reachable code in this binary uses them, not that Cargo skipped compiling them.)
 
 *(**Milestone D**: release mode exists — a single self-contained binary per module, no `dlopen`, no IPC, no
 `libloading` — and dev mode is unaffected.)*
@@ -1388,7 +2572,8 @@ permanent scaffolding left over. `surge-player`'s binary has exactly one behavio
 ### Phase 5 — Shippability cleanup
 
 - **5.1.** Rewrite `stager/stager.py` (flagged, not designed, by resolved open question 7): stage a single
-  per-module release binary + its `config.toml` + `assets/`, not a player-exe-plus-`.so` pair. Test:
+  per-module release binary (`target/release/<module>_release`, per 4.2's explicit `[[bin]] name` — Q59) +
+  its `config.toml` + `assets/`, not a player-exe-plus-`.so` pair. Test:
   `python3 stager/stager.py stage surge-mod-2048`, run the staged binary from a directory other than the
   repo root, confirm assets resolve (exercises `resolve_asset_path`'s staged-path branch, now keyed off the
   *module's* `current_exe()` per the behavior change noted under Q32).
@@ -1397,7 +2582,12 @@ permanent scaffolding left over. `surge-player`'s binary has exactly one behavio
   & run" and "Frame lifecycle" sections for now-inaccurate statements (`load_from_dylib`, the `dlopen` ABI
   description, the CWD contract's `libsurge_mod_*.so` mention, the stale "no tests" line 1.2 already
   touched) — a documentation-only commit, not a design change, closing the loop this doc opened by citing
-  `CLAUDE.md` as ground truth throughout.
+  `CLAUDE.md` as ground truth throughout. Test (Q79 — pass 7–13 gave this step none at all, and "it's only
+  docs" is exactly how a stale `hot_reloading` feature or a leftover `load_from_dylib` reference survives):
+  compile gate, plus `grep -rn "hot_reloading\|load_from_dylib\|libloading\|libsurge_mod" --include=*.toml
+  --include=*.md --include=*.rs .` returning nothing outside this design doc's own history sections. A grep
+  that must come back empty is a real test — it fails when the sweep was incomplete, which is the only way
+  this commit can be wrong.
 
 ## Self-critique / risks
 
@@ -1507,3 +2697,126 @@ permanent scaffolding left over. `surge-player`'s binary has exactly one behavio
   stop — there may well be a ninth class of gap a pass 9 would need a fifth kind of check to find. Whoever
   implements this doc should not read "all N items resolved" as "no more gaps of any kind," only as "no
   more gaps of the kinds passes 1 through 8 knew to look for."
+- Pass 9 didn't need the fifth kind of check pass 8 speculated about — it reused pass 4–7's method (open the
+  real file, check what it actually declares, don't reason from memory or the plan's own paraphrase of it) but
+  pointed it at ground passes 1–8 never covered: the not-yet-created `surge-sdk` crate's own `Cargo.toml`
+  (open question 49) and the exact privacy modifiers already sitting in `surge-mod-2048`'s current source
+  (open question 53), rather than the winit/nalgebra/orphan-rule questions passes 4–6 checked or the call-site
+  completeness pass 7 checked. Two of its five findings (50, 51) are a variant one step removed from that: a
+  step's own stated action not fully executed against the code it touches — "retype the trait" without
+  retyping the free functions the trait's own module code routes its argument through on the way in; "swap the
+  dependency" without removing the call site whose only remaining reason to compile *was* that dependency, and
+  without noticing a second, already-existing call to the function it's also adding a fresh call to. One
+  (52) is closer to pass 8's own shape — prose states a fix, no step performs it. So: five more gaps, found by
+  widening *what* gets checked against reality rather than by inventing a new *way* of checking, which is
+  worth stating plainly since it means pass 8's "there may be a ninth class" framing undersold how much
+  mileage the existing methods still had, aimed at parts of the plan/codebase intersection nobody had pointed
+  them at yet. Extend pass 8's own caveat one more time: no more gaps of the kinds passes 1 through 9 knew to
+  look for, and no guarantee any of them checked every file the plan actually touches — only the ones each
+  pass happened to open.
+- Pass 10 split cleanly into the two things nine passes of "open the real file" hadn't tried yet: checking
+  whether a step's own downstream *caller* can produce every value that step's signature demands (open
+  question 54 — nobody had asked "can `release.rs` actually construct the `EngineConfig` `run()` wants,"
+  only "does `run()`'s own signature/body make sense," which is a different question with a different
+  answer), and checking a claim about the repository's state *as it stands today*, not as this plan would
+  leave it, directly against that repository rather than against `CLAUDE.md`'s summary of it (open question
+  55 — `surge-core` already has tests; step 1.2's "first test in the workspace" was never true, this doc's
+  implementation status notwithstanding). Neither required a new *technique* — both are the same "open the
+  real file, don't reason from memory or the plan's own paraphrase" discipline every source-checking pass
+  since 4 has used — they're both instances of pointing that discipline at a target nobody had pointed it at:
+  a step's caller's obligations rather than the step's own body, and a "this is true today" claim rather than
+  a "this will be true once you add X" claim. Q54 is the more consequential of the two: unfixed, it's a
+  compile error an implementer wouldn't hit until Phase 4, potentially session(s) after Phases 1–3 shipped
+  and this doc was believed done with the hard part. Worth naming the pattern once more, since it's the same
+  one four straight passes (7, 8, 9, 10) have now landed on from a different angle each time: a design doc
+  that has been read for internal consistency as many times as this one has stops finding new bugs that way,
+  but keeps finding them every time a pass asks a question about the plan's relationship to the actual
+  repository that no earlier pass happened to ask — which is not evidence the method is exhausted, only that
+  each pass so far has covered a strict subset of the questions worth asking. Nothing about pass 10's two
+  findings suggests pass 11 wouldn't find an eleventh; anyone implementing this doc from here should keep
+  verifying each step against the real, current source at the moment they write it, not treat "N passes with
+  no findings would mean done" as a threshold this doc is close to hitting.
+- Pass 11 confirmed pass 10's own prediction within one pass, and did it by asking two questions nothing in
+  1–10 had asked in this exact form. The first (Q56, Q57) goes a level more granular than Q49/Q54's "was the
+  dependency edge added at all" — it's "does the crate a step says to 'add' actually export, under its
+  *default* features, the specific function/derive that step's own code calls" — checked against `postcard`'s
+  and `serde`'s real `[features]` tables (both cached locally, read directly, not inferred from how some other
+  crate in the workspace already happens to use them). It's notably the same failure *shape* Q26 already found
+  once, for `nalgebra`'s `serde-serialize` feature — proof that catching a bug shape once in a doc this heavily
+  reviewed doesn't retire it, it just means the next occurrence is sitting in a file nobody had opened yet
+  (here, `surge-sdk`'s own two newest dependencies at 1.2, and a third, `thiserror`, missing by omission at
+  4.1). The second (Q58) is a genuinely different question, not a deeper version of an old one: not "is this
+  fix correct" (every fix from Q1–Q57 was individually checked and correct on its own terms) but "do two fixes
+  that land in the *same commit*, each independently verified, actually agree with each other once combined" —
+  Q50 and Q36 were each resolved carefully on their own terms, in passes 8 and 7 respectively, and neither
+  pass's own verification had any reason to re-check the other's fix once its own was settled, so the conflict
+  between them sat unnoticed through three more passes of "read the doc again." Worth naming as a checklist
+  gap this doc's own methodology hadn't articulated yet: passes 7–10 all check a step (or a step-sequence)
+  against reality; none of them, until now, checked whether the *union* of everything bundled into one specific
+  commit is internally consistent, as distinct from each bundled piece being individually consistent with the
+  source it's checked against. "Every fix in this doc is correct" and "every commit's bundle of fixes agrees
+  with itself" turned out to be different claims — pass 12, if there is one, should keep both in view rather
+  than assuming the first implies the second.
+- Pass 12 kept that in view and it paid twice (Q60: Q14+Q44+Q45 each correct, their composition not; Q63: two
+  backends of one trait method, each locally sensible, returning different values), but its distinctive
+  question was a different one: **every pass from 4 through 11 checked source — none checked artifacts.**
+  What does the build tool actually emit and name; which file does the player then execute; which lifecycle
+  message does a respawned process actually receive; which binary actually runs the startup code. Every one
+  of pass 12's findings lives in that gap, and Q59 is the sharpest illustration in the doc: `src/bin/dev.rs`
+  is correct Rust, resolves every symbol, satisfies every dependency edge eleven passes verified — and
+  produces a binary at a path the player never looks for and that the other module overwrites. No amount of
+  reading source finds it; ten minutes of running `cargo build` in a throwaway two-package workspace finds it
+  immediately, which is the same lesson Q8's IPC harness and Q33's compile spike each taught in their own
+  domain and which this doc had never applied to the build itself. Two process points worth carrying forward.
+  First, the "verify by running it" habit should extend past *compiles?* to *what did that produce, and does
+  anything actually consume it by that name* — a question a design doc can answer with a scratch workspace in
+  minutes, and an implementer otherwise answers by losing an afternoon to a silently-wrong module. Second,
+  Q61 is a plain miss with no methodological excuse: Q52 wrote the version-skew argument out in full for
+  `nalgebra`, and `winit` sat directly beneath it in the very same `Cargo.toml`, unexamined through three
+  subsequent passes — when a pass finds a bug that belongs to a *category* (a shared external crate declared
+  in two places), the next move is enumerating the category's other members, not fixing the instance and
+  moving on. That is the fourth distinct time this doc has had to relearn some version of "the same bug shape
+  is sitting in the file nobody opened yet" (Q26→Q56, Q36, Q53, now Q52→Q61), which is worth reading as a
+  standing property of documents this size rather than a defect of any one pass.
+- Pass 13 changed the unit of analysis rather than the depth of checking: every pass from 4 through 12 asked
+  a question about *a step* (does it compile, does it name real things, does it emit the right file); pass 13
+  asked about *the set* — take every behavior the design specifies, and check each one has a commit. Two did
+  not (Q65's shutdown round trip, Q66's crash path), and the second is the more instructive: three separate
+  steps route failures into "the Q11 crash path" as if it were existing machinery, and that phrase reads as
+  an implemented thing precisely *because* it is cited so often. Frequent citation is not evidence of
+  existence — arguably it is a mild counter-indicator, since a name that appears in five places and is
+  defined in none has been treated as settled by everyone who read it. The generalization worth carrying:
+  a design doc's cross-references are load-bearing claims that something exists, and they deserve the same
+  "open the file and check" treatment passes 9–12 gave to function names and Cargo features. Two related
+  observations. First, Q71 is Q61's lesson recurring in the shape the doc explicitly warned about — an
+  argument (Q20's "release binaries must not link the IPC machinery") applied carefully to one crate and
+  never re-run when the design later gave release binaries a dependency on a *different* crate holding that
+  same code; enumerating a category's members has to happen again whenever the category gains a member, not
+  once. Second, Q68 and Q70 show that "compile-blocking" bugs survive twelve passes when the broken commit
+  is not the one that introduces the mistake: 1.2 omits a derive that fails at 2.2, 3.1 adds an import that
+  fails at 3.4. A per-step read finds neither; only walking the plan as a single artifact does. If there is
+  a pass 14, the highest-value question left is probably the mirror of this one — not "does every behavior
+  have a commit" but "does every commit have a test that could actually fail," since several steps here are
+  still gated only by the compile gate, and 2.5 in particular carries a named, accepted integration risk
+  that nothing verifies until 3.2.
+- Pass 14 asked that question and the suspicion was right, though not where it was aimed: 2.5's *named*
+  risk was the safe kind — flagged, bounded, and closed at 3.2 — while the damage was in the unflagged
+  kind. `PR_SET_PDEATHSIG` (Q74) had a verification plan ("deferred to 2.6/3.x") that pointed at steps
+  which never test it, and that phrasing is worse than saying nothing: it reads as scheduled and is
+  therefore never re-examined. The generalizable rule this pass ends on: **a deferral is only real if it
+  names the step and the observable.** "Deferred to later" is how a test disappears; "first proven at 3.6
+  case 2, `ps` after `kill -9` of the player" is a promise something can break. Two secondary observations
+  worth carrying. First, four of this pass's eight findings were mechanical — extracting every `Test:`
+  clause with `awk` and grepping the plan for `kill`/`cargo test` immediately exposed the four steps with
+  no test at all and the fact that no test kills the player. When the artifact under review is a list, read
+  it as a list, programmatically, rather than re-reading prose that has been re-read thirteen times.
+  Second, the fault-injection cases 3.6 collects are cheap in a way this plan hadn't noticed for thirteen
+  passes: because dev-mode modules are separate binaries on disk, half of them are produced by rebuilding
+  *one side* (a stale module after a `WIRE_VERSION` bump is a genuine mismatched pair; a `loop {}` in the
+  module's `Shutdown` arm needs no player rebuild) and the rest are `kill -9`/`kill -STOP` from another
+  shell. Process isolation, adopted for reload safety, turns out to make the system's failure modes
+  unusually easy to test — an argument for the architecture nobody had made yet. If there is a pass 15, the
+  question left unasked is about the *ordering* of the plan's risk rather than its coverage: 3.6 now
+  concentrates six failure-path tests in a single late commit, and whether some of those belong earlier —
+  as soon as the code they exercise exists, rather than as soon as a screen can display the result — is a
+  real sequencing question this pass did not open.
