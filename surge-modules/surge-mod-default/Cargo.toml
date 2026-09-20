@@ -5,8 +5,11 @@ edition = "2024"
 
 [dependencies]
 log = "0.4.28"
-surge-core = { path = "../../surge-core" }
 surge-sdk = { path = "../../surge-sdk" }
 
 [lib]
-crate-type = ["rlib", "dylib"]
+crate-type = ["rlib"]
+
+[[bin]]
+name = "surge_mod_default"
+path = "src/bin/dev.rs"

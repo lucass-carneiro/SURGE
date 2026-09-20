@@ -27,7 +27,6 @@ fn upload_assets(canvas: &mut dyn SpriteCanvas) {
 
 impl SurgeApp for AppDefault {
     fn on_load(&mut self, canvas: &mut dyn SpriteCanvas) {
-        surge_sdk::init_env_logger();
         log::info!("Default app startup");
 
         upload_assets(canvas);

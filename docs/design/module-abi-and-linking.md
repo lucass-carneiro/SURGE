@@ -2406,7 +2406,7 @@ module or doesn't.)*
   `surge_sdk::` here purely to keep it compiling; its `on_load` still calls `init_env_logger()` for now.
   The smoke test ran with the process loader and a SIGINT after ~8s rather than a window close: one
   `surge_mod_2048` child while open, none after, `2048 startup` and the `OnLoad` request logged once.)*
-- **3.3.** Port `surge-mod-default` the same way — `AppDefault {}` is already a `pub` unit struct directly in
+- **3.3.** **[DONE]** Port `surge-mod-default` the same way — `AppDefault {}` is already a `pub` unit struct directly in
   `lib.rs`, so `surge_mod_default::surge_register_app()` (Q53, for consistency with 2048's entry point) works
   the same way without ever having hit the visibility problem 3.2 traced through; `on_load`'s own
   `init_env_logger()` call (`lib.rs:31`) is deleted the same way, for the same reason (Q51), and its
@@ -2419,6 +2419,12 @@ module or doesn't.)*
   window must print `Default app shutdown` — from the *child* process — before the player exits. Its
   absence means `Request::Shutdown` isn't being sent or isn't being dispatched, which nothing else in the
   plan would catch.
+  *(As built: `surge-mod-default` dropped its `surge-core` dependency and the `dylib` crate-type, and gained
+  `src/bin/dev.rs` plus the explicit `[[bin]] name = "surge_mod_default"` table. Smoke tests ran with the
+  process loader and a SIGINT after ~8s for both modules: exactly one child while open and none after,
+  `Default app startup` / `2048 startup` logged once each. **Not yet observed:** `Default app shutdown` —
+  SIGINT does not go through a window close, and no tool was available to close the window from the
+  shell, so the Q65 shutdown round trip still needs one manual window-close run.)*
 - **3.4.** Cutover complete: delete the `SURGE_DEV_LOADER` branch and default `main()` to the `process` path
   unconditionally; delete `surge-core/src/app/mod.rs` (`LoadedApp`, `load_from_dylib`), `AppError` and
   `ModuleError` from `surge-core/src/errors/mod.rs` (Q29 — `ModuleError` was already fully dead before this
