@@ -1,6 +1,6 @@
 use super::{
     DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
-    ctx_graphics_pipeline::GraphicsPipelineBuilder, texture::Texture,
+    ctx_graphics_pipeline::GraphicsPipelineBuilder, image::srgb_to_linear, texture::Texture,
 };
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
@@ -554,6 +554,24 @@ impl SpriteDatabase {
 
         assert!(read_info.buffer_size() == image_size);
 
+        // 8-bit texels are uploaded as `R8G8B8A8_SRGB`, so the GPU linearises them on sampling.
+        // There is no sRGB 16-bit format, so do the same conversion here. The `png` crate emits
+        // 16-bit samples big-endian; the GPU reads them in host order.
+        if read_info.bit_depth == png::BitDepth::Sixteen {
+            for texel in rgba.chunks_exact_mut(8) {
+                for (i, sample) in texel.chunks_exact_mut(2).enumerate() {
+                    let value = u16::from_be_bytes([sample[0], sample[1]]);
+                    let value = if i < 3 {
+                        let linear = srgb_to_linear(value as f32 / 65535.0);
+                        (linear * 65535.0).round() as u16
+                    } else {
+                        value // alpha is already linear
+                    };
+                    sample.copy_from_slice(&value.to_ne_bytes());
+                }
+            }
+        }
+
         Ok(DecodedTexture {
             width: read_info.width,
             height: read_info.height,
@@ -619,7 +637,7 @@ impl SpriteDatabase {
 
         // Allocate GPU texture
         let format = match decoded.bit_depth {
-            png::BitDepth::Eight => vk::Format::R8G8B8A8_UNORM,
+            png::BitDepth::Eight => vk::Format::R8G8B8A8_SRGB,
             png::BitDepth::Sixteen => vk::Format::R16G16B16A16_UNORM,
             other => return Err(VulkanError::UnsupportedTextureBitDepth(other)),
         };

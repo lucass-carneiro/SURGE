@@ -1,4 +1,7 @@
-use super::{SwpcLayoutTransitionInfo, VulkanContext};
+use super::{
+    image::{is_srgb_format, srgb_to_linear},
+    SwpcLayoutTransitionInfo, VulkanContext,
+};
 use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;
 
@@ -114,11 +117,21 @@ impl VulkanContext {
     }
 
     pub fn cmd_render_begin(&self, swpc_img_idx: u32, config: &EngineConfig) {
+        // `clear_color` is authored as display (sRGB) values, but clears are written raw: an
+        // sRGB attachment does not encode them, so convert to linear to land on the same colour.
+        let to_attachment = |c: f64| {
+            if is_srgb_format(self.swapchain_data.format) {
+                srgb_to_linear(c as f32)
+            } else {
+                c as f32
+            }
+        };
+
         let ccl = vk::ClearColorValue {
             float32: [
-                config.clear_color.r as f32,
-                config.clear_color.g as f32,
-                config.clear_color.b as f32,
+                to_attachment(config.clear_color.r),
+                to_attachment(config.clear_color.g),
+                to_attachment(config.clear_color.b),
                 config.clear_color.a as f32,
             ],
         };

@@ -672,17 +672,21 @@ shows without `-vv`. A signal-killed glslang no longer panics (`status.code()` i
 glslang is now passed `--target-env vulkan1.3`, so the modules are SPIR-V 1.6 to match the app's
 `API_VERSION_1_3` (verified with `spirv-dis`).
 
-**M14. No colour-space management anywhere.** The swapchain is `B8G8R8A8_UNORM` (linear) presented as
-`SRGB_NONLINEAR` (`image.rs:35-36`), textures are uploaded as `R8G8B8A8_UNORM` (`mod.rs:618-620`), and
-`sprite.frag` does a plain multiply. sRGB-encoded PNG texels are therefore sampled as if they were linear,
-alpha-blended in non-linear space, and handed to a display that decodes them as sRGB. The net effect is
-that images pass through roughly correct while **blending is wrong** — transparent edges composite too
-dark, which is exactly the artefact the 2048 tiles will show. Either use `_SRGB` formats for both the
-swapchain and the textures, or convert explicitly. Right now the choice has not been made, it has been
-defaulted into.
+**M14. ~~No colour-space management anywhere~~ — FIXED** — `image.rs`, `ctx_command.rs`,
+`sprite_database/mod.rs`.
+The renderer is now linear end to end. The swapchain prefers `B8G8R8A8_SRGB` (then `R8G8B8A8_SRGB`) with
+`SRGB_NONLINEAR`, 8-bit textures are uploaded as `R8G8B8A8_SRGB` so sampling decodes them, and blending
+therefore happens in linear space with the hardware encoding on write. `clear_color` in `config.toml` stays
+authored as display (sRGB) values and is converted to linear in `cmd_render_begin`, since clears are not
+encoded. 16-bit PNGs have no `_SRGB` format, so `decode_texture_file` linearises their RGB on the CPU. If a
+surface offers no sRGB format the player warns and falls back to whatever it offers (colours will be dark;
+the clear colour is left unconverted in that case). `color_multiplier` is a linear tint.
+Was: the swapchain was `B8G8R8A8_UNORM` presented as `SRGB_NONLINEAR` (`image.rs:35-36`), textures were
+`R8G8B8A8_UNORM`, and `sprite.frag` did a plain multiply, so sRGB texels were sampled as linear and
+alpha-blended in non-linear space — transparent edges composited too dark.
 
 **M15. The 16-bit PNG path uploads byte-swapped data** — `sprite_database/mod.rs:618-621`. The `png` crate
-emits 16-bit samples in **big-endian** order; `R16G16B16A16_UNORM` is interpreted in host order. On every
+emits 16-bit samples in **big-endian** order (M14's linearisation in `decode_texture_file` now converts them to host order, which fixes this, but the item has not been re-verified); `R16G16B16A16_UNORM` is interpreted in host order. On every
 little-endian target each channel is byte-reversed. No shipped asset is 16-bit, so the branch has never
 run.
 
