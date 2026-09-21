@@ -585,7 +585,8 @@ Was: `last_update_call_timer` is only reset after a
 completed frame. Pause for 30 s, and the first frame back delivers `dt = 30.0` to `app.update`. Any module
 doing `pos += v * dt` teleports.
 
-**M3. Rendering stops on focus loss and may never resume** — `main.rs:249-271`. `Focused(false)` sets
+**M3. ~~Rendering stops on focus loss and may never resume~~ — FIXED** — `surge-player/src/lib.rs` (`window_event`: pause now only on a zero-size `Resized`, any non-zero `Resized` resumes, `Focused` events are ignored).
+Was: `main.rs:249-271`. `Focused(false)` sets
 `pause_rendering = true`, and only `Focused(true)` clears it — a non-zero `Resized` sets
 `recreate_swapchain` but leaves the pause flag alone. Observed directly: launching the player from a
 terminal leaves it in `Pausing` for the whole run, rendering nothing, because it never took focus. A

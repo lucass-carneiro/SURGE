@@ -62,7 +62,7 @@ impl ApplicationHandler for SurgeContext {
         }
 
         // While there is nothing to render, sleep until the next window event instead of
-        // spinning: every way out of these states (F5, focus, resize) arrives as an event.
+        // spinning: every way out of these states (F5, resize) arrives as an event.
         // A fault discovered inside `update()` below returns with `Poll` still set, so the
         // next tick still gets here to update the title before going to sleep.
         if faulted || self.pause_rendering {
@@ -307,9 +307,22 @@ impl ApplicationHandler for SurgeContext {
                 );
 
                 if size.width == 0 || size.height == 0 {
-                    log::info!("Pausing");
-                    self.pause_rendering = true;
-                } else if size != self.last_window_size {
+                    if !self.pause_rendering {
+                        log::info!("Pausing (window has no area)");
+                        self.pause_rendering = true;
+                    }
+                    return;
+                }
+
+                // Any non-zero size is the way out of a minimize-pause. Focus is deliberately
+                // not involved: a restore is not guaranteed to deliver `Focused(true)`, and a
+                // window that never took focus must still render.
+                if self.pause_rendering {
+                    log::info!("Resuming");
+                    self.pause_rendering = false;
+                }
+
+                if size != self.last_window_size {
                     // The surface's actual extent changed (e.g. compositor-imposed
                     // resize, DPI change), so the swapchain must be rebuilt. This does
                     // NOT change engine_config.resolution: that stays the fixed design
@@ -317,18 +330,6 @@ impl ApplicationHandler for SurgeContext {
                     // surface capabilities actually allow.
                     self.last_window_size = size;
                     self.recreate_swapchain = true;
-                }
-            }
-            WindowEvent::Focused(true) => {
-                if self.pause_rendering {
-                    log::info!("Resuming");
-                    self.pause_rendering = false;
-                }
-            }
-            WindowEvent::Focused(false) => {
-                if !self.pause_rendering {
-                    log::info!("Pausing");
-                    self.pause_rendering = true;
                 }
             }
             WindowEvent::KeyboardInput {

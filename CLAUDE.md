@@ -78,7 +78,7 @@ Because dev-mode modules are separate processes, each has its own `log` state �
 - F5 (in `window_event`) → `app.reload()`; a `true` return schedules a swapchain recreate, whose `on_swapchain_recreate` re-uploads textures into the fresh database.
 - `exiting` → `app.on_unload()`, then **`destroy_swapchain()` explicitly**, because winit drops the surface before the `VulkanContext` would otherwise be dropped.
 
-Rendering pauses entirely on minimize *and on focus loss*. On resize (or a suboptimal swapchain), the player recreates the swapchain **and rebuilds the `SpriteDatabase` from scratch**, which is why `on_swapchain_recreate` exists: its job is to re-upload every texture, since the old GPU textures died with the old database.
+Rendering pauses entirely while the window has zero size (minimized); focus changes do not affect rendering, and any non-zero `Resized` resumes. On resize (or a suboptimal swapchain), the player recreates the swapchain **and rebuilds the `SpriteDatabase` from scratch**, which is why `on_swapchain_recreate` exists: its job is to re-upload every texture, since the old GPU textures died with the old database.
 
 ### Vulkan layer (`surge-core/src/vulkan/`)
 
