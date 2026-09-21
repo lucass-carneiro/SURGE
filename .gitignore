@@ -1,4 +1,3 @@
-Cargo.lock
 target
 staging-*
 # Root config.toml is a per-developer working copy; module config.tomls

@@ -610,7 +610,8 @@ Was: `piece.rs:51-62`. `c_pos += 0.1 * r` is per-*frame*, and the engine's
 computed delta never reached it (`update(&mut self, _: f32, ...)` in `lib.rs:76` discarded it before
 `update_live_pieces_pos` was even called). Animation speed was a direct function of framerate.
 
-**M7. `Cargo.lock` is gitignored** — `.gitignore:1`. This workspace ships a binary; the lock file belongs
+**M7. ~~`Cargo.lock` is gitignored~~ — FIXED** — `.gitignore` (the `Cargo.lock` entry is removed, so the lock file can be tracked).
+Was: `.gitignore:1`. This workspace ships a binary; the lock file belongs
 in version control. Right now no two clones are guaranteed to build the same dependency graph, and
 `vk-mem`/`ash` are exactly the crates where that matters.
 
