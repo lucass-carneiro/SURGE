@@ -723,8 +723,12 @@ finding: the
 `#[cfg(target_os = ...)]` block yields `()` on macOS/BSD, producing a confusing type error instead of a
 `compile_error!` naming the unsupported platform.
 
-**M19. `shader_draw_parameters` is requested but never checked — and never used** — `device.rs:235` vs
-`device.rs:17-45`. `device_has_required_features` validates nine features; this tenth one is enabled at
+**M19. ~~`shader_draw_parameters` is requested but never checked — and never used~~ — FIXED** — `device.rs`.
+**Fixed.** The feature is no longer requested: `create_logical_device` builds its feature chain from
+`features12`/`features13` only, and `device_has_required_features` queries the same two structs, so the
+suitability check and `vkCreateDevice` now cover exactly the same set of features. No shader reads
+`gl_BaseInstance`/`gl_BaseVertex`/`gl_DrawID`, so nothing depended on it.
+Was: `device_has_required_features` validates nine features; this tenth one is enabled at
 `vkCreateDevice` without ever being in the suitability check, so a device that passes suitability can
 still fail device creation. Meanwhile the shaders only use `gl_InstanceIndex`/`gl_VertexIndex`, which need
 no such feature. Drop it or check it.
