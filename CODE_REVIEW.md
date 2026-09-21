@@ -573,7 +573,8 @@ what it says.
 
 ## MEDIUM
 
-**M1. ~57% of a core burned while paused or unfocused** — `main.rs:37-40`. `ControlFlow::Poll` plus an
+**M1. ~~~57% of a core burned while paused or unfocused~~ — FIXED** — `surge-player/src/lib.rs`
+(`about_to_wait` now sets `ControlFlow::Wait` while paused or faulted, `Poll` otherwise). Was: `ControlFlow::Poll` plus an
 early `return` from `about_to_wait` skips the FPS-cap sleep at the bottom of the same function. Measured:
 `57.2% CPU` for a window that is rendering nothing. Combine with **M3** and the observed steady state of a
 freshly launched player is "frozen, and hot".

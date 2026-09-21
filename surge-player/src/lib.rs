@@ -42,7 +42,7 @@ impl ApplicationHandler for SurgeContext {
     }
 
     /// Game loop body
-    fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         // A faulted module freezes the window on its last presented frame: nothing is acquired,
         // drawn or presented until a reload clears the fault.
         let faulted = self.startup_app.is_faulted();
@@ -57,14 +57,16 @@ impl ApplicationHandler for SurgeContext {
                 window.set_title(&title);
             }
         }
-        if faulted {
-            return;
-        }
 
-        // Stop rendering if minimized
-        if self.pause_rendering {
+        // While there is nothing to render, sleep until the next window event instead of
+        // spinning: every way out of these states (F5, focus, resize) arrives as an event.
+        // A fault discovered inside `update()` below returns with `Poll` still set, so the
+        // next tick still gets here to update the title before going to sleep.
+        if faulted || self.pause_rendering {
+            event_loop.set_control_flow(ControlFlow::Wait);
             return;
         }
+        event_loop.set_control_flow(ControlFlow::Poll);
 
         // Reinitialize if necessary
         if self.recreate_swapchain {
