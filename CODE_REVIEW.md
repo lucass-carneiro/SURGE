@@ -605,9 +605,10 @@ value) = 1/16 × 1/2 ≈ 1/32 of new games. `reconstruct_board` then does `board
 overwriting — one piece vanishes from the move logic permanently, renders forever at its start slot, and
 never responds to input.
 
-**M6. `update_pos` ignores `dt`** — `piece.rs:51-62`. `c_pos += 0.1 * r` is per-*frame*, and the engine's
-computed delta never reaches it (`update(&mut self, _: f32, ...)` in `lib.rs:76` discards it before
-`update_live_pieces_pos` is even called). Animation speed is a direct function of framerate.
+**M6. ~~`update_pos` ignores `dt`~~ — FIXED** — `piece.rs`, `app_2048.rs`, `lib.rs` (`update` now forwards `dt` through `update_live_pieces_pos` to `Piece::update_pos`, which closes `1 - exp(-MOVE_RATE * dt)` of the gap per call; `MOVE_RATE ≈ 6.32/s` matches the old 0.1/frame at 60 fps).
+Was: `piece.rs:51-62`. `c_pos += 0.1 * r` is per-*frame*, and the engine's
+computed delta never reached it (`update(&mut self, _: f32, ...)` in `lib.rs:76` discarded it before
+`update_live_pieces_pos` was even called). Animation speed was a direct function of framerate.
 
 **M7. `Cargo.lock` is gitignored** — `.gitignore:1`. This workspace ships a binary; the lock file belongs
 in version control. Right now no two clones are guaranteed to build the same dependency graph, and

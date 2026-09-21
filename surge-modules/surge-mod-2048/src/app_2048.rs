@@ -76,10 +76,10 @@ impl App2048 {
         board
     }
 
-    pub(crate) fn update_live_pieces_pos(&mut self) -> bool {
+    pub(crate) fn update_live_pieces_pos(&mut self, dt: f32) -> bool {
         let mut update_done = true;
         for piece in &mut self.live_pieces {
-            update_done &= piece.update_pos();
+            update_done &= piece.update_pos(dt);
         }
         update_done
     }

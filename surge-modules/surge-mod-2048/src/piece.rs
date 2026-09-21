@@ -11,6 +11,9 @@ pub(crate) struct Piece {
     t_pos: Vec2<f32>,    // Target pixel pos.
 }
 
+// Exponential approach rate (1/s). Equals the old per-frame factor of 0.1 at 60 fps: -ln(0.9) * 60.
+const MOVE_RATE: f32 = 6.3212;
+
 impl Piece {
     pub(crate) fn new_random(bg: &BoardGeometry) -> Self {
         let mut rng = rand::rng();
@@ -48,11 +51,12 @@ impl Piece {
         }
     }
 
-    pub(crate) fn update_pos(&mut self) -> bool {
+    pub(crate) fn update_pos(&mut self, dt: f32) -> bool {
         // TODO: Better position update ?
         let r = self.t_pos - self.c_pos;
         if r.norm() > 1.0e-3 {
-            self.c_pos += 0.1 * r;
+            // Frame-rate independent: the same fraction of the gap closes per second at any fps.
+            self.c_pos += (1.0 - (-MOVE_RATE * dt).exp()) * r;
             false
         } else {
             self.c_slot = self.t_slot;

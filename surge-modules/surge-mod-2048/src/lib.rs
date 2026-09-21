@@ -73,7 +73,7 @@ impl SurgeApp for App2048 {
         upload_board_assets(spdb);
     }
 
-    fn update(&mut self, _: f32, spdb: &mut dyn SpriteCanvas) {
+    fn update(&mut self, dt: f32, spdb: &mut dyn SpriteCanvas) {
         // Add sprites
         add_board_sprite(spdb, self.get_board_geometry());
 
@@ -96,7 +96,7 @@ impl SurgeApp for App2048 {
                 log::info!("Board merge {:?}", merge_direction);
 
                 // Move all pieces that need moving. Pop the state if no more pieces are moving
-                if self.update_live_pieces_pos() {
+                if self.update_live_pieces_pos(dt) {
                     self.pop_state();
                 }
             }
