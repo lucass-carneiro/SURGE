@@ -350,6 +350,16 @@ Note this is not merely an oversight of ordering: `create_logical_device` runs a
 *before* the surface is created at line 78, so the physical-device selection is structurally incapable of
 considering presentation support.
 
+**Fix:** the surface is now created before device selection, and `select_physical_device` takes it. A
+device is suitable only if some graphics family reports `get_physical_device_surface_support` for it and
+the surface has at least one format and present mode; that family becomes `QueueFamilyIndices::graphics`
+(the queue frames are presented on), and the indices are passed on to `create_logical_device` instead of
+being recomputed. `create_swapchain` now enumerates formats (prefers `B8G8R8A8_UNORM` + `SRGB_NONLINEAR`,
+else warns and takes the first) and present modes (`IMMEDIATE` only if offered, else `FIFO`). The chosen
+format already flows through `swapchain_data.format` into the pipeline. Verified with a clean validation
+run on the dev machine; the fallback branches are not exercised there. H5/H6 (compute/transfer selection)
+are untouched.
+
 ### H5. `vkGetDeviceQueue` on a family with no created queues — `device.rs:203-217, 258-260`
 
 ```rust

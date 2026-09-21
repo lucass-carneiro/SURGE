@@ -32,8 +32,31 @@ pub(super) fn create_swapchain(
         ),
     };
 
-    let format = vk::Format::B8G8R8A8_UNORM;
-    let color_space = vk::ColorSpaceKHR::SRGB_NONLINEAR;
+    let surface_formats = unsafe {
+        surface_loader
+            .get_physical_device_surface_formats(physical_device, surface)
+            .map_err(|e| VulkanError::SurfaceFormatQueryError(e))?
+    };
+
+    // Device selection guarantees at least one format. Prefer the one the renderer was written
+    // against; otherwise take whatever the surface offers first.
+    let surface_format = surface_formats
+        .iter()
+        .copied()
+        .find(|f| {
+            f.format == vk::Format::B8G8R8A8_UNORM
+                && f.color_space == vk::ColorSpaceKHR::SRGB_NONLINEAR
+        })
+        .unwrap_or_else(|| {
+            log::warn!(
+                "Surface does not offer B8G8R8A8_UNORM/SRGB_NONLINEAR, falling back to {:?}/{:?}",
+                surface_formats[0].format,
+                surface_formats[0].color_space
+            );
+            surface_formats[0]
+        });
+    let format = surface_format.format;
+    let color_space = surface_format.color_space;
 
     let image_count = if surface_capabilities.max_image_count > 0 {
         surface_capabilities
@@ -43,10 +66,20 @@ pub(super) fn create_swapchain(
         surface_capabilities.min_image_count + 1
     };
 
-    let present_mode = if vsync {
-        vk::PresentModeKHR::FIFO
-    } else {
+    let present_modes = unsafe {
+        surface_loader
+            .get_physical_device_surface_present_modes(physical_device, surface)
+            .map_err(|e| VulkanError::SurfacePresentModeQueryError(e))?
+    };
+
+    // FIFO is the only mode the spec guarantees.
+    let present_mode = if !vsync && present_modes.contains(&vk::PresentModeKHR::IMMEDIATE) {
         vk::PresentModeKHR::IMMEDIATE
+    } else {
+        if !vsync {
+            log::warn!("IMMEDIATE present mode unavailable, falling back to FIFO");
+        }
+        vk::PresentModeKHR::FIFO
     };
 
     let swapchain_create_info = vk::SwapchainCreateInfoKHR::default()

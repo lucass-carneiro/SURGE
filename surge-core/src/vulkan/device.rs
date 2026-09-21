@@ -108,19 +108,52 @@ fn device_has_required_queue_families(
     has_graphics && has_compute && has_transfer
 }
 
+/// First graphics-capable queue family that can also present to `surface`. Frames are presented
+/// on the graphics queue, so this is the family `QueueFamilyIndices::graphics` must be.
+fn find_graphics_present_family(
+    queue_families: &[vk::QueueFamilyProperties],
+    physical_device: vk::PhysicalDevice,
+    surface_loader: &khr::surface::Instance,
+    surface: vk::SurfaceKHR,
+) -> Option<u32> {
+    queue_families
+        .iter()
+        .enumerate()
+        .filter(|(_, family)| family.queue_flags.contains(vk::QueueFlags::GRAPHICS))
+        .map(|(i, _)| i as u32)
+        .find(|&i| unsafe {
+            surface_loader
+                .get_physical_device_surface_support(physical_device, i, surface)
+                .unwrap_or(false)
+        })
+}
+
+fn device_has_surface_formats_and_present_modes(
+    physical_device: vk::PhysicalDevice,
+    surface_loader: &khr::surface::Instance,
+    surface: vk::SurfaceKHR,
+) -> bool {
+    unsafe {
+        let formats = surface_loader.get_physical_device_surface_formats(physical_device, surface);
+        let modes =
+            surface_loader.get_physical_device_surface_present_modes(physical_device, surface);
+        matches!(formats, Ok(f) if !f.is_empty()) && matches!(modes, Ok(m) if !m.is_empty())
+    }
+}
+
+/// `graphics` is chosen by the caller (it depends on the surface); compute/transfer are not
+/// presentation-related.
 pub(super) fn get_queue_family_indices(
     queue_families: &[vk::QueueFamilyProperties],
+    graphics: u32,
 ) -> QueueFamilyIndices {
     let mut indices = QueueFamilyIndices {
-        graphics: 0,
+        graphics,
         compute: 0,
         transfer: 0,
     };
 
     for (i, family) in queue_families.iter().enumerate() {
-        if family.queue_flags.contains(vk::QueueFlags::GRAPHICS) {
-            indices.graphics = i as u32;
-        }
         if family.queue_flags.contains(vk::QueueFlags::COMPUTE) {
             indices.compute = i as u32;
         }
@@ -132,7 +165,12 @@ pub(super) fn get_queue_family_indices(
     indices
 }
 
-fn is_device_suitable(instance: &ash::Instance, physical_device: vk::PhysicalDevice) -> bool {
+fn is_device_suitable(
+    instance: &ash::Instance,
+    physical_device: vk::PhysicalDevice,
+    surface_loader: &khr::surface::Instance,
+    surface: vk::SurfaceKHR,
+) -> Option<QueueFamilyIndices> {
     let properties = unsafe { instance.get_physical_device_properties(physical_device) };
     let device_name = unsafe {
         CStr::from_ptr(properties.device_name.as_ptr())
@@ -146,35 +184,52 @@ fn is_device_suitable(instance: &ash::Instance, physical_device: vk::PhysicalDev
     let has_device_extensions = device_has_required_extensions(instance, physical_device);
     let has_queue_families = device_has_required_queue_families(instance, physical_device);
 
-    let is_suitable = has_required_features && has_device_extensions && has_queue_families;
+    let queue_families =
+        unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
+    let graphics_family = find_graphics_present_family(
+        &queue_families,
+        physical_device,
+        surface_loader,
+        surface,
+    );
+    let can_present = graphics_family.is_some()
+        && device_has_surface_formats_and_present_modes(physical_device, surface_loader, surface);
 
-    if is_suitable {
+    let is_suitable =
+        has_required_features && has_device_extensions && has_queue_families && can_present;
+
+    if let (true, Some(graphics)) = (is_suitable, graphics_family) {
         log::info!("Device is suitable");
+        Some(get_queue_family_indices(&queue_families, graphics))
     } else {
         log::info!(
             "Device is unsuitable:
   Has required features? {}
   Has required device extensions? {}
-  Has required queue families? {}",
+  Has required queue families? {}
+  Can present to the window surface? {}",
             has_required_features,
             has_device_extensions,
-            has_queue_families
+            has_queue_families,
+            can_present
         );
+        None
     }
-
-    is_suitable
 }
 
 pub(super) fn select_physical_device(
     instance: &ash::Instance,
-) -> Result<vk::PhysicalDevice, VulkanError> {
+    surface_loader: &khr::surface::Instance,
+    surface: vk::SurfaceKHR,
+) -> Result<(vk::PhysicalDevice, QueueFamilyIndices), VulkanError> {
     log::info!("Selecting first suitable physical device");
 
     let physical_devices = get_available_physical_devices(instance)?;
 
     for physical_device in physical_devices {
-        if is_device_suitable(instance, physical_device) {
-            return Ok(physical_device);
+        if let Some(indices) = is_device_suitable(instance, physical_device, surface_loader, surface)
+        {
+            return Ok((physical_device, indices));
         }
     }
 
@@ -185,12 +240,9 @@ pub(super) fn select_physical_device(
 pub(super) fn create_logical_device(
     instance: &ash::Instance,
     physical_device: vk::PhysicalDevice,
+    indices: &QueueFamilyIndices,
 ) -> Result<(ash::Device, vk::Queue, vk::Queue, vk::Queue), VulkanError> {
     log::info!("Creating logical device");
-
-    let queue_families =
-        unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
-    let indices = get_queue_family_indices(&queue_families);
 
     let queue_priorities = [1.0f32];
     let mut queue_create_infos = vec![

@@ -36,6 +36,12 @@ pub enum VulkanError {
     #[error("Unable to query Vulkan device surface capabilities: {0}")]
     SurfaceCapabilityQueryError(ash::vk::Result),
 
+    #[error("Unable to query Vulkan device surface formats: {0}")]
+    SurfaceFormatQueryError(ash::vk::Result),
+
+    #[error("Unable to query Vulkan device surface present modes: {0}")]
+    SurfacePresentModeQueryError(ash::vk::Result),
+
     #[error("Unable to create swapchain: {0}")]
     SwapchainCreationError(ash::vk::Result),
 

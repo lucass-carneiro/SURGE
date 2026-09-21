@@ -69,11 +69,8 @@ impl VulkanContext {
             (debug_utils, messenger)
         };
 
-        let physical_device = device::select_physical_device(&instance)?;
-
-        let (device, graphics_queue, _compute_queue, _transfer_queue) =
-            device::create_logical_device(&instance, physical_device)?;
-
+        // The surface must exist before device selection: whether a device can present to it is
+        // part of what makes it suitable.
         let surface_loader = khr::surface::Instance::new(&entry, &instance);
         let surface_khr = unsafe {
             ash_window::create_surface(
@@ -86,6 +83,12 @@ impl VulkanContext {
             .map_err(|e| VulkanError::SurfaceCreationError(e))?
         };
 
+        let (physical_device, indices) =
+            device::select_physical_device(&instance, &surface_loader, surface_khr)?;
+
+        let (device, graphics_queue, _compute_queue, _transfer_queue) =
+            device::create_logical_device(&instance, physical_device, &indices)?;
+
         let swapchain_data = image::create_swapchain(
             &instance,
             physical_device,
@@ -96,10 +99,6 @@ impl VulkanContext {
             config.resolution.height,
             config.renderer.vsync,
         )?;
-
-        let queue_families =
-            unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
-        let indices = device::get_queue_family_indices(&queue_families);
 
         let command_pool = command::create_command_pool(&device, indices.graphics)?;
         let command_buffers = command::create_command_buffers(&device, command_pool)?;
