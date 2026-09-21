@@ -579,7 +579,9 @@ early `return` from `about_to_wait` skips the FPS-cap sleep at the bottom of the
 `57.2% CPU` for a window that is rendering nothing. Combine with **M3** and the observed steady state of a
 freshly launched player is "frozen, and hot".
 
-**M2. Delta-time spike on unpause** — `main.rs:76`. `last_update_call_timer` is only reset after a
+**M2. ~~Delta-time spike on unpause~~ — FIXED** — `surge-player/src/lib.rs` (`about_to_wait` records
+`was_idle` when it sleeps for pause/fault and resets `last_update_call_timer` on the first frame back).
+Was: `last_update_call_timer` is only reset after a
 completed frame. Pause for 30 s, and the first frame back delivers `dt = 30.0` to `app.update`. Any module
 doing `pos += v * dt` teleports.
 

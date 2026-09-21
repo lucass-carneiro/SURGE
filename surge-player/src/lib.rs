@@ -24,6 +24,9 @@ struct SurgeContext {
     frame_timer: Instant,
     last_update_call_timer: Instant,
     pause_rendering: bool,
+    // True while `about_to_wait` is sleeping (paused or faulted), so the first frame after
+    // waking can discard the time spent asleep instead of handing it to `update` as `dt`.
+    was_idle: bool,
     recreate_swapchain: bool,
     /// Whether the window title currently carries the crash suffix, so the transition into and
     /// out of the faulted state is acted on once rather than every frame.
@@ -64,9 +67,15 @@ impl ApplicationHandler for SurgeContext {
         // next tick still gets here to update the title before going to sleep.
         if faulted || self.pause_rendering {
             event_loop.set_control_flow(ControlFlow::Wait);
+            self.was_idle = true;
             return;
         }
         event_loop.set_control_flow(ControlFlow::Poll);
+        if self.was_idle {
+            // Time spent paused or faulted is not simulation time.
+            self.last_update_call_timer = Instant::now();
+            self.was_idle = false;
+        }
 
         // Reinitialize if necessary
         if self.recreate_swapchain {
@@ -407,6 +416,7 @@ pub fn run(app: Box<dyn SurgeApp>, engine_config: EngineConfig) {
         frame_timer: Instant::now(),
         last_update_call_timer: Instant::now(),
         pause_rendering: false,
+        was_idle: false,
         recreate_swapchain: false,
         crash_shown: false,
         last_window_size: initial_size,
