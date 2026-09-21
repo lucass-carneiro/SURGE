@@ -637,10 +637,19 @@ submission that binds the set. Nothing in the API says so, and it is a `pub fn`.
 `&mut self` `ApplicationHandler` method, so this was a mechanical signature change with no borrow-checker
 fallout. Updated both implementors (`surge-mod-2048`, `surge-mod-default`) to match.
 
-**M11. The `errors` module is dead weight at the top level** — `main.rs` contains **29** `.unwrap()`
-calls. Forty-plus carefully written `thiserror` variants, and every call site in the player discards them.
-A missing `config.toml`, a missing dylib, a missing shader, and a lost device are all indistinguishable
-panics-with-backtrace. Every one of those has a good message already written for it.
+**M11. ~~The `errors` module is dead weight at the top level~~ — FIXED — `surge-player/src/{lib,main}.rs`,
+`surge-modules/*/src/bin/release.rs`.
+**Fixed.** Every fallible call in the player loop now uses `?` and surfaces its real error. Event-loop
+callbacks cannot return errors, so `about_to_wait` runs a fallible `frame()` and `resumed` a fallible
+`init_graphics()`; a failure goes to `SurgeContext::fail`, which keeps the first error and exits the loop.
+`run` now returns an `ExitCode` (logging the error), and the new `surge_player::fail` prints pre-logger
+failures (config parsing, module spawning) to stderr, since `parse_config`'s own `log::error!` runs before the
+logger exists and was invisible. `main.rs` and both `release.rs` mains return `ExitCode`. `exiting` no longer
+panics when start-up failed before a Vulkan context existed. The remaining `unwrap()`s in the player are
+`Option` accessors for state `resumed` always fills before any frame runs.
+Was: `main.rs` contained **29** `.unwrap()` calls. Forty-plus carefully written `thiserror` variants, and every
+call site in the player discarded them. A missing `config.toml`, a missing dylib, a missing shader, and a lost
+device were all indistinguishable panics-with-backtrace.
 
 **M12. Each texture upload fully stalls the GPU** — `ctx_command.rs:332-361`. `cmd_immediate_submit`
 creates a fence, submits, blocks up to 1 s, destroys the fence — per texture. 2048's startup does this 12

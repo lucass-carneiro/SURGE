@@ -1,6 +1,9 @@
 use sc::vulkan::{VulkanContext, sprite_database as spd};
 use std::{
     cell::RefCell,
+    error::Error,
+    fmt::Display,
+    process::ExitCode,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -14,6 +17,8 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::{Fullscreen, Window, WindowId},
 };
+
+type PlayerError = Box<dyn Error>;
 
 struct SurgeContext {
     window: Option<Arc<Window>>,
@@ -36,16 +41,59 @@ struct SurgeContext {
     // is a fixed design constant (depth image extent, ortho projection, module
     // pixel math) and must never be overwritten by the window manager.
     last_window_size: PhysicalSize<u32>,
+    /// The first fatal error hit inside an event-loop callback. Callbacks cannot return errors,
+    /// so the loop is asked to exit and `run` hands this back to the caller afterwards.
+    error: Option<PlayerError>,
 }
 
-impl ApplicationHandler for SurgeContext {
-    /// Game loop start
-    fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
-        self.frame_timer = Instant::now();
+impl SurgeContext {
+    /// Records `err` as the reason the player is stopping and leaves the event loop. Only the
+    /// first error is kept: later ones are usually fallout from it.
+    fn fail(&mut self, event_loop: &ActiveEventLoop, err: PlayerError) {
+        if self.error.is_none() {
+            self.error = Some(err);
+        } else {
+            log::error!("{err}");
+        }
+        event_loop.exit();
     }
 
-    /// Game loop body
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    /// Brings up Vulkan and the sprite database for `window`.
+    fn init_graphics(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window: &Arc<Window>,
+    ) -> Result<(), PlayerError> {
+        let context = Arc::new(RefCell::new(sc::vulkan::VulkanContext::new(
+            event_loop,
+            window,
+            &self.engine_config,
+        )?));
+
+        self.sprite_database = Some(spd::SpriteDatabase::new(
+            context.clone(),
+            spd::CreateInfo {
+                blending_mode: spd::BlendingMode::Alpha,
+                texture_filtering_mode: spd::TextureFilteringMode::Linear,
+                texture_filtering_level: spd::TextureFilteringLevel::X4,
+                max_sprites: 32,
+                max_textures: 32,
+                window_width: self.engine_config.resolution.width as f32,
+                window_height: self.engine_config.resolution.height as f32,
+            },
+        )?);
+        self.vulkan_context = Some(context);
+        Ok(())
+    }
+
+    /// One tick of the game loop; see `about_to_wait`.
+    fn frame(&mut self, event_loop: &ActiveEventLoop) -> Result<(), PlayerError> {
+        // Once a fatal error is recorded the loop is already exiting; a tick that still slips in
+        // before it does must not touch Vulkan state again.
+        if self.error.is_some() {
+            return Ok(());
+        }
+
         // A faulted module freezes the window on its last presented frame: nothing is acquired,
         // drawn or presented until a reload clears the fault.
         let faulted = self.startup_app.is_faulted();
@@ -68,7 +116,7 @@ impl ApplicationHandler for SurgeContext {
         if faulted || self.pause_rendering {
             event_loop.set_control_flow(ControlFlow::Wait);
             self.was_idle = true;
-            return;
+            return Ok(());
         }
         event_loop.set_control_flow(ControlFlow::Poll);
         if self.was_idle {
@@ -83,24 +131,20 @@ impl ApplicationHandler for SurgeContext {
                 .as_mut()
                 .unwrap()
                 .borrow_mut()
-                .recreate_swapchain(&self.engine_config)
-                .unwrap();
+                .recreate_swapchain(&self.engine_config)?;
 
-            self.sprite_database = Some(
-                spd::SpriteDatabase::new(
-                    self.vulkan_context.as_ref().unwrap().clone(),
-                    spd::CreateInfo {
-                        blending_mode: spd::BlendingMode::Alpha,
-                        texture_filtering_mode: spd::TextureFilteringMode::Linear,
-                        texture_filtering_level: spd::TextureFilteringLevel::X4,
-                        max_sprites: 32,
-                        max_textures: 32,
-                        window_width: self.engine_config.resolution.width as f32,
-                        window_height: self.engine_config.resolution.height as f32,
-                    },
-                )
-                .unwrap(),
-            );
+            self.sprite_database = Some(spd::SpriteDatabase::new(
+                self.vulkan_context.as_ref().unwrap().clone(),
+                spd::CreateInfo {
+                    blending_mode: spd::BlendingMode::Alpha,
+                    texture_filtering_mode: spd::TextureFilteringMode::Linear,
+                    texture_filtering_level: spd::TextureFilteringLevel::X4,
+                    max_sprites: 32,
+                    max_textures: 32,
+                    window_width: self.engine_config.resolution.width as f32,
+                    window_height: self.engine_config.resolution.height as f32,
+                },
+            )?);
 
             self.startup_app
                 .on_swapchain_recreate(self.sprite_database.as_mut().unwrap());
@@ -116,15 +160,14 @@ impl ApplicationHandler for SurgeContext {
             .as_mut()
             .unwrap()
             .borrow_mut()
-            .request_swpc_img()
-            .unwrap()
+            .request_swpc_img()?
         {
             Some(data) => data,
             None => {
                 // Swapchain is out of date (e.g. resize, monitor/DPI change, compositor
                 // restart) - there is no valid image to render into this tick.
                 self.recreate_swapchain = true;
-                return;
+                return Ok(());
             }
         };
 
@@ -141,7 +184,7 @@ impl ApplicationHandler for SurgeContext {
         // acquired image, its semaphore and the reset fence are all discarded by the swapchain
         // recreate that the reload clearing this fault always schedules.
         if self.startup_app.is_faulted() {
-            return;
+            return Ok(());
         }
 
         // Begin command recording
@@ -149,8 +192,7 @@ impl ApplicationHandler for SurgeContext {
             .as_ref()
             .unwrap()
             .borrow()
-            .cmd_begin(swpc_img_data.index)
-            .unwrap();
+            .cmd_begin(swpc_img_data.index)?;
 
         // Begin rendering
         self.vulkan_context
@@ -160,7 +202,7 @@ impl ApplicationHandler for SurgeContext {
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
         // Draw sprites
-        self.sprite_database.as_mut().unwrap().draw().unwrap();
+        self.sprite_database.as_mut().unwrap().draw()?;
 
         // End rendering
         self.vulkan_context
@@ -174,16 +216,14 @@ impl ApplicationHandler for SurgeContext {
             .as_ref()
             .unwrap()
             .borrow()
-            .cmd_end(swpc_img_data.index)
-            .unwrap();
+            .cmd_end(swpc_img_data.index)?;
 
         // Submit command buffer
         self.vulkan_context
             .as_ref()
             .unwrap()
             .borrow()
-            .cmd_submit()
-            .unwrap();
+            .cmd_submit()?;
 
         // Present
         let present_out_of_date = self
@@ -191,8 +231,7 @@ impl ApplicationHandler for SurgeContext {
             .as_ref()
             .unwrap()
             .borrow_mut()
-            .present_swpc(&mut swpc_img_data)
-            .unwrap();
+            .present_swpc(&mut swpc_img_data)?;
 
         self.recreate_swapchain |= present_out_of_date || swpc_img_data.suboptimal;
 
@@ -205,6 +244,22 @@ impl ApplicationHandler for SurgeContext {
             && (frame_time < desired_frame_time)
         {
             std::thread::sleep(Duration::from_secs_f64(desired_frame_time - frame_time));
+        }
+
+        Ok(())
+    }
+}
+
+impl ApplicationHandler for SurgeContext {
+    /// Game loop start
+    fn new_events(&mut self, _: &ActiveEventLoop, _: winit::event::StartCause) {
+        self.frame_timer = Instant::now();
+    }
+
+    /// Game loop body
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Err(err) = self.frame(event_loop) {
+            self.fail(event_loop, err);
         }
     }
 
@@ -229,43 +284,26 @@ impl ApplicationHandler for SurgeContext {
                     self.engine_config.resolution.height,
                 ));
 
-            match event_loop.create_window(window_attributes) {
-                Ok(window) => {
-                    // Init Vulkan
-                    let w = Arc::new(window);
-                    self.vulkan_context = Some(Arc::new(RefCell::new(
-                        sc::vulkan::VulkanContext::new(&event_loop, &w, &self.engine_config)
-                            .unwrap(),
-                    )));
-
-                    // Init sprite database
-                    self.sprite_database = Some(
-                        spd::SpriteDatabase::new(
-                            self.vulkan_context.as_ref().unwrap().clone(),
-                            spd::CreateInfo {
-                                blending_mode: spd::BlendingMode::Alpha,
-                                texture_filtering_mode: spd::TextureFilteringMode::Linear,
-                                texture_filtering_level: spd::TextureFilteringLevel::X4,
-                                max_sprites: 32,
-                                max_textures: 32,
-                                window_width: self.engine_config.resolution.width as f32,
-                                window_height: self.engine_config.resolution.height as f32,
-                            },
-                        )
-                        .unwrap(),
+            let window = match event_loop.create_window(window_attributes) {
+                Ok(window) => Arc::new(window),
+                Err(e) => {
+                    self.fail(
+                        event_loop,
+                        format!("Unable to create SURGE window: {e}").into(),
                     );
+                    return;
+                }
+            };
 
-                    //Save window to context
-                    self.window = Some(w);
+            match self.init_graphics(event_loop, &window) {
+                Ok(()) => {
+                    self.window = Some(window);
 
                     // Load startup app
                     self.startup_app
                         .on_load(self.sprite_database.as_mut().unwrap());
                 }
-                Err(e) => {
-                    log::error!("Unable to create SURGE window: {}", e);
-                    event_loop.exit();
-                }
+                Err(e) => self.fail(event_loop, e),
             }
         }
     }
@@ -278,13 +316,12 @@ impl ApplicationHandler for SurgeContext {
         // We need to destroy the swapchain here because Winnit
         // drops the surface before we have a chance to drop the Vulkan context.
         // We can't have this, so we must destroy the swapchain before Winnit drops
-        // the window surface.
-        self.vulkan_context
-            .as_ref()
-            .unwrap()
-            .borrow_mut()
-            .destroy_swapchain()
-            .unwrap();
+        // the window surface. There is no context to tear down if start-up failed.
+        if let Some(context) = &self.vulkan_context {
+            if let Err(e) = context.borrow_mut().destroy_swapchain() {
+                self.error.get_or_insert_with(|| e.into());
+            }
+        }
     }
 
     fn window_event(
@@ -383,7 +420,27 @@ impl ApplicationHandler for SurgeContext {
 ///
 /// Owns process-wide startup (logo, logger), so it must be the first thing in the process to
 /// touch `log`, and it may only be called once.
-pub fn run(app: Box<dyn SurgeApp>, engine_config: EngineConfig) {
+///
+/// Returns the process exit code: success after a normal close, failure (with the error logged)
+/// if start-up or a frame hit a fatal error.
+pub fn run(app: Box<dyn SurgeApp>, engine_config: EngineConfig) -> ExitCode {
+    match run_loop(app, engine_config) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            log::error!("{e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Reports a fatal error from before `run` could set up logging (config parsing, module
+/// spawning) on stderr and returns the failure exit code.
+pub fn fail(err: impl Display) -> ExitCode {
+    eprintln!("SURGE Error: {err}");
+    ExitCode::FAILURE
+}
+
+fn run_loop(app: Box<dyn SurgeApp>, engine_config: EngineConfig) -> Result<(), PlayerError> {
     /********
      * Logo *
      ********/
@@ -397,7 +454,7 @@ pub fn run(app: Box<dyn SurgeApp>, engine_config: EngineConfig) {
     /*******************
      * Init event loop *
      *******************/
-    let event_loop = EventLoop::new().unwrap();
+    let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
 
     /******************
@@ -421,10 +478,16 @@ pub fn run(app: Box<dyn SurgeApp>, engine_config: EngineConfig) {
         recreate_swapchain: false,
         crash_shown: false,
         last_window_size: initial_size,
+        error: None,
     };
 
     /*************
      * Main Loop *
      *************/
-    event_loop.run_app(&mut ctx).unwrap();
+    event_loop.run_app(&mut ctx)?;
+
+    match ctx.error {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }
 }

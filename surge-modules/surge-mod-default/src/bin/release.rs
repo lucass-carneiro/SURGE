@@ -1,4 +1,9 @@
-fn main() {
-    let config = surge_sdk::config::parse_config("config.toml").unwrap();
-    surge_player::run(surge_mod_default::surge_register_app(), config);
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
+    let config = match surge_sdk::config::parse_config("config.toml") {
+        Ok(config) => config,
+        Err(e) => return surge_player::fail(e),
+    };
+    surge_player::run(surge_mod_default::surge_register_app(), config)
 }
