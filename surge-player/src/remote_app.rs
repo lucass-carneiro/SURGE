@@ -417,3 +417,139 @@ fn stop_child(child: &mut Child) {
         log::warn!("reaping module failed: {e}");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use surge_sdk::{
+        BlendingMode, CanvasError, CreateInfo, InstanceInfo, TextureFilteringLevel,
+        TextureFilteringMode,
+    };
+
+    /// Counts what the module asks of the canvas, without a GPU.
+    #[derive(Default)]
+    struct CountingCanvas {
+        uploads: usize,
+        instances: usize,
+    }
+
+    impl SpriteCanvas for CountingCanvas {
+        fn add_instance(&mut self, _: &InstanceInfo) {
+            self.instances += 1;
+        }
+
+        fn upload_texture(&mut self, _: &str) -> Result<usize, CanvasError> {
+            self.uploads += 1;
+            Ok(self.uploads - 1)
+        }
+
+        fn get_create_info(&self) -> CreateInfo {
+            CreateInfo {
+                blending_mode: BlendingMode::Alpha,
+                texture_filtering_mode: TextureFilteringMode::Nearest,
+                texture_filtering_level: TextureFilteringLevel::X0,
+                max_sprites: 32,
+                max_textures: 32,
+                window_width: 500.0,
+                window_height: 800.0,
+            }
+        }
+    }
+
+    /// Builds the `surge-mod-default` dev binary and returns the startup config that spawns it.
+    ///
+    /// The module lives in another package, so cargo will not have built it for this test; the
+    /// build here is what keeps the test independent of what ran before it. The output folder is
+    /// the one this test binary itself sits in (`<target>/<profile>/deps/<test>`).
+    fn default_module_config() -> StartupAppConfig {
+        let profile_dir = std::env::current_exe()
+            .unwrap()
+            .parent()
+            .and_then(Path::parent)
+            .expect("test binary is in <target>/<profile>/deps")
+            .to_path_buf();
+
+        let mut build = Command::new(std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into()));
+        build.args([
+            "build",
+            "--quiet",
+            "-p",
+            "surge-mod-default",
+            "--bin",
+            "surge_mod_default",
+        ]);
+        if profile_dir
+            .file_name()
+            .is_some_and(|name| name == "release")
+        {
+            build.arg("--release");
+        }
+        let status = build
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .status()
+            .expect("failed to run cargo");
+        assert!(status.success(), "building surge_mod_default failed");
+
+        StartupAppConfig {
+            app_folder: profile_dir.to_string_lossy().into_owned(),
+            app_name: format!("surge_mod_default{}", std::env::consts::EXE_SUFFIX),
+        }
+    }
+
+    /// Drives `frames` updates and returns the canvas they drew to.
+    fn run_frames(app: &mut RemoteApp, canvas: &mut CountingCanvas, frames: usize) {
+        for _ in 0..frames {
+            app.update(1.0 / 60.0, canvas);
+        }
+    }
+
+    /// The F5 path: a crashed module freezes the app, and `reload` (what F5 calls) respawns it,
+    /// asks for a canvas rebuild and gets the app drawing again from a fresh `on_load`.
+    #[test]
+    fn reload_recovers_from_a_crashed_module() {
+        let mut app = RemoteApp::new(&default_module_config()).unwrap();
+
+        let mut canvas = CountingCanvas::default();
+        app.on_load(&mut canvas);
+        run_frames(&mut app, &mut canvas, 5);
+        assert!(!app.is_faulted());
+        assert!(canvas.uploads > 0, "on_load uploaded nothing");
+        assert!(canvas.instances >= 5, "healthy frames drew nothing");
+
+        // Crash the module. The next round trip must notice and fault the app.
+        app.child.kill().unwrap();
+        app.child.wait().unwrap();
+        app.update(1.0 / 60.0, &mut canvas);
+        assert!(app.is_faulted(), "a dead module must fault the app");
+
+        // A faulted app must not draw or talk to the dead module.
+        let drawn = canvas.instances;
+        app.update(1.0 / 60.0, &mut canvas);
+        assert_eq!(canvas.instances, drawn);
+
+        // F5. The player then swaps in a fresh canvas and re-runs `on_load` on it.
+        assert!(
+            SurgeApp::reload(&mut app),
+            "reload must request a canvas rebuild"
+        );
+        assert!(!app.is_faulted(), "a successful reload clears the fault");
+
+        let mut fresh = CountingCanvas::default();
+        app.on_load(&mut fresh);
+        run_frames(&mut app, &mut fresh, 5);
+        assert!(!app.is_faulted());
+        assert_eq!(
+            fresh.uploads, canvas.uploads,
+            "reloaded module uploads the same assets"
+        );
+        assert!(fresh.instances >= 5, "reloaded module drew nothing");
+
+        // Reloading a healthy module works too, and shutdown afterwards is clean.
+        assert!(SurgeApp::reload(&mut app));
+        let mut again = CountingCanvas::default();
+        app.on_load(&mut again);
+        run_frames(&mut app, &mut again, 1);
+        assert!(!app.is_faulted());
+        app.on_unload();
+    }
+}

@@ -18,7 +18,8 @@ cargo check --workspace          # fastest correctness loop
 cargo build                      # debug: target/debug/surge-player + one dev binary per module (surge_mod_*)
 cargo build --release --features release-bin   # required before staging: <module>_release binaries
 cargo run -p surge-player        # MUST be run from the repo root (see CWD contract)
-cargo test --workspace           # tests live in surge-core and surge-sdk; `cargo test -p <crate> <filter>` narrows
+cargo test --workspace           # tests live in surge-core, surge-sdk, surge-player and surge-mod-2048; `cargo test -p <crate> <filter>` narrows.
+                                 # surge-player's reload test builds surge-mod-default itself (nested `cargo build`)
 ```
 
 ### The CWD contract
