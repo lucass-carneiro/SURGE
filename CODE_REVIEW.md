@@ -333,7 +333,7 @@ projection) into that extent via `letterbox`, preserving aspect ratio and center
 color). The render area already used the swapchain extent. Unit-tested in `sprite_database`; not exercised
 on a real fullscreen surface.
 
-### H4. The presentation queue is never validated; formats and present modes are never enumerated
+### H4. ~~The presentation queue is never validated; formats and present modes are never enumerated~~ — FIXED
 
 `grep` across the whole crate finds exactly one surface query —
 `get_physical_device_surface_capabilities` (`image.rs:20`). There is no:
