@@ -665,16 +665,12 @@ fence when the submit or the wait fails.
 Was: `ctx_command.rs:332-361`. `cmd_immediate_submit` created a fence, submitted, blocked up to 1 s, and
 destroyed the fence — per texture. 2048's startup did this 12 times serially.
 
-**M13. `build.rs` writes into the source tree and hides its own errors** — `surge-core/build.rs`. Output
-goes to `src/vulkan/sprite_database/shaders/*.spv` rather than `OUT_DIR` (breaks read-only checkouts and
-cross-target builds, and survives `cargo clean`, so a stale `.spv` can be staged); there are no
-`cargo:rerun-if-changed` directives; diagnostics use `println!` instead of `cargo::warning=`, so on failure
-the user sees a bare `exit(1)` with the glslang output swallowed unless they pass `-vv`.
-`o.status.code().unwrap()` also panics if glslang is killed by a signal. Nothing passes
-`--target-env vulkan1.3`: the emitted modules are **SPIR-V 1.0** carrying
-`OpCapability PhysicalStorageBufferAddresses` + `OpExtension "SPV_KHR_physical_storage_buffer"` against an
-app that declares `API_VERSION_1_3`. That is legal and works, but it is an accident of glslang's default
-target env rather than a decision.
+**M13. ~~`build.rs` writes into the source tree and hides its own errors~~ — FIXED** — `surge-core/build.rs`.
+SPIR-V goes to `OUT_DIR` (consumed via `include_bytes!`), each shader has a `cargo::rerun-if-changed`
+directive, and glslang failures are printed to stderr with glslang's own stdout+stderr output, which cargo
+shows without `-vv`. A signal-killed glslang no longer panics (`status.code()` is handled as `None`), and
+glslang is now passed `--target-env vulkan1.3`, so the modules are SPIR-V 1.6 to match the app's
+`API_VERSION_1_3` (verified with `spirv-dis`).
 
 **M14. No colour-space management anywhere.** The swapchain is `B8G8R8A8_UNORM` (linear) presented as
 `SRGB_NONLINEAR` (`image.rs:35-36`), textures are uploaded as `R8G8B8A8_UNORM` (`mod.rs:618-620`), and
