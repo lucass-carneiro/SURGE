@@ -751,7 +751,7 @@ InstanceRecord`. Query it at use, or at least assert non-null at construction.
 `mapped_ptr::<T>()`, which asks VMA on every call, and `Buffer::new` returns the new
 `VulkanError::BufferNotMapped` if a `MAPPED` buffer comes back with a null pointer.
 
-**M22 (was H7 — corrected). `depth_bounds_test_enable = VK_TRUE` without the `depthBounds` feature** —
+**M22 (was H7 — corrected). ~~`depth_bounds_test_enable = VK_TRUE` without the `depthBounds` feature~~ — FIXED** —
 `ctx_graphics_pipeline.rs:147`. `set_depth_test_enabled` unconditionally enables the depth bounds test;
 `create_logical_device` never requests `depthBounds` and `device_has_required_features` never checks it.
 VUID-VkPipelineDepthStencilStateCreateInfo-depthBoundsTestEnable-00598 is unambiguous, so this is out of
@@ -763,6 +763,8 @@ deliberately injected `minDepthBounds = 5.0` on the same struct, produced any me
 the bounds are `0.0..1.0`, making the test a functional no-op — and the cost of correctness is deleting one
 line. Demoted from HIGH accordingly, and flagged as a reminder that "validation is clean" does not mean
 "spec-conformant".
+**Fixed.** `set_depth_test_enabled` now sets `depth_bounds_test_enable = VK_FALSE`, so the pipeline no longer
+depends on the unrequested `depthBounds` feature; behaviour is unchanged because the bounds were `0.0..1.0`.
 
 ---
 

@@ -143,7 +143,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self.depth_info.depth_test_enable = vk::TRUE;
         self.depth_info.depth_write_enable = enable_write as u32;
         self.depth_info.depth_compare_op = op;
-        self.depth_info.depth_bounds_test_enable = vk::TRUE;
+        self.depth_info.depth_bounds_test_enable = vk::FALSE;
         self.depth_info.stencil_test_enable = vk::FALSE;
         self.depth_info.front = vk::StencilOpState {
             ..Default::default()
