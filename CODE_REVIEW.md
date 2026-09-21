@@ -592,7 +592,8 @@ Was: `main.rs:249-271`. `Focused(false)` sets
 terminal leaves it in `Pausing` for the whole run, rendering nothing, because it never took focus. A
 restore-from-minimize that does not deliver focus leaves the window permanently frozen.
 
-**M4. `fps_cap = 0` panics** — `main.rs:141-148`. `1.0/0.0` → `inf` → `Duration::from_secs_f64(inf)`
+**M4. ~~`fps_cap = 0` panics~~ — FIXED** — `surge-sdk/src/config.rs` (`parse_config` now runs `EngineConfig::validate`, returning `ConfigError::InvalidValue` for a zero `resolution.width/height` or a zero `fps_cap` while `cap_fps` is true).
+Was: `main.rs:141-148`. `1.0/0.0` → `inf` → `Duration::from_secs_f64(inf)`
 panics. No config validation anywhere; `resolution.width/height = 0` is equally unguarded. Unreachable in
 the shipped configs only because they all set `vsync = true`.
 
