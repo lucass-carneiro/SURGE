@@ -49,7 +49,7 @@ precision gaps. All are resolved below with fixes folded back into the sections 
 (Pass 12's own paragraph was retained here through pass 13 and dropped by pass 14's trim, per this doc's
 convention of keeping only the immediately-preceding pass's status paragraph as history.)
 
-**Origin:** CODE_REVIEW.md H10 ("Two statically-linked copies of `surge-core` and `std` in one
+**Origin:** `docs/code_reviews/review_0.md` H10 (then `CODE_REVIEW.md`) ("Two statically-linked copies of `surge-core` and `std` in one
 process"). What started as "give the module entry point a versioned, `extern "C"` ABI" grew into this
 doc once two additional, concrete failure modes came up in discussion (see "Problem" below). Both are
 bigger than H10's original scope and change what "fixing H10" means.
