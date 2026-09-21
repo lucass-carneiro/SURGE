@@ -360,7 +360,13 @@ format already flows through `swapchain_data.format` into the pipeline. Verified
 run on the dev machine; the fallback branches are not exercised there. H5/H6 (compute/transfer selection)
 are untouched.
 
-### H5. `vkGetDeviceQueue` on a family with no created queues — `device.rs:203-217, 258-260`
+### H5. ~~`vkGetDeviceQueue` on a family with no created queues~~ — FIXED — `device.rs:203-217, 258-260`
+
+**Fixed.** `create_logical_device` now builds a de-duplicated list of the graphics, transfer and compute
+families (graphics first) and creates exactly one `DeviceQueueCreateInfo` per distinct family, so every
+family later passed to `get_device_queue` is guaranteed to have a queue, whatever way the three coincide
+(including `compute == transfer != graphics`). The dev machine's families do not collide that way, so the
+collision branch is not exercised there; H6 (which family is picked) is untouched.
 
 ```rust
 if indices.transfer != indices.graphics && indices.transfer != indices.compute { push transfer }

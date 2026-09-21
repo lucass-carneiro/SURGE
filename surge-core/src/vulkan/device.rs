@@ -245,29 +245,24 @@ pub(super) fn create_logical_device(
     log::info!("Creating logical device");
 
     let queue_priorities = [1.0f32];
-    let mut queue_create_infos = vec![
-        vk::DeviceQueueCreateInfo::default()
-            .queue_family_index(indices.graphics)
-            .queue_priorities(&queue_priorities),
-    ];
 
-    // Add optional dedicated transfer queue if different from graphics
-    if indices.transfer != indices.graphics && indices.transfer != indices.compute {
-        queue_create_infos.push(
-            vk::DeviceQueueCreateInfo::default()
-                .queue_family_index(indices.transfer)
-                .queue_priorities(&queue_priorities),
-        );
+    // One queue per *distinct* family: graphics, compute and transfer may all coincide or overlap
+    // in any combination, and every family fetched below must have been created here.
+    let mut unique_families = vec![indices.graphics];
+    for family in [indices.transfer, indices.compute] {
+        if !unique_families.contains(&family) {
+            unique_families.push(family);
+        }
     }
 
-    // Add optional dedicated compute queue if different from graphics and transfer
-    if indices.compute != indices.graphics && indices.compute != indices.transfer {
-        queue_create_infos.push(
+    let queue_create_infos: Vec<_> = unique_families
+        .iter()
+        .map(|&family| {
             vk::DeviceQueueCreateInfo::default()
-                .queue_family_index(indices.compute)
-                .queue_priorities(&queue_priorities),
-        );
-    }
+                .queue_family_index(family)
+                .queue_priorities(&queue_priorities)
+        })
+        .collect();
 
     let extensions = get_required_device_extensions();
 
