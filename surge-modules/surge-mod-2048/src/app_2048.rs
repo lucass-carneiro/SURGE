@@ -38,7 +38,7 @@ impl App2048 {
         let piece_a = Piece::new_random(&board_geometry);
         let mut piece_b = Piece::new_random(&board_geometry);
 
-        while piece_a == piece_b {
+        while piece_a.get_c_slot() == piece_b.get_c_slot() {
             piece_b = Piece::new_random(&board_geometry);
         }
 

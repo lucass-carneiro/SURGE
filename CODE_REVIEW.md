@@ -597,12 +597,13 @@ Was: `main.rs:141-148`. `1.0/0.0` → `inf` → `Duration::from_secs_f64(inf)`
 panics. No config validation anywhere; `resolution.width/height = 0` is equally unguarded. Unreachable in
 the shipped configs only because they all set `vsync = true`.
 
-**M5. 2048's two starting pieces can occupy one slot** — `app_2048.rs:38-43`. `while piece_a == piece_b`
+**M5. ~~2048's two starting pieces can occupy one slot~~ — FIXED** — `app_2048.rs` (`App2048::new` now re-rolls `piece_b` while `piece_a.get_c_slot() == piece_b.get_c_slot()`, comparing slots rather than whole `Piece`s).
+Was: `app_2048.rs:38-43`. `while piece_a == piece_b`
 compares the *whole* `Piece` (a derived `PartialEq` over `usize` slots **and** `f32` positions **and**
 `value`), so two pieces on the same slot with different values pass the check: P(same slot) × P(different
 value) = 1/16 × 1/2 ≈ 1/32 of new games. `reconstruct_board` then does `board[y][x] = Some(idx)`,
 overwriting — one piece vanishes from the move logic permanently, renders forever at its start slot, and
-never responds to input. Compare slots, not pieces.
+never responds to input.
 
 **M6. `update_pos` ignores `dt`** — `piece.rs:51-62`. `c_pos += 0.1 * r` is per-*frame*, and the engine's
 computed delta never reaches it (`update(&mut self, _: f32, ...)` in `lib.rs:76` discards it before
