@@ -733,13 +733,15 @@ Was: `device_has_required_features` validates nine features; this tenth one is e
 still fail device creation. Meanwhile the shaders only use `gl_InstanceIndex`/`gl_VertexIndex`, which need
 no such feature. Drop it or check it.
 
-**M20. `present_completed_sem` is over-allocated, and the comment explaining why is wrong** —
+**M20. ~~`present_completed_sem` is over-allocated, and the comment explaining why is wrong~~ — FIXED** —
 `ctx_new_drop.rs:128-134`, `ctx_swpc.rs:23`, `ctx_command.rs:277`. A five-line comment explains that
 semaphores are sized per swapchain image "because the render_finished semaphore … is held by the
 presentation engine". That is true of `render_finished_sem` and false of `present_completed_sem`, which is
 indexed by `current_frame` (0..`FRAMES_IN_FLIGHT`). Both arrays get `swapchain_image_count` entries, so
 the acquire semaphores beyond index 1 are created, never used, and destroyed. Harmless; actively
 misleading to the next reader, on the one topic in this file where the code is otherwise right.
+**Fixed.** `present_completed_sem` is now created with `FRAMES_IN_FLIGHT` entries (at context creation and on
+swapchain recreation), `render_finished_sem` keeps one per swapchain image, and the comment says which is which.
 
 **M21. `Buffer` snapshots its `AllocationInfo` at construction** — `buffer.rs:28-38`. `mapped_data` is
 cached once and handed out by `get_allocation_info()` forever. Any VMA remap or defragmentation

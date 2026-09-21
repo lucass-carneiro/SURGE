@@ -125,9 +125,10 @@ impl VulkanContext {
             config.renderer.vsync,
         )?;
 
-        // Create fresh synchronization objects sized to swapchain image count
+        // Create fresh synchronization objects: acquire semaphores per frame in flight,
+        // render-finished semaphores per swapchain image
         let swapchain_image_count = self.swapchain_data.images.len();
-        self.present_completed_sem = command::create_semaphores(&self.device, swapchain_image_count)?;
+        self.present_completed_sem = command::create_semaphores(&self.device, FRAMES_IN_FLIGHT)?;
         self.render_finished_sem = command::create_semaphores(&self.device, swapchain_image_count)?;
         self.frame_fences = command::create_fences(&self.device)?;
 

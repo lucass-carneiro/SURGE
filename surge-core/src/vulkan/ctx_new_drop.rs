@@ -1,4 +1,4 @@
-use super::{VulkanContext, command, device, image, instance};
+use super::{FRAMES_IN_FLIGHT, VulkanContext, command, device, image, instance};
 use crate::{config::EngineConfig, errors::VulkanError};
 use ash::{self, ext, khr, vk};
 use std::mem::ManuallyDrop;
@@ -124,12 +124,12 @@ impl VulkanContext {
 
         let depth_image = image::create_depth_image(&memory_allocator, &device, swapchain_data.extent)?;
 
-        // Semaphores are created per swapchain image because the render_finished semaphore
-        // used in presentation is held by the presentation engine until that specific image
-        // is re-acquired. Using image_index for semaphore indexing ensures we don't reuse
-        // a semaphore until its associated image comes back.
+        // present_completed_sem is the acquire semaphore: it is indexed by current_frame and only
+        // needs to outlive one frame, so it gets FRAMES_IN_FLIGHT entries. render_finished_sem is
+        // waited on by the presentation engine, which holds it until that specific image is
+        // re-acquired, so it is indexed by image index and gets one entry per swapchain image.
         let swapchain_image_count = swapchain_data.images.len();
-        let present_completed_sem = command::create_semaphores(&device, swapchain_image_count)?;
+        let present_completed_sem = command::create_semaphores(&device, FRAMES_IN_FLIGHT)?;
         let render_finished_sem = command::create_semaphores(&device, swapchain_image_count)?;
         let frame_fences = command::create_fences(&device)?;
 
