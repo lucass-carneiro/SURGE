@@ -912,6 +912,40 @@ mod tests {
         }
     }
 
+    /// Regression test for M15: the `png` crate emits 16-bit samples big-endian, while
+    /// `R16G16B16A16_UNORM` is read in host order, so `decode_texture_file` must convert.
+    #[test]
+    fn decode_16_bit_png_yields_host_order_samples() {
+        let path = std::env::temp_dir().join(format!("surge_m15_{}.png", std::process::id()));
+
+        // Samples whose two bytes differ, so a byte swap is observable. Alpha is not colour
+        // managed, so it must come back unchanged; 0 and 0xFFFF are fixed points of sRGB->linear.
+        let texel: [u16; 4] = [0xFFFF, 0x0000, 0x8000, 0x1234];
+        {
+            let file = File::create(&path).unwrap();
+            let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), 1, 1);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Sixteen);
+            let mut writer = encoder.write_header().unwrap();
+            let be: Vec<u8> = texel.iter().flat_map(|v| v.to_be_bytes()).collect();
+            writer.write_image_data(&be).unwrap();
+        }
+
+        let decoded = SpriteDatabase::decode_texture_file(path.to_str().unwrap());
+        let _ = std::fs::remove_file(&path);
+        let decoded = decoded.unwrap();
+
+        assert_eq!(decoded.bit_depth, png::BitDepth::Sixteen);
+        let host: Vec<u16> = decoded
+            .rgba
+            .chunks_exact(2)
+            .map(|s| u16::from_ne_bytes([s[0], s[1]]))
+            .collect();
+
+        let mid = (srgb_to_linear(0x8000 as f32 / 65535.0) * 65535.0).round() as u16;
+        assert_eq!(host, vec![0xFFFF, 0x0000, mid, 0x1234]);
+    }
+
     /// Runs a sprite's z through the same proj * view * model chain
     /// the engine builds at draw time and returns the resulting
     /// Vulkan NDC/depth z (post perspective-divide).

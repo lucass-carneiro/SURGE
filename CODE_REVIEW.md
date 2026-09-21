@@ -685,10 +685,14 @@ Was: the swapchain was `B8G8R8A8_UNORM` presented as `SRGB_NONLINEAR` (`image.rs
 `R8G8B8A8_UNORM`, and `sprite.frag` did a plain multiply, so sRGB texels were sampled as linear and
 alpha-blended in non-linear space — transparent edges composited too dark.
 
-**M15. The 16-bit PNG path uploads byte-swapped data** — `sprite_database/mod.rs:618-621`. The `png` crate
-emits 16-bit samples in **big-endian** order (M14's linearisation in `decode_texture_file` now converts them to host order, which fixes this, but the item has not been re-verified); `R16G16B16A16_UNORM` is interpreted in host order. On every
-little-endian target each channel is byte-reversed. No shipped asset is 16-bit, so the branch has never
-run.
+**M15. ~~The 16-bit PNG path uploads byte-swapped data~~ — FIXED** — `sprite_database/mod.rs`
+(`decode_texture_file`). The `png` crate emits 16-bit samples **big-endian**, while `R16G16B16A16_UNORM` is
+read in host order, so on every little-endian target each channel was byte-reversed. The M14 linearisation
+loop in `decode_texture_file` already reads each sample with `u16::from_be_bytes` and writes it back with
+`to_ne_bytes` (alpha included, unconverted otherwise), which fixes this; it is now verified by the
+`decode_16_bit_png_yields_host_order_samples` test, which encodes a 16-bit RGBA PNG, decodes it, and checks
+every sample in host order (the test fails if the conversion is dropped).
+Was: the bytes were copied to the GPU untouched. No shipped asset is 16-bit, so the branch had never run.
 
 **M16. ~~`.gitignore`'s unanchored `config.toml` also ignores the module configs the stager requires~~ — FIXED.**
 
