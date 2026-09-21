@@ -340,11 +340,10 @@ impl SpriteDatabase {
             let proj = make_ortho_projection(ci.window_width, ci.window_height);
 
             unsafe {
-                *(frame_globals_ubo.get_allocation_info().mapped_data as *mut FrameGlobals) =
-                    FrameGlobals {
-                        _view: view,
-                        _proj: proj,
-                    };
+                *frame_globals_ubo.mapped_ptr::<FrameGlobals>() = FrameGlobals {
+                    _view: view,
+                    _proj: proj,
+                };
             }
 
             frame_globals_ubo.flush()?;
@@ -502,9 +501,7 @@ impl SpriteDatabase {
 
         let instance_records_slice: &mut [InstanceRecord] = unsafe {
             slice::from_raw_parts_mut(
-                self.instance_records_ssbos[current_frame]
-                    .get_allocation_info()
-                    .mapped_data as *mut InstanceRecord,
+                self.instance_records_ssbos[current_frame].mapped_ptr::<InstanceRecord>(),
                 self.ci.max_sprites as usize,
             )
         };
@@ -625,12 +622,8 @@ impl SpriteDatabase {
             Buffer::new(self.context.clone(), &bci, &bai)
         }?;
 
-        let cpu_buffer_slice: &mut [u8] = unsafe {
-            slice::from_raw_parts_mut(
-                cpu_buffer.get_allocation_info().mapped_data as *mut u8,
-                image_size,
-            )
-        };
+        let cpu_buffer_slice: &mut [u8] =
+            unsafe { slice::from_raw_parts_mut(cpu_buffer.mapped_ptr::<u8>(), image_size) };
 
         cpu_buffer_slice.copy_from_slice(&decoded.rgba);
         cpu_buffer.flush()?;

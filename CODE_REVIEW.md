@@ -743,10 +743,13 @@ misleading to the next reader, on the one topic in this file where the code is o
 **Fixed.** `present_completed_sem` is now created with `FRAMES_IN_FLIGHT` entries (at context creation and on
 swapchain recreation), `render_finished_sem` keeps one per swapchain image, and the comment says which is which.
 
-**M21. `Buffer` snapshots its `AllocationInfo` at construction** — `buffer.rs:28-38`. `mapped_data` is
+**M21. ~~`Buffer` snapshots its `AllocationInfo` at construction~~ — FIXED** — `buffer.rs:28-38`. `mapped_data` is
 cached once and handed out by `get_allocation_info()` forever. Any VMA remap or defragmentation
 invalidates it silently, and there is no null check before `add_instance` dereferences it as `*mut
 InstanceRecord`. Query it at use, or at least assert non-null at construction.
+**Fixed.** `Buffer` no longer stores an `AllocationInfo`; `get_allocation_info()` is replaced by
+`mapped_ptr::<T>()`, which asks VMA on every call, and `Buffer::new` returns the new
+`VulkanError::BufferNotMapped` if a `MAPPED` buffer comes back with a null pointer.
 
 **M22 (was H7 — corrected). `depth_bounds_test_enable = VK_TRUE` without the `depthBounds` feature** —
 `ctx_graphics_pipeline.rs:147`. `set_depth_test_enabled` unconditionally enables the depth bounds test;

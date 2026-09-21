@@ -8,7 +8,6 @@ pub struct Buffer {
     context: Arc<RefCell<VulkanContext>>,
     buffer: vk::Buffer,
     allocation: vk_mem::Allocation,
-    allocation_info: vk_mem::AllocationInfo,
 }
 
 impl Buffer {
@@ -25,17 +24,21 @@ impl Buffer {
                 .map_err(|e| VulkanError::BufferAllocationError(e))
         }?;
 
-        let allocation_info = context
-            .borrow()
-            .memory_allocator
-            .get_allocation_info(&allocation);
-
-        Ok(Buffer {
+        let buf = Buffer {
             context,
             buffer,
             allocation,
-            allocation_info,
-        })
+        };
+
+        // A buffer that was asked to be persistently mapped must actually be; failing here (the
+        // `Drop` of `buf` frees the allocation) beats a null dereference at the first write.
+        if ai.flags.contains(vk_mem::AllocationCreateFlags::MAPPED)
+            && buf.mapped_ptr::<u8>().is_null()
+        {
+            return Err(VulkanError::BufferNotMapped);
+        }
+
+        Ok(buf)
     }
 
     pub fn get_buffer(&self) -> vk::Buffer {
@@ -46,8 +49,14 @@ impl Buffer {
         self.allocation
     }
 
-    pub fn get_allocation_info(&self) -> &vk_mem::AllocationInfo {
-        &self.allocation_info
+    /// The persistently mapped host pointer, or null if the buffer is not mapped. Queried from
+    /// VMA on every call rather than cached, since VMA may move or remap an allocation.
+    pub fn mapped_ptr<T>(&self) -> *mut T {
+        self.context
+            .borrow()
+            .memory_allocator
+            .get_allocation_info(&self.allocation)
+            .mapped_data as *mut T
     }
 
     /// Flushes the whole allocation's mapped memory range, making CPU writes visible to the

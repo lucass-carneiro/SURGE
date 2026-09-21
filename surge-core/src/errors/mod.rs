@@ -111,6 +111,9 @@ pub enum VulkanError {
     #[error("Unable to allocate buffer: {0}")]
     BufferAllocationError(ash::vk::Result),
 
+    #[error("Buffer was requested persistently mapped but has no host pointer")]
+    BufferNotMapped,
+
     #[error("Unable to flush buffer memory: {0}")]
     BufferFlushError(ash::vk::Result),
 
