@@ -385,7 +385,15 @@ someone uses them.
 Confirmed not to trigger on the dev machine (its families do not collide that way), which is consistent
 with the clean validation run and is exactly why it will be found by someone else.
 
-### H6. `get_queue_family_indices` picks the *last* match — `device.rs:120-130`
+### H6. ~~`get_queue_family_indices` picks the *last* match~~ — FIXED — `device.rs:144-186`
+
+**Fixed.** Selection is now by preference instead of last-match. Compute: a dedicated (COMPUTE, no
+GRAPHICS) family, else the graphics family if it has COMPUTE, else any family with COMPUTE. Transfer: a
+transfer-only family (no flag beyond TRANSFER/SPARSE_BINDING, which rules out the video and optical-flow
+families), else the graphics family if it has TRANSFER, else any with TRANSFER. The function now returns
+`Option<QueueFamilyIndices>`, so a device with no matching family is reported unsuitable instead of
+silently getting family 0. On the dev machine's layout below this yields graphics = 0, compute = 2,
+transfer = 1. Covered by unit tests in `device.rs`. Original finding kept below for the record.
 
 The loop has no `break`, so each index ends up as the highest-numbered family carrying the bit, not the
 first or the most suitable. Measured on the dev machine's own GPU:

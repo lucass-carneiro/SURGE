@@ -143,26 +143,46 @@ fn device_has_surface_formats_and_present_modes(
 
 /// `graphics` is chosen by the caller (it depends on the surface); compute/transfer are not
 /// presentation-related.
+///
+/// Preference order, first match wins:
+/// - compute: a dedicated (async) compute family, i.e. COMPUTE without GRAPHICS; else the graphics
+///   family if it has COMPUTE; else any family with COMPUTE.
+/// - transfer: a transfer-only family (no flag beyond TRANSFER/SPARSE_BINDING, which excludes
+///   video decode/encode and optical-flow families); else the graphics family if it has TRANSFER;
+///   else any family with TRANSFER.
+///
+/// Returns `None` if no family offers compute or transfer at all.
 pub(super) fn get_queue_family_indices(
     queue_families: &[vk::QueueFamilyProperties],
     graphics: u32,
-) -> QueueFamilyIndices {
-    let mut indices = QueueFamilyIndices {
-        graphics,
-        compute: 0,
-        transfer: 0,
+) -> Option<QueueFamilyIndices> {
+    let find = |pred: &dyn Fn(u32, vk::QueueFlags) -> bool| {
+        queue_families
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (i as u32, f.queue_flags))
+            .find(|&(i, flags)| pred(i, flags))
+            .map(|(i, _)| i)
     };
 
-    for (i, family) in queue_families.iter().enumerate() {
-        if family.queue_flags.contains(vk::QueueFlags::COMPUTE) {
-            indices.compute = i as u32;
-        }
-        if family.queue_flags.contains(vk::QueueFlags::TRANSFER) {
-            indices.transfer = i as u32;
-        }
-    }
+    let compute = find(&|_, flags| {
+        flags.contains(vk::QueueFlags::COMPUTE) && !flags.contains(vk::QueueFlags::GRAPHICS)
+    })
+    .or_else(|| find(&|i, flags| i == graphics && flags.contains(vk::QueueFlags::COMPUTE)))
+    .or_else(|| find(&|_, flags| flags.contains(vk::QueueFlags::COMPUTE)))?;
 
-    indices
+    let transfer_only_extras = vk::QueueFlags::TRANSFER | vk::QueueFlags::SPARSE_BINDING;
+    let transfer = find(&|_, flags| {
+        flags.contains(vk::QueueFlags::TRANSFER) && (flags & !transfer_only_extras).is_empty()
+    })
+    .or_else(|| find(&|i, flags| i == graphics && flags.contains(vk::QueueFlags::TRANSFER)))
+    .or_else(|| find(&|_, flags| flags.contains(vk::QueueFlags::TRANSFER)))?;
+
+    Some(QueueFamilyIndices {
+        graphics,
+        compute,
+        transfer,
+    })
 }
 
 fn is_device_suitable(
@@ -198,9 +218,14 @@ fn is_device_suitable(
     let is_suitable =
         has_required_features && has_device_extensions && has_queue_families && can_present;
 
-    if let (true, Some(graphics)) = (is_suitable, graphics_family) {
+    let indices = match (is_suitable, graphics_family) {
+        (true, Some(graphics)) => get_queue_family_indices(&queue_families, graphics),
+        _ => None,
+    };
+
+    if let Some(indices) = indices {
         log::info!("Device is suitable");
-        Some(get_queue_family_indices(&queue_families, graphics))
+        Some(indices)
     } else {
         log::info!(
             "Device is unsuitable:
@@ -307,4 +332,45 @@ pub(super) fn create_logical_device(
     let transfer_queue = unsafe { device.get_device_queue(indices.transfer, 0) };
 
     Ok((device, graphics_queue, compute_queue, transfer_queue))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn family(flags: vk::QueueFlags) -> vk::QueueFamilyProperties {
+        vk::QueueFamilyProperties::default()
+            .queue_flags(flags)
+            .queue_count(1)
+    }
+
+    const G: vk::QueueFlags = vk::QueueFlags::GRAPHICS;
+    const C: vk::QueueFlags = vk::QueueFlags::COMPUTE;
+    const T: vk::QueueFlags = vk::QueueFlags::TRANSFER;
+    const S: vk::QueueFlags = vk::QueueFlags::SPARSE_BINDING;
+
+    #[test]
+    fn prefers_dedicated_families_over_the_last_match() {
+        // The dev machine's layout: family 3 stands in for the video/optical-flow families,
+        // which carry TRANSFER plus an extra bit and used to win by being last.
+        let extra = vk::QueueFlags::from_raw(0x20); // VIDEO_DECODE_KHR
+        let families = [
+            family(G | C | T | S),
+            family(T | S),
+            family(C | T | S),
+            family(T | S | extra),
+        ];
+        let i = get_queue_family_indices(&families, 0).unwrap();
+        assert_eq!((i.graphics, i.compute, i.transfer), (0, 2, 1));
+    }
+
+    #[test]
+    fn falls_back_to_graphics_family_then_reports_none() {
+        let single = [family(G | C | T)];
+        let i = get_queue_family_indices(&single, 0).unwrap();
+        assert_eq!((i.compute, i.transfer), (0, 0));
+
+        let no_compute = [family(G | T)];
+        assert!(get_queue_family_indices(&no_compute, 0).is_none());
+    }
 }
