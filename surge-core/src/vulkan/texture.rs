@@ -97,9 +97,11 @@ impl Texture {
             .height(self.image_extent.height)
     }
 
-    pub fn immediate_upload_from_buffer(&self, src_buffer: &Buffer) -> Result<(), VulkanError> {
-        self.context.borrow().cmd_immediate_begin()?;
-
+    /// Records the buffer-to-image copy (with both layout transitions) into the immediate command
+    /// buffer, which the caller must have begun (`cmd_immediate_begin`). Nothing is submitted:
+    /// the caller ends and submits the buffer once for however many textures it recorded, and
+    /// must keep `src_buffer` alive until that submission has completed.
+    pub fn record_upload_from_buffer(&self, src_buffer: &Buffer) {
         let barrier_1 = [vk::ImageMemoryBarrier2::default()
             .src_stage_mask(vk::PipelineStageFlags2::TOP_OF_PIPE)
             .dst_stage_mask(vk::PipelineStageFlags2::TRANSFER)
@@ -157,10 +159,6 @@ impl Texture {
                 .device
                 .cmd_pipeline_barrier2(cmd_buffer, &dep_info_2);
         }
-
-        self.context.borrow().cmd_immediate_end()?;
-
-        self.context.borrow().cmd_immediate_submit()
     }
 }
 

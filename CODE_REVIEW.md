@@ -651,9 +651,19 @@ Was: `main.rs` contained **29** `.unwrap()` calls. Forty-plus carefully written 
 call site in the player discarded them. A missing `config.toml`, a missing dylib, a missing shader, and a lost
 device were all indistinguishable panics-with-backtrace.
 
-**M12. Each texture upload fully stalls the GPU** — `ctx_command.rs:332-361`. `cmd_immediate_submit`
-creates a fence, submits, blocks up to 1 s, destroys the fence — per texture. 2048's startup does this 12
-times serially.
+**M12. ~~Each texture upload fully stalls the GPU~~ — FIXED — `sprite_database/mod.rs`, `texture.rs`,
+`ctx_command.rs`.
+**Fixed.** Uploads are now batched. `upload_decoded_texture` only records the buffer-to-image copy
+(`Texture::record_upload_from_buffer`, which no longer begins/ends/submits) into the immediate command buffer
+and parks the staging buffer in `SpriteDatabase::pending_uploads`. The new private `flush_uploads`, called at
+the top of `draw()` (before the descriptor set is bound), ends and submits the buffer once, waits, frees the
+staging buffers, and does the M9 `device_wait_idle` + descriptor write once. A burst of N uploads is now one
+fence and one device drain instead of N of each, in both release and dev mode (dev-mode uploads are replayed
+onto the real database by the player, so no wire change was needed). Texture ids are still handed out
+immediately, and the capacity check counts pending textures. `cmd_immediate_submit` also no longer leaks its
+fence when the submit or the wait fails.
+Was: `ctx_command.rs:332-361`. `cmd_immediate_submit` created a fence, submitted, blocked up to 1 s, and
+destroyed the fence — per texture. 2048's startup did this 12 times serially.
 
 **M13. `build.rs` writes into the source tree and hides its own errors** — `surge-core/build.rs`. Output
 goes to `src/vulkan/sprite_database/shaders/*.spv` rather than `OUT_DIR` (breaks read-only checkouts and

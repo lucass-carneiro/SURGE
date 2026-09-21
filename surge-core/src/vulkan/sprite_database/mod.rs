@@ -105,6 +105,10 @@ pub struct SpriteDatabase {
 
     /// Sprite textures uploaded to GPU memory
     uploaded_textures: Vec<Texture>,
+
+    /// Staging buffers of copies recorded into the immediate command buffer but not yet
+    /// submitted. Non-empty exactly while that command buffer is recording; see `flush_uploads`.
+    pending_uploads: Vec<Buffer>,
 }
 
 impl SpriteDatabase {
@@ -435,6 +439,7 @@ impl SpriteDatabase {
             pipeline_layout,
             pipeline,
             uploaded_textures: Vec::new(),
+            pending_uploads: Vec::new(),
         })
     }
 
@@ -560,9 +565,10 @@ impl SpriteDatabase {
     /// Returns the new texture's index in upload order, i.e. the `texture_id` to use in
     /// `InstanceInfo`. Fails with `TextureDatabaseFull` once `max_textures` are uploaded.
     ///
-    /// Safe to call at any time outside command-buffer recording (before or between frames): it
-    /// waits for the device to go idle before updating the material descriptor set, so it stalls
-    /// the GPU.
+    /// The GPU copy is only recorded here; it is submitted, along with every other pending upload,
+    /// by the next `draw`. That is what makes a burst of uploads (e.g. at startup) cost one GPU
+    /// stall in total instead of one each. The stall itself is a full device drain, since the
+    /// material descriptor set is rewritten at that point.
     pub fn upload_texture(&mut self, texture_file: &str) -> Result<usize, VulkanError> {
         let decoded = Self::decode_texture_file(texture_file)?;
         self.upload_decoded_texture(&decoded)
@@ -620,15 +626,35 @@ impl SpriteDatabase {
 
         let texture = Texture::new(self.context.clone(), decoded.width, decoded.height, format)?;
 
-        // Submit CPU to GPU buffer copy command
-        texture.immediate_upload_from_buffer(&cpu_buffer)?;
+        // Record the CPU to GPU buffer copy; `flush_uploads` submits it. The first upload of a
+        // batch opens the immediate command buffer.
+        if self.pending_uploads.is_empty() {
+            self.context.borrow().cmd_immediate_begin()?;
+        }
+        texture.record_upload_from_buffer(&cpu_buffer);
+
+        // The staging buffer must outlive the submission.
+        self.pending_uploads.push(cpu_buffer);
 
         // Add GPU image record to database
         let texture_id = self.uploaded_textures.len();
         self.uploaded_textures.push(texture);
 
+        Ok(texture_id)
+    }
+
+    /// Submits every recorded texture upload in one go, waits for it, and publishes the new
+    /// textures in the material descriptor set. No-op when nothing is pending.
+    fn flush_uploads(&mut self) -> Result<(), VulkanError> {
+        if self.pending_uploads.is_empty() {
+            return Ok(());
+        }
+
+        self.context.borrow().cmd_immediate_end()?;
+        self.context.borrow().cmd_immediate_submit()?;
+        self.pending_uploads.clear();
+
         // Update texture descriptor.
-        // TODO: Do this somewhere else?
         {
             // `mat_desc_set` is not UPDATE_AFTER_BIND, so it must not be written while any
             // submitted command buffer that bound it is still pending. Frames already in flight
@@ -667,10 +693,13 @@ impl SpriteDatabase {
             };
         }
 
-        Ok(texture_id)
+        Ok(())
     }
 
     pub fn draw(&mut self) -> Result<(), VulkanError> {
+        // Before binding the descriptor set: flushing rewrites it.
+        self.flush_uploads()?;
+
         self.context
             .borrow()
             .cmd_bind_graphics_pipeline(self.pipeline);

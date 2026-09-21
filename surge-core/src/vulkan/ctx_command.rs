@@ -345,18 +345,20 @@ impl VulkanContext {
             ..Default::default()
         };
 
-        unsafe {
+        let result = unsafe {
             self.device
                 .queue_submit(self.graphics_queue, &[si], fence)
-                .map_err(|e| VulkanError::FrameCommandBufferSubmitError(self.current_frame, e))?;
-
-            self.device
-                .wait_for_fences(&[fence], true, 1000000000)
-                .map_err(|e| VulkanError::FenceWaiteError(e))?;
-
-            self.device.destroy_fence(fence, None)
+                .map_err(|e| VulkanError::FrameCommandBufferSubmitError(self.current_frame, e))
+                .and_then(|()| {
+                    self.device
+                        .wait_for_fences(&[fence], true, 1000000000)
+                        .map_err(|e| VulkanError::FenceWaiteError(e))
+                })
         };
 
-        Ok(())
+        // Destroy the fence on the error paths too, instead of leaking it.
+        unsafe { self.device.destroy_fence(fence, None) };
+
+        result
     }
 }
