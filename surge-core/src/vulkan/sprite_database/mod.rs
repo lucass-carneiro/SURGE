@@ -559,6 +559,10 @@ impl SpriteDatabase {
 
     /// Returns the new texture's index in upload order, i.e. the `texture_id` to use in
     /// `InstanceInfo`. Fails with `TextureDatabaseFull` once `max_textures` are uploaded.
+    ///
+    /// Safe to call at any time outside command-buffer recording (before or between frames): it
+    /// waits for the device to go idle before updating the material descriptor set, so it stalls
+    /// the GPU.
     pub fn upload_texture(&mut self, texture_file: &str) -> Result<usize, VulkanError> {
         let decoded = Self::decode_texture_file(texture_file)?;
         self.upload_decoded_texture(&decoded)
@@ -626,6 +630,18 @@ impl SpriteDatabase {
         // Update texture descriptor.
         // TODO: Do this somewhere else?
         {
+            // `mat_desc_set` is not UPDATE_AFTER_BIND, so it must not be written while any
+            // submitted command buffer that bound it is still pending. Frames already in flight
+            // bind it every draw, so drain the GPU first rather than relying on callers to
+            // upload only before the first submission.
+            unsafe {
+                self.context
+                    .borrow()
+                    .device
+                    .device_wait_idle()
+                    .map_err(VulkanError::DeviceWaitIdleError)?
+            };
+
             let mut si = Vec::new();
 
             for texture in &self.uploaded_textures {

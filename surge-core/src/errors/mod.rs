@@ -75,6 +75,9 @@ pub enum VulkanError {
     #[error("Unable to wait fence: {0}")]
     FenceWaiteError(ash::vk::Result),
 
+    #[error("Unable to wait for the device to become idle: {0}")]
+    DeviceWaitIdleError(ash::vk::Result),
+
     #[error("Unable to reset fence: {0}")]
     FenceResetError(ash::vk::Result),
 

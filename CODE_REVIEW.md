@@ -621,10 +621,15 @@ in version control. Right now no two clones are guaranteed to build the same dep
 `add_instance` occupancy check keep using `max_sprites`. Both call sites in `main.rs` pass `max_sprites: 32,
 max_textures: 32`, preserving current numeric behavior while decoupling the mechanism for future tuning.
 
-**M9. `upload_texture` updates a live descriptor set** — `sprite_database/mod.rs:637-663`.
-`update_descriptor_sets` on `mat_desc_set` with no `UPDATE_AFTER_BIND` flag and no fence wait. Safe only
-because both call sites happen to run before any submission that binds the set. Nothing in the API says
-so, and it is a `pub fn`.
+**M9. ~~`upload_texture` updates a live descriptor set~~ — FIXED — `sprite_database/mod.rs`, `errors/mod.rs`.
+`upload_decoded_texture` now calls `device_wait_idle` (new `VulkanError::DeviceWaitIdleError`) before
+`update_descriptor_sets` on `mat_desc_set`, so the write can no longer race a pending frame that bound the
+set, regardless of when a caller uploads. `upload_texture` documents that it stalls the GPU. Chosen over
+`UPDATE_AFTER_BIND` because that would add a new required device feature; uploads are already a full stall
+(M12).
+Was: `sprite_database/mod.rs:637-663`. `update_descriptor_sets` on `mat_desc_set` with no
+`UPDATE_AFTER_BIND` flag and no fence wait. Safe only because both call sites happen to run before any
+submission that binds the set. Nothing in the API says so, and it is a `pub fn`.
 
 **M10. ~~`on_swapchain_recreate(&self, ...)` takes `&self`~~ — FIXED — `app/mod.rs`.
 **Fixed.** `on_swapchain_recreate`, `mouse_wheel_event`, and `on_unload` all now take `&mut self`, matching
