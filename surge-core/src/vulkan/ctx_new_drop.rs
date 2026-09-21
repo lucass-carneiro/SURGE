@@ -123,7 +123,7 @@ impl VulkanContext {
             physical_device,
         )?);
 
-        let depth_image = image::create_depth_image(&memory_allocator, &device, config)?;
+        let depth_image = image::create_depth_image(&memory_allocator, &device, swapchain_data.extent)?;
 
         // Semaphores are created per swapchain image because the render_finished semaphore
         // used in presentation is held by the presentation engine until that specific image

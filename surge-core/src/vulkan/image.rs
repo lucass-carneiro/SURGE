@@ -1,5 +1,5 @@
 use super::{AllocatedImage, DPETH_FORMAT, SwapchainData};
-use crate::{config::EngineConfig, errors::VulkanError};
+use crate::errors::VulkanError;
 use ash::{self, khr, vk};
 use vk_mem::Alloc;
 
@@ -116,11 +116,13 @@ pub(super) fn create_swapchain(
 pub(super) fn create_depth_image(
     memory_allocator: &vk_mem::Allocator,
     device: &ash::Device,
-    config: &EngineConfig,
+    swapchain_extent: vk::Extent2D,
 ) -> Result<AllocatedImage, VulkanError> {
+    // Must match the swapchain (and so the render area), not the configured design resolution:
+    // in borderless fullscreen the surface is the monitor size.
     let extent = vk::Extent3D {
-        width: config.resolution.width,
-        height: config.resolution.height,
+        width: swapchain_extent.width,
+        height: swapchain_extent.height,
         depth: 1,
     };
 

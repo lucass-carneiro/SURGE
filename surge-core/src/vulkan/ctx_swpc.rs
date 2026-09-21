@@ -3,6 +3,12 @@ use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;
 
 impl VulkanContext {
+    /// The actual extent of the current swapchain images, which is what every render target
+    /// (depth image, render area, viewport) must be sized against.
+    pub fn swapchain_extent(&self) -> vk::Extent2D {
+        self.swapchain_data.extent
+    }
+
     /// Returns `Ok(None)` when the swapchain is out of date: there is no valid image to render
     /// into, so the caller must skip the frame entirely and recreate the swapchain instead.
     pub fn request_swpc_img(&mut self) -> Result<Option<SwapchainImageData>, VulkanError> {
@@ -129,7 +135,11 @@ impl VulkanContext {
         self.current_frame = 0;
         self.current_image_index = 0;
 
-        self.depth_image = image::create_depth_image(&self.memory_allocator, &self.device, config)?;
+        self.depth_image = image::create_depth_image(
+            &self.memory_allocator,
+            &self.device,
+            self.swapchain_data.extent,
+        )?;
 
         Ok(())
     }

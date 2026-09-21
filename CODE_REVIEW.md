@@ -309,7 +309,7 @@ The `&mut` parameter is pure ceremony. Separately, line 87 uses `=` rather than 
 a recreation request rather than accumulating one — safe only by accident of winit's current
 event/`about_to_wait` interleaving.
 
-### H3. `windowed = false` is structurally broken
+### H3. ~~`windowed = false` is structurally broken~~ — FIXED
 
 Four consumers, three different notions of extent, and only one of them tracks reality:
 
@@ -325,6 +325,13 @@ TOML says (500×800 for 2048). You then render into a render area larger than th
 violation — through a viewport sized to the config. Every shipped `config.toml` sets `windowed = true`, so
 this has probably never been exercised. See also **H13**, which is the same mismatch reached by a path
 that *does* fire, every single launch.
+
+**Fix:** the swapchain extent is now the single source of truth for render targets. The depth image is
+created from `swapchain_data.extent` (`create_depth_image` no longer takes the config), and the sprite
+database's viewport/scissor map the design resolution (`ci.window_*`, which still defines the ortho
+projection) into that extent via `letterbox`, preserving aspect ratio and centering (bars keep the clear
+color). The render area already used the swapchain extent. Unit-tested in `sprite_database`; not exercised
+on a real fullscreen surface.
 
 ### H4. The presentation queue is never validated; formats and present modes are never enumerated
 
@@ -797,7 +804,7 @@ the machine does not otherwise consider valid.
 6. **C5** + **M8** — ~~give `upload_texture` a real handle type instead of a bare `usize` index, and split the
    texture budget from the instance budget~~ — FIXED (both).
 7. **H1** + **H2** — ~~treat `OUT_OF_DATE`/`SUBOPTIMAL` as control flow, not error. This unblocks resize,
-   fullscreen, and **H3**~~ — FIXED (both; **H3** itself is still open, see below).
+   fullscreen, and **H3**~~ — FIXED (both, and **H3** itself).
 8. **M17** — ~~stop re-reading assets from disk inside the frame loop on every swapchain recreate~~ — FIXED.
    (**H13** and **M10**, the other two hats this item used to wear — the resolution being an input not an
    output, and the recreate hook being `&mut self` — are both fixed too.)

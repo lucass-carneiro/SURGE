@@ -677,21 +677,24 @@ impl SpriteDatabase {
             .borrow()
             .cmd_set_push_constants(self.pipeline_layout, &push_constant_data);
 
+        // The design resolution (ci.window_*) defines the ortho projection; the swapchain is
+        // whatever size the surface actually is (the monitor, when borderless fullscreen). Map
+        // the former into the latter, letterboxed so the aspect ratio is preserved.
+        let target = self.context.borrow().swapchain_extent();
+        let (x, y, width, height) = letterbox(self.ci.window_width, self.ci.window_height, target);
+
         let viewport = vk::Viewport::default()
-            .x(0.0)
-            .y(0.0)
-            .width(self.ci.window_width)
-            .height(self.ci.window_height)
+            .x(x as f32)
+            .y(y as f32)
+            .width(width as f32)
+            .height(height as f32)
             .min_depth(0.0)
             .max_depth(1.0);
         self.context.borrow().cmd_set_viewport(viewport);
 
         let scissor = vk::Rect2D::default()
-            .offset(vk::Offset2D { x: 0, y: 0 })
-            .extent(vk::Extent2D {
-                width: self.ci.window_width as u32,
-                height: self.ci.window_height as u32,
-            });
+            .offset(vk::Offset2D { x, y })
+            .extent(vk::Extent2D { width, height });
         self.context.borrow().cmd_set_scissor(scissor);
 
         self.context.borrow().cmd_draw(6, self.occupancy, 0, 0);
@@ -807,9 +810,44 @@ pub fn make_model_matrix(
         .append_translation(&mv)
 }
 
+/// Largest rectangle with the design resolution's aspect ratio that fits in `target`, centered.
+/// Returns `(x, y, width, height)` in target pixels; the leftover bars keep the clear color.
+fn letterbox(design_w: f32, design_h: f32, target: vk::Extent2D) -> (i32, i32, u32, u32) {
+    let scale = (target.width as f32 / design_w).min(target.height as f32 / design_h);
+    let width = ((design_w * scale).round() as u32).clamp(1, target.width.max(1));
+    let height = ((design_h * scale).round() as u32).clamp(1, target.height.max(1));
+    let x = ((target.width - width.min(target.width)) / 2) as i32;
+    let y = ((target.height - height.min(target.height)) / 2) as i32;
+    (x, y, width, height)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn ext(width: u32, height: u32) -> vk::Extent2D {
+        vk::Extent2D { width, height }
+    }
+
+    #[test]
+    fn letterbox_identity_when_extent_matches_design() {
+        assert_eq!(letterbox(500.0, 800.0, ext(500, 800)), (0, 0, 500, 800));
+    }
+
+    #[test]
+    fn letterbox_pillarboxes_portrait_design_on_landscape_monitor() {
+        // 500x800 into 1920x1080: height-bound, scale 1.35 -> 675x1080, centered horizontally.
+        assert_eq!(letterbox(500.0, 800.0, ext(1920, 1080)), (622, 0, 675, 1080));
+    }
+
+    #[test]
+    fn letterbox_stays_inside_target() {
+        for (w, h) in [(1, 1), (7, 3), (3840, 2160), (800, 500)] {
+            let (x, y, lw, lh) = letterbox(500.0, 800.0, ext(w, h));
+            assert!(x >= 0 && y >= 0);
+            assert!(x as u32 + lw <= w && y as u32 + lh <= h, "{w}x{h}");
+        }
+    }
 
     /// Runs a sprite's z through the same proj * view * model chain
     /// the engine builds at draw time and returns the resulting
