@@ -28,9 +28,9 @@ impl<'a> GraphicsPipelineBuilder<'a> {
     pub fn set_shaders(
         mut self,
         vertex_shader: vk::ShaderModule,
-        fragment_sader: vk::ShaderModule,
+        fragment_shader: vk::ShaderModule,
         vertex_shader_name: &'a CStr,
-        fragmen_shader_name: &'a CStr,
+        fragment_shader_name: &'a CStr,
     ) -> Self {
         // Vertex Shader
         let vs_info = vk::PipelineShaderStageCreateInfo::default()
@@ -42,8 +42,8 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         // Fragment Shader
         let fs_info = vk::PipelineShaderStageCreateInfo::default()
             .stage(vk::ShaderStageFlags::FRAGMENT)
-            .module(fragment_sader)
-            .name(fragmen_shader_name);
+            .module(fragment_shader)
+            .name(fragment_shader_name);
         self.shader_stage_infos.push(fs_info);
         self
     }
@@ -143,23 +143,6 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self.depth_info.depth_test_enable = vk::TRUE;
         self.depth_info.depth_write_enable = enable_write as u32;
         self.depth_info.depth_compare_op = op;
-        self.depth_info.depth_bounds_test_enable = vk::FALSE;
-        self.depth_info.stencil_test_enable = vk::FALSE;
-        self.depth_info.front = vk::StencilOpState {
-            ..Default::default()
-        };
-        self.depth_info.back = vk::StencilOpState {
-            ..Default::default()
-        };
-        self.depth_info.min_depth_bounds = 0.0;
-        self.depth_info.max_depth_bounds = 1.0;
-        self
-    }
-
-    pub fn set_depth_test_disabled(mut self) -> Self {
-        self.depth_info.depth_test_enable = vk::FALSE;
-        self.depth_info.depth_write_enable = vk::FALSE;
-        self.depth_info.depth_compare_op = vk::CompareOp::NEVER;
         self.depth_info.depth_bounds_test_enable = vk::FALSE;
         self.depth_info.stencil_test_enable = vk::FALSE;
         self.depth_info.front = vk::StencilOpState {

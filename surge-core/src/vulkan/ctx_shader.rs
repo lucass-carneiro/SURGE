@@ -8,29 +8,10 @@ impl VulkanContext {
     pub fn load_shader_module(&self, spirv_bytes: &[u8]) -> Result<vk::ShaderModule, VulkanError> {
         log::info!("Creating SPIRV shader module ({} bytes)", spirv_bytes.len());
 
-        // Vulkan wants shaders to be u32 buffers.
-        // Check if the byte slice size is a multiple of sizeof(u32)
-        let byte_size = spirv_bytes.len();
-        let u32_size = size_of::<u32>();
-
-        if byte_size % u32_size != 0 {
-            return Err(VulkanError::ShaderModuleInvalidSizeError(byte_size));
-        }
-
-        // Reinterpret the byte slice as a u32 vector.
-        // The key is to use the `from_ne_bytes` method (native endianness) or
-        // explicitly specify the endianness (`from_le_bytes` or `from_be_bytes`)
-        // based on how the bytes were originally written.
-        let u32_buffer: Vec<u32> = spirv_bytes
-            .chunks_exact(u32_size)
-            .map(|bytes_slice| {
-                let bytes_array: [u8; 4] = bytes_slice.try_into().unwrap();
-                u32::from_ne_bytes(bytes_array)
-            })
-            .collect();
+        let u32_buffer = spirv_words(spirv_bytes)?;
 
         let ci = vk::ShaderModuleCreateInfo {
-            code_size: byte_size,
+            code_size: spirv_bytes.len(),
             p_code: u32_buffer.as_ptr(),
             ..Default::default()
         };
@@ -50,5 +31,60 @@ impl VulkanContext {
         unsafe {
             self.device.destroy_shader_module(sm, None);
         }
+    }
+}
+
+/// The first word of every SPIR-V module, in the module's own endianness.
+const SPIRV_MAGIC: u32 = 0x0723_0203;
+
+/// Copies SPIR-V bytes into a `Vec<u32>` and checks the magic number.
+///
+/// The copy is not incidental: `p_code` must be 4-byte aligned, which a `&[u8]` (such as the
+/// `include_bytes!` data) does not guarantee, and a `Vec<u32>` does. Words are read in native
+/// endianness, which is what Vulkan requires; a byte-swapped module fails the magic check.
+fn spirv_words(spirv_bytes: &[u8]) -> Result<Vec<u32>, VulkanError> {
+    let byte_size = spirv_bytes.len();
+
+    if byte_size % size_of::<u32>() != 0 {
+        return Err(VulkanError::ShaderModuleInvalidSizeError(byte_size));
+    }
+
+    let words: Vec<u32> = spirv_bytes
+        .chunks_exact(size_of::<u32>())
+        .map(|chunk| u32::from_ne_bytes(chunk.try_into().unwrap()))
+        .collect();
+
+    if words.first() != Some(&SPIRV_MAGIC) {
+        return Err(VulkanError::ShaderModuleInvalidMagicError);
+    }
+
+    Ok(words)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spirv_words_accepts_a_module_with_the_magic_number() {
+        let mut bytes = SPIRV_MAGIC.to_ne_bytes().to_vec();
+        bytes.extend_from_slice(&1u32.to_ne_bytes());
+        assert_eq!(spirv_words(&bytes).unwrap(), vec![SPIRV_MAGIC, 1]);
+    }
+
+    #[test]
+    fn spirv_words_rejects_bad_size_magic_and_empty_input() {
+        assert!(matches!(
+            spirv_words(&[1, 2, 3]),
+            Err(VulkanError::ShaderModuleInvalidSizeError(3))
+        ));
+        assert!(matches!(
+            spirv_words(&SPIRV_MAGIC.swap_bytes().to_ne_bytes()),
+            Err(VulkanError::ShaderModuleInvalidMagicError)
+        ));
+        assert!(matches!(
+            spirv_words(&[]),
+            Err(VulkanError::ShaderModuleInvalidMagicError)
+        ));
     }
 }

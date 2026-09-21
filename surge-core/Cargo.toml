@@ -11,7 +11,6 @@ nalgebra = "0.34.1"
 png = "0.18.0"
 surge-sdk = { path = "../surge-sdk" }
 thiserror = "2.0.17"
-uuid = "1.19.0"
 vk-mem = "0.5.0"
 winit = "0.30.12"
 

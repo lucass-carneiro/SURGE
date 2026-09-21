@@ -1,5 +1,4 @@
 use log;
-use std::cell::RefCell;
 use surge_sdk::{
     InstanceInfo, KeyEvent, SpriteCanvas, SubTextureInfo, SurgeApp,
     nalgebra::{Vector2, Vector4},
@@ -11,11 +10,24 @@ const SECONDS_PER_FRAME: f32 = 1.0 / 20.0;
 
 const MODULE_NAME: &str = "surge-mod-default";
 
-pub struct AppDefault {}
+/// Animation state lives here rather than in `thread_local!` statics, so a fresh instance (as
+/// built on an F5 reload) starts from a clean slate.
+pub struct AppDefault {
+    /// X position of the moving sprite.
+    position: f32,
+    /// Current frame of the sprite-sheet animation.
+    frame_counter: u32,
+    /// Time accumulated towards the next animation frame.
+    elapsed_time: f32,
+}
 
 #[unsafe(no_mangle)]
 pub fn surge_register_app() -> Box<dyn SurgeApp> {
-    Box::new(AppDefault {})
+    Box::new(AppDefault {
+        position: 0.0,
+        frame_counter: 0,
+        elapsed_time: 0.0,
+    })
 }
 
 fn upload_assets(canvas: &mut dyn SpriteCanvas) {
@@ -65,33 +77,23 @@ impl SurgeApp for AppDefault {
         spdb.add_instance(&aii);
 
         // Test motion
-        thread_local! {
-            static POSITION: RefCell<f32> = const{ RefCell::new(0.0) };
+        aii.position = Vector2::new(self.position, 150.0);
+        self.position += 2.5;
+        if self.position > 800.0 {
+            self.position = -100.0;
         }
-
-        POSITION.with_borrow_mut(|pos| {
-            aii.position = Vector2::new(*pos, 150.0);
-            *pos += 2.5;
-            if *pos > 800.0 {
-                *pos = -100.0;
-            }
-        });
 
         aii.color_multiplier = Vector4::from_element(1.0);
         aii.z = 0.0;
         spdb.add_instance(&aii);
 
         // Test animation
-        thread_local! {
-            static FRAME_COUNTER: RefCell<u32> = const{ RefCell::new(0) };
-            static ELAPSED_TIME: RefCell<f32> = const{ RefCell::new(0.0f32) };
-        }
-
-        let frame_subtexture = FRAME_COUNTER.with_borrow(|fc| {
-            SubTextureInfo::default()
-                .origin(surge_sdk::nalgebra::Vector2::new(2 + fc * (498 + 2), 2))
-                .extent(surge_sdk::nalgebra::Vector2::from_element(498))
-        });
+        let frame_subtexture = SubTextureInfo::default()
+            .origin(surge_sdk::nalgebra::Vector2::new(
+                2 + self.frame_counter * (498 + 2),
+                2,
+            ))
+            .extent(surge_sdk::nalgebra::Vector2::from_element(498));
 
         let anim_ii = InstanceInfo {
             position: Vector2::new(400.0, 0.0),
@@ -103,17 +105,13 @@ impl SurgeApp for AppDefault {
         };
         spdb.add_instance(&anim_ii);
 
-        ELAPSED_TIME.with_borrow_mut(|et| {
-            if *et >= SECONDS_PER_FRAME {
-                *et = 0.0f32;
-                FRAME_COUNTER.with_borrow_mut(|fc| {
-                    *fc += 1;
-                    *fc %= NUM_FRAMES
-                });
-            } else {
-                *et += dt;
-            }
-        });
+        // Carry the leftover time over instead of discarding it, so the animation does not
+        // drift slow; a long frame may advance more than one animation frame.
+        self.elapsed_time += dt;
+        while self.elapsed_time >= SECONDS_PER_FRAME {
+            self.elapsed_time -= SECONDS_PER_FRAME;
+            self.frame_counter = (self.frame_counter + 1) % NUM_FRAMES;
+        }
     }
 
     fn keyboard_event(&mut self, device_id: DeviceId, event: KeyEvent, is_synthetic: bool) {
@@ -146,7 +144,7 @@ impl SurgeApp for AppDefault {
         phase: TouchPhase,
     ) {
         log::info!(
-            "Mouse scroll event: ID = {:?} delta = {:?} phaase = {:?}",
+            "Mouse scroll event: ID = {:?} delta = {:?} phase = {:?}",
             device_id,
             delta,
             phase

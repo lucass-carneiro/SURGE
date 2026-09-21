@@ -45,10 +45,6 @@ impl Buffer {
         self.buffer
     }
 
-    pub fn get_allocation(&self) -> vk_mem::Allocation {
-        self.allocation
-    }
-
     /// The persistently mapped host pointer, or null if the buffer is not mapped. Queried from
     /// VMA on every call rather than cached, since VMA may move or remap an allocation.
     pub fn mapped_ptr<T>(&self) -> *mut T {

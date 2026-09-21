@@ -1,4 +1,4 @@
-use super::{AllocatedImage, DPETH_FORMAT, SwapchainData};
+use super::{AllocatedImage, DEPTH_FORMAT, SwapchainData};
 use crate::errors::VulkanError;
 use ash::{self, khr, vk};
 use vk_mem::Alloc;
@@ -12,6 +12,7 @@ pub(super) fn create_swapchain(
     width: u32,
     height: u32,
     vsync: bool,
+    old_swapchain: vk::SwapchainKHR,
 ) -> Result<SwapchainData, VulkanError> {
     log::info!("Creating swapchain");
 
@@ -21,15 +22,21 @@ pub(super) fn create_swapchain(
             .map_err(|e| VulkanError::SurfaceCapabilityQueryError(e))?
     };
 
-    let extent = vk::Extent2D {
-        width: width.clamp(
-            surface_capabilities.min_image_extent.width,
-            surface_capabilities.max_image_extent.width,
-        ),
-        height: height.clamp(
-            surface_capabilities.min_image_extent.height,
-            surface_capabilities.max_image_extent.height,
-        ),
+    // A `current_extent` of `u32::MAX` is the spec's "the surface size is up to you" sentinel;
+    // anything else is the size the surface already has, and the only one that is valid.
+    let extent = if surface_capabilities.current_extent.width != u32::MAX {
+        surface_capabilities.current_extent
+    } else {
+        vk::Extent2D {
+            width: width.clamp(
+                surface_capabilities.min_image_extent.width,
+                surface_capabilities.max_image_extent.width,
+            ),
+            height: height.clamp(
+                surface_capabilities.min_image_extent.height,
+                surface_capabilities.max_image_extent.height,
+            ),
+        }
     };
 
     let surface_formats = unsafe {
@@ -91,12 +98,16 @@ pub(super) fn create_swapchain(
         .image_color_space(color_space)
         .image_extent(extent)
         .image_array_layers(1)
-        .image_usage(vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::COLOR_ATTACHMENT)
+        // Swapchain images are only ever rendered to; COLOR_ATTACHMENT is the one usage the spec
+        // requires every surface to support, so there is nothing to check against
+        // `supported_usage_flags`.
+        .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
         .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
         .pre_transform(surface_capabilities.current_transform)
         .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
         .present_mode(present_mode)
-        .clipped(true);
+        .clipped(true)
+        .old_swapchain(old_swapchain);
 
     let swapchain_loader = khr::swapchain::Device::new(instance, device);
     let swapchain = unsafe {
@@ -134,7 +145,7 @@ pub(super) fn create_swapchain(
         image_views.push(unsafe {
             device
                 .create_image_view(&ivci, None)
-                .map_err(|e| VulkanError::SwapchainCreationError(e))
+                .map_err(|e| VulkanError::ImageViewCreationError(e))
         }?);
     }
 
@@ -163,7 +174,7 @@ pub(super) fn create_depth_image(
 
     let image_ci = vk::ImageCreateInfo {
         image_type: vk::ImageType::TYPE_2D,
-        format: DPETH_FORMAT,
+        format: DEPTH_FORMAT,
         extent: extent,
         mip_levels: 1,
         array_layers: 1,
@@ -195,7 +206,7 @@ pub(super) fn create_depth_image(
 
     let ivci = vk::ImageViewCreateInfo {
         view_type: vk::ImageViewType::TYPE_2D,
-        format: DPETH_FORMAT,
+        format: DEPTH_FORMAT,
         subresource_range: sr,
         image: depth_image,
         ..Default::default()
@@ -204,7 +215,7 @@ pub(super) fn create_depth_image(
     let depth_image_view = unsafe {
         device
             .create_image_view(&ivci, None)
-            .map_err(|e| VulkanError::SwapchainCreationError(e))
+            .map_err(|e| VulkanError::ImageViewCreationError(e))
     }?;
 
     Ok(AllocatedImage {

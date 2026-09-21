@@ -53,6 +53,13 @@ impl App2048 {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn with_pieces(live_pieces: Vec<Piece>) -> Self {
+        let mut app = App2048::new();
+        app.live_pieces = live_pieces;
+        app
+    }
+
     pub(crate) fn board_idle(&self) -> bool {
         match self.board_states.front() {
             Some(s) => *s == BoardState::Idle,
@@ -106,5 +113,53 @@ impl App2048 {
 
     pub(crate) fn pop_state(&mut self) {
         self.board_states.pop_front();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reconstruct_board_indexes_by_row_then_column() {
+        let bg = BoardGeometry::new();
+        let app = App2048::with_pieces(vec![
+            Piece::new(&bg, 1, Vec2::new(2, 1)), // x = 2, y = 1
+            Piece::new(&bg, 2, Vec2::new(0, 3)),
+        ]);
+
+        let board = app.reconstruct_board();
+
+        assert_eq!(board[1][2], Some(0));
+        assert_eq!(board[3][0], Some(1));
+        assert_eq!(board.iter().flatten().filter(|s| s.is_some()).count(), 2);
+    }
+
+    #[test]
+    fn new_app_starts_idle_with_two_distinct_pieces() {
+        for _ in 0..50 {
+            let app = App2048::new();
+            assert!(app.board_idle());
+            assert_eq!(app.get_live_pieces().len(), 2);
+            assert_ne!(
+                app.get_live_pieces()[0].get_c_slot(),
+                app.get_live_pieces()[1].get_c_slot()
+            );
+        }
+    }
+
+    #[test]
+    fn an_empty_queue_counts_as_idle() {
+        let mut app = App2048::new();
+        app.pop_state();
+        assert!(app.board_idle());
+    }
+
+    #[test]
+    fn input_is_refused_while_a_move_is_in_flight() {
+        let mut app = App2048::new();
+        app.push_state(BoardState::Move(MoveDirection::Right));
+        app.pop_state(); // Drop the initial Idle so Move is at the front.
+        assert!(!app.board_idle());
     }
 }

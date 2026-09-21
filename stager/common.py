@@ -6,7 +6,12 @@ LOG = logging.getLogger(__name__)
 
 
 def get_module_list():
-    return os.listdir("surge-modules")
+    # Only real crates: a stray file or an empty directory is not a module
+    return sorted(
+        entry
+        for entry in os.listdir("surge-modules")
+        if os.path.isfile(os.path.join("surge-modules", entry, "Cargo.toml"))
+    )
 
 
 def cwd_is_surge_root():
@@ -30,10 +35,10 @@ def cwd_is_surge_root():
             return False
 
         members = data["workspace"]["members"]
-        has_all_mambers = ("surge-core" in members) and (
+        has_all_members = ("surge-core" in members) and (
             "surge-player" in members) and ("surge-modules/*" in members)
 
-        if not has_all_mambers:
+        if not has_all_members:
             LOG.error(
                 "Cargo.toml does not have the expected SURGE crates as workspace members"
             )

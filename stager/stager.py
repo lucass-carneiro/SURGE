@@ -1,22 +1,10 @@
 """SURGE stager.
 
 Usage:
-  stager.py [options] list
-  stager.py [options] stage <module-name>
-
-Commands:
-  list   Lists available modules.
-  stage  Creates a new staging for a module
-
-Arguments:
-  <module-name>  The name of a module.
-
-Options:
-  -h --help       Show this screen.
-  --version       Show version.
-  -o --overwrite  Overwrites data in a staging folder, even if the folder already exists
+  stager.py list
+  stager.py stage <module-name> [-o | --overwrite]
 """
-from docopt import docopt
+import argparse
 import sys
 import os
 import logging
@@ -35,10 +23,10 @@ def list_modules():
 
 
 def make_staging(args):
-    overwrite = bool(args["--overwrite"])
+    overwrite = args.overwrite
 
     av_modules = common.get_module_list()
-    req_module = args["<module-name>"]
+    req_module = args.module_name
 
     # Check if the requested module actually exists
     if req_module not in av_modules:
@@ -102,16 +90,46 @@ def make_staging(args):
         "assets"
     )
 
-    shutil.copytree(src_assets_folder, dst_assets_folder)
+    # `assets/svg/` holds source artwork for the PNGs, not something the module loads at runtime
+    if os.path.isdir(src_assets_folder):
+        shutil.copytree(
+            src_assets_folder,
+            dst_assets_folder,
+            ignore=shutil.ignore_patterns("svg")
+        )
+    else:
+        LOG.info(f"Module {req_module} has no assets folder. Staging without assets")
+
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(
+        prog="stager.py", description="Creates self-contained release layouts of SURGE modules."
+    )
+    parser.add_argument("--version", action="version", version="SURGE stager v1.1.0")
+
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    commands.add_parser("list", help="Lists available modules.")
+
+    stage = commands.add_parser("stage", help="Creates a new staging for a module.")
+    stage.add_argument("module_name", metavar="<module-name>", help="The name of a module.")
+    stage.add_argument(
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="Overwrites data in a staging folder, even if the folder already exists",
+    )
+
+    return parser.parse_args(argv)
 
 
 def main(args):
     if not common.cwd_is_surge_root():
         exit(1)
 
-    if args["list"]:
+    if args.command == "list":
         list_modules()
-    elif args["stage"]:
+    elif args.command == "stage":
         make_staging(args)
 
 
@@ -124,6 +142,6 @@ if __name__ == "__main__":
         ]
     )
 
-    args = docopt(__doc__, version="SURGE stager v1.0.0")
+    args = parse_args(sys.argv[1:])
 
     main(args)

@@ -36,7 +36,6 @@ pub struct ResolutionConfig {
 #[derive(Debug, Deserialize)]
 pub struct RendererConfig {
     pub vsync: bool,
-    pub msaa: bool,
     pub cap_fps: bool,
     pub fps_cap: u32,
 }
@@ -144,7 +143,6 @@ mod tests {
             height = {height}
             [renderer]
             vsync = false
-            msaa = false
             cap_fps = {cap_fps}
             fps_cap = {fps_cap}
             [clear_color]

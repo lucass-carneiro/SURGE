@@ -64,12 +64,7 @@ pub(super) unsafe extern "system" fn debug_callback(
         let callback_data = &*p_callback_data;
         let message = CStr::from_ptr(callback_data.p_message).to_string_lossy();
 
-        let type_str = match message_type {
-            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL => "General",
-            vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION => "Validation",
-            vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE => "Performance",
-            _ => "Unknown",
-        };
+        let type_str = message_type_name(message_type);
 
         if message_severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
             || message_severity.contains(vk::DebugUtilsMessageSeverityFlagsEXT::INFO)
@@ -82,6 +77,26 @@ pub(super) unsafe extern "system" fn debug_callback(
         }
 
         vk::FALSE
+    }
+}
+
+/// Names a message type bitmask; a message can carry several bits (e.g. `GENERAL | VALIDATION`).
+#[cfg(feature = "validation_layers")]
+fn message_type_name(message_type: vk::DebugUtilsMessageTypeFlagsEXT) -> String {
+    let names: Vec<&str> = [
+        (vk::DebugUtilsMessageTypeFlagsEXT::GENERAL, "General"),
+        (vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION, "Validation"),
+        (vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE, "Performance"),
+    ]
+    .into_iter()
+    .filter(|(flag, _)| message_type.contains(*flag))
+    .map(|(_, name)| name)
+    .collect();
+
+    if names.is_empty() {
+        "Unknown".to_string()
+    } else {
+        names.join("|")
     }
 }
 
@@ -157,5 +172,18 @@ pub(super) fn build_instance(
         entry
             .create_instance(&create_info, None)
             .map_err(|e| VulkanError::InstanceCreationError(e))
+    }
+}
+
+#[cfg(all(test, feature = "validation_layers"))]
+mod tests {
+    use super::*;
+    use vk::DebugUtilsMessageTypeFlagsEXT as T;
+
+    #[test]
+    fn message_type_name_handles_combined_flags() {
+        assert_eq!(message_type_name(T::VALIDATION), "Validation");
+        assert_eq!(message_type_name(T::GENERAL | T::VALIDATION), "General|Validation");
+        assert_eq!(message_type_name(T::empty()), "Unknown");
     }
 }

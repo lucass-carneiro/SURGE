@@ -74,36 +74,25 @@ impl SurgeApp for App2048 {
     }
 
     fn update(&mut self, dt: f32, spdb: &mut dyn SpriteCanvas) {
-        // Add sprites
-        add_board_sprite(spdb, self.get_board_geometry());
-
-        for piece in self.get_live_pieces() {
-            spdb.add_instance(&piece.get_sprite_instance_info(self.get_board_geometry()));
-        }
-
-        // Process game state
-        let current_state = match self.get_board_states().front() {
-            Some(s) => s,
-            None => {
-                self.push_state(BoardState::Idle);
-                return;
-            }
-        };
-
-        match current_state {
-            BoardState::Idle => return,
-            BoardState::Move(merge_direction) => {
-                log::info!("Board merge {:?}", merge_direction);
-
+        // Advance the game state first, so the sprites submitted below show this frame's
+        // positions rather than the previous frame's.
+        match self.get_board_states().front() {
+            None => self.push_state(BoardState::Idle),
+            Some(BoardState::Idle) => {}
+            Some(BoardState::Move(_)) => {
                 // Move all pieces that need moving. Pop the state if no more pieces are moving
                 if self.update_live_pieces_pos(dt) {
                     self.pop_state();
                 }
             }
-            BoardState::Resolve => {
-                log::info!("Board resolve");
-                self.pop_state();
-            }
+            Some(BoardState::Resolve) => self.pop_state(),
+        }
+
+        // Add sprites
+        add_board_sprite(spdb, self.get_board_geometry());
+
+        for piece in self.get_live_pieces() {
+            spdb.add_instance(&piece.get_sprite_instance_info(self.get_board_geometry()));
         }
     }
 

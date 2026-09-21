@@ -365,7 +365,7 @@ impl VulkanContext {
                 .and_then(|()| {
                     self.device
                         .wait_for_fences(&[fence], true, 1000000000)
-                        .map_err(|e| VulkanError::FenceWaiteError(e))
+                        .map_err(|e| VulkanError::FenceWaitError(e))
                 })
         };
 

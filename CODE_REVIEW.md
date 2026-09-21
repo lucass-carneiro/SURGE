@@ -770,62 +770,69 @@ depends on the unrequested `depthBounds` feature; behaviour is unchanged because
 
 ## LOW / hygiene
 
-- **Subtexture bounds off-by-one** — `sprite_database/mod.rs:522-523`: `(sx + sw) < ow` rejects a sub-rect
-  ending exactly at the texture edge; should be `<=`. Not triggered by the shipped 12502×502 sheet (frame
-  24 ends at 12500 — verified), but it's wrong. `sx + sw` also overflows `u32` and panics in debug.
-- **`create_swapchain` ignores half of what it queries** — `image.rs:18-64`: `current_extent` (including
-  the `0xFFFFFFFF` "surface size is up to you" sentinel) is never consulted, and
-  `supported_usage_flags` is never checked against the unconditionally-requested `TRANSFER_DST`.
-- **`Buffer::get_allocation()` hands out a `Copy` handle** — `buffer.rs:45`. `vk_mem::Allocation` derives
-  `Copy`; a caller can trivially arrange a double-free. Currently unused — delete it.
-- **`SpriteDatabase::new` panics inside `std::array::from_fn`** — `mod.rs:208`: `Buffer::new(...).unwrap()`
-  turns an allocation failure into a panic, in a function whose whole signature is `Result<Self,
-  VulkanError>`. Same shape at `mod.rs:585` (`output_buffer_size().unwrap()` on attacker-controlled input).
-- **`Drop for VulkanContext` leaks everything if `device_wait_idle` fails** — `ctx_new_drop.rs:210-213`
-  returns early, skipping the allocator, device, surface, messenger, and instance.
-- **Config drift** — `msaa = true` in every shipped config while `set_multisampling_none()` is hardcoded;
-  `allow_resizes` is an unknown key silently swallowed by serde (no `deny_unknown_fields`) against a window
-  hardcoded `.with_resizable(false)`.
-- **Dead code** — `uuid` is a `surge-core` dependency with **zero** references (verified); `ModuleError`
-  and `VulkanError::ImageCreationError` are never constructed; `Texture::new` reports image-creation
-  failure as `DepthImageCreationError` (`texture.rs:52`) and image-view failure as
-  `SwapchainCreationError` (`texture.rs:77`); `create_depth_image` does the same at `image.rs:170`;
-  `set_depth_test_disabled` is unused; `surge-player`'s `path` dependency on `surge-mod-default` is
-  vestigial.
-- **`BlendingMode::default()` / `SubTextureInfo::default()`** are inherent methods shadowing the `Default`
-  trait without implementing it — they will not work in `..Default::default()` position.
-- **`load_shader_module` never checks the SPIR-V magic number** (`ctx_shader.rs`), and the
-  `chunks_exact`/`from_ne_bytes` round-trip is a byte-identical copy whose only real purpose — obtaining
-  4-byte alignment for `p_code` — is the one thing the comment doesn't mention.
-- **`debug_callback` matches a bitflag by equality** — `instance.rs:67-72`: a message tagged
-  `GENERAL | VALIDATION` falls through to `"Unknown"`.
-- **`README.md` is entirely wrong** — it documents the C++/CMake/vcpkg incarnation: `SURGE_*` flags,
-  submodules, OpenGL, a `SCOMP` tool that does not exist. Only "Philosophy" survives. It is the first thing
-  anyone reads.
+All items below were addressed in one pass; each note says what was done. Items that were already stale
+when the pass started say so.
+
+- **~~Subtexture bounds off-by-one~~ — FIXED** — `sprite_database/mod.rs`. The bounds check is now the pure
+  function `subtexture_uv_transform`, which uses `checked_add` and `<=`, so a sub-rect ending exactly on the
+  texture edge is accepted and `sx + sw` can no longer overflow. It is also where the UV derivation is now
+  unit-tested (in-range, exact-edge, out-of-range and overflowing rects).
+- **~~`create_swapchain` ignores half of what it queries~~ — FIXED** — `image.rs`. `current_extent` is used
+  unless it is the `0xFFFFFFFF` sentinel, in which case the requested size is clamped as before. The
+  `TRANSFER_DST` usage was requested but never used (swapchain images are only rendered to), so it was
+  dropped instead of checked; `COLOR_ATTACHMENT` is the usage every surface must support.
+- **~~`Buffer::get_allocation()` hands out a `Copy` handle~~ — FIXED** — deleted (it had no callers).
+- **~~`SpriteDatabase::new` panics inside `std::array::from_fn`~~ — FIXED** — the SSBOs are built with
+  `collect::<Result<Vec<_>, _>>()?` and the allocation error now propagates. `output_buffer_size()` returning
+  `None` on a hostile PNG header is now `VulkanError::TextureTooLarge` instead of a panic.
+- **~~`Drop for VulkanContext` leaks everything if `device_wait_idle` fails~~ — FIXED** — the failure is
+  logged and cleanup continues.
+- **~~Config drift~~ — FIXED** — the `msaa` field is removed from `RendererConfig` (it was never read; the
+  pipeline is hardcoded single-sample) and `msaa` / `allow_resizes` are removed from the checked-in configs.
+  `deny_unknown_fields` was deliberately **not** added: developers' gitignored root `config.toml` copies
+  still carry the old keys and would stop loading.
+- **~~Dead code~~ — FIXED** — the unused `uuid` dependency and `set_depth_test_disabled` are deleted.
+  `ModuleError` (module ABI step 3.x) and `surge-player`'s dependency on `surge-mod-default` (step 0.1) were
+  already gone. `VulkanError::ImageCreationError` is now used by `Texture::new` for image creation, and a new
+  `ImageViewCreationError` replaces the `SwapchainCreationError` / `DepthImageCreationError` misuse for image
+  views in `texture.rs` and `image.rs`.
+- **~~`BlendingMode::default()` / `SubTextureInfo::default()`~~ — FIXED** — both now derive the real
+  `Default` trait (`BlendingMode::Alpha` via `#[default]`), so `..Default::default()` works and existing
+  `X::default()` calls are unchanged.
+- **~~`load_shader_module` never checks the SPIR-V magic number~~ — FIXED** — the byte-to-word copy is now
+  `spirv_words`, which checks the magic number (new `ShaderModuleInvalidMagicError`) and whose doc comment
+  states that the copy exists to get the 4-byte alignment `p_code` needs. Unit-tested.
+- **~~`debug_callback` matches a bitflag by equality~~ — FIXED** — `message_type_name` tests each bit, so
+  `GENERAL | VALIDATION` prints as `General|Validation`. Unit-tested.
+- **~~`README.md` is entirely wrong~~ — FIXED** — rewritten for the Rust workspace (philosophy, crate layout,
+  build/run, F5 reload, staging, config). `CLAUDE.md`'s "README is stale" warning is removed with it.
 - **~~`surge-player/hot_reloading`~~ — FIXED.** The feature flag and its two placeholder comments are deleted
   (step 5.2 of the module ABI plan). Original finding: a declared feature with two `//` placeholder
   comments and no implementation, for the capability the README calls the engine's reason to exist.
-- **No `old_swapchain`** passed on recreate (`ctx_swpc.rs:96`); the old one is destroyed first,
-  guaranteeing a visible hitch on a path that, per **H13**, runs at least once every launch.
-- **VMA `vulkan_api_version` never set** (`command.rs:77-78`), so VMA defaults to 1.0 semantics on a 1.3
-  device and skips 1.1+ paths.
-- **Per-frame log spam** — `surge-mod-2048/src/lib.rs:96,104` log at `info!` inside the move/resolve arms,
-  i.e. every frame of every animation. `init_env_logger` also hardcodes `LevelFilter::Debug` *after*
-  `from_default_env()`, overriding `RUST_LOG`.
-- **2048 renders one frame stale** — `lib.rs:76-107` submits every sprite before advancing the state
-  machine, so the screen always shows the previous frame's positions.
-- **`surge-mod-default` keeps animation state in `thread_local!` statics inside a dylib**
-  (`lib.rs:63-100`) rather than in `AppDefault`, which is an empty struct. That state survives a module
-  reload and will be a hot-reloading landmine. Its frame timer also drops the leftover accumulator on each
-  advance, so it drifts.
-- **Typos in public identifiers** — `DPETH_FORMAT`, `FenceWaiteError`, `fragmen_shader_name`,
-  `fragment_sader`, "Winnit", "databasae", "recieves", "engin", "phaase", "has_all_mambers".
-- **`stager/`** — `get_module_list()` is a bare `os.listdir` with no filter for real crate directories;
-  `copytree` on a missing `assets/` throws an unhandled traceback; it copies `assets/svg/` (source artwork)
-  into the release; `docopt.py` is vendored (581 lines of an unmaintained library) rather than pinned.
-- **Zero tests in the workspace.** `board_geometry`, `right_ops`, `reconstruct_board`,
-  `make_ortho_projection` (see **C6** — a three-line test would have caught it), and the subtexture UV
-  derivation are all pure functions with obvious properties and no coverage.
+- **~~No `old_swapchain` passed on recreate~~ — FIXED** — `recreate_swapchain` destroys the old image views,
+  creates the new swapchain with `old_swapchain` set, and only then destroys the old one. If creation fails
+  the context still holds the old (view-less) swapchain, which `destroy_swapchain` frees. The hitch the
+  original note predicted was not measured.
+- **~~VMA `vulkan_api_version` never set~~ — FIXED** — `create_memory_allocator` sets `API_VERSION_1_3`,
+  matching the instance's `api_version`.
+- **~~Per-frame log spam~~ — FIXED** — the per-frame `info!` calls in `surge-mod-2048` are removed, and
+  `init_env_logger` now uses `Env::default().default_filter_or("debug")`, so `RUST_LOG` is honoured and
+  `debug` is only the default.
+- **~~2048 renders one frame stale~~ — FIXED** — `update` advances the state machine before submitting
+  sprites.
+- **~~`surge-mod-default` keeps animation state in `thread_local!` statics~~ — FIXED** — the position, frame
+  counter and accumulator are fields of `AppDefault`. (The "inside a dylib" part was already stale: modules
+  stopped being dylibs in step 3.3.) The frame timer now subtracts `SECONDS_PER_FRAME` instead of zeroing the
+  accumulator, so it no longer drifts.
+- **~~Typos in public identifiers~~ — FIXED** — `DEPTH_FORMAT`, `FenceWaitError`, `fragment_shader_name`,
+  `fragment_shader`, "Winit", "database", "receives", "the engine", "phase", `has_all_members`.
+- **~~`stager/`~~ — FIXED** — `get_module_list()` lists only directories containing a `Cargo.toml`; a module
+  without `assets/` stages without them instead of raising; `assets/svg/` is not copied; the vendored
+  `docopt.py` is deleted in favour of stdlib `argparse` (same commands: `list`, `stage <module> [-o]`).
+- **~~Zero tests in the workspace~~ — FIXED** (the "zero" part was already stale: `surge-core` and `surge-sdk`
+  had tests, including one for `make_ortho_projection`). Added coverage for the remaining pure pieces:
+  `BoardGeometry`, `reconstruct_board`, `set_move_target_right`, the subtexture UV derivation, the SPIR-V
+  word check and the debug-message type names. `surge-mod-2048` had none before.
 
 ---
 

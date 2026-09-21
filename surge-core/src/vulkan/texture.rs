@@ -49,7 +49,7 @@ impl Texture {
                 .borrow()
                 .memory_allocator
                 .create_image(&image_ci, &alloc_ci)
-                .map_err(|e| VulkanError::DepthImageCreationError(e))
+                .map_err(|e| VulkanError::ImageCreationError(e))
         }?;
 
         let image_srr = vk::ImageSubresourceRange {
@@ -74,7 +74,7 @@ impl Texture {
                 .borrow()
                 .device
                 .create_image_view(&ivci, None)
-                .map_err(|e| VulkanError::SwapchainCreationError(e))
+                .map_err(|e| VulkanError::ImageViewCreationError(e))
         }?;
 
         Ok(Self {

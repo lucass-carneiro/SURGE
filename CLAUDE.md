@@ -2,10 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository status
-
-**`README.md` is stale.** It documents a previous C++/CMake/vcpkg incarnation of SURGE (OpenGL, `SURGE_*` CMake flags, submodules). None of that applies: this is now a Rust workspace using Vulkan via `ash`. Only the "Philosophy" section (player / core / modules split) still describes the design. Do not follow the README's build instructions.
-
 ## Workflow rules
 
 These apply to every change, not just plan steps:
@@ -40,7 +36,7 @@ python3 stager/stager.py list
 python3 stager/stager.py stage surge-mod-2048 [-o]   # -> staging-surge-mod-2048/
 ```
 
-It requires `cargo build --release --features release-bin` to have run and must itself be invoked from the repo root. It copies the module's single `<module>_release` binary, the module's own `config.toml`, and `assets/` — nothing else (shaders are embedded in the binary). The staged binary still reads `config.toml` from CWD, so run it with the staging folder as the working directory.
+It requires `cargo build --release --features release-bin` to have run and must itself be invoked from the repo root. It copies the module's single `<module>_release` binary, the module's own `config.toml`, and `assets/` (minus the `assets/svg/` source artwork) — nothing else (shaders are embedded in the binary). The staged binary still reads `config.toml` from CWD, so run it with the staging folder as the working directory.
 
 ### Feature flags
 
@@ -102,7 +98,7 @@ Shaders are GLSL 460 in `sprite_database/shaders/`; edit the `.vert`/`.frag` and
 
 ### Config (`surge-sdk/src/config.rs`)
 
-`config.toml` deserializes into `EngineConfig` via serde. Unknown keys are silently ignored (e.g. `[window] allow_resizes` appears in the shipped configs but has no field — the window is hardcoded `.with_resizable(false)`). `windowed = false` means borderless fullscreen on the primary monitor.
+`config.toml` deserializes into `EngineConfig` via serde. Unknown keys are silently ignored (there is no `deny_unknown_fields`), so a stale or misspelled key does nothing; the window is hardcoded `.with_resizable(false)` and there is no MSAA setting. `windowed = false` means borderless fullscreen on the primary monitor.
 
 ### `surge-mod-2048` (work in progress)
 

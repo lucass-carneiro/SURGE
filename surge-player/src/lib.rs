@@ -313,9 +313,9 @@ impl ApplicationHandler for SurgeContext {
         log::info!("Closing SURGE window");
         self.startup_app.on_unload();
 
-        // We need to destroy the swapchain here because Winnit
+        // We need to destroy the swapchain here because Winit
         // drops the surface before we have a chance to drop the Vulkan context.
-        // We can't have this, so we must destroy the swapchain before Winnit drops
+        // We can't have this, so we must destroy the swapchain before Winit drops
         // the window surface. There is no context to tear down if start-up failed.
         if let Some(context) = &self.vulkan_context {
             if let Err(e) = context.borrow_mut().destroy_swapchain() {

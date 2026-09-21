@@ -57,3 +57,73 @@ impl App2048 {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{app_2048::App2048, board_geometry::BoardGeometry, piece::Piece};
+    use surge_sdk::nalgebra::Vector2 as Vec2;
+
+    /// Builds an app with one piece per `(x, y)` slot, in order.
+    fn app_with(slots: &[(usize, usize)]) -> App2048 {
+        let bg = BoardGeometry::new();
+        App2048::with_pieces(
+            slots
+                .iter()
+                .map(|&(x, y)| Piece::new(&bg, 1, Vec2::new(x, y)))
+                .collect(),
+        )
+    }
+
+    /// Runs the move to completion and returns each piece's final slot.
+    fn settle(app: &mut App2048) -> Vec<(usize, usize)> {
+        for _ in 0..100 {
+            if app.update_live_pieces_pos(1.0) {
+                return app
+                    .get_live_pieces()
+                    .iter()
+                    .map(|p| (p.get_c_slot()[0], p.get_c_slot()[1]))
+                    .collect();
+            }
+        }
+        panic!("pieces never settled");
+    }
+
+    #[test]
+    fn single_piece_slides_to_the_right_edge() {
+        let mut app = app_with(&[(0, 2)]);
+        app.set_move_target_right();
+        assert_eq!(settle(&mut app), vec![(3, 2)]);
+    }
+
+    #[test]
+    fn two_pieces_pack_against_the_right_edge_in_order() {
+        let mut app = app_with(&[(0, 1), (2, 1)]);
+        app.set_move_target_right();
+        assert_eq!(settle(&mut app), vec![(2, 1), (3, 1)]);
+    }
+
+    #[test]
+    fn three_pieces_pack_against_the_right_edge_in_order() {
+        // Listed out of x order to prove the order comes from the board, not the piece list.
+        let mut app = app_with(&[(3, 0), (0, 0), (1, 0)]);
+        app.set_move_target_right();
+        assert_eq!(settle(&mut app), vec![(3, 0), (1, 0), (2, 0)]);
+    }
+
+    #[test]
+    fn rows_are_independent_and_full_rows_do_not_move() {
+        let mut app = app_with(&[(0, 0), (0, 1), (1, 1), (2, 1), (3, 1)]);
+        app.set_move_target_right();
+        assert_eq!(
+            settle(&mut app),
+            vec![(3, 0), (0, 1), (1, 1), (2, 1), (3, 1)]
+        );
+    }
+
+    #[test]
+    fn already_packed_pieces_stay_put() {
+        let mut app = app_with(&[(3, 3), (2, 3)]);
+        app.set_move_target_right();
+        assert_eq!(settle(&mut app), vec![(3, 3), (2, 3)]);
+    }
+}

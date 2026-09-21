@@ -18,7 +18,7 @@ impl VulkanContext {
         unsafe {
             self.device
                 .wait_for_fences(&[self.frame_fences[self.current_frame]], true, timeout)
-                .map_err(|e| VulkanError::FenceWaiteError(e))?;
+                .map_err(|e| VulkanError::FenceWaitError(e))?;
         }
 
         // Acquire next image
@@ -97,7 +97,6 @@ impl VulkanContext {
                 .map_err(|e| VulkanError::SwapchainRecreationError(e))
         }?;
 
-        self.destroy_swapchain()?;
         self.destroy_depth_image();
 
         // Destroy old synchronization objects - they may have stale state from the old swapchain
@@ -113,8 +112,17 @@ impl VulkanContext {
             }
         }
 
+        // The old swapchain's image views must go before the swapchain does, but the swapchain
+        // itself is handed to the new one as `old_swapchain` so the driver can recycle its
+        // resources, and is destroyed only once the replacement exists. If creation fails the
+        // context is left holding the (view-less) old swapchain, which `destroy_swapchain`
+        // still knows how to free.
+        for image_view in self.swapchain_data.image_views.drain(..) {
+            unsafe { self.device.destroy_image_view(image_view, None) };
+        }
+
         // Create swapchain first to know the image count for semaphores
-        self.swapchain_data = image::create_swapchain(
+        let new_swapchain_data = image::create_swapchain(
             &self.instance,
             self.physical_device,
             &self.device,
@@ -123,7 +131,15 @@ impl VulkanContext {
             config.resolution.width,
             config.resolution.height,
             config.renderer.vsync,
+            self.swapchain_data.swapchain,
         )?;
+
+        let old_swapchain_data = std::mem::replace(&mut self.swapchain_data, new_swapchain_data);
+        unsafe {
+            old_swapchain_data
+                .swapchain_loader
+                .destroy_swapchain(old_swapchain_data.swapchain, None);
+        }
 
         // Create fresh synchronization objects: acquire semaphores per frame in flight,
         // render-finished semaphores per swapchain image

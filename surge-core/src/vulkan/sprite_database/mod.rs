@@ -1,5 +1,5 @@
 use super::{
-    DPETH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
+    DEPTH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
     ctx_graphics_pipeline::GraphicsPipelineBuilder, image::srgb_to_linear, texture::Texture,
 };
 use crate::errors::VulkanError;
@@ -64,7 +64,7 @@ pub struct SpriteDatabase {
     /// Creation info
     ci: CreateInfo,
 
-    /// The number of elements currently in the databasae
+    /// The number of elements currently in the database
     occupancy: u32,
 
     /// UBO storing frame global data (see FrameGlobals)
@@ -132,23 +132,27 @@ impl SpriteDatabase {
         }?;
 
         //Instance record SSBOs
-        let instance_records_ssbos: [Buffer; FRAMES_IN_FLIGHT] = std::array::from_fn(|_| {
-            let bci = vk::BufferCreateInfo::default()
-                .size(INSTANCE_RECORD_STRUCT_SIZE * (ci.max_sprites as u64))
-                .usage(
-                    vk::BufferUsageFlags::STORAGE_BUFFER
-                        | vk::BufferUsageFlags::SHADER_DEVICE_ADDRESS,
-                );
+        let instance_records_ssbos: [Buffer; FRAMES_IN_FLIGHT] = (0..FRAMES_IN_FLIGHT)
+            .map(|_| {
+                let bci = vk::BufferCreateInfo::default()
+                    .size(INSTANCE_RECORD_STRUCT_SIZE * (ci.max_sprites as u64))
+                    .usage(
+                        vk::BufferUsageFlags::STORAGE_BUFFER
+                            | vk::BufferUsageFlags::SHADER_DEVICE_ADDRESS,
+                    );
 
-            let bai = vk_mem::AllocationCreateInfo {
-                flags: vk_mem::AllocationCreateFlags::MAPPED
-                    | vk_mem::AllocationCreateFlags::HOST_ACCESS_SEQUENTIAL_WRITE,
-                usage: vk_mem::MemoryUsage::Auto,
-                ..Default::default()
-            };
+                let bai = vk_mem::AllocationCreateInfo {
+                    flags: vk_mem::AllocationCreateFlags::MAPPED
+                        | vk_mem::AllocationCreateFlags::HOST_ACCESS_SEQUENTIAL_WRITE,
+                    usage: vk_mem::MemoryUsage::Auto,
+                    ..Default::default()
+                };
 
-            Buffer::new(context.clone(), &bci, &bai).unwrap()
-        });
+                Buffer::new(context.clone(), &bci, &bai)
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .try_into()
+            .unwrap_or_else(|_| unreachable!("exactly FRAMES_IN_FLIGHT buffers were created"));
 
         let instance_records_ssbo_addresses: [vk::DeviceAddress; FRAMES_IN_FLIGHT] =
             std::array::from_fn(|i| {
@@ -406,7 +410,7 @@ impl SpriteDatabase {
                 .set_multisampling_none() // TODO: Enable multisampling
                 .set_depth_test_enabled(true, vk::CompareOp::GREATER_OR_EQUAL)
                 .set_color_attachment_format(context.borrow().swapchain_data.format)
-                .set_depth_format(DPETH_FORMAT);
+                .set_depth_format(DEPTH_FORMAT);
 
             pb = match ci.blending_mode {
                 BlendingMode::None => pb.set_blending_none(),
@@ -467,34 +471,20 @@ impl SpriteDatabase {
         let subtexture_data = match &aii.subtexture_info {
             Some(sti) => {
                 let o_extent = self.uploaded_textures[aii.texture_id].get_image_extent();
-                let ow = o_extent.width;
-                let oh = o_extent.height;
 
-                let sx = sti.origin[0];
-                let sy = sti.origin[1];
-                let sw = sti.extent[0];
-                let sh = sti.extent[1];
-
-                let x_fits = sx < ow && (sx + sw) < ow;
-                let y_fits = sy < oh && (sy + sh) < oh;
-                let subimage_fits = x_fits && y_fits;
-
-                if !subimage_fits {
+                subtexture_uv_transform(
+                    [sti.origin[0], sti.origin[1]],
+                    [sti.extent[0], sti.extent[1]],
+                    [o_extent.width, o_extent.height],
+                )
+                .unwrap_or_else(|| {
                     log::warn!(
                         "Requested subtexture is not contained within the main texture. Drawing the whole texture instead."
                     );
-
-                    nalgebra::Vector4::new(1.0f32, 1.0f32, 0.0f32, 0.0f32)
-                } else {
-                    nalgebra::Vector4::new(
-                        (sw as f32) / (ow as f32),
-                        (sh as f32) / (oh as f32),
-                        (sx as f32) / (ow as f32),
-                        (sy as f32) / (oh as f32),
-                    )
-                }
+                    full_texture_uv_transform()
+                })
             }
-            None => nalgebra::Vector4::new(1.0f32, 1.0f32, 0.0f32, 0.0f32),
+            None => full_texture_uv_transform(),
         };
 
         let current_frame = self.context.borrow().current_frame;
@@ -542,7 +532,10 @@ impl SpriteDatabase {
             return Err(VulkanError::UnsupportedTextureColorType(output_color_type));
         }
 
-        let image_size = reader.output_buffer_size().unwrap();
+        // `None` when the decoded size overflows `usize`, which a hostile header can request.
+        let image_size = reader
+            .output_buffer_size()
+            .ok_or(VulkanError::TextureTooLarge)?;
         let mut rgba = vec![0u8; image_size];
 
         let read_info = reader
@@ -866,6 +859,34 @@ pub fn make_model_matrix(
         .append_translation(&mv)
 }
 
+/// The UV transform `(scale.xy, offset.xy)` that selects the whole texture.
+fn full_texture_uv_transform() -> nalgebra::Vector4<f32> {
+    nalgebra::Vector4::new(1.0, 1.0, 0.0, 0.0)
+}
+
+/// Converts a sub-rect of a `texture`-sized image (all in texels) into the UV transform
+/// `(scale.xy, offset.xy)` the vertex shader applies. Derivation in `extra/subimage.wls`.
+/// Returns `None` if the sub-rect is not fully inside the texture; a sub-rect that
+/// ends exactly on the texture edge is inside.
+fn subtexture_uv_transform(
+    origin: [u32; 2],
+    extent: [u32; 2],
+    texture: [u32; 2],
+) -> Option<nalgebra::Vector4<f32>> {
+    let fits = |o: u32, e: u32, t: u32| o.checked_add(e).is_some_and(|end| end <= t);
+
+    if !fits(origin[0], extent[0], texture[0]) || !fits(origin[1], extent[1], texture[1]) {
+        return None;
+    }
+
+    Some(nalgebra::Vector4::new(
+        extent[0] as f32 / texture[0] as f32,
+        extent[1] as f32 / texture[1] as f32,
+        origin[0] as f32 / texture[0] as f32,
+        origin[1] as f32 / texture[1] as f32,
+    ))
+}
+
 /// Largest rectangle with the design resolution's aspect ratio that fits in `target`, centered.
 /// Returns `(x, y, width, height)` in target pixels; the leftover bars keep the clear color.
 fn letterbox(design_w: f32, design_h: f32, target: vk::Extent2D) -> (i32, i32, u32, u32) {
@@ -883,6 +904,28 @@ mod tests {
 
     fn ext(width: u32, height: u32) -> vk::Extent2D {
         vk::Extent2D { width, height }
+    }
+
+    #[test]
+    fn subtexture_uv_transform_maps_rect_to_normalised_scale_and_offset() {
+        let uv = subtexture_uv_transform([100, 50], [200, 25], [400, 100]).unwrap();
+        assert_eq!(uv, nalgebra::Vector4::new(0.5, 0.25, 0.25, 0.5));
+    }
+
+    #[test]
+    fn subtexture_uv_transform_accepts_rect_ending_exactly_on_the_edge() {
+        // The shipped 12502x502 sheet's last frame ends at 12500, but a rect may end at 12502.
+        assert!(subtexture_uv_transform([12004, 2], [498, 500], [12502, 502]).is_some());
+        assert!(subtexture_uv_transform([0, 0], [400, 100], [400, 100]).is_some());
+    }
+
+    #[test]
+    fn subtexture_uv_transform_rejects_out_of_bounds_and_overflowing_rects() {
+        assert!(subtexture_uv_transform([1, 0], [400, 100], [400, 100]).is_none());
+        assert!(subtexture_uv_transform([0, 1], [400, 100], [400, 100]).is_none());
+        assert!(subtexture_uv_transform([400, 0], [1, 1], [400, 100]).is_none());
+        // `origin + extent` overflows u32; must be rejected, not panic in debug builds.
+        assert!(subtexture_uv_transform([u32::MAX, 0], [2, 1], [400, 100]).is_none());
     }
 
     #[test]

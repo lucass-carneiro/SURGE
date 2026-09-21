@@ -1,11 +1,10 @@
 use std::io::Write;
 
 pub fn init_env_logger() {
-    use env_logger::Builder;
-    use log::LevelFilter;
+    use env_logger::{Builder, Env};
 
-    let mut builder = Builder::from_default_env();
-    builder.filter_level(LevelFilter::Debug);
+    // `debug` is only the default: an explicit `RUST_LOG` wins.
+    let mut builder = Builder::from_env(Env::default().default_filter_or("debug"));
 
     builder.format(|buf, record| {
         let banner = match record.level() {

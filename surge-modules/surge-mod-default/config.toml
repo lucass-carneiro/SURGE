@@ -1,7 +1,6 @@
 [window]
 name = "SURGE: Default Module"
 windowed = true
-allow_resizes = false
 
 [resolution]
 width = 800
@@ -9,7 +8,6 @@ height = 600
 
 [renderer]
 vsync = true
-msaa = true
 cap_fps = false
 fps_cap = 60
 

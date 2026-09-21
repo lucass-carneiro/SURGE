@@ -98,6 +98,7 @@ impl VulkanContext {
             config.resolution.width,
             config.resolution.height,
             config.renderer.vsync,
+            vk::SwapchainKHR::null(),
         )?;
 
         let command_pool = command::create_command_pool(&device, indices.graphics)?;
@@ -207,10 +208,11 @@ impl Drop for VulkanContext {
         log::info!("Cleaning up Vulkan resources");
 
         unsafe {
-            // Wait for device to be idle before destroying anything
+            // Wait for device to be idle before destroying anything. If that fails (typically
+            // device loss) carry on anyway: bailing out would leak the allocator, device,
+            // surface, messenger and instance, and destroying a lost device's objects is legal.
             if let Err(e) = self.device.device_wait_idle() {
                 log::error!("Failed to wait for device idle during cleanup: {:?}", e);
-                return; // Don't proceed with cleanup if device is in bad state
             }
 
             log::debug!("Destroying sync objects");

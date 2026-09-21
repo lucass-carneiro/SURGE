@@ -2,17 +2,12 @@ use nalgebra;
 use serde::{Deserialize, Serialize};
 
 /// Database blending mode
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub enum BlendingMode {
     None,
     Additive,
+    #[default]
     Alpha,
-}
-
-impl BlendingMode {
-    pub fn default() -> Self {
-        BlendingMode::Alpha
-    }
 }
 
 /// Texture filtering modes
@@ -45,20 +40,13 @@ pub struct CreateInfo {
     pub window_height: f32,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct SubTextureInfo {
     pub origin: nalgebra::Vector2<u32>,
     pub extent: nalgebra::Vector2<u32>,
 }
 
 impl SubTextureInfo {
-    pub fn default() -> Self {
-        SubTextureInfo {
-            origin: nalgebra::Vector2::from_element(0),
-            extent: nalgebra::Vector2::from_element(0),
-        }
-    }
-
     pub fn origin(mut self, origin: nalgebra::Vector2<u32>) -> Self {
         self.origin = origin;
         self

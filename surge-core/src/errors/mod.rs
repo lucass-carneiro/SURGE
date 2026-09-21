@@ -57,6 +57,9 @@ pub enum VulkanError {
     #[error("Unable to create depth buffer {0}")]
     DepthImageCreationError(ash::vk::Result),
 
+    #[error("Unable to create image view: {0}")]
+    ImageViewCreationError(ash::vk::Result),
+
     #[error("Unable to create command pool: {0}")]
     CommandPoolCreation(ash::vk::Result),
 
@@ -73,7 +76,7 @@ pub enum VulkanError {
     FenceCreationError(ash::vk::Result),
 
     #[error("Unable to wait fence: {0}")]
-    FenceWaiteError(ash::vk::Result),
+    FenceWaitError(ash::vk::Result),
 
     #[error("Unable to wait for the device to become idle: {0}")]
     DeviceWaitIdleError(ash::vk::Result),
@@ -101,6 +104,9 @@ pub enum VulkanError {
 
     #[error("The shader module does not have a size multiple of u32. Module size: {0} bytes")]
     ShaderModuleInvalidSizeError(usize),
+
+    #[error("The shader module does not start with the SPIR-V magic number")]
+    ShaderModuleInvalidMagicError,
 
     #[error("Unable to create shader module: {0}")]
     ShaderModuleCreateError(ash::vk::Result),
@@ -140,6 +146,9 @@ pub enum VulkanError {
 
     #[error("Texture file has unsupported color type: {0:?}. Only RGBA is supported")]
     UnsupportedTextureColorType(png::ColorType),
+
+    #[error("Texture file is too large to decode")]
+    TextureTooLarge,
 
     #[error("Unable to upload texture: the texture database is full")]
     TextureDatabaseFull,

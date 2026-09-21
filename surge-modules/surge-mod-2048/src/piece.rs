@@ -21,7 +21,11 @@ impl Piece {
         let x = rng.random_range(0..4);
         let y = rng.random_range(0..4);
 
-        let slot = Vec2::new(x, y);
+        Piece::new(bg, value, Vec2::new(x, y))
+    }
+
+    /// A settled piece of the given value (a texture index) sitting in `slot`.
+    pub(crate) fn new(bg: &BoardGeometry, value: usize, slot: Vec2<usize>) -> Self {
         let pos = bg.slot_to_pos(slot);
 
         Piece {
