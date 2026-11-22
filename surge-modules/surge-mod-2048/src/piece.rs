@@ -29,7 +29,7 @@ pub(crate) struct Piece {
 }
 
 // Exponential approach rate (1/s).
-const MOVE_RATE: f32 = 6.3212;
+const MOVE_RATE: f32 = 50.0;
 
 // A moving piece snaps onto its target once it is this close to the target (in pixels).
 const SNAP_DISTANCE: f32 = 0.5;
