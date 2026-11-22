@@ -207,6 +207,13 @@ impl SurgeApp for RemoteApp {
         }
     }
 
+    fn cursor_moved_event(&mut self, _: DeviceId, position: surge_sdk::nalgebra::Vector2<f32>) {
+        if !self.faulted {
+            self.pending_input
+                .push(InputEvent::CursorMoved { position });
+        }
+    }
+
     /// Always asks the player to rebuild its canvas, even if the respawn failed: the failure is
     /// recorded as a fault, and the rebuilt canvas is simply never drawn to.
     fn reload(&mut self) -> bool {

@@ -1,4 +1,9 @@
-use crate::{board_geometry::BoardGeometry, piece::Piece};
+use crate::{
+    board_geometry::BoardGeometry,
+    new_game_button::NewGameButton,
+    piece::{MergeRole, Piece},
+};
+use rand::seq::IndexedRandom;
 use std::collections::VecDeque;
 use surge_sdk::nalgebra::Vector2 as Vec2;
 
@@ -15,6 +20,8 @@ pub(crate) enum BoardState {
     Idle,
     Move(MoveDirection),
     Resolve,
+    Spawn,
+    GameOver,
 }
 
 pub(crate) struct App2048 {
@@ -26,31 +33,56 @@ pub(crate) struct App2048 {
 
     // Live pieces on the board
     live_pieces: Vec<Piece>,
+
+    // The "New Game" button, which calls `restart`
+    new_game_button: NewGameButton,
+
+    // Points scored this game: each merge adds the merged tile's number. Not displayed yet.
+    score: u32,
 }
 
 impl App2048 {
     pub(crate) fn new() -> Self {
         let board_geometry = BoardGeometry::new();
-
-        let mut board_states = VecDeque::new();
-        board_states.push_back(BoardState::Idle);
-
-        let piece_a = Piece::new_random(&board_geometry);
-        let mut piece_b = Piece::new_random(&board_geometry);
-
-        while piece_a.get_c_slot() == piece_b.get_c_slot() {
-            piece_b = Piece::new_random(&board_geometry);
-        }
-
-        let mut live_pieces = Vec::new();
-        live_pieces.push(piece_a);
-        live_pieces.push(piece_b);
+        let live_pieces = App2048::start_pieces(&board_geometry);
 
         App2048 {
             board_geometry,
-            board_states,
+            board_states: VecDeque::from([BoardState::Idle]),
             live_pieces,
+            new_game_button: NewGameButton::default(),
+            score: 0,
         }
+    }
+
+    fn start_pieces(bg: &BoardGeometry) -> Vec<Piece> {
+        let piece_a = Piece::new_random(bg);
+        let mut piece_b = Piece::new_random(bg);
+
+        while piece_a.get_c_slot() == piece_b.get_c_slot() {
+            piece_b = Piece::new_random(bg);
+        }
+
+        vec![piece_a, piece_b]
+    }
+
+    pub(crate) fn restart(&mut self) {
+        self.live_pieces = App2048::start_pieces(&self.board_geometry);
+        self.board_states = VecDeque::from([BoardState::Idle]);
+        self.score = 0;
+    }
+
+    #[allow(dead_code)] // Bookkeeping only until the SCORE counter is drawn.
+    pub(crate) fn get_score(&self) -> u32 {
+        self.score
+    }
+
+    pub(crate) fn get_new_game_button(&self) -> &NewGameButton {
+        &self.new_game_button
+    }
+
+    pub(crate) fn get_new_game_button_mut(&mut self) -> &mut NewGameButton {
+        &mut self.new_game_button
     }
 
     #[cfg(test)]
@@ -58,6 +90,27 @@ impl App2048 {
         let mut app = App2048::new();
         app.live_pieces = live_pieces;
         app
+    }
+
+    #[cfg(test)]
+    pub(crate) fn take_last_piece(&mut self) -> Option<Piece> {
+        self.live_pieces.pop()
+    }
+
+    pub(crate) fn is_game_over(&self) -> bool {
+        self.board_states.front() == Some(&BoardState::GameOver)
+    }
+
+    pub(crate) fn can_move(&self) -> bool {
+        let board = self.reconstruct_board();
+        let value = |x: usize, y: usize| board[y][x].map(|i| self.live_pieces[i].get_value());
+
+        (0..4).any(|y| {
+            (0..4).any(|x| {
+                let v = value(x, y);
+                v.is_none() || (x < 3 && value(x + 1, y) == v) || (y < 3 && value(x, y + 1) == v)
+            })
+        })
     }
 
     pub(crate) fn board_idle(&self) -> bool {
@@ -83,12 +136,86 @@ impl App2048 {
         board
     }
 
+    pub(crate) fn start_move(&mut self, dir: MoveDirection) {
+        if !self.board_idle() {
+            return;
+        }
+
+        self.set_move_targets(&dir);
+
+        if !self.live_pieces.iter().any(Piece::is_moving) {
+            return;
+        }
+
+        self.push_state(BoardState::Move(dir));
+        self.push_state(BoardState::Resolve);
+        self.push_state(BoardState::Spawn);
+        self.push_state(BoardState::Idle);
+        self.pop_state();
+    }
+
+    /// Advances the board state machine by one frame.
+    pub(crate) fn step(&mut self, dt: f32) {
+        match self.board_states.front() {
+            None => self.push_state(BoardState::Idle),
+            Some(BoardState::Idle) => {}
+            Some(BoardState::Move(_)) => {
+                // Pop the state once every piece has arrived.
+                if self.update_live_pieces_pos(dt) {
+                    self.pop_state();
+                }
+            }
+            Some(BoardState::Resolve) => {
+                self.resolve_merges();
+                self.pop_state();
+            }
+            Some(BoardState::Spawn) => {
+                self.spawn_piece();
+                self.pop_state();
+                if !self.can_move() {
+                    log::info!("2048: game over, no moves left");
+                    self.board_states.clear();
+                    self.push_state(BoardState::GameOver);
+                }
+            }
+            Some(BoardState::GameOver) => {}
+        }
+    }
+
+    pub(crate) fn spawn_piece(&mut self) -> Option<Vec2<usize>> {
+        let board = self.reconstruct_board();
+        let empty: Vec<Vec2<usize>> = (0..4)
+            .flat_map(|y| (0..4).map(move |x| Vec2::new(x, y)))
+            .filter(|s| board[s[1]][s[0]].is_none())
+            .collect();
+
+        let slot = *empty.choose(&mut rand::rng())?;
+        self.live_pieces.push(Piece::new(
+            &self.board_geometry,
+            Piece::random_value(),
+            slot,
+        ));
+        Some(slot)
+    }
+
     pub(crate) fn update_live_pieces_pos(&mut self, dt: f32) -> bool {
         let mut update_done = true;
         for piece in &mut self.live_pieces {
             update_done &= piece.update_pos(dt);
         }
         update_done
+    }
+
+    pub(crate) fn resolve_merges(&mut self) {
+        self.live_pieces
+            .retain(|piece| piece.get_merge() != MergeRole::Consumed);
+        for piece in &mut self.live_pieces {
+            self.score += piece.resolve_merge();
+        }
+    }
+
+    pub(crate) fn set_piece_merge(&mut self, idx: usize, merge: MergeRole) {
+        self.live_pieces[idx].set_merge(merge);
     }
 
     pub(crate) fn set_piece_move_target(&mut self, idx: usize, slot: Vec2<usize>) {
@@ -101,10 +228,6 @@ impl App2048 {
 
     pub(crate) fn get_live_pieces(&self) -> &Vec<Piece> {
         &self.live_pieces
-    }
-
-    pub(crate) fn get_board_states(&self) -> &VecDeque<BoardState> {
-        &self.board_states
     }
 
     pub(crate) fn push_state(&mut self, state: BoardState) {
@@ -146,6 +269,156 @@ mod tests {
                 app.get_live_pieces()[1].get_c_slot()
             );
         }
+    }
+
+    #[test]
+    fn spawning_fills_the_only_empty_slot_and_then_stops() {
+        let bg = BoardGeometry::new();
+        // Every slot but (1, 2), in a checkerboard of 2s and 4s so nothing could merge.
+        let pieces = (0..4)
+            .flat_map(|y| (0..4).map(move |x| (x, y)))
+            .filter(|&(x, y)| (x, y) != (1, 2))
+            .map(|(x, y)| Piece::new(&bg, 1 + (x + y) % 2, Vec2::new(x, y)))
+            .collect();
+        let mut app = App2048::with_pieces(pieces);
+
+        assert_eq!(app.spawn_piece(), Some(Vec2::new(1, 2)));
+        let spawned = app.get_live_pieces().last().unwrap();
+        assert_eq!(spawned.get_c_slot(), Vec2::new(1, 2));
+        assert!((1..=2).contains(&spawned.get_value()));
+
+        assert_eq!(app.spawn_piece(), None);
+        assert_eq!(app.get_live_pieces().len(), 16);
+    }
+
+    /// A full board in a checkerboard of 2s and 4s: no slot is empty and nothing can merge.
+    fn stuck_pieces(bg: &BoardGeometry) -> Vec<Piece> {
+        (0..4)
+            .flat_map(|y| (0..4).map(move |x| (x, y)))
+            .map(|(x, y)| Piece::new(bg, 1 + (x + y) % 2, Vec2::new(x, y)))
+            .collect()
+    }
+
+    #[test]
+    fn a_full_board_without_equal_neighbours_cannot_move() {
+        let bg = BoardGeometry::new();
+        assert!(!App2048::with_pieces(stuck_pieces(&bg)).can_move());
+    }
+
+    #[test]
+    fn an_empty_slot_or_equal_neighbours_still_allow_a_move() {
+        let bg = BoardGeometry::new();
+
+        let mut with_gap = stuck_pieces(&bg);
+        with_gap.remove(5);
+        assert!(App2048::with_pieces(with_gap).can_move());
+
+        // Equal neighbours in a row (bottom-right corner matches its left neighbour) ...
+        let mut row_pair = stuck_pieces(&bg);
+        row_pair[15] = Piece::new(&bg, row_pair[14].get_value(), Vec2::new(3, 3));
+        assert!(App2048::with_pieces(row_pair).can_move());
+
+        // ... and in a column (bottom-right corner matches the piece above it).
+        let mut col_pair = stuck_pieces(&bg);
+        col_pair[15] = Piece::new(&bg, col_pair[11].get_value(), Vec2::new(3, 3));
+        assert!(App2048::with_pieces(col_pair).can_move());
+    }
+
+    #[test]
+    fn a_spawn_that_leaves_no_move_ends_the_game_and_freezes_input() {
+        let bg = BoardGeometry::new();
+        // A stuck board minus (0, 0); the spawn must land there. Make both possible spawn values
+        // dead ends: (1, 0) and (0, 1) are 8s, which no 2 or 4 can merge with.
+        let mut pieces = stuck_pieces(&bg);
+        pieces.remove(0);
+        for p in pieces.iter_mut() {
+            if p.get_c_slot() == Vec2::new(1, 0) || p.get_c_slot() == Vec2::new(0, 1) {
+                *p = Piece::new(&bg, 3, p.get_c_slot());
+            }
+        }
+        let mut app = App2048::with_pieces(pieces);
+        app.pop_state();
+        app.push_state(BoardState::Spawn);
+        app.push_state(BoardState::Idle);
+
+        app.step(1.0 / 60.0);
+        assert!(app.is_game_over());
+        assert!(!app.board_idle());
+
+        let before: Vec<_> = app.get_live_pieces().clone();
+        app.start_move(MoveDirection::Left);
+        for _ in 0..100 {
+            app.step(1.0 / 60.0);
+        }
+        assert!(app.is_game_over());
+        assert_eq!(app.get_live_pieces(), &before);
+    }
+
+    #[test]
+    fn restart_after_a_game_over_gives_a_fresh_playable_board() {
+        let bg = BoardGeometry::new();
+        let mut app = App2048::with_pieces(stuck_pieces(&bg));
+        app.board_states = VecDeque::from([BoardState::GameOver]);
+        app.score = 1234;
+        assert!(app.is_game_over());
+
+        app.restart();
+        assert!(!app.is_game_over());
+        assert_eq!(app.get_score(), 0);
+        assert!(app.board_idle());
+        assert_eq!(app.get_live_pieces().len(), 2);
+        assert_ne!(
+            app.get_live_pieces()[0].get_c_slot(),
+            app.get_live_pieces()[1].get_c_slot()
+        );
+
+        // And it plays: some direction moves the two pieces.
+        for dir in [
+            MoveDirection::Up,
+            MoveDirection::Down,
+            MoveDirection::Left,
+            MoveDirection::Right,
+        ] {
+            app.start_move(dir);
+            if !app.board_idle() {
+                return;
+            }
+        }
+        panic!("no direction moved the fresh board");
+    }
+
+    #[test]
+    fn restart_mid_move_drops_the_move() {
+        let bg = BoardGeometry::new();
+        let mut app = App2048::with_pieces(vec![Piece::new(&bg, 1, Vec2::new(0, 0))]);
+        app.start_move(MoveDirection::Right);
+        app.step(1.0 / 60.0);
+        assert!(!app.board_idle());
+
+        app.restart();
+        assert!(app.board_idle());
+        assert_eq!(app.get_live_pieces().len(), 2);
+        for _ in 0..100 {
+            app.step(1.0 / 60.0);
+        }
+        assert_eq!(app.get_live_pieces().len(), 2); // Nothing resolved or spawned.
+    }
+
+    #[test]
+    fn a_spawn_that_leaves_a_move_does_not_end_the_game() {
+        let mut app = App2048::new();
+        app.pop_state();
+        app.push_state(BoardState::Spawn);
+        app.push_state(BoardState::Idle);
+        app.step(1.0 / 60.0);
+        assert!(!app.is_game_over());
+        assert!(app.board_idle());
+    }
+
+    #[test]
+    fn spawned_values_are_mostly_twos() {
+        let twos = (0..1000).filter(|_| Piece::random_value() == 1).count();
+        assert!((800..=980).contains(&twos), "{twos} of 1000 were 2s");
     }
 
     #[test]

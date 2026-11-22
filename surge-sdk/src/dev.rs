@@ -124,6 +124,7 @@ fn dispatch_input(app: &mut dyn SurgeApp, event: InputEvent) {
         } => app.keyboard_event(device, event, is_synthetic),
         InputEvent::MouseButton { state, button } => app.mouse_button_event(device, state, button),
         InputEvent::MouseWheel { delta, phase } => app.mouse_wheel_event(device, delta, phase),
+        InputEvent::CursorMoved { position } => app.cursor_moved_event(device, position),
     }
 }
 
@@ -225,6 +226,11 @@ mod tests {
 
         fn mouse_wheel_event(&mut self, _: DeviceId, _: MouseScrollDelta, phase: TouchPhase) {
             self.log.push(format!("mouse_wheel {phase:?}"));
+        }
+
+        fn cursor_moved_event(&mut self, _: DeviceId, position: nalgebra::Vector2<f32>) {
+            self.log
+                .push(format!("cursor_moved {} {}", position.x, position.y));
         }
 
         fn on_unload(&mut self) {
@@ -350,6 +356,9 @@ mod tests {
                 &Request::Frame {
                     dt: 0.25,
                     input_events: vec![
+                        InputEvent::CursorMoved {
+                            position: nalgebra::Vector2::new(12.5, 40.0),
+                        },
                         InputEvent::MouseButton {
                             state: ElementState::Pressed,
                             button: MouseButton::Left,
@@ -373,6 +382,7 @@ mod tests {
             app.log,
             [
                 "on_load upload=0",
+                "cursor_moved 12.5 40",
                 "mouse_button Pressed Left",
                 "keyboard Pressed synthetic=true",
                 "mouse_wheel Moved",

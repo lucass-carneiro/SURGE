@@ -898,9 +898,46 @@ fn letterbox(design_w: f32, design_h: f32, target: vk::Extent2D) -> (i32, i32, u
     (x, y, width, height)
 }
 
+/// Maps a point in swapchain pixels (where the window's cursor is reported) to design-resolution
+/// coordinates, inverting the letterboxing `draw()` applies with this same `letterbox`. A point
+/// over the bars maps outside `0..design_w` / `0..design_h`.
+pub fn window_to_design(
+    design_w: f32,
+    design_h: f32,
+    target: vk::Extent2D,
+    x: f64,
+    y: f64,
+) -> nalgebra::Vector2<f32> {
+    let (lx, ly, lw, lh) = letterbox(design_w, design_h, target);
+    nalgebra::Vector2::new(
+        (x as f32 - lx as f32) * design_w / lw as f32,
+        (y as f32 - ly as f32) * design_h / lh as f32,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn window_to_design_is_the_identity_without_letterboxing() {
+        let p = window_to_design(500.0, 800.0, ext(500, 800), 358.0, 68.5);
+        assert_eq!(p, nalgebra::Vector2::new(358.0, 68.5));
+    }
+
+    #[test]
+    fn window_to_design_undoes_pillarboxing() {
+        // 500x800 on 1920x1080: the image is 675x1080 at x = 622.
+        let ext = ext(1920, 1080);
+        assert_eq!(
+            window_to_design(500.0, 800.0, ext, 622.0, 0.0),
+            nalgebra::Vector2::new(0.0, 0.0)
+        );
+        let far = window_to_design(500.0, 800.0, ext, 1297.0, 1080.0);
+        assert!((far.x - 500.0).abs() < 1e-3 && (far.y - 800.0).abs() < 1e-3);
+        // The left bar maps to negative x.
+        assert!(window_to_design(500.0, 800.0, ext, 100.0, 500.0).x < 0.0);
+    }
 
     fn ext(width: u32, height: u32) -> vk::Extent2D {
         vk::Extent2D { width, height }

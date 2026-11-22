@@ -411,6 +411,26 @@ impl ApplicationHandler for SurgeContext {
             } => {
                 self.startup_app.mouse_wheel_event(device_id, delta, phase);
             }
+            WindowEvent::CursorMoved {
+                device_id,
+                position,
+            } => {
+                // Before graphics exist there is no swapchain to map through; nothing is drawn
+                // yet either, so the event has nothing to hit.
+                let Some(ctx) = &self.vulkan_context else {
+                    return;
+                };
+                let extent = ctx.borrow().swapchain_extent();
+                let resolution = &self.engine_config.resolution;
+                let position = spd::window_to_design(
+                    resolution.width as f32,
+                    resolution.height as f32,
+                    extent,
+                    position.x,
+                    position.y,
+                );
+                self.startup_app.cursor_moved_event(device_id, position);
+            }
             _ => (),
         }
     }

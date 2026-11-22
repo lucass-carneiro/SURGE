@@ -1,3 +1,4 @@
+use nalgebra::Vector2;
 use winit::event::{DeviceId, ElementState, MouseButton, MouseScrollDelta, TouchPhase};
 
 use crate::{canvas::SpriteCanvas, input::KeyEvent};
@@ -18,6 +19,12 @@ pub trait SurgeApp {
 
     /// Called when the application receives a mouse button event
     fn mouse_button_event(&mut self, _: DeviceId, _: ElementState, _: MouseButton) {}
+
+    /// Called when the cursor moves over the window. `position` is in design-resolution
+    /// coordinates, the same space sprites are placed in (origin top-left, +y down), so a module
+    /// can hit-test it against its sprites directly. Over the letterbox bars it lies outside
+    /// `0..window_width` / `0..window_height`.
+    fn cursor_moved_event(&mut self, _: DeviceId, _position: Vector2<f32>) {}
 
     /// Called when the application receives a mouse wheel event
     fn mouse_wheel_event(&mut self, _: DeviceId, _: MouseScrollDelta, _: TouchPhase) {}

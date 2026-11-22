@@ -10,7 +10,7 @@ use crate::{
 
 /// Version of the player <-> module wire protocol. The module sends it in `Response::Handshake`
 /// and the player compares against this same constant, so bumping it in one place is enough.
-pub const WIRE_VERSION: u16 = 1;
+pub const WIRE_VERSION: u16 = 2;
 
 /// Largest frame `read_message` will accept. A corrupt or hostile length prefix must not turn
 /// into a multi-gigabyte allocation.
@@ -72,6 +72,10 @@ pub enum InputEvent {
     MouseWheel {
         delta: MouseScrollDelta,
         phase: TouchPhase,
+    },
+    /// Already in design-resolution coordinates (see `SurgeApp::cursor_moved_event`).
+    CursorMoved {
+        position: nalgebra::Vector2<f32>,
     },
 }
 
@@ -170,6 +174,9 @@ mod tests {
             InputEvent::MouseWheel {
                 delta: MouseScrollDelta::PixelDelta(winit::dpi::PhysicalPosition::new(1.5, 2.5)),
                 phase: TouchPhase::Started,
+            },
+            InputEvent::CursorMoved {
+                position: nalgebra::Vector2::new(-3.5, 812.25),
             },
         ]
     }
