@@ -1879,6 +1879,7 @@ name = "surge-sdk"
 version = "1.4.0"
 dependencies = [
  "env_logger",
+ "harfrust",
  "log",
  "nalgebra",
  "postcard",

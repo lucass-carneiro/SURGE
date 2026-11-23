@@ -6,6 +6,7 @@ mod dev;
 mod input;
 mod logging;
 mod proxy;
+mod shaping;
 mod sprite;
 mod text;
 mod wire;
@@ -28,4 +29,7 @@ pub use sprite::{
     BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
     TextureFilteringMode,
 };
+pub use shaping::{Font, LineMetrics, ShapedText, TextAnchor, TextCanvasExt};
+#[doc(hidden)]
+pub use shaping::{anchor_offset, px_per_unit, select_vertical_metrics};
 pub use text::{PositionedGlyph, TextRun};

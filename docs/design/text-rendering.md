@@ -318,7 +318,7 @@ fire-and-forget like `upload_texture`, and `add_text_run` clones the run into `o
   `cargo check --workspace` green; `cargo test -p surge-player --no-run` builds the `CountingCanvas`
   double cleanly.
 
-### Step 3: Shaping layer (`surge-sdk`, no GPU)
+### Step 3: Shaping layer (`surge-sdk`, no GPU) ✅
 Add `Font` (HarfRust face + scaled metrics + FontId), `ShapedText` (positioned glyphs + width +
 ascent/descent/line height), `Font::load(canvas, path)`, `font.shape(text, px)`, `TextAnchor`, and the
 `draw_text` extension-trait default method (anchor offset → `TextRun` → `add_text_run`). **Parse-once-
@@ -332,6 +332,47 @@ directly. The SDK side does **not** pull in skrifa, so it parses the font exactl
 **Verification:** unit tests for font-unit→px scaling, metric-selection (typo vs hhea), measured width of a known string
 in the bundled font, and anchor-offset resolution (center of width W puts origin at −W/2); all
 pure/GPU-free.
+
+**Resolution:** Done. New `surge-sdk/src/shaping.rs` module (sibling of `text.rs`), re-exported from
+`lib.rs`. `harfrust = "=0.16.1"` moved from a `surge-core` dev-dependency to a real `surge-sdk`
+dependency; no skrifa on the SDK side, so the SDK parses each font exactly once.
+
+- **`Font`** owns one `harfrust::Font` (which owns the font bytes via `read-fonts`' shared `Arc`
+  blob — no self-referential struct, no separate byte buffer). It stores `font_id`, `units_per_em`,
+  and the vertical metrics in *font units*. `Font::load(canvas, path)` records the load
+  (`canvas.load_font`), reads the file (`std::fs::read`), and parses; `Font::from_bytes(bytes,
+  font_id)` is the public disk-free entry point (tests `include_bytes!` the bundled font through it).
+  Per the texture convention, `load` takes an **already-resolved** path (the module calls
+  `resolve_asset_path` itself), confirmed with the author; the SDK stays free of module-name
+  plumbing.
+- **Metric source (settled explicitly).** `harfrust::Font` *is* `read-fonts`' model font and exposes
+  `.metrics()` → a `Metrics` carrying `use_typo_metrics`, `typo_line`, and `hhea_line`. The pure
+  `select_vertical_metrics(use_typo, typo, hhea)` helper implements the plan's rule — OS/2 typo line
+  when `fsSelection.USE_TYPO_METRICS` is set, else `hhea`, falling back to whichever is present — and
+  normalizes the descender's sign to a non-negative magnitude. **No direct `read-fonts` dependency
+  was added** (everything is reached through harfrust's re-export), and no skrifa is pulled in, so the
+  parse-once-per-side rule holds. Noto Sans resolves `upem=1000`, ascent≈34.2px / descent≈9.4px /
+  gap=0 at 32px.
+- **`shape(text, px)`** builds a fresh `ShaperFont` per call (as the Step 0 spike does — it borrows
+  the `Font`, so it cannot be stored alongside it), shapes one LTR run, and scales positions by
+  `px_per_unit = px / units_per_em` (§3.5): advances accumulate along +x, HarfRust's y-up `y_offset`
+  is negated into the engine's y-down space (baseline at local y = 0). `ShapedText` exposes
+  `width/ascent/descent/line_gap/line_height/metrics/px_size/font_id/glyphs/len/is_empty`.
+- **`TextAnchor`** is a flat 9-variant enum (`TopLeft … Center … BottomRight`; `Center` =
+  horizontal-center + baseline), chosen with the author over a two-axis struct to match the doc's
+  `TextAnchor::Center` spelling. **`draw_text`** is a default method on the `TextCanvasExt` extension
+  trait (blanket-impl'd for every `SpriteCanvas`): it resolves the anchor offset against the measured
+  box, adds the origin to each local glyph position, and emits a `TextRun` via `add_text_run`.
+- **Deviation (test placement):** per the author's choice, the Step 3 tests live in a dedicated
+  `surge-sdk/tests/shaping.rs` (public API only), not inline — matching Step 1's split. Two pure
+  helpers (`select_vertical_metrics`, `anchor_offset`) plus `px_per_unit` are exposed `#[doc(hidden)]
+  pub` so the integration test can drive both metric-selection branches and every anchor case
+  deterministically with one font.
+- **Verification run:** `cargo test -p surge-sdk` → 20 unit + 12 shaping + 1 round-trip tests pass
+  (scaling, both metric-selection branches, real-font metrics, measured width / glyph count, empty
+  string, anchor offsets, `draw_text`→`TextRun` placement, and `Font::load` disk+id wiring).
+  `cargo test --workspace` green; `cargo clippy -p surge-sdk --tests` reports nothing new (the four
+  warnings are all pre-existing); `cargo tree -d` still shows a single `read-fonts v0.47.0`.
 
 ### Step 4: `font_database` skeleton (`surge-core`, GPU but empty)
 New GLSL `font.vert`/`font.frag` + two build.rs entries. The pure **shelf atlas allocator** (with
