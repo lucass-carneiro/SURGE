@@ -48,7 +48,7 @@ cargo test --workspace           # tests live in surge-core, surge-sdk, surge-pl
 The player resolves nearly everything relative to the process working directory, so **always run from the repo root** during development:
 
 - `config.toml` is read from CWD. It is **gitignored** — the checked-in copies live at `surge-modules/<module>/config.toml`, and the root one is a per-developer working copy (typically a module's config with `app_folder` repointed at `target/debug`).
-- SPIR-V is **not** read from disk at runtime. `surge-core/build.rs` compiles `sprite_database/shaders/sprite.{vert,frag}` with `glslang` into its own Cargo `OUT_DIR`, and `sprite_database/mod.rs` pulls the bytes in at compile time with `include_bytes!(concat!(env!("OUT_DIR"), "/sprite_vert.spv"))`, so the SPIR-V ships inside the player binary itself. There is no `shaders/` directory, no symlinks, and nothing for the stager to copy.
+- SPIR-V is **not** read from disk at runtime. `surge-core/build.rs` compiles both databases' shaders — `sprite_database/shaders/sprite.{vert,frag}` and `font_database/shaders/font.{vert,frag}` — with `glslang` into its own Cargo `OUT_DIR`, and each database's `mod.rs` pulls the bytes in at compile time with `include_bytes!(concat!(env!("OUT_DIR"), "/sprite_vert.spv"))`, so the SPIR-V ships inside the player binary itself. There is no `shaders/` directory, no symlinks, and nothing for the stager to copy.
 - Module asset paths go through `surge_sdk::resolve_asset_path(module_name, relative)`, which tries `<exe_dir>/assets/` first (staged layout) and falls back to the repo-root-relative `surge-modules/<module_name>/assets/` (dev), so a module runs correctly from the repo root in dev and from a staged folder.
 
 `stager/stager.py` produces a self-contained, CWD-correct release layout:
@@ -65,4 +65,4 @@ It requires `cargo build --release --features release-bin` to have run and must 
 - `surge-core/validation_layers` — **on by default**. Enables Vulkan validation layers + debug messenger, and gates several `VulkanError` variants behind `cfg`.
 - `<module>/release-bin` — pulls in the optional `surge-player` dependency and enables the module's `<module>_release` `[[bin]]` (`required-features`). Without it only the dev binary builds.
 
-PNG and SVG assets are tracked with **git-lfs** (see `.gitattributes`).
+PNG, SVG, and TTF assets are tracked with **git-lfs** (see `.gitattributes`).

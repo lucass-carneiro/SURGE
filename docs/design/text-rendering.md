@@ -546,7 +546,7 @@ Option<FontDatabase>` field beside `sprite_database`.
   --tests` adds no new warning from the changed files (the two `lib.rs` warnings are on pre-existing,
   unchanged lines). The end-to-end GPU draw with a real device arrives with the demo module in Step 7.
 
-### Step 7: Text-demo module + docs
+### Step 7: Text-demo module + docs ✅
 Add a new module, **`surge-mod-text`**, whose only job is to render some text on screen and exercise
 the full path end to end. It is kept as minimal as possible — a bare `SurgeApp` that draws nothing but
 text, with dev/release `[[bin]]`s, its own `config.toml`, and an `assets/fonts/` folder holding
@@ -559,6 +559,35 @@ visible. The workspace picks it up automatically via the `surge-modules/*` glob.
 legible text — as crisp as the fractional letterbox scale allows (the R8 atlas is linearly sampled, so
 glyphs are pixel-crisp only when design-px maps ~1:1 to device-px; scale-independent crispness via
 SDF/hinting is deferred, §6.5); `cargo test --workspace` green.
+
+**Resolution:** Done. New `surge-modules/surge-mod-text/` module, picked up automatically by the
+`surge-modules/*` workspace glob. It mirrors `surge-mod-default`'s layout — `Cargo.toml` (same
+`release-bin` feature gating the optional `surge-player` dep and the `surge_mod_text_release`
+`[[bin]]`), `config.toml`, `src/bin/dev.rs`, `src/bin/release.rs` — and ships the Noto Sans TTF at
+`assets/fonts/NotoSans-Regular.ttf`, LFS-tracked by the existing `*.ttf` rule.
+
+- **The app (`src/lib.rs`)** is a bare `SurgeApp` that draws only text. It holds `font: Option<Font>`
+  and re-registers it (`Font::load` via `resolve_asset_path(MODULE_NAME, "fonts/NotoSans-Regular.ttf")`)
+  in **both** `on_load` and `on_swapchain_recreate`, per §3.4, because the player restarts font ids at
+  0 when it rebuilds the font database. `update` shapes and `draw_text`s five runs exercising the full
+  path: a large centered title (64px, `TopCenter`), left/right edge-anchored lines (`TopLeft`/
+  `TopRight`), a colored line in a third size (40px teal, `TopCenter`), and a **live `frame: N`
+  counter** (32px amber) whose changing digits drive new glyphs through the atlas cache at runtime.
+  A font-load failure logs and leaves `font = None` (the app then draws nothing rather than panicking).
+- **Author choices honored (asked up front):** dark slate background (`0.12, 0.12, 0.15`) at 800×600
+  so light/colored text reads clearly; static sample lines **plus** the live counter.
+- **Docs:** AGENTS.md's "Build & run" note now lists both databases' shaders compiled by `build.rs`
+  (`sprite.{vert,frag}` *and* `font.{vert,frag}`), and the git-lfs note now reads "PNG, SVG, and TTF".
+- **Verification run:** `cargo check --workspace`, `cargo build -p surge-mod-text --features
+  release-bin`, and `cargo test --workspace` (109 tests) are all green; `cargo clippy -p
+  surge-mod-text` adds no warning (the four reported are pre-existing in `surge-sdk`). The end-to-end
+  GPU path was smoke-run with `cargo run -p surge-player` (root `config.toml` temporarily repointed at
+  `surge_mod_text`, then restored): Vulkan initializes, the font database is created, the module
+  registers the font and runs its frame loop for the full timeout with **zero** validation errors,
+  **zero** panics, and **zero** dropped/overflowed glyph runs. Visual confirmation that the glyphs are
+  *legible and correctly placed* still needs a human at the window — run from the repo root with the
+  root `config.toml`'s `[startup_app]` set to `app_folder = "target/debug"`, `app_name =
+  "surge_mod_text"`.
 
 ## 5. Self-critique (harsh, per AGENTS.md)
 

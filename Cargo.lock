@@ -1863,6 +1863,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "surge-mod-text"
+version = "1.4.0"
+dependencies = [
+ "log",
+ "surge-player",
+ "surge-sdk",
+]
+
+[[package]]
 name = "surge-player"
 version = "1.4.0"
 dependencies = [
