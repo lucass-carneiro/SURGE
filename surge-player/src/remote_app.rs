@@ -145,9 +145,10 @@ impl RemoteApp {
         }
     }
 
-    /// Texture uploads first, in order, since instances refer to them by position; then
-    /// instances. The first failed upload stops everything: the module's positional
-    /// `texture_id`s are wrong from that point on, so there is nothing sensible to reconcile.
+    /// Loads first, in order, since draws refer to them by position: texture uploads (instances
+    /// index them) and font loads (text runs index them). A failed load stops everything, because
+    /// the module's positional `texture_id`s/`font_id`s are wrong from that point on and there is
+    /// nothing sensible to reconcile. Then the draws: instances, then text runs.
     fn apply_ops(&mut self, ops: CanvasOps, canvas: &mut dyn SpriteCanvas) {
         for path in &ops.texture_uploads {
             if let Err(e) = canvas.upload_texture(path) {
@@ -155,8 +156,17 @@ impl RemoteApp {
                 return;
             }
         }
+        for path in &ops.font_loads {
+            if let Err(e) = canvas.load_font(path) {
+                self.fault(format_args!("loading font {path:?} failed: {e}"));
+                return;
+            }
+        }
         for instance in &ops.instances {
             canvas.add_instance(instance);
+        }
+        for run in &ops.text_runs {
+            canvas.add_text_run(run);
         }
     }
 }
@@ -429,8 +439,8 @@ fn stop_child(child: &mut Child) {
 mod tests {
     use super::*;
     use surge_sdk::{
-        BlendingMode, CanvasError, CreateInfo, InstanceInfo, TextRun, TextureFilteringLevel,
-        TextureFilteringMode,
+        BlendingMode, CanvasError, CanvasProxy, CreateInfo, InstanceInfo, PositionedGlyph, Response,
+        TextRun, TextureFilteringLevel, TextureFilteringMode, nalgebra::Vector4, write_message,
     };
 
     /// Counts what the module asks of the canvas, without a GPU.
@@ -462,15 +472,7 @@ mod tests {
         }
 
         fn get_create_info(&self) -> CreateInfo {
-            CreateInfo {
-                blending_mode: BlendingMode::Alpha,
-                texture_filtering_mode: TextureFilteringMode::Nearest,
-                texture_filtering_level: TextureFilteringLevel::X0,
-                max_sprites: 32,
-                max_textures: 32,
-                window_width: 500.0,
-                window_height: 800.0,
-            }
+            test_create_info()
         }
     }
 
@@ -519,6 +521,68 @@ mod tests {
         for _ in 0..frames {
             app.update(1.0 / 60.0, canvas);
         }
+    }
+
+    fn test_create_info() -> CreateInfo {
+        CreateInfo {
+            blending_mode: BlendingMode::Alpha,
+            texture_filtering_mode: TextureFilteringMode::Nearest,
+            texture_filtering_level: TextureFilteringLevel::X0,
+            max_sprites: 32,
+            max_textures: 32,
+            window_width: 500.0,
+            window_height: 800.0,
+        }
+    }
+
+    /// Font loads and text runs recorded by a module through the proxy must survive the wire and
+    /// reach the canvas's `load_font`/`add_text_run` when the player replays the `CanvasOps` — the
+    /// Step 6 text path end to end (proxy → wire → `apply_ops`), minus the GPU.
+    #[test]
+    fn text_run_survives_proxy_wire_apply_ops() {
+        // Module side: record a font load and a shaped run through the proxy, exactly as
+        // `draw_text` would.
+        let mut proxy = CanvasProxy::new(test_create_info());
+        let font_id = proxy.load_font("fonts/NotoSans-Regular.ttf").unwrap();
+        proxy.add_text_run(&TextRun {
+            font_id,
+            px_size: 32.0,
+            color: Vector4::new(1.0, 1.0, 1.0, 1.0),
+            z: 0.0,
+            glyphs: vec![
+                PositionedGlyph {
+                    glyph_id: 36,
+                    x: 0.0,
+                    y: 0.0,
+                },
+                PositionedGlyph {
+                    glyph_id: 74,
+                    x: 18.0,
+                    y: 0.0,
+                },
+            ],
+        });
+        let ops = proxy.take_ops();
+
+        // Wire: the player receives these ops framed inside a `Response::CanvasOps`.
+        let mut buf = Vec::new();
+        write_message(&mut buf, &Response::CanvasOps(ops)).unwrap();
+        let Response::CanvasOps(ops) = read_message(&buf[..]).unwrap() else {
+            panic!("expected CanvasOps");
+        };
+
+        // Player side: replay onto a counting canvas via a live `RemoteApp`. The module process it
+        // spawns is only needed so `apply_ops` has its `self`; it is torn down at the end.
+        let mut app = RemoteApp::new(&default_module_config()).unwrap();
+        let mut canvas = CountingCanvas::default();
+        app.apply_ops(ops, &mut canvas);
+
+        assert!(!app.is_faulted(), "applying valid ops must not fault");
+        assert_eq!(canvas.font_loads, 1, "font load did not reach the canvas");
+        assert_eq!(canvas.text_runs, 1, "text run did not reach the canvas");
+        assert_eq!(canvas.instances, 0, "no sprite instances were sent");
+
+        app.on_unload();
     }
 
     /// The F5 path: a crashed module freezes the app, and `reload` (what F5 calls) respawns it,

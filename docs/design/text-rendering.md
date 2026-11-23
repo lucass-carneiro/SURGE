@@ -506,12 +506,45 @@ still resolves a single `read-fonts v0.47.0`.
   actually calls `add_text_run`/`draw` with a real device (the composite `Canvas`) is Step 6, so the
   GPU upload/draw path is exercised end-to-end there, not yet here.
 
-### Step 6: Player wiring (`surge-player`)
+### Step 6: Player wiring (`surge-player`) ✅
 Introduce the `Canvas` composite (§3.3); build `FontDatabase` in `init_graphics` and the
 swapchain-recreate branch; draw both DBs in `frame()`; handle `font_loads` + `text_runs` in
 `remote_app::apply_ops`. **Verification:** extend the headless reload test if it asserts canvas
 shape; a dev-mode round-trip test that a `TextRun` survives proxy→wire→`apply_ops` onto a counting
 canvas.
+
+**Resolution:** Done. The `Canvas` composite lives in a new `surge-player/src/canvas.rs` (library
+crate): `Canvas<'a> { sprites: &'a mut SpriteDatabase, fonts: &'a mut FontDatabase }` implements the
+foreign `SpriteCanvas` trait, routing `add_instance`/`upload_texture`/`get_create_info` to the sprite
+DB and `load_font`/`add_text_run` to the font DB. `SurgeContext` gained a `font_database:
+Option<FontDatabase>` field beside `sprite_database`.
+
+- **One `CreateInfo` builds both DBs.** `init_graphics` and the swapchain-recreate branch now build
+  one `spd::CreateInfo` and pass it to both `SpriteDatabase::new` and `FontDatabase::new`
+  (`FontDatabase` reads only `window_width/height` from it, §Step 4), removing the duplicated literal
+  at each site.
+- **Composite at all three callback sites.** `on_load` (in `resumed`), `on_swapchain_recreate` and
+  `update` each destructure the two owned `Option` fields into a borrowed `Canvas` and hand
+  `&mut composite` to the module. Disjoint-field borrows let `self.startup_app` be called while both
+  DB fields are borrowed. `frame()` draws `sprites.draw()` then `fonts.draw()` into the same render
+  pass, so text wins equal-z ties (§3.3).
+- **`apply_ops` replays the two new op kinds.** Font loads are applied right after texture uploads
+  (both are positional loads that later draws index), with the same fault-and-stop-on-first-failure
+  policy as textures; then instances, then text runs. The bare `SpriteDatabase`'s `load_font`/
+  `add_text_run` stubs (Step 2) are now dead in the real player path — every callback receives a
+  `Canvas`, never a bare DB — so they stay as `unimplemented!` guards against a wiring mistake.
+- **Deviation (reload test not extended).** The headless reload test asserts only sprite counts, not
+  "canvas shape", so it needed no change (it already compiled against the new trait methods via
+  `CountingCanvas`). The new coverage is a dedicated `text_run_survives_proxy_wire_apply_ops` test:
+  it records a `load_font` + `add_text_run` through a `CanvasProxy`, frames the drained `CanvasOps`
+  inside a `Response::CanvasOps` through the real `write_message`/`read_message` wire, then calls
+  `apply_ops` onto a `CountingCanvas` via a live `RemoteApp`, asserting the font load and text run
+  both arrive and the app does not fault. The `CountingCanvas::get_create_info` literal was factored
+  into a shared `test_create_info` helper the new test reuses.
+- **Verification run:** `cargo test -p surge-player` → 2 tests pass (the extended-coverage round-trip
+  and the existing reload test); `cargo test --workspace` green; `cargo clippy -p surge-player
+  --tests` adds no new warning from the changed files (the two `lib.rs` warnings are on pre-existing,
+  unchanged lines). The end-to-end GPU draw with a real device arrives with the demo module in Step 7.
 
 ### Step 7: Text-demo module + docs
 Add a new module, **`surge-mod-text`**, whose only job is to render some text on screen and exercise

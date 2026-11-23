@@ -1,4 +1,5 @@
-use sc::vulkan::{VulkanContext, sprite_database as spd};
+use canvas::Canvas;
+use sc::vulkan::{VulkanContext, font_database::FontDatabase, sprite_database as spd};
 use std::{
     cell::RefCell,
     error::Error,
@@ -18,12 +19,15 @@ use winit::{
     window::{Fullscreen, Window, WindowId},
 };
 
+mod canvas;
+
 type PlayerError = Box<dyn Error>;
 
 struct SurgeContext {
     window: Option<Arc<Window>>,
     vulkan_context: Option<Arc<RefCell<VulkanContext>>>,
     sprite_database: Option<spd::SpriteDatabase>,
+    font_database: Option<FontDatabase>,
     engine_config: EngineConfig,
     startup_app: Box<dyn SurgeApp>,
     frame_timer: Instant,
@@ -70,18 +74,17 @@ impl SurgeContext {
             &self.engine_config,
         )?));
 
-        self.sprite_database = Some(spd::SpriteDatabase::new(
-            context.clone(),
-            spd::CreateInfo {
-                blending_mode: spd::BlendingMode::Alpha,
-                texture_filtering_mode: spd::TextureFilteringMode::Linear,
-                texture_filtering_level: spd::TextureFilteringLevel::X4,
-                max_sprites: 32,
-                max_textures: 32,
-                window_width: self.engine_config.resolution.width as f32,
-                window_height: self.engine_config.resolution.height as f32,
-            },
-        )?);
+        let create_info = spd::CreateInfo {
+            blending_mode: spd::BlendingMode::Alpha,
+            texture_filtering_mode: spd::TextureFilteringMode::Linear,
+            texture_filtering_level: spd::TextureFilteringLevel::X4,
+            max_sprites: 32,
+            max_textures: 32,
+            window_width: self.engine_config.resolution.width as f32,
+            window_height: self.engine_config.resolution.height as f32,
+        };
+        self.sprite_database = Some(spd::SpriteDatabase::new(context.clone(), create_info)?);
+        self.font_database = Some(FontDatabase::new(context.clone(), create_info)?);
         self.vulkan_context = Some(context);
         Ok(())
     }
@@ -133,21 +136,24 @@ impl SurgeContext {
                 .borrow_mut()
                 .recreate_swapchain(&self.engine_config)?;
 
-            self.sprite_database = Some(spd::SpriteDatabase::new(
-                self.vulkan_context.as_ref().unwrap().clone(),
-                spd::CreateInfo {
-                    blending_mode: spd::BlendingMode::Alpha,
-                    texture_filtering_mode: spd::TextureFilteringMode::Linear,
-                    texture_filtering_level: spd::TextureFilteringLevel::X4,
-                    max_sprites: 32,
-                    max_textures: 32,
-                    window_width: self.engine_config.resolution.width as f32,
-                    window_height: self.engine_config.resolution.height as f32,
-                },
-            )?);
+            let context = self.vulkan_context.as_ref().unwrap().clone();
+            let create_info = spd::CreateInfo {
+                blending_mode: spd::BlendingMode::Alpha,
+                texture_filtering_mode: spd::TextureFilteringMode::Linear,
+                texture_filtering_level: spd::TextureFilteringLevel::X4,
+                max_sprites: 32,
+                max_textures: 32,
+                window_width: self.engine_config.resolution.width as f32,
+                window_height: self.engine_config.resolution.height as f32,
+            };
+            self.sprite_database = Some(spd::SpriteDatabase::new(context.clone(), create_info)?);
+            self.font_database = Some(FontDatabase::new(context, create_info)?);
 
-            self.startup_app
-                .on_swapchain_recreate(self.sprite_database.as_mut().unwrap());
+            let mut composite = Canvas {
+                sprites: self.sprite_database.as_mut().unwrap(),
+                fonts: self.font_database.as_mut().unwrap(),
+            };
+            self.startup_app.on_swapchain_recreate(&mut composite);
 
             self.recreate_swapchain = false;
         }
@@ -175,8 +181,11 @@ impl SurgeContext {
 
         // Call startup app update
         let dt = self.last_update_call_timer.elapsed().as_secs_f32();
-        self.startup_app
-            .update(dt, self.sprite_database.as_mut().unwrap());
+        let mut composite = Canvas {
+            sprites: self.sprite_database.as_mut().unwrap(),
+            fonts: self.font_database.as_mut().unwrap(),
+        };
+        self.startup_app.update(dt, &mut composite);
         self.last_update_call_timer = Instant::now();
 
         // A fault is only discovered inside `update()`, i.e. after the acquire above. Presenting
@@ -201,8 +210,9 @@ impl SurgeContext {
             .borrow()
             .cmd_render_begin(swpc_img_data.index, &self.engine_config);
 
-        // Draw sprites
+        // Draw sprites, then text on top (text draws second so it wins equal-z ties, §3.3).
         self.sprite_database.as_mut().unwrap().draw()?;
+        self.font_database.as_mut().unwrap().draw()?;
 
         // End rendering
         self.vulkan_context
@@ -300,8 +310,11 @@ impl ApplicationHandler for SurgeContext {
                     self.window = Some(window);
 
                     // Load startup app
-                    self.startup_app
-                        .on_load(self.sprite_database.as_mut().unwrap());
+                    let mut composite = Canvas {
+                        sprites: self.sprite_database.as_mut().unwrap(),
+                        fonts: self.font_database.as_mut().unwrap(),
+                    };
+                    self.startup_app.on_load(&mut composite);
                 }
                 Err(e) => self.fail(event_loop, e),
             }
@@ -489,6 +502,7 @@ fn run_loop(app: Box<dyn SurgeApp>, engine_config: EngineConfig) -> Result<(), P
         window: None,
         vulkan_context: None,
         sprite_database: None,
+        font_database: None,
         engine_config,
         startup_app: app,
         frame_timer: Instant::now(),
