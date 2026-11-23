@@ -31,6 +31,8 @@ fn main() {
     let shaders = [
         ("src/vulkan/sprite_database/shaders/sprite.vert", "sprite_vert.spv"),
         ("src/vulkan/sprite_database/shaders/sprite.frag", "sprite_frag.spv"),
+        ("src/vulkan/font_database/shaders/font.vert", "font_vert.spv"),
+        ("src/vulkan/font_database/shaders/font.frag", "font_frag.spv"),
     ];
 
     for (src, spv) in shaders {

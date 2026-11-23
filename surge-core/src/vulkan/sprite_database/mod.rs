@@ -1,6 +1,10 @@
 use super::{
     DEPTH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
-    ctx_graphics_pipeline::GraphicsPipelineBuilder, image::srgb_to_linear, texture::Texture,
+    ctx_graphics_pipeline::GraphicsPipelineBuilder, image::srgb_to_linear,
+    render_common::{
+        letterbox, make_model_matrix, make_ortho_projection, make_view, subtexture_uv_transform,
+    },
+    texture::Texture,
 };
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
@@ -816,95 +820,9 @@ impl Drop for SpriteDatabase {
     }
 }
 
-/// Creates an orthographic projection for 2D rendering.
-/// It places the origin on upper left corner of the game window
-/// with +x pointing right, +y pointing down and +z pointing into
-/// the screen. Composed with `make_view`'s camera (eye at z = 1,
-/// looking at z = 0), a `z` passed to `add_instance` in `[0, 1]`
-/// maps to Vulkan NDC/depth `[0, 1]`, with `z = 0` frontmost
-/// (depth = 1) and `z = 1` backmost (depth = 0).
-///
-/// `nalgebra::Matrix4::new_orthographic` emits the GL convention
-/// (NDC z in `[-1, 1]`), which Vulkan does not clip-space-remap on
-/// its own — Vulkan's NDC/depth range is `[0, 1]` directly. Using
-/// the GL matrix as-is silently clips any z whose GL NDC z is
-/// negative. This builds the z row for Vulkan's convention directly
-/// instead.
-///
-/// # Parameters:
-/// * `width`, `height`: Screen dimensions.
-pub fn make_ortho_projection(width: f32, height: f32) -> nalgebra::Matrix4<f32> {
-    #[rustfmt::skip]
-    let proj = nalgebra::Matrix4::new(
-        2.0f32 / width, 0.0,             0.0, -1.0,
-        0.0,            2.0f32 / height, 0.0, -1.0,
-        0.0,            0.0,            -1.0,  0.0,
-        0.0,            0.0,             0.0,  1.0,
-    );
-    proj
-}
-
-/// Creates a view matrix for 2D rendering
-///
-/// # Parameters:
-/// `eye`: Position of the camera in 2D coordinates.
-pub fn make_view(eye: nalgebra::Vector2<f32>) -> nalgebra::Matrix4<f32> {
-    let eye_3d = nalgebra::Point3::new(eye[0], eye[1], 1.0f32);
-    let target = nalgebra::Point3::new(eye[0], eye[1], 0.0f32);
-    let up = nalgebra::Vector3::new(0.0f32, 1.0f32, 0.0f32);
-    nalgebra::Matrix4::look_at_rh(&eye_3d, &target, &up)
-}
-
-/// Crete a model matrix for a given sprite
-pub fn make_model_matrix(
-    position: nalgebra::Vector2<f32>,
-    scale: nalgebra::Vector2<f32>,
-    z: f32,
-) -> nalgebra::Matrix4<f32> {
-    let mv = nalgebra::Vector3::new(position[0], position[1], z);
-    let sc = nalgebra::Vector3::new(scale[0], scale[1], 1.0f32);
-    nalgebra::Matrix4::identity()
-        .append_nonuniform_scaling(&sc)
-        .append_translation(&mv)
-}
-
 /// The UV transform `(scale.xy, offset.xy)` that selects the whole texture.
 fn full_texture_uv_transform() -> nalgebra::Vector4<f32> {
     nalgebra::Vector4::new(1.0, 1.0, 0.0, 0.0)
-}
-
-/// Converts a sub-rect of a `texture`-sized image (all in texels) into the UV transform
-/// `(scale.xy, offset.xy)` the vertex shader applies. Derivation in `extra/subimage.wls`.
-/// Returns `None` if the sub-rect is not fully inside the texture; a sub-rect that
-/// ends exactly on the texture edge is inside.
-fn subtexture_uv_transform(
-    origin: [u32; 2],
-    extent: [u32; 2],
-    texture: [u32; 2],
-) -> Option<nalgebra::Vector4<f32>> {
-    let fits = |o: u32, e: u32, t: u32| o.checked_add(e).is_some_and(|end| end <= t);
-
-    if !fits(origin[0], extent[0], texture[0]) || !fits(origin[1], extent[1], texture[1]) {
-        return None;
-    }
-
-    Some(nalgebra::Vector4::new(
-        extent[0] as f32 / texture[0] as f32,
-        extent[1] as f32 / texture[1] as f32,
-        origin[0] as f32 / texture[0] as f32,
-        origin[1] as f32 / texture[1] as f32,
-    ))
-}
-
-/// Largest rectangle with the design resolution's aspect ratio that fits in `target`, centered.
-/// Returns `(x, y, width, height)` in target pixels; the leftover bars keep the clear color.
-fn letterbox(design_w: f32, design_h: f32, target: vk::Extent2D) -> (i32, i32, u32, u32) {
-    let scale = (target.width as f32 / design_w).min(target.height as f32 / design_h);
-    let width = ((design_w * scale).round() as u32).clamp(1, target.width.max(1));
-    let height = ((design_h * scale).round() as u32).clamp(1, target.height.max(1));
-    let x = ((target.width - width.min(target.width)) / 2) as i32;
-    let y = ((target.height - height.min(target.height)) / 2) as i32;
-    (x, y, width, height)
 }
 
 /// Maps a point in swapchain pixels (where the window's cursor is reported) to design-resolution
@@ -952,48 +870,6 @@ mod tests {
         vk::Extent2D { width, height }
     }
 
-    #[test]
-    fn subtexture_uv_transform_maps_rect_to_normalised_scale_and_offset() {
-        let uv = subtexture_uv_transform([100, 50], [200, 25], [400, 100]).unwrap();
-        assert_eq!(uv, nalgebra::Vector4::new(0.5, 0.25, 0.25, 0.5));
-    }
-
-    #[test]
-    fn subtexture_uv_transform_accepts_rect_ending_exactly_on_the_edge() {
-        // The shipped 12502x502 sheet's last frame ends at 12500, but a rect may end at 12502.
-        assert!(subtexture_uv_transform([12004, 2], [498, 500], [12502, 502]).is_some());
-        assert!(subtexture_uv_transform([0, 0], [400, 100], [400, 100]).is_some());
-    }
-
-    #[test]
-    fn subtexture_uv_transform_rejects_out_of_bounds_and_overflowing_rects() {
-        assert!(subtexture_uv_transform([1, 0], [400, 100], [400, 100]).is_none());
-        assert!(subtexture_uv_transform([0, 1], [400, 100], [400, 100]).is_none());
-        assert!(subtexture_uv_transform([400, 0], [1, 1], [400, 100]).is_none());
-        // `origin + extent` overflows u32; must be rejected, not panic in debug builds.
-        assert!(subtexture_uv_transform([u32::MAX, 0], [2, 1], [400, 100]).is_none());
-    }
-
-    #[test]
-    fn letterbox_identity_when_extent_matches_design() {
-        assert_eq!(letterbox(500.0, 800.0, ext(500, 800)), (0, 0, 500, 800));
-    }
-
-    #[test]
-    fn letterbox_pillarboxes_portrait_design_on_landscape_monitor() {
-        // 500x800 into 1920x1080: height-bound, scale 1.35 -> 675x1080, centered horizontally.
-        assert_eq!(letterbox(500.0, 800.0, ext(1920, 1080)), (622, 0, 675, 1080));
-    }
-
-    #[test]
-    fn letterbox_stays_inside_target() {
-        for (w, h) in [(1, 1), (7, 3), (3840, 2160), (800, 500)] {
-            let (x, y, lw, lh) = letterbox(500.0, 800.0, ext(w, h));
-            assert!(x >= 0 && y >= 0);
-            assert!(x as u32 + lw <= w && y as u32 + lh <= h, "{w}x{h}");
-        }
-    }
-
     /// Regression test for M15: the `png` crate emits 16-bit samples big-endian, while
     /// `R16G16B16A16_UNORM` is read in host order, so `decode_texture_file` must convert.
     #[test]
@@ -1026,75 +902,6 @@ mod tests {
 
         let mid = (srgb_to_linear(0x8000 as f32 / 65535.0) * 65535.0).round() as u16;
         assert_eq!(host, vec![0xFFFF, 0x0000, mid, 0x1234]);
-    }
-
-    /// Runs a sprite's z through the same proj * view * model chain
-    /// the engine builds at draw time and returns the resulting
-    /// Vulkan NDC/depth z (post perspective-divide).
-    fn ndc_z(z: f32, width: f32, height: f32) -> f32 {
-        let model = make_model_matrix(
-            nalgebra::Vector2::new(0.0f32, 0.0f32),
-            nalgebra::Vector2::new(1.0f32, 1.0f32),
-            z,
-        );
-        let view = make_view(nalgebra::Vector2::from_element(0.0f32));
-        let proj = make_ortho_projection(width, height);
-
-        let clip = proj * view * model * nalgebra::Vector4::new(0.0f32, 0.0f32, 0.0f32, 1.0f32);
-
-        // Orthographic: w must stay 1, i.e. no perspective divide needed.
-        assert!(
-            (clip.w - 1.0f32).abs() < 1e-6,
-            "orthographic projection introduced a perspective divide: w = {}",
-            clip.w
-        );
-
-        clip.z
-    }
-
-    #[test]
-    fn full_z_range_lands_inside_vulkan_depth_bounds() {
-        let (width, height) = (500.0f32, 800.0f32);
-
-        // Documented range (CLAUDE.md, make_ortho_projection): z in [0, 1]
-        // must map onto Vulkan's valid NDC/depth range [0, 1] in full,
-        // not just the [0, 0.5] half the pre-fix GL-convention matrix
-        // produced (values above landed in negative NDC and were clipped).
-        for &(z, expected_depth) in &[
-            (0.00f32, 1.00f32),
-            (0.25f32, 0.75f32),
-            (0.50f32, 0.50f32),
-            (0.75f32, 0.25f32),
-            (1.00f32, 0.00f32),
-        ] {
-            let depth = ndc_z(z, width, height);
-
-            assert!(
-                (0.0..=1.0).contains(&depth),
-                "z = {z} produced depth {depth}, outside Vulkan's valid [0, 1] range \
-                 (would be clipped and never rendered)"
-            );
-            assert!(
-                (depth - expected_depth).abs() < 1e-5,
-                "z = {z}: expected depth {expected_depth}, got {depth}"
-            );
-        }
-    }
-
-    #[test]
-    fn smaller_world_z_draws_in_front() {
-        // GREATER_OR_EQUAL depth test + clear depth 0.0: a larger stored
-        // depth wins, so smaller world z (foreground, e.g. 2048 pieces at
-        // z = 0.0) must map to a larger depth than larger world z
-        // (background, e.g. the board at z = 0.5).
-        let (width, height) = (500.0f32, 800.0f32);
-
-        let foreground_depth = ndc_z(0.0, width, height);
-        let background_depth = ndc_z(0.5, width, height);
-        let backmost_depth = ndc_z(1.0, width, height);
-
-        assert!(foreground_depth > background_depth);
-        assert!(background_depth > backmost_depth);
     }
 
     /// `FrameGlobals` and `InstanceRecord` are written byte-for-byte into

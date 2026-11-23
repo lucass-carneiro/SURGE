@@ -152,6 +152,15 @@ pub enum VulkanError {
 
     #[error("Unable to upload texture: the texture database is full")]
     TextureDatabaseFull,
+
+    #[error("Font file IO error: {0}")]
+    FontFileIOError(std::io::Error),
+
+    #[error("Font file parse error: {0}")]
+    FontParseError(String),
+
+    #[error("Unable to load font: the font database is full")]
+    FontDatabaseFull,
 }
 
 impl From<VulkanError> for surge_sdk::CanvasError {

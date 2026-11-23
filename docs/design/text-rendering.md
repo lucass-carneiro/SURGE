@@ -374,7 +374,7 @@ dependency; no skrifa on the SDK side, so the SDK parses each font exactly once.
   `cargo test --workspace` green; `cargo clippy -p surge-sdk --tests` reports nothing new (the four
   warnings are all pre-existing); `cargo tree -d` still shows a single `read-fonts v0.47.0`.
 
-### Step 4: `font_database` skeleton (`surge-core`, GPU but empty)
+### Step 4: `font_database` skeleton (`surge-core`, GPU but empty) ✅
 New GLSL `font.vert`/`font.frag` + two build.rs entries. The pure **shelf atlas allocator** (with
 tests), packing each cell with a ≥1px gutter (§3.2). `FontDatabase::new/drop`: R8 atlas image +
 sampler (**LINEAR** filter, for GPU scaling) + pipeline + descriptor sets + instance SSBOs (mirroring
@@ -385,6 +385,56 @@ instances. Promote the shared helpers (`letterbox`, projection/view, subtexture 
 tests (fills a shelf, wraps to the next, reports overflow, keeps the gutter between cells); a
 GPU-struct-layout test pinning the font `InstanceRecord` size/align to the GLSL
 (mirror sprite DB's `gpu_struct_layout_matches_glsl`).
+
+**Resolution:** Done. New `surge-core/src/vulkan/font_database/` module (sibling of
+`sprite_database`), registered in `vulkan/mod.rs`. `skrifa = "=0.50.0"` moved from a dev-dependency to
+a real `surge-core` dependency; `harfrust` and `zeno` stay dev-dependencies for the Step 0 spike
+(`zeno` moves to a real dep in Step 5). The four settled decisions below were confirmed with the
+author before coding.
+
+- **Shared helpers → new `render_common` module.** Per the author's choice, `make_ortho_projection`,
+  `make_view`, `make_model_matrix`, `letterbox`, and `subtexture_uv_transform` moved from
+  `sprite_database` (where `letterbox`/`subtexture_uv_transform` were private) into a new
+  `surge-core/src/vulkan/render_common.rs`; both databases import them. The two matrix/projection
+  helpers stay `pub`, `letterbox`/`subtexture_uv_transform` are now `pub(crate)`. Their unit tests
+  (subtexture, letterbox, the `ndc_z` depth-range/ordering tests) moved with them to
+  `render_common_tests.rs`. `window_to_design` (player cursor mapping, sprite-specific) and
+  `full_texture_uv_transform` stay in `sprite_database`; `window_to_design` now imports `letterbox`.
+- **`FontDatabase::new(context, ci: CreateInfo)`** reuses the sprite `CreateInfo` (author's choice,
+  for symmetry with `SpriteDatabase::new`), reading only `window_width/height` for the projection and
+  ignoring the sprite-only fields. Budgets are player-internal `const`s (§6.6): `ATLAS_SIZE = 1024`
+  (one 1 MiB `R8_UNORM` page), `ATLAS_GUTTER = 1`, `MAX_GLYPH_INSTANCES = 4096`, `MAX_FONTS = 16`.
+- **Atlas held as a raw image inline** (author's choice): `FontDatabase` owns the atlas as
+  `vk::Image` + `vk_mem::Allocation` + `vk::ImageView`, created and transitioned
+  `UNDEFINED → SHADER_READ_ONLY_OPTIMAL` once in `new()` via the immediate command buffer, destroyed
+  in `drop()`. It is deliberately **not** a `Texture`, whose upload path discards the whole image;
+  Step 5 needs the raw image handle for sub-region copies. With zero instances drawn, the atlas's
+  undefined contents are never sampled.
+- **Descriptors / pipeline mirror the sprite DB but simpler.** Single atlas, so set 1 is a plain
+  `SAMPLER` + one `SAMPLED_IMAGE` (no bindless array, no `VARIABLE_DESCRIPTOR_COUNT`/`PARTIALLY_BOUND`).
+  The font `InstanceRecord` drops the sprite's trailing `material` field (96 bytes vs 112). The
+  `LINEAR` atlas sampler uses `CLAMP_TO_EDGE`. The pipeline is alpha-blended with the same
+  `GREATER_OR_EQUAL` depth test as sprites, so the two share the depth buffer (text drawn second wins
+  equal-z ties, §3.3). The `font.frag` samples single-channel coverage and writes
+  `vec4(color.rgb, color.a * coverage)` (§3.2).
+- **`load_font(path)`** reads the file once (`std::fs::read`), validates it parses with
+  `skrifa::FontRef::new` (so a bad font fails at load, not mid-frame), and stores the one byte buffer
+  per file (the `FontRef` borrows those bytes, so it is rebuilt on demand in Step 5 rather than stored
+  self-referentially). Returns the `FontId` (upload order, matching the module side). New
+  `VulkanError` variants: `FontFileIOError`, `FontParseError`, `FontDatabaseFull`.
+- **Deviation (test placement):** per AGENTS.md's "separate test and module code" rule, the new unit
+  tests live in dedicated files included as `#[cfg(test)] #[path = "…"] mod tests`
+  (`render_common_tests.rs`, `font_database/atlas_allocator_tests.rs`, `font_database/tests.rs`)
+  rather than inline `#[cfg(test)] mod tests` as `sprite_database` still does. The allocator carries a
+  module-level `#![allow(dead_code)]` because `allocate` is only exercised by tests until Step 5 packs
+  glyphs; `InstanceRecord` and `LoadedFont.bytes` carry targeted `#[allow(dead_code)]` for the same
+  reason.
+- **Verification run:** `cargo test -p surge-core` → 24 unit (5 new packer tests, the font
+  `gpu_struct_layout_matches_glsl`, the moved `render_common` tests) + 2 spike tests pass;
+  `cargo test --workspace` green; `cargo check -p surge-core` and `cargo clippy -p surge-core --tests`
+  report nothing new from the added files; `cargo tree -d` still shows a single `read-fonts v0.47.0`
+  (skrifa/harfrust/zeno/read-fonts/font-types unduplicated). `draw()` renders `occupancy = 0`
+  instances; `add_text_run` and rasterization arrive in Step 5.
 
 ### Step 5: Rasterization + cache + atlas upload + draw (`surge-core`)
 skrifa→zeno glyph rasterization (through the §3.2 adapter) keyed by `(FontId, GlyphId, round(px))`;

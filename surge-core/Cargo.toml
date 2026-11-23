@@ -9,6 +9,7 @@ ash-window = "0.13.0"
 log = "0.4.28"
 nalgebra = "0.34.1"
 png = "0.18.0"
+skrifa = "=0.50.0"
 surge-sdk = { path = "../surge-sdk" }
 thiserror = "2.0.17"
 vk-mem = "0.5.0"
@@ -18,10 +19,10 @@ winit = "0.30.12"
 default = ["validation_layers"]
 validation_layers =[]
 
-# Step 0 dependency spike (throwaway): proves harfrust (shaping) + skrifa (outlines)
-# + zeno (coverage) before any GPU wiring. These move to their real homes in later
-# steps (harfrust -> surge-sdk, skrifa + zeno -> surge-core deps).
+# harfrust (shaping) and zeno (coverage) remain dev-dependencies for the Step 0
+# throwaway spike (tests/font_spike.rs). skrifa is now a real dependency: the
+# player-side font_database parses one skrifa font per file to draw glyph outlines.
+# zeno moves to a real dependency in Step 5 (rasterization).
 [dev-dependencies]
 harfrust = "=0.16.1"
-skrifa = "=0.50.0"
 zeno = "=0.3.3"
