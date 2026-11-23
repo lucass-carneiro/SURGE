@@ -17,3 +17,11 @@ winit = "0.30.12"
 [features]
 default = ["validation_layers"]
 validation_layers =[]
+
+# Step 0 dependency spike (throwaway): proves harfrust (shaping) + skrifa (outlines)
+# + zeno (coverage) before any GPU wiring. These move to their real homes in later
+# steps (harfrust -> surge-sdk, skrifa + zeno -> surge-core deps).
+[dev-dependencies]
+harfrust = "=0.16.1"
+skrifa = "=0.50.0"
+zeno = "=0.3.3"

@@ -215,7 +215,7 @@ Each step compiles and is testable on its own. Per the repo's test contract, no 
 window — GPU-facing logic is kept in pure helpers (packer, scaling, anchors, layout structs). Tests
 go in separate files from module code.
 
-### Step 0: Dependency spike — prove the external crates before wiring any GPU
+### Step 0: Dependency spike — prove the external crates before wiring any GPU ✅
 Pin `harfrust`, `skrifa`, and `zeno` to known-good versions and record them. Run `cargo tree -d` and
 prefer a tree with a single `read-fonts`, but treat that as **dependency hygiene, not a correctness
 gate**: HarfRust is used only in `surge-sdk` and skrifa only in `surge-core`, they never share a font
@@ -231,6 +231,38 @@ bitmap with sane bearings read from zeno's `Placement`. This isolates the y-up�
 the font-unit scaling before any Vulkan code depends on them. **Verification:** the spike test passes;
 `cargo tree -d` recorded (single `read-fonts` preferred, not required); versions recorded in the
 Resolution.
+
+**Resolution:** Done. Settled the three §6.1-adjacent open items with the author first: the test font
+is a copy of the system `NotoSans-Regular.ttf` (607 KiB static TTF, Latin/Greek/Cyrillic, OFL)
+committed at repo-root `test-assets/fonts/NotoSans-Regular.ttf`; tests read it via `include_bytes!`
+(no CWD/asset-layout dependency); the throwaway spike lives in `surge-core/tests/font_spike.rs` with
+`harfrust`/`skrifa`/`zeno` added as **surge-core dev-dependencies** (they move to their real homes —
+harfrust→surge-sdk, skrifa+zeno→surge-core deps — in Steps 3–4).
+
+- **git-lfs:** added `*.ttf filter=lfs diff=lfs merge=lfs -text` to `.gitattributes`; the font stages
+  as a 131-byte LFS pointer.
+- **Versions pinned** (exact, `=`): `harfrust 0.16.1`, `skrifa 0.50.0`, `zeno 0.3.3`. They resolve a
+  **single** `read-fonts v0.47.0` and `font-types v0.12.7`; `cargo tree -d` shows none of
+  read-fonts/font-types/skrifa/harfrust/zeno duplicated. Hygiene goal met (not required for
+  correctness, per §3.2).
+- **Shaping spike:** `"Ag"` shapes to exactly 2 glyphs with strictly increasing pen-x and a plausible
+  advance width. Confirmed harfrust's default scale is identity, so positions come out in **font
+  units**; the test applies `px_per_unit = px_size / units_per_em` (§3.5). API shape:
+  `harfrust::Font::new(bytes, 0)` → `ShaperFont::new(&font)` → `Buffer::push_str` +
+  `guess_segment_properties()` → free fn `harfrust::shape(..)`; read `glyph_infos()`/`glyph_positions()`.
+- **Raster spike + convention finding (the main §3.5 risk):** the skrifa→zeno adapter rasterizes `'A'`
+  @ 64px to a non-empty `41×46` Alpha coverage mask. **skrifa emits y-up** (outline y-range
+  `[0, +45.89]`, baseline at 0). The adapter **negates y** to hand zeno the engine's y-down space and
+  renders with zeno's **default `Origin::TopLeft`**. With that, an above-baseline glyph has a
+  **negative** `Placement.top` (here `-46`): it is the signed baseline→top-row offset (up is negative),
+  so quad-top-left `y = baseline_y + placement.top` and the baseline-to-top bearing is `-placement.top`
+  (`46`, ~cap height — sane). `Placement.left` is the left bearing. This **matches the plan's §3.2
+  "flipping to y-down"** wording and is the convention Step 5 must adopt. (A tried-and-rejected
+  `Origin::BottomLeft` + no-flip approach yields `top=0` here, because zeno's non-explicit-size render
+  path leaves its internal `height` at 0 in the BottomLeft branch — a dead end. Noted so it isn't
+  re-attempted.)
+- **Verification run:** `cargo test -p surge-core --test font_spike` → 2 passed, no warnings;
+  `cargo test --workspace` green (dev-deps don't touch the normal build graph).
 
 ### Step 1: Wire types (`surge-sdk`, no GPU)
 Add `font_loads: Vec<String>` and `text_runs: Vec<TextRun>` to `CanvasOps`; define `TextRun` and
