@@ -1,0 +1,384 @@
+# Text Rendering (TTF + HarfRust shaping + glyph atlas)
+
+**Status:** Draft (pass 1, review-corrected). The four structural decisions in §3.0 were settled with
+the author; the items in §6 (Open decisions) are deliberately left for review before Step 0 starts. A
+harsh design-review pass (2026-11-22, two independent reviewers + crate-fact verification against
+docs.rs) corrected the font-parsing framing (§3.2 / §Step 0), the atlas upload/sync rationale
+(§3.2 / §Step 5), and several over-claims, and added atlas gutters and dropped-glyph memoization. No
+code has been written.
+
+---
+
+## 1. What is being implemented
+
+A text-rendering subsystem for the SURGE engine that lets a module draw strings in a TTF/OTF font:
+
+- **Shaping** (string + font + size → positioned glyph IDs) with **HarfRust**, running **module-side
+  in `surge-sdk`**, so a module can *measure* text (width, ascent, descent, line height) and lay out
+  its own UI around it.
+- **Rasterization + caching** of glyph bitmaps into a GPU **glyph atlas**, and drawing each shaped
+  glyph as a textured quad — the exact mechanism `sprite_database` already uses for sprites. This
+  lives in a new **`surge-core/src/vulkan/font_database`** module, a sibling of `sprite_database`.
+
+Scope for this first version (v1) is deliberately narrow: a **single shaped run** — one font, one
+pixel size, one line, left-to-right, no wrapping — placed at a point with an alignment anchor
+(left / center / right, top / baseline / bottom). Everything else is explicitly deferred (§6.5).
+
+## 2. What problem it solves
+
+Today the engine has **no text**. A module that wants to show a string must bake it into a PNG ahead
+of time — one sprite per possible value. That does not scale: any dynamic string (a score, a timer, a
+name, a debug overlay) is impossible without pre-rendering every value as artwork. A module needs to
+render arbitrary strings at runtime from a font file, and it needs to know how big that text will be
+so it can position and size the UI around it.
+
+## 3. Design overview — how it all fits together
+
+### 3.0 The four settled decisions (and why)
+
+The architecture is shaped by one hard constraint in the existing code: **in dev mode the module is a
+separate process and the player↔module wire is one-way per turn** — `wire.rs` states "the module has
+no way to ask the player anything mid-turn." A module therefore cannot query the renderer for text
+metrics synchronously. That single fact drives decision (1).
+
+| # | Decision | Choice | Rationale |
+|---|----------|--------|-----------|
+| 1 | Where shaping runs | **Module-side, in `surge-sdk`** | The module can't query the renderer mid-turn (the wire forbids it), so it holds the font and measures locally; the only alternative — the player shipping metrics back at load time — is clumsier and still can't do full glyph positioning. The module shapes, measures, lays out, and ships a *positioned glyph run*. |
+| 2 | How glyph quads reach the screen | **Dedicated `font_database`** (own mutable atlas, own pipeline/shader) | A glyph atlas is *mutated incrementally* as glyphs are cached; the sprite DB's texture array is "upload once, never mutate". Mirroring `sprite_database` keeps the structure the author asked for and keeps the dynamic-atlas lifecycle out of the sprite path. |
+| 3 | Rasterizer stack | **skrifa (outlines) + zeno (coverage)** | skrifa and HarfRust both parse with the fontations `read-fonts` stack (each wraps it in its own `Font` type), so the two sides share a parsing family without sharing a font object. zeno is the path rasterizer from the swash family; returns a grayscale coverage mask. skrifa's outline does not pipe directly into zeno — a small adapter translates it (§3.2). No hinting — fine for GPU-scaled game text. |
+| 4 | v1 scope | **Minimal single-run** | Keeps the first commit chain small and testable; layout (wrapping, bidi, rich text, SDF) is a later plan. |
+
+### 3.1 The data path, end to end
+
+```
+MODULE (surge-sdk, process A in dev / linked in release)
+  Font::load(canvas, "fonts/X.ttf")
+      ├─ canvas.load_font("fonts/X.ttf")  ──► records path, returns cumulative FontId
+      └─ parse HarfRust face from the same path (for shaping)      (both sides parse the file)
+  let shaped = font.shape("Score: 42", 32.0)      // HarfRust → positioned glyphs (font units; SDK scales to px, §3.5)
+  shaped.width(), shaped.ascent(), ...            // module uses these to lay out its UI
+  canvas.draw_text(&shaped, origin, anchor, color, z)   // SDK applies anchor offset,
+                                                        // emits a TextRun into the canvas
+
+WIRE (dev mode only): CanvasOps gains
+  font_loads: Vec<String>            // like texture_uploads
+  text_runs:  Vec<TextRun>           // { font_id, px_size, color, z, glyphs: [{glyph_id, x, y}] }
+
+PLAYER (surge-core font_database, process B in dev / same process in release)
+  load_font(path)  ──► skrifa parses outlines, assigns FontId (== module's, same order)
+  add_text_run(run):
+      for each glyph:
+          key = (font_id, glyph_id, round(px_size))
+          on cache miss: skrifa outline → zeno coverage bitmap → pack into atlas (shelf allocator)
+                         → record a partial buffer→image copy into the persistent atlas image
+          append an InstanceRecord { model(quad at pen + bearing, sized to bitmap),
+                                     color, subtexture_data = atlas cell UVs, z }
+  draw():
+      flush pending atlas uploads (barrier; device drain on a miss frame)
+      bind font pipeline + atlas descriptor, set letterboxed viewport (shared with sprites),
+      draw `occupancy` instances, reset occupancy
+```
+
+The module shapes and knows every glyph's **pen position on the baseline** (design-space, y-down).
+The player adds the **rasterization bearing** (known only after rasterizing: left bearing, top
+bearing) to place the quad's top-left. This split is deliberate: advances/positions are a shaping
+concern (module), bitmap placement is a raster concern (player), and they compose cleanly.
+
+### 3.2 What is new vs. reused
+
+**Reused wholesale (patterns and building blocks):**
+- The instanced-quad draw: `FrameGlobals` UBO (view+proj), per-instance SSBO addressed by buffer
+  reference, `PushConstants` with the SSBO device address, `FRAMES_IN_FLIGHT` ring of SSBOs — all
+  mirror `sprite_database`.
+- `make_ortho_projection`, `make_view`, `make_model_matrix`, `letterbox`, `subtexture_uv_transform`
+  — these are already pure and reusable; the plan **promotes the shared ones** (`letterbox`, the
+  projection/view, the subtexture transform) so both databases call one copy rather than duplicating.
+- `Buffer` (staging) and the immediate-command-buffer upload pattern (`cmd_immediate_begin/end/submit`,
+  deferred `flush`). The atlas copy reuses only the raw `cmd_copy_buffer_to_image` call
+  (`texture.rs:149`); it **cannot** reuse `Texture::record_upload_from_buffer` (`texture.rs:104-162`),
+  whose whole-image `UNDEFINED → TRANSFER_DST → SHADER_READ_ONLY` path *discards* existing contents and
+  copies the full extent. The atlas needs a genuinely new sub-region copy with
+  `SHADER_READ_ONLY ↔ TRANSFER_DST` transitions (see "Genuinely new" below and §5).
+- The build.rs glslang step: two new shaders (`font.vert`, `font.frag`) are added to the same array,
+  compiled to `OUT_DIR`, and `include_bytes!`'d — identical to the sprite shaders, so the SPIR-V still
+  ships inside the player binary (no files on disk, per the CWD contract).
+
+**Genuinely new:**
+- A **persistent, mutable** `R8_UNORM` atlas image with incremental sub-region uploads and the
+  layout-transition/hazard handling that implies (vs. the sprite DB's immutable whole-texture upload).
+- A **shelf (skyline-lite) atlas allocator**: pure CPU bookkeeping, unit-tested without a GPU. Each
+  packed cell carries a **≥1px transparent gutter** on every side, and sampled UVs are inset by half a
+  texel, so bilinear sampling of a GPU-scaled glyph never bleeds into its neighbours.
+- A **glyph cache**: `HashMap<(FontId, GlyphId, u32 px), GlyphEntry>`; `GlyphEntry` = atlas cell rect
+  (texels) + bitmap size + left/top bearing. On atlas overflow a **sentinel entry** (zero size, draws
+  nothing) is cached so a dropped glyph is a cache *hit*, never re-rasterized or re-uploaded (§Step 5).
+- A **skrifa-outline → zeno adapter**: skrifa draws a glyph outline into a `PathSink` (y-up, font
+  design space); the adapter re-emits those commands as `zeno::Command`s (flipping to y-down) and
+  rasterizes with `zeno::Mask`. skrifa and zeno don't compose directly — this small translation layer
+  is new code, unit-testable on the coverage output. The quad's left/top bearing come from zeno's
+  `Placement.left/top` rather than being hand-derived.
+- The **HarfRust shaping layer** in `surge-sdk` (`Font`, `ShapedText`), plus the anchor math.
+- The **font fragment shader**: samples single-channel coverage and writes
+  `vec4(color.rgb, color.a * coverage)` — so text color comes from the per-run color and the atlas
+  only stores coverage.
+
+**The parse-once-per-side rule (font parsing).** HarfRust and skrifa both parse with the fontations
+`read-fonts` stack, which is zero-copy and lazy: the parsed font borrows the font bytes and reads
+tables on demand, so the cost of "parsing" is really one in-memory copy of the font bytes plus a
+trivial table-directory setup. The plan keeps that cost to its unavoidable minimum:
+
+- **Cross-process (dev mode) is inherent.** The module shapes and the player rasterizes in *different
+  processes*; a borrowed, bytes-referencing font object cannot cross a socket, so each side loads its
+  own copy. This is the price of module-side shaping (decision #1), not of the crate choice — any two
+  libraries would do the same.
+- **Within a side, parse once.** The SDK builds **one HarfRust font per file** and reads both shaped
+  positions *and* vertical metrics from it (no skrifa on the SDK side, §Step 3); the player's
+  `font_database` holds **one skrifa font per file** from which outlines are drawn (§Step 4).
+- **No cross-crate type sharing is required (correction to the pass-1 framing).** The two sides never
+  hand the *same* font object to both crates: HarfRust lives only in `surge-sdk`, skrifa only in
+  `surge-core`, and current HarfRust and skrifa each wrap `read-fonts` in their **own** `Font` type
+  rather than re-exporting a bare shared `read_fonts::FontRef`. So there is **no correctness
+  requirement** that the two crates resolve to the same `read-fonts` version — two copies in the tree
+  would still build and run. Step 0's `cargo tree -d` check is therefore **dependency hygiene, not a
+  correctness gate** (a single copy keeps the tree small and keeps the §6 escape hatch — which *would*
+  share types — viable). As of this writing HarfRust 0.16.1 and skrifa 0.50.0 both depend on
+  `read-fonts` 0.47.x, so the tree can unify, but nothing breaks if a future bump diverges them.
+
+So the only duplication that remains is one lazy, zero-copy byte buffer per font per process in dev —
+negligible for the fonts in play, and accepted deliberately (§5). §6 records the escape hatch if a
+profile ever says otherwise.
+
+### 3.3 Player-side ownership and the composite canvas
+
+Today the player stores `sprite_database: Option<SpriteDatabase>` and passes
+`&mut dyn SpriteCanvas` (the DB itself) to every `SurgeApp` callback (`lib.rs:150,179,304`).
+Text needs a second database, so the plan introduces a **borrowed composite** passed to the
+callbacks:
+
+```rust
+struct Canvas<'a> { sprites: &'a mut SpriteDatabase, fonts: &'a mut FontDatabase }
+impl SpriteCanvas for Canvas<'_> { /* sprite calls → sprites, text calls → fonts */ }
+```
+
+The player keeps both DBs as owned fields, builds a `Canvas` borrow at each of the three callback
+sites, and in `frame()` draws `sprites.draw()` then `fonts.draw()` into the same render pass. The
+shared depth buffer uses a `GREATER_OR_EQUAL` test (clear depth 0.0, `sprite_database/mod.rs:411`), so
+equal-z ties resolve to text-on-top because fonts draw second. Note the depth buffer only orders
+*opaque occlusion*: because both sprites and coverage text are alpha-blended, correct blending of
+overlapping *translucent* fragments across the two passes is still draw-order dependent (text always
+last), not resolved by z — the usual single-depth-buffer transparency caveat, inherited from the
+existing sprite pipeline. This is the smallest
+change that keeps the single-`&mut dyn SpriteCanvas` callback shape the whole codebase already relies
+on. In dev mode, `remote_app::apply_ops` replays `font_loads` then `text_runs` onto this same
+composite via the extended trait — no new transport.
+
+### 3.4 The module-facing API (`surge-sdk`)
+
+```rust
+// Registers the font with the renderer (ships the path, gets a FontId) AND loads a HarfRust
+// face for shaping. Must be called in on_load AND on_swapchain_recreate, exactly like texture
+// uploads, because the player rebuilds both databases on recreate and restarts FontIds at 0.
+let font = Font::load(canvas, "fonts/Inter.ttf")?;
+
+let shaped = font.shape("Score: 42", 32.0);   // single run, LTR
+let w = shaped.width();                        // design px; lay out UI around this
+let h = shaped.line_height();
+
+// Anchor says how `origin` maps onto the text box; the SDK resolves it from the measured
+// metrics so the module never does baseline math itself.
+canvas.draw_text(&shaped, origin, TextAnchor::Center, color, z);
+```
+
+`draw_text` is an **extension-trait default method** over `SpriteCanvas`, so the anchor math lives in
+one place and off the trait object. The trait itself gains only two object-safe primitives, mirroring
+the sprite ones:
+
+```rust
+fn load_font(&mut self, path: &str) -> Result<usize, CanvasError>;  // like upload_texture
+fn add_text_run(&mut self, run: &TextRun);                          // like add_instance
+```
+
+### 3.5 Coordinate conventions (the main correctness risk)
+
+HarfRust and skrifa use font-design conventions (y-up, units-per-em); the engine is y-down,
+origin top-left, design-resolution pixels. The SDK is the single place that converts:
+`px_per_unit = px_size / units_per_em`; advances accumulate along +x; the baseline sits at
+`origin.y`; ascent is above it (smaller y). The player, after zeno rasterization, gets a bitmap whose
+top bearing is the distance from the baseline up to the bitmap's top row, so the quad's top-left y is
+`baseline_y − top_bearing`. Pen x/y are **rounded to integer design-px** before placement (v1
+snapping; §6.3). Getting this wrong yields upside-down or baseline-drifting text, so Step 0 de-risks
+it with a rasterize-one-glyph spike and Step 5 pins it under test.
+
+## 4. Implementation plan (small, self-contained commits)
+
+Each step compiles and is testable on its own. Per the repo's test contract, no step needs a GPU or a
+window — GPU-facing logic is kept in pure helpers (packer, scaling, anchors, layout structs). Tests
+go in separate files from module code.
+
+### Step 0: Dependency spike — prove the external crates before wiring any GPU
+Pin `harfrust`, `skrifa`, and `zeno` to known-good versions and record them. Run `cargo tree -d` and
+prefer a tree with a single `read-fonts`, but treat that as **dependency hygiene, not a correctness
+gate**: HarfRust is used only in `surge-sdk` and skrifa only in `surge-core`, they never share a font
+object, and each wraps `read-fonts` in its own `Font` type, so two `read-fonts` copies would still
+build and run (§3.2). A single copy keeps the tree small and keeps the §6 escape hatch viable. (As of
+this writing HarfRust 0.16.1 and skrifa 0.50.0 both resolve `read-fonts` 0.47.x.) Do **not** add a
+direct `read-fonts` dependency or require version unification to proceed. Add the **Noto Sans TTF** to
+the repo via git-lfs for tests to use (font file location for tests is the one open item in §6.1).
+Write a throwaway integration test that: loads the font, shapes `"Ag"` (HarfRust output is in font
+units — scale to px in the test), asserts two glyphs with increasing pen x and a plausible width;
+rasterizes one glyph through the skrifa-outline→zeno adapter (§3.2) and asserts a non-empty coverage
+bitmap with sane bearings read from zeno's `Placement`. This isolates the y-up↔y-down convention and
+the font-unit scaling before any Vulkan code depends on them. **Verification:** the spike test passes;
+`cargo tree -d` recorded (single `read-fonts` preferred, not required); versions recorded in the
+Resolution.
+
+### Step 1: Wire types (`surge-sdk`, no GPU)
+Add `font_loads: Vec<String>` and `text_runs: Vec<TextRun>` to `CanvasOps`; define `TextRun` and
+`PositionedGlyph`; bump `WIRE_VERSION` (2 → 3). **Verification:** extend the existing `CanvasOps`
+postcard round-trip test (`every_request_and_response_variant_round_trips`, `wire.rs`) to cover fonts +
+runs and a `TextRun`, mirroring the `InstanceInfo` round-trip test (which lives in `sprite.rs`).
+
+### Step 2: Canvas trait + proxy (`surge-sdk`, no GPU)
+Add `load_font` and `add_text_run` to `SpriteCanvas`; implement on `CanvasProxy` (cumulative
+`next_font_id`, reset in `cache_create_info` alongside `next_texture_id`; push runs into `ops`).
+Update the object-safety witness in `canvas.rs` and the `CountingCanvas` test double in
+`remote_app.rs`. **Verification:** proxy tests for cumulative font IDs across drains and reset on
+recache (mirror the texture-ID tests).
+
+### Step 3: Shaping layer (`surge-sdk`, no GPU)
+Add `Font` (HarfRust face + scaled metrics + FontId), `ShapedText` (positioned glyphs + width +
+ascent/descent/line height), `Font::load(canvas, path)`, `font.shape(text, px)`, `TextAnchor`, and the
+`draw_text` extension-trait default method (anchor offset → `TextRun` → `add_text_run`). **Parse-once-
+per-side rule:** `Font` owns one byte buffer and one HarfRust font built from it; HarfRust shapes from
+it in **font units** (no ppem scaling is built in — the SDK applies `px_per_unit = px_size /
+units_per_em`, §3.5, to positions *and* metrics). Vertical metrics (ascent/descent/line-gap) come from
+the *same* font; specify the source explicitly and unit-test it: prefer the `OS/2` typographic metrics
+(`sTypoAscender/sTypoDescender/sTypoLineGap`) when `fsSelection.USE_TYPO_METRICS` is set, else fall
+back to `hhea`, reading whichever HarfRust exposes (font extents) or going through `read-fonts` tables
+directly. The SDK side does **not** pull in skrifa, so it parses the font exactly once.
+**Verification:** unit tests for font-unit→px scaling, metric-selection (typo vs hhea), measured width of a known string
+in the bundled font, and anchor-offset resolution (center of width W puts origin at −W/2); all
+pure/GPU-free.
+
+### Step 4: `font_database` skeleton (`surge-core`, GPU but empty)
+New GLSL `font.vert`/`font.frag` + two build.rs entries. The pure **shelf atlas allocator** (with
+tests), packing each cell with a ≥1px gutter (§3.2). `FontDatabase::new/drop`: R8 atlas image +
+sampler (**LINEAR** filter, for GPU scaling) + pipeline + descriptor sets + instance SSBOs (mirroring
+`sprite_database`), `load_font` (reads the file once into one byte buffer + one skrifa font, from which
+skrifa draws outlines — the player side's one parsed font per file), and a `draw()` that renders zero
+instances. Promote the shared helpers (`letterbox`, projection/view, subtexture transform) — currently
+**private** in `sprite_database` — to a common location both DBs use. **Verification:** packer unit
+tests (fills a shelf, wraps to the next, reports overflow, keeps the gutter between cells); a
+GPU-struct-layout test pinning the font `InstanceRecord` size/align to the GLSL
+(mirror sprite DB's `gpu_struct_layout_matches_glsl`).
+
+### Step 5: Rasterization + cache + atlas upload + draw (`surge-core`)
+skrifa→zeno glyph rasterization (through the §3.2 adapter) keyed by `(FontId, GlyphId, round(px))`;
+`GlyphEntry` cache; incremental atlas upload via a **sub-region** `cmd_copy_buffer_to_image` with
+`SHADER_READ_ONLY → TRANSFER_DST → SHADER_READ_ONLY` transitions on the persistent atlas image, and a
+device drain on a miss frame to serialize the write against the `FRAMES_IN_FLIGHT` frames still
+sampling the atlas. **This is a write-after-read hazard on one persistent image — a *different* hazard
+from the sprite DB's drain, which exists only because its descriptor set is rewritten each flush and is
+not `UPDATE_AFTER_BIND` (`sprite_database/mod.rs:663-673`); the atlas descriptor never changes, so do
+not cite that rationale** (§3.1, §5). On atlas overflow, insert a **sentinel `GlyphEntry`** (zero size,
+draws nothing) into the cache so the dropped glyph becomes a cache *hit* and is never re-rasterized or
+re-drained. `add_text_run` builds instances with the y-up↔y-down conversion from §3.5; `draw()` emits
+them under the letterboxed viewport. **Verification:** pure tests for glyph-cache keying/bucketing, for
+the pen→quad placement math (baseline, top bearing, rounding), and that a second reference to a dropped
+glyph is a cache hit that rasterizes nothing.
+
+### Step 6: Player wiring (`surge-player`)
+Introduce the `Canvas` composite (§3.3); build `FontDatabase` in `init_graphics` and the
+swapchain-recreate branch; draw both DBs in `frame()`; handle `font_loads` + `text_runs` in
+`remote_app::apply_ops`. **Verification:** extend the headless reload test if it asserts canvas
+shape; a dev-mode round-trip test that a `TextRun` survives proxy→wire→`apply_ops` onto a counting
+canvas.
+
+### Step 7: Text-demo module + docs
+Add a new module, **`surge-mod-text`**, whose only job is to render some text on screen and exercise
+the full path end to end. It is kept as minimal as possible — a bare `SurgeApp` that draws nothing but
+text, with dev/release `[[bin]]`s, its own `config.toml`, and an `assets/fonts/` folder holding
+the Noto Sans TTF (resolved through `resolve_asset_path`, like any module asset). In `on_load` /
+`on_swapchain_recreate` it registers the font (`Font::load`), and in `update` it shapes a short string
+and draws it with a couple of anchors/sizes/colors so placement and the atlas cache are both
+visible. The workspace picks it up automatically via the `surge-modules/*` glob. Update
+`CLAUDE.md`/`AGENTS.md` build notes: the two new shaders in build.rs, and the git-lfs entry for the
+`.ttf`. **Verification:** `cargo run -p surge-player` (configured for `surge-mod-text`) shows correctly-placed,
+legible text — as crisp as the fractional letterbox scale allows (the R8 atlas is linearly sampled, so
+glyphs are pixel-crisp only when design-px maps ~1:1 to device-px; scale-independent crispness via
+SDF/hinting is deferred, §6.5); `cargo test --workspace` green.
+
+## 5. Self-critique (harsh, per AGENTS.md)
+
+- **The font bytes are held once per side (not "parsed twice").** The parse-once-per-side rule
+  (§3.2) keeps each process to one lazy, zero-copy `read-fonts` parse: the SDK side feeds HarfRust and
+  reads metrics from one HarfRust font with no skrifa; the player side holds one skrifa font for
+  outlines. What remains is the *cross-process* copy — module (shaping) and player (raster) are
+  different processes in dev, and a borrowed, bytes-referencing font cannot cross a socket — which is inherent to
+  module-side shaping (decision #1), not to the crate choice. `read-fonts` being zero-copy makes this
+  one byte buffer per font per process, negligible for the fonts in play. Accepted for v1; the escape
+  hatch (ship outlines so the player never parses the font) is recorded in §6.
+- **Measurement vs. rasterization can disagree by a sub-pixel.** The module measures with continuous
+  px advances; the player rasterizes at `round(px)`. Glyph *positions* are unaffected (they come from
+  shaping, not from the raster bucket), so only each glyph's *bitmap* bearing/size can differ by <1px.
+  Accepted, documented.
+- **A device drain per cache-miss frame is blunt.** Reusing the texture-upload stall is correct but
+  stalls the GPU whenever a new glyph appears (warmup, or the first frame a new string is shown). For
+  games with a mostly-static glyph set this is a handful of early stalls; for a ticker of ever-new
+  glyphs it is bad. A barrier-only ring-buffer upload is the refinement, deferred.
+- **Extending `SpriteCanvas` rather than adding a `TextCanvas` trait** means every impl (real DB,
+  proxy, test doubles, composite) must grow two methods with no default. That is churn, but defaults
+  that silently drop text would be a worse footgun. The name `SpriteCanvas` also becomes a slight
+  misnomer; renaming it is out of scope and noisy, so it stays.
+- **Gamma.** `color.a * coverage` with straight alpha blending in the existing framebuffer gives the
+  usual slightly-thin AA text, consistent with how sprites already blend. Gamma-correct coverage is a
+  deferred refinement, not a v1 goal.
+- **The y-up↔y-down conversion is the one place a subtle bug hides.** It is concentrated in the SDK
+  scaling (Step 3) and the player placement (Step 5), both pure and unit-tested, and de-risked by the
+  Step 0 spike — but it is the first thing to check if text renders inverted or drifting.
+
+## 6. Open decisions (for review before Step 0)
+
+These are defaults the author chose but did not want to commit silently; say the word to change any.
+
+1. **Test font location.** The font is **Noto Sans** (OFL), committed via git-lfs, settled. The demo
+   module ships it under its own `assets/fonts/` (Step 7). The one undecided detail is where the
+   *unit tests* in `surge-sdk` (Step 3) and `surge-core` (Step 0) read a font from, since those
+   crates have no module assets folder. Proposed: `include_bytes!` a single committed copy of the
+   Noto TTF into the tests, so they don't depend on CWD or a module's asset layout. Acceptable, or
+   keep one shared on-disk fixture referenced by a workspace-relative path?
+2. **Miss-frame stall vs. barrier-only upload.** v1 reuses the existing device-drain-on-upload
+   (simple, correct, matches textures). Acceptable, or should the barrier-only ring buffer be in v1?
+3. **px bucketing for the glyph cache.** Proposed: round to integer design-px. Alternative: 0.25-px
+   buckets (crisper at the cost of more atlas entries), or exact f32 (risks cache bloat if a caller
+   passes jittery sizes). Integer px is the default.
+4. **v1 scope confirmation.** Single run, single font, single size, single line, LTR, point-anchored
+   (left/center/right × top/baseline/bottom). No wrapping, multi-line, rich text, RTL/bidi, SDF,
+   hinting, subpixel AA, or color/bitmap/emoji fonts (skrifa draws monochrome outlines only — a COLR/
+   CBDT/sbix glyph would rasterize to an empty mask). Confirm this is the line for v1.
+5. **Atlas size and overflow policy.** Default: one fixed 1024×1024 R8 atlas (1 MiB), cells packed with
+   a ≥1px gutter (usable area slightly under the full 1 MiB); on overflow, log and draw nothing for the
+   glyph, **caching a sentinel so it is not re-rasterized or re-drained every frame** (§Step 5; mirrors
+   `max_textures`). Multi-page/eviction is deferred.
+6. **Font budgets location.** `FontDatabase`'s budgets (atlas size, max fonts, max glyph instances
+   per frame) are player-internal constants, like the sprite DB's hardcoded `CreateInfo` in
+   `lib.rs:75`, not config or wire fields. Confirm they need not be module-configurable in v1.
+
+**Escape hatch (not part of v1, recorded so it isn't rediscovered later).** The inherent cross-process
+font copy (§3.2, §5) can be removed entirely by doing *all* font work on the module side, which already
+holds the font for shaping, and shipping the player **glyph outlines** instead of glyph IDs: the
+module extracts the outline with skrifa from the same font bytes (this is the one place HarfRust and
+skrifa would coexist in a single crate, so *there* a single `read-fonts` in the tree becomes a real
+requirement), the player rasterizes the path
+with zeno only (no skrifa, no font file deployed player-side), and outlines being resolution-
+independent are sent once per glyph and rastered at any px. The cost is heavier wire payload on
+cache-miss, CPU rasterization moving into the module process, and the player losing a cross-module
+glyph cache — and it partly inverts decision #2. Pursue only if font load time or memory ever shows up
+in a profile. The current design keeps shaping module-side / rasterization player-side as decided.
+
+> **Settled during review:** font is **Noto Sans**; the demo is a **new, minimal `surge-mod-text`
+> module** that draws only text, and no existing module is touched. This plan refers to no module
+> other than `surge-mod-text`. The font-parsing approach is **keep the current design** — parse once
+> per side (one HarfRust font in the SDK, one skrifa font in the player), cross-process copy accepted;
+> a single `read-fonts` in the tree is preferred for hygiene but is **not** required for correctness
+> (§3.2, §Step 0). The escape hatch above is explicitly deferred.
