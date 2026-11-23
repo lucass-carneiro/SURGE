@@ -4,10 +4,6 @@
 //! texels on every side so that bilinear sampling of a GPU-scaled glyph never bleeds into a
 //! neighbour (the sampled UVs are additionally inset by half a texel when drawing).
 //!
-//! The skeleton constructs the allocator but does not pack into it yet, so outside the unit tests
-//! `allocate` and the packed rect are unused until Step 5 drives glyph rasterization.
-#![allow(dead_code)]
-
 /// A packed cell's content rectangle in atlas texels (the gutter is outside it).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct AtlasRect {

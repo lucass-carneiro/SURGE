@@ -14,15 +14,15 @@ surge-sdk = { path = "../surge-sdk" }
 thiserror = "2.0.17"
 vk-mem = "0.5.0"
 winit = "0.30.12"
+zeno = "=0.3.3"
 
 [features]
 default = ["validation_layers"]
 validation_layers =[]
 
-# harfrust (shaping) and zeno (coverage) remain dev-dependencies for the Step 0
-# throwaway spike (tests/font_spike.rs). skrifa is now a real dependency: the
-# player-side font_database parses one skrifa font per file to draw glyph outlines.
-# zeno moves to a real dependency in Step 5 (rasterization).
+# harfrust (shaping) remains a dev-dependency for the Step 0 throwaway spike
+# (tests/font_spike.rs); it only ever runs on the SDK side in production. skrifa
+# (outlines) and zeno (coverage) are real dependencies: the player-side
+# font_database parses one skrifa font per file and rasterizes glyphs through zeno.
 [dev-dependencies]
 harfrust = "=0.16.1"
-zeno = "=0.3.3"

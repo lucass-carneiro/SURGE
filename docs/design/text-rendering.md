@@ -436,7 +436,7 @@ author before coding.
   (skrifa/harfrust/zeno/read-fonts/font-types unduplicated). `draw()` renders `occupancy = 0`
   instances; `add_text_run` and rasterization arrive in Step 5.
 
-### Step 5: Rasterization + cache + atlas upload + draw (`surge-core`)
+### Step 5: Rasterization + cache + atlas upload + draw (`surge-core`) ✅
 skrifa→zeno glyph rasterization (through the §3.2 adapter) keyed by `(FontId, GlyphId, round(px))`;
 `GlyphEntry` cache; incremental atlas upload via a **sub-region** `cmd_copy_buffer_to_image` with
 `SHADER_READ_ONLY → TRANSFER_DST → SHADER_READ_ONLY` transitions on the persistent atlas image, and a
@@ -450,6 +450,61 @@ re-drained. `add_text_run` builds instances with the y-up↔y-down conversion fr
 them under the letterboxed viewport. **Verification:** pure tests for glyph-cache keying/bucketing, for
 the pen→quad placement math (baseline, top bearing, rounding), and that a second reference to a dropped
 glyph is a cache hit that rasterizes nothing.
+
+**Resolution:** Done. Two new GPU-free modules under `font_database/` keep all the fiddly logic out
+of the Vulkan path and under test: `rasterizer.rs` (the skrifa-outline→zeno-coverage adapter,
+`rasterize_glyph(bytes, glyph_id, px) -> Option<RasterizedGlyph>`, returning `None` for an unknown
+id / undrawable / empty-outline glyph) and `glyph_cache.rs` (keying, the shelf-atlas packing, the
+sentinel policy, and the pure placement/UV math). `zeno = "=0.3.3"` moved from a dev-dependency to a
+real `surge-core` dependency; `harfrust` stays a dev-dependency (SDK-only in production). The tree
+still resolves a single `read-fonts v0.47.0`.
+
+- **Cache + sentinels.** `GlyphCache` wraps a `HashMap<GlyphKey, GlyphEntry>` over the
+  `ShelfAllocator`; `GlyphKey = (font_id, glyph_id, px)` where `px = px_bucket(px_size)` =
+  `px_size.round().max(1.0) as u32` (integer bucket, §6.3, clamped to ≥1 so a degenerate size never
+  asks for a zero-pixel glyph). `get_or_insert(key, rasterize)` calls the rasterize closure **exactly
+  once on a miss** and never on a hit; on an empty rasterization *or* atlas overflow it caches a
+  zero-size **sentinel** `GlyphEntry` (so the glyph is a cache hit forever after, never re-rasterized
+  or re-drained), and on a successful pack returns `(cell, coverage)` for the caller to upload. The
+  borrow split in `add_text_run` (closure reads `self.fonts`, `get_or_insert` mutates
+  `self.glyph_cache`) relies on disjoint-field borrows so the closure only runs on a miss.
+- **Placement (§3.5).** `glyph_quad(pen_x, pen_y, entry)` snaps the pen to integer design-px
+  (`pen.round()`), adds zeno's `left`/`top` bearings (top is the signed baseline→top-row offset,
+  negative above the baseline, exactly as the Step 0 spike pinned), and sizes the quad to the atlas
+  cell. The quad is placed with the promoted `make_model_matrix`.
+- **Atlas-cell UVs — deviation from the "reuse `subtexture_uv_transform`" note.** The shared helper
+  works in whole texels and cannot express the §3.2 half-texel inset, so the font path uses a small
+  dedicated `glyph_cell_uv(cell, atlas_size)` that insets the sampled rect by half a texel on every
+  side (offset `+0.5`, scale `−1.0` texel). This keeps the bilinear footprint of a GPU-scaled glyph
+  **strictly inside its written cell**, which also means the `≥1px` allocator gutter never needs to be
+  sampled. **Consequently the atlas is *not* cleared** (Step 4 only layout-transitions it; the gutter
+  texels stay undefined but are provably never read). This diverges from the literal "transparent
+  gutter" wording in §3.2/§5; see the open question below for the author.
+- **Incremental upload.** `stage_glyph_upload` copies each miss's coverage into a host-visible
+  `TRANSFER_SRC` staging buffer and records `(buffer, cell)` in `pending_glyph_uploads`.
+  `flush_glyph_uploads` (first thing in `draw`) does one `SHADER_READ_ONLY→TRANSFER_DST` barrier, one
+  `cmd_copy_buffer_to_image` per staged glyph into its sub-region (`image_offset`/`image_extent` =
+  cell), one `TRANSFER_DST→SHADER_READ_ONLY` barrier, then `device_wait_idle()` **before** submitting
+  the immediate command buffer, to serialize the write against in-flight frames still sampling the
+  persistent atlas (the write-after-read hazard — deliberately *not* the sprite DB's
+  descriptor-rewrite drain, §3.1). No-op on a frame with no misses. The `InstanceRecord` struct is now
+  populated (its `#[allow(dead_code)]` and the allocator/`LoadedFont.bytes` dead-code allows were
+  removed).
+- **Error handling.** `add_text_run` is infallible (trait-shaped). An out-of-range `font_id` drops the
+  whole run with a warning; a full per-frame instance buffer (`MAX_GLYPH_INSTANCES`) drops the rest of
+  the run; a glyph that packs but whose staging buffer fails to allocate (OOM) is `mark_dropped`
+  (sentinel) so its reserved-but-unwritten cell is never sampled.
+- **Deviation (test placement):** per AGENTS.md, tests are in sibling files included via
+  `#[cfg(test)] #[path = "…"] mod tests` — `glyph_cache_tests.rs` (8 tests: px bucketing, hit/miss and
+  rasterize-once, same-bucket sharing, empty→sentinel, overflow→sentinel-hit, `mark_dropped`, the
+  `glyph_quad` snap/bearing math, and the `glyph_cell_uv` half-texel inset) and `rasterizer_tests.rs`
+  (3 tests over the bundled Noto Sans: a visible glyph's coverage + sane bearings, a space → `None`,
+  an out-of-range id → `None`). All GPU-free.
+- **Verification run:** `cargo test -p surge-core` → 35 unit (11 new) + 2 spike tests pass;
+  `cargo test --workspace` green; `cargo clippy -p surge-core --tests` adds no new warning from the
+  Step 5 files; `cargo tree -d` still shows a single `read-fonts v0.47.0`. The player wiring that
+  actually calls `add_text_run`/`draw` with a real device (the composite `Canvas`) is Step 6, so the
+  GPU upload/draw path is exercised end-to-end there, not yet here.
 
 ### Step 6: Player wiring (`surge-player`)
 Introduce the `Canvas` composite (§3.3); build `FontDatabase` in `init_graphics` and the
