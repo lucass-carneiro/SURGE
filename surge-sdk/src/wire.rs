@@ -6,11 +6,12 @@ use winit::event::{ElementState, MouseButton, MouseScrollDelta, TouchPhase};
 use crate::{
     input::KeyEvent,
     sprite::{CreateInfo, InstanceInfo},
+    text::TextRun,
 };
 
 /// Version of the player <-> module wire protocol. The module sends it in `Response::Handshake`
 /// and the player compares against this same constant, so bumping it in one place is enough.
-pub const WIRE_VERSION: u16 = 2;
+pub const WIRE_VERSION: u16 = 3;
 
 /// Largest frame `read_message` will accept. A corrupt or hostile length prefix must not turn
 /// into a multi-gigabyte allocation.
@@ -55,6 +56,12 @@ pub struct CanvasOps {
     pub texture_uploads: Vec<String>,
     /// Empty in practice for `OnLoad`/`OnSwapchainRecreate`, populated for `Frame`.
     pub instances: Vec<InstanceInfo>,
+    /// Font asset paths, in call order, mirroring `texture_uploads`. `font_id` is the proxy's
+    /// cumulative load counter, not this vec's index.
+    pub font_loads: Vec<String>,
+    /// Shaped text runs, mirroring `instances`. Empty in practice for
+    /// `OnLoad`/`OnSwapchainRecreate`, populated for `Frame`.
+    pub text_runs: Vec<TextRun>,
 }
 
 /// An input event, replayed into the module in wire order. `DeviceId` is deliberately absent:
@@ -146,6 +153,27 @@ mod tests {
         }
     }
 
+    fn text_run(font_id: usize) -> TextRun {
+        TextRun {
+            font_id,
+            px_size: 32.0,
+            color: nalgebra::Vector4::new(1.0, 0.5, 0.25, 1.0),
+            z: 0.75,
+            glyphs: vec![
+                crate::text::PositionedGlyph {
+                    glyph_id: 36,
+                    x: 0.0,
+                    y: 12.0,
+                },
+                crate::text::PositionedGlyph {
+                    glyph_id: 859,
+                    x: 18.5,
+                    y: 12.0,
+                },
+            ],
+        }
+    }
+
     fn key_event() -> KeyEvent {
         KeyEvent {
             physical_key: PhysicalKey::Code(KeyCode::ArrowRight),
@@ -209,6 +237,8 @@ mod tests {
             Response::CanvasOps(CanvasOps {
                 texture_uploads: vec!["a/b.png".to_string(), "c.png".to_string()],
                 instances: vec![instance(0), instance(1)],
+                font_loads: vec!["fonts/Inter.ttf".to_string(), "fonts/Noto.ttf".to_string()],
+                text_runs: vec![text_run(0), text_run(1)],
             }),
             Response::CanvasOps(CanvasOps::default()),
             Response::ShutdownAck,

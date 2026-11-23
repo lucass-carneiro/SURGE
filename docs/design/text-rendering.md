@@ -264,11 +264,30 @@ harfrust→surge-sdk, skrifa+zeno→surge-core deps — in Steps 3–4).
 - **Verification run:** `cargo test -p surge-core --test font_spike` → 2 passed, no warnings;
   `cargo test --workspace` green (dev-deps don't touch the normal build graph).
 
-### Step 1: Wire types (`surge-sdk`, no GPU)
+### Step 1: Wire types (`surge-sdk`, no GPU) ✅
 Add `font_loads: Vec<String>` and `text_runs: Vec<TextRun>` to `CanvasOps`; define `TextRun` and
 `PositionedGlyph`; bump `WIRE_VERSION` (2 → 3). **Verification:** extend the existing `CanvasOps`
 postcard round-trip test (`every_request_and_response_variant_round_trips`, `wire.rs`) to cover fonts +
 runs and a `TextRun`, mirroring the `InstanceInfo` round-trip test (which lives in `sprite.rs`).
+
+**Resolution:** Done. `TextRun` and `PositionedGlyph` live in a new `surge-sdk/src/text.rs` module
+(sibling of `sprite.rs`), re-exported from `lib.rs`. `TextRun` = `{ font_id: usize, px_size: f32,
+color: Vector4<f32>, z: f32, glyphs: Vec<PositionedGlyph> }`; `PositionedGlyph` = `{ glyph_id: u32,
+x: f32, y: f32 }` (pen position on the baseline, design-px y-down, per §3.1/§3.5). Both derive
+`PartialEq` (unlike `InstanceInfo`) so tests compare directly. `CanvasOps` gained `font_loads` and
+`text_runs`; every existing construction uses `CanvasOps::default()`, so only the wire test's struct
+literal needed updating. `WIRE_VERSION` bumped 2 → 3.
+
+- **Deviation from the plan's verification note:** the doc suggested mirroring the `InstanceInfo`
+  round-trip test *in `sprite.rs`* (i.e. inline). Per AGENTS.md's "separate test and module code" rule
+  (confirmed with the author), the new `TextRun` round-trip test instead lives in a dedicated
+  `surge-sdk/tests/text_run_round_trip.rs` (requiring a `postcard` dev-dependency). The `wire.rs`
+  `CanvasOps` round-trip test was extended in place as specified (it now populates `font_loads` and
+  `text_runs`), since the plan says to extend that existing test.
+- **Verification run:** `cargo test -p surge-sdk` → 17 unit + 1 integration test pass, including the
+  extended `every_request_and_response_variant_round_trips` and the new
+  `text_run_round_trips_through_postcard`; `cargo check --workspace` green (player's `apply_ops` takes
+  `CanvasOps` by value and simply ignores the two new fields until Step 6).
 
 ### Step 2: Canvas trait + proxy (`surge-sdk`, no GPU)
 Add `load_font` and `add_text_run` to `SpriteCanvas`; implement on `CanvasProxy` (cumulative

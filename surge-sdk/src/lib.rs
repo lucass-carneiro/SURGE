@@ -7,6 +7,7 @@ mod input;
 mod logging;
 mod proxy;
 mod sprite;
+mod text;
 mod wire;
 
 // Re-exported so modules take exactly the versions the `SurgeApp` trait is written against.
@@ -27,3 +28,4 @@ pub use sprite::{
     BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
     TextureFilteringMode,
 };
+pub use text::{PositionedGlyph, TextRun};
