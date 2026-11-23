@@ -13,7 +13,7 @@ pub use surge_sdk::{
     BlendingMode, CreateInfo, InstanceInfo, SubTextureInfo, TextureFilteringLevel,
     TextureFilteringMode,
 };
-use surge_sdk::{CanvasError, SpriteCanvas};
+use surge_sdk::{CanvasError, SpriteCanvas, TextRun};
 
 /// A texture decoded to RGBA bytes, ready to upload to the GPU via
 /// `SpriteDatabase::upload_decoded_texture`. Produced by `SpriteDatabase::decode_texture_file`.
@@ -765,6 +765,15 @@ impl SpriteCanvas for SpriteDatabase {
 
     fn upload_texture(&mut self, texture_file: &str) -> Result<usize, CanvasError> {
         Ok(SpriteDatabase::upload_texture(self, texture_file)?)
+    }
+
+    // Text is routed through the Step 6 composite canvas, never to a bare SpriteDatabase.
+    fn load_font(&mut self, _path: &str) -> Result<usize, CanvasError> {
+        unimplemented!("fonts are routed through the composite canvas")
+    }
+
+    fn add_text_run(&mut self, _run: &TextRun) {
+        unimplemented!("fonts are routed through the composite canvas")
     }
 
     fn get_create_info(&self) -> CreateInfo {

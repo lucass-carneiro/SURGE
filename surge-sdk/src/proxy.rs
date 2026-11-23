@@ -1,6 +1,7 @@
 use crate::{
     canvas::{CanvasError, SpriteCanvas},
     sprite::{CreateInfo, InstanceInfo},
+    text::TextRun,
     wire::CanvasOps,
 };
 
@@ -15,6 +16,10 @@ pub struct CanvasProxy {
     /// the player rebuilds its `SpriteDatabase` exactly when a new `CreateInfo` is pushed, and the
     /// database's upload index restarts from zero there.
     next_texture_id: usize,
+    /// Cumulative across turns and reset only by `cache_create_info`, exactly like
+    /// `next_texture_id`: the player rebuilds its `FontDatabase` on a new `CreateInfo` and restarts
+    /// its font index from zero there.
+    next_font_id: usize,
     ops: CanvasOps,
 }
 
@@ -23,6 +28,7 @@ impl CanvasProxy {
         Self {
             create_info,
             next_texture_id: 0,
+            next_font_id: 0,
             ops: CanvasOps::default(),
         }
     }
@@ -32,6 +38,7 @@ impl CanvasProxy {
     pub fn cache_create_info(&mut self, create_info: CreateInfo) {
         self.create_info = create_info;
         self.next_texture_id = 0;
+        self.next_font_id = 0;
     }
 
     /// Drain everything recorded since the last drain. The upload counter is untouched.
@@ -54,6 +61,19 @@ impl SpriteCanvas for CanvasProxy {
         Ok(id)
     }
 
+    /// Fire-and-forget, like `upload_texture`: always `Ok`, with a real failure surfacing
+    /// player-side through the crash path.
+    fn load_font(&mut self, path: &str) -> Result<usize, CanvasError> {
+        self.ops.font_loads.push(path.to_owned());
+        let id = self.next_font_id;
+        self.next_font_id += 1;
+        Ok(id)
+    }
+
+    fn add_text_run(&mut self, run: &TextRun) {
+        self.ops.text_runs.push(run.clone());
+    }
+
     fn get_create_info(&self) -> CreateInfo {
         self.create_info
     }
@@ -63,6 +83,7 @@ impl SpriteCanvas for CanvasProxy {
 mod tests {
     use super::*;
     use crate::sprite::{BlendingMode, TextureFilteringLevel, TextureFilteringMode};
+    use crate::text::PositionedGlyph;
 
     fn create_info(max_sprites: u32) -> CreateInfo {
         CreateInfo {
@@ -84,6 +105,20 @@ mod tests {
             texture_id,
             color_multiplier: nalgebra::Vector4::new(1.0, 1.0, 1.0, 1.0),
             subtexture_info: None,
+        }
+    }
+
+    fn text_run(font_id: usize) -> TextRun {
+        TextRun {
+            font_id,
+            px_size: 32.0,
+            color: nalgebra::Vector4::new(1.0, 1.0, 1.0, 1.0),
+            z: 0.5,
+            glyphs: vec![PositionedGlyph {
+                glyph_id: 7,
+                x: 0.0,
+                y: 0.0,
+            }],
         }
     }
 
@@ -131,6 +166,47 @@ mod tests {
         proxy.cache_create_info(create_info(64));
         assert_eq!(proxy.upload_texture("a.png").unwrap(), 0);
         assert_eq!(proxy.upload_texture("b.png").unwrap(), 1);
+    }
+
+    #[test]
+    fn font_index_is_cumulative_across_drains() {
+        let mut proxy = CanvasProxy::new(create_info(32));
+
+        assert_eq!(proxy.load_font("a.ttf").unwrap(), 0);
+        assert_eq!(proxy.take_ops().font_loads, ["a.ttf"]);
+
+        // No new `CreateInfo` in between: the player's font database is the same one, so the next
+        // index continues rather than restarting at this turn's buffer position.
+        assert_eq!(proxy.load_font("b.ttf").unwrap(), 1);
+        assert_eq!(proxy.take_ops().font_loads, ["b.ttf"]);
+    }
+
+    #[test]
+    fn font_index_resets_when_a_new_create_info_is_cached() {
+        let mut proxy = CanvasProxy::new(create_info(32));
+        proxy.load_font("a.ttf").unwrap();
+        proxy.load_font("b.ttf").unwrap();
+        proxy.take_ops();
+
+        // The player rebuilt its font database; the first font load is index 0 again.
+        proxy.cache_create_info(create_info(64));
+        assert_eq!(proxy.load_font("a.ttf").unwrap(), 0);
+        assert_eq!(proxy.load_font("b.ttf").unwrap(), 1);
+    }
+
+    #[test]
+    fn text_runs_drain_in_order() {
+        let mut proxy = CanvasProxy::new(create_info(32));
+
+        proxy.add_text_run(&text_run(0));
+        proxy.add_text_run(&text_run(1));
+
+        let ops = proxy.take_ops();
+        let ids: Vec<_> = ops.text_runs.iter().map(|r| r.font_id).collect();
+        assert_eq!(ids, [0, 1]);
+
+        // Draining empties the buffer.
+        assert!(proxy.take_ops().text_runs.is_empty());
     }
 
     #[test]

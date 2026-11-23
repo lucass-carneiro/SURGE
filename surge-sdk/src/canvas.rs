@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::sprite::{CreateInfo, InstanceInfo};
+use crate::text::TextRun;
 
 /// Opaque, message-carrying error returned by [`SpriteCanvas`] operations.
 ///
@@ -44,6 +45,17 @@ pub trait SpriteCanvas {
     /// return `Ok` — a real dev-mode failure surfaces player-side, after this call returned, and
     /// is routed through the crash path instead of back through this `Result`.
     fn upload_texture(&mut self, texture_file: &str) -> Result<usize, CanvasError>;
+
+    /// Register a font by path and return its assigned `font_id`.
+    ///
+    /// Mirrors `upload_texture`: IDs are cumulative and assigned in call order, and the dev-mode
+    /// proxy is fire-and-forget (always `Ok`, a real failure surfaces player-side through the crash
+    /// path). The player loads the font when it replays the recorded `font_loads`.
+    fn load_font(&mut self, path: &str) -> Result<usize, CanvasError>;
+
+    /// Queue one shaped text run for this frame. Occupancy resets after every draw, exactly like
+    /// `add_instance` — a run not re-added disappears.
+    fn add_text_run(&mut self, run: &TextRun);
 
     /// The `CreateInfo` the canvas was built with. By value, matching
     /// `SpriteDatabase::get_create_info` (`CreateInfo` is `Copy`); the dev proxy answers from its

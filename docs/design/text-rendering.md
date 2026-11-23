@@ -289,12 +289,34 @@ literal needed updating. `WIRE_VERSION` bumped 2 → 3.
   `text_run_round_trips_through_postcard`; `cargo check --workspace` green (player's `apply_ops` takes
   `CanvasOps` by value and simply ignores the two new fields until Step 6).
 
-### Step 2: Canvas trait + proxy (`surge-sdk`, no GPU)
+### Step 2: Canvas trait + proxy (`surge-sdk`, no GPU) ✅
 Add `load_font` and `add_text_run` to `SpriteCanvas`; implement on `CanvasProxy` (cumulative
 `next_font_id`, reset in `cache_create_info` alongside `next_texture_id`; push runs into `ops`).
 Update the object-safety witness in `canvas.rs` and the `CountingCanvas` test double in
 `remote_app.rs`. **Verification:** proxy tests for cumulative font IDs across drains and reset on
 recache (mirror the texture-ID tests).
+
+**Resolution:** Done. `SpriteCanvas` gained `load_font(&mut self, path: &str) -> Result<usize,
+CanvasError>` and `add_text_run(&mut self, run: &TextRun)`, both object-safe, so the existing
+`const _: Option<&mut dyn SpriteCanvas> = None;` witness in `canvas.rs` needed no edit and now
+covers them. `CanvasProxy` grew a cumulative `next_font_id` (reset in `cache_create_info` beside
+`next_texture_id`); `load_font` pushes onto `ops.font_loads` and hands back the pre-increment index
+fire-and-forget like `upload_texture`, and `add_text_run` clones the run into `ops.text_runs`.
+
+- **Deviation (surge-core touched):** the step text names only `surge-sdk` and `remote_app.rs`, but
+  adding two *required* trait methods also broke `impl SpriteCanvas for SpriteDatabase`
+  (`surge-core`), which the player passes directly as `&mut dyn SpriteCanvas`. The real text routing
+  is the Step 6 composite `Canvas`, so — confirmed with the author — `SpriteDatabase`'s two methods
+  are temporary `unimplemented!("fonts are routed through the composite canvas")` stubs. They are
+  unreachable before Step 6 (dev-mode `apply_ops` still ignores `font_loads`/`text_runs`, and no
+  module calls `Font::load` yet), so the panic can only ever fire on a genuine wiring mistake, never
+  silently drop text. The `CountingCanvas` double in `remote_app.rs` instead counts `font_loads` and
+  `text_runs`.
+- **Verification run:** three new `proxy::tests` — `font_index_is_cumulative_across_drains`,
+  `font_index_resets_when_a_new_create_info_is_cached`, `text_runs_drain_in_order` (mirroring the
+  texture-ID tests) — pass; `cargo test -p surge-sdk` → 20 unit + 1 integration green;
+  `cargo check --workspace` green; `cargo test -p surge-player --no-run` builds the `CountingCanvas`
+  double cleanly.
 
 ### Step 3: Shaping layer (`surge-sdk`, no GPU)
 Add `Font` (HarfRust face + scaled metrics + FontId), `ShapedText` (positioned glyphs + width +

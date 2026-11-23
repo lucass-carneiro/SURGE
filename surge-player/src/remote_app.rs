@@ -429,7 +429,7 @@ fn stop_child(child: &mut Child) {
 mod tests {
     use super::*;
     use surge_sdk::{
-        BlendingMode, CanvasError, CreateInfo, InstanceInfo, TextureFilteringLevel,
+        BlendingMode, CanvasError, CreateInfo, InstanceInfo, TextRun, TextureFilteringLevel,
         TextureFilteringMode,
     };
 
@@ -438,6 +438,8 @@ mod tests {
     struct CountingCanvas {
         uploads: usize,
         instances: usize,
+        font_loads: usize,
+        text_runs: usize,
     }
 
     impl SpriteCanvas for CountingCanvas {
@@ -448,6 +450,15 @@ mod tests {
         fn upload_texture(&mut self, _: &str) -> Result<usize, CanvasError> {
             self.uploads += 1;
             Ok(self.uploads - 1)
+        }
+
+        fn load_font(&mut self, _: &str) -> Result<usize, CanvasError> {
+            self.font_loads += 1;
+            Ok(self.font_loads - 1)
+        }
+
+        fn add_text_run(&mut self, _: &TextRun) {
+            self.text_runs += 1;
         }
 
         fn get_create_info(&self) -> CreateInfo {
