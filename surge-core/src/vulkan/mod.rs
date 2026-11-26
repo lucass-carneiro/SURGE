@@ -1,4 +1,6 @@
-use ash::{self, ext, khr, vk};
+use ash::{self, khr, vk};
+#[cfg(feature = "validation_layers")]
+use ash::ext;
 use std::mem::ManuallyDrop;
 
 const FRAMES_IN_FLIGHT: usize = 2;

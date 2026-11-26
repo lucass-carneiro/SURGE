@@ -11,6 +11,7 @@ surge-sdk = { path = "../../surge-sdk" }
 
 [features]
 release-bin = ["dep:surge-player"]
+validation_layers = ["surge-player?/validation_layers"]
 
 [lib]
 crate-type = ["rlib"]

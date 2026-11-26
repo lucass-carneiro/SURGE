@@ -1,6 +1,10 @@
 use crate::errors::VulkanError;
-use ash::{self, ext, vk};
-use std::ffi::{CStr, CString, c_void};
+use ash::{self, vk};
+#[cfg(feature = "validation_layers")]
+use ash::ext;
+use std::ffi::CString;
+#[cfg(feature = "validation_layers")]
+use std::ffi::{CStr, c_void};
 use winit::{event_loop::ActiveEventLoop, raw_window_handle::HasDisplayHandle};
 
 pub(super) fn get_required_instance_extensions(
@@ -9,6 +13,7 @@ pub(super) fn get_required_instance_extensions(
     log::info!("Querying required Vulkan instance extensions");
 
     // Get required surface extensions from winit
+    #[cfg_attr(not(feature = "validation_layers"), allow(unused_mut))]
     let mut extensions =
         ash_window::enumerate_required_extensions(event_loop.display_handle().unwrap().as_raw())
             .map_err(|_| VulkanError::UnsuitablePhysicalDevice)?

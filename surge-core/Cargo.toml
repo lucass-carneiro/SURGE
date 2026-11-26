@@ -17,8 +17,10 @@ winit = "0.30.12"
 zeno = "=0.3.3"
 
 [features]
-default = ["validation_layers"]
-validation_layers =[]
+# Not a default: an enabled-by-default feature would be unified into every
+# workspace build, so staged release binaries would always carry the layers.
+default = []
+validation_layers = []
 
 # harfrust (shaping) remains a dev-dependency for the Step 0 throwaway spike
 # (tests/font_spike.rs); it only ever runs on the SDK side in production. skrifa

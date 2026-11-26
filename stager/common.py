@@ -69,3 +69,33 @@ def module_release_binary_exists(module_name: str):
         return False
 
     return True
+
+
+# Only the "validation_layers" build of surge-core embeds this layer name.
+VALIDATION_LAYER_MARKER = b"VK_LAYER_KHRONOS_validation"
+
+
+def binary_has_validation_layers(bin_path: str):
+    # Read overlapping chunks so a marker straddling a boundary is still found
+    overlap = len(VALIDATION_LAYER_MARKER) - 1
+    tail = b""
+
+    with open(bin_path, "rb") as f:
+        while chunk := f.read(1 << 20):
+            if VALIDATION_LAYER_MARKER in tail + chunk:
+                return True
+            tail = chunk[-overlap:]
+
+    return False
+
+
+def module_release_binary_is_shippable(module_name: str):
+    bin_path = os.path.join("target", "release", make_release_bin_name(module_name))
+
+    if binary_has_validation_layers(bin_path):
+        LOG.error(
+            f"{bin_path} was built with Vulkan validation layers enabled and must not be staged. Rebuild it without the \"validation_layers\" feature: \"cargo build --release --features release-bin\""
+        )
+        return False
+
+    return True

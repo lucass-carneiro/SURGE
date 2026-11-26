@@ -10,6 +10,9 @@ surge-core = { path = "../surge-core" }
 surge-sdk = { path = "../surge-sdk" }
 winit = "0.30.12"
 
+[features]
+validation_layers = ["surge-core/validation_layers"]
+
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2"
 

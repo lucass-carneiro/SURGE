@@ -39,6 +39,10 @@ def make_staging(args):
     if not common.module_release_binary_exists(req_module):
         exit(1)
 
+    # A staged binary must not carry the Vulkan validation layers
+    if not common.module_release_binary_is_shippable(req_module):
+        exit(1)
+
     # Check if the module has a config file
     src_module_config = os.path.join(
         "surge-modules",

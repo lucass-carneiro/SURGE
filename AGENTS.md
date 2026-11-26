@@ -37,8 +37,9 @@ Requires `glslang` on `PATH` (from the Vulkan SDK) — `surge-core/build.rs` she
 cargo check --workspace          # fastest correctness loop
 cargo build                      # debug: target/debug/surge-player + one dev binary per module (surge_mod_*)
 cargo build --release --features release-bin   # required before staging: <module>_release binaries
-cargo run -p surge-player        # MUST be run from the repo root (see CWD contract)
+cargo run -p surge-player --features validation_layers   # normal dev run; MUST be from the repo root (see CWD contract)
 cargo test --workspace           # tests live in surge-core, surge-sdk, surge-player and surge-mod-2048; `cargo test -p <crate> <filter>` narrows.
+                                 # add --features validation_layers to also run the one debug-messenger test gated behind it
                                  # surge-player's reload test builds surge-mod-default itself (nested `cargo build`)
                                  # No test needs a GPU or a window: Vulkan-facing logic is kept in pure helpers so it can be tested.
 ```
@@ -62,7 +63,9 @@ It requires `cargo build --release --features release-bin` to have run and must 
 
 # Feature flags
 
-- `surge-core/validation_layers` — **on by default**. Enables Vulkan validation layers + debug messenger, and gates several `VulkanError` variants behind `cfg`.
+- `surge-core/validation_layers` — **off by default**, opt in per build. Enables Vulkan validation layers + debug messenger, and gates several `VulkanError` variants (plus one unit test) behind `cfg`. `surge-player` and each module forward it under the same name, so `--features validation_layers` works from any of them; for a module it only takes effect alongside `release-bin`.
+
+  It is deliberately not a default feature. Cargo features are additive and unified per invocation, so a default would be pulled in by every workspace-wide build — including the release build that produces the staged binaries — and could not be switched back off by `release-bin`. Staging therefore hard-fails on a binary that still contains the layers.
 - `<module>/release-bin` — pulls in the optional `surge-player` dependency and enables the module's `<module>_release` `[[bin]]` (`required-features`). Without it only the dev binary builds.
 
 PNG, SVG, and TTF assets are tracked with **git-lfs** (see `.gitattributes`).
