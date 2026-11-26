@@ -2,6 +2,7 @@ use crate::{
     board_geometry::BoardGeometry,
     new_game_button::NewGameButton,
     piece::{MergeRole, Piece},
+    score_display::ScoreDisplay,
 };
 use rand::seq::IndexedRandom;
 use std::collections::VecDeque;
@@ -37,8 +38,15 @@ pub(crate) struct App2048 {
     // The "New Game" button, which calls `restart`
     new_game_button: NewGameButton,
 
-    // Points scored this game: each merge adds the merged tile's number. Not displayed yet.
+    // Points scored this game: each merge adds the merged tile's number.
     score: u32,
+
+    // Highest score reached by an earlier game this session. `get_best` folds the current game's
+    // score in, so the displayed best is live and never needs touching on a merge.
+    best: u32,
+
+    // Draws `score` and `best` into the two boxes at the top of the board.
+    score_display: ScoreDisplay,
 }
 
 impl App2048 {
@@ -52,6 +60,8 @@ impl App2048 {
             live_pieces,
             new_game_button: NewGameButton::default(),
             score: 0,
+            best: 0,
+            score_display: ScoreDisplay::default(),
         }
     }
 
@@ -69,12 +79,24 @@ impl App2048 {
     pub(crate) fn restart(&mut self) {
         self.live_pieces = App2048::start_pieces(&self.board_geometry);
         self.board_states = VecDeque::from([BoardState::Idle]);
+        self.best = self.get_best();
         self.score = 0;
     }
 
-    #[allow(dead_code)] // Bookkeeping only until the SCORE counter is drawn.
     pub(crate) fn get_score(&self) -> u32 {
         self.score
+    }
+
+    pub(crate) fn get_best(&self) -> u32 {
+        self.best.max(self.score)
+    }
+
+    pub(crate) fn get_score_display(&self) -> &ScoreDisplay {
+        &self.score_display
+    }
+
+    pub(crate) fn get_score_display_mut(&mut self) -> &mut ScoreDisplay {
+        &mut self.score_display
     }
 
     pub(crate) fn get_new_game_button(&self) -> &NewGameButton {
@@ -385,6 +407,43 @@ mod tests {
             }
         }
         panic!("no direction moved the fresh board");
+    }
+
+    #[test]
+    fn merging_scores_the_merged_tile_and_the_best_follows_the_score() {
+        let bg = BoardGeometry::new();
+        // Two 2s on one row: a right press merges them into a 4, scoring 4.
+        let mut app = App2048::with_pieces(vec![
+            Piece::new(&bg, 1, Vec2::new(0, 0)),
+            Piece::new(&bg, 1, Vec2::new(1, 0)),
+        ]);
+        assert_eq!(app.get_best(), 0);
+
+        app.start_move(MoveDirection::Right);
+        for _ in 0..100 {
+            app.step(1.0 / 60.0);
+        }
+
+        assert_eq!(app.get_score(), 4);
+        assert_eq!(app.get_best(), 4);
+    }
+
+    #[test]
+    fn the_best_survives_a_restart_and_a_worse_game_never_lowers_it() {
+        let mut app = App2048::new();
+        app.score = 5000;
+        assert_eq!(app.get_best(), 5000);
+
+        app.restart();
+        assert_eq!(app.get_score(), 0);
+        assert_eq!(app.get_best(), 5000);
+
+        app.score = 8;
+        assert_eq!(app.get_score(), 8);
+        assert_eq!(app.get_best(), 5000);
+
+        app.restart();
+        assert_eq!(app.get_best(), 5000);
     }
 
     #[test]

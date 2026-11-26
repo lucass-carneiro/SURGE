@@ -12,6 +12,7 @@ mod board_geometry;
 mod move_ops;
 mod new_game_button;
 mod piece;
+mod score_display;
 
 use app_2048::{App2048, MoveDirection};
 use board_geometry::BoardGeometry;
@@ -70,10 +71,12 @@ impl SurgeApp for App2048 {
     fn on_load(&mut self, spdb: &mut dyn SpriteCanvas) {
         log::info!("2048 startup");
         upload_board_assets(spdb);
+        self.get_score_display_mut().load_font(spdb);
     }
 
     fn on_swapchain_recreate(&mut self, spdb: &mut dyn SpriteCanvas) {
         upload_board_assets(spdb);
+        self.get_score_display_mut().load_font(spdb);
     }
 
     fn update(&mut self, dt: f32, spdb: &mut dyn SpriteCanvas) {
@@ -89,6 +92,8 @@ impl SurgeApp for App2048 {
         };
 
         add_board_sprite(spdb, self.get_board_geometry(), tint);
+        self.get_score_display()
+            .draw(spdb, self.get_score(), self.get_best(), tint);
 
         for piece in self.get_live_pieces() {
             let mut instance = piece.get_sprite_instance_info(self.get_board_geometry());
