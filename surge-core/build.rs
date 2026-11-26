@@ -8,7 +8,9 @@ fn glslang(src: &str, dst: &str) -> Result<(), String> {
         .arg("-o")
         .arg(dst)
         .output()
-        .map_err(|e| format!("Failed to compile glsl shader {src}. Unable to execute glslang: {e}"))?;
+        .map_err(|e| {
+            format!("Failed to compile glsl shader {src}. Unable to execute glslang: {e}")
+        })?;
 
     if o.status.success() {
         return Ok(());
@@ -29,10 +31,22 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
     let shaders = [
-        ("src/vulkan/sprite_database/shaders/sprite.vert", "sprite_vert.spv"),
-        ("src/vulkan/sprite_database/shaders/sprite.frag", "sprite_frag.spv"),
-        ("src/vulkan/font_database/shaders/font.vert", "font_vert.spv"),
-        ("src/vulkan/font_database/shaders/font.frag", "font_frag.spv"),
+        (
+            "src/vulkan/sprite_database/shaders/sprite.vert",
+            "sprite_vert.spv",
+        ),
+        (
+            "src/vulkan/sprite_database/shaders/sprite.frag",
+            "sprite_frag.spv",
+        ),
+        (
+            "src/vulkan/font_database/shaders/font.vert",
+            "font_vert.spv",
+        ),
+        (
+            "src/vulkan/font_database/shaders/font.frag",
+            "font_frag.spv",
+        ),
     ];
 
     for (src, spv) in shaders {

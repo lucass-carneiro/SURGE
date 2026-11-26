@@ -1,8 +1,8 @@
 use super::{FRAMES_IN_FLIGHT, VulkanContext, command, device, image, instance};
 use crate::{config::EngineConfig, errors::VulkanError};
-use ash::{self, khr, vk};
 #[cfg(feature = "validation_layers")]
 use ash::ext;
+use ash::{self, khr, vk};
 use std::mem::ManuallyDrop;
 use winit::{
     event_loop::ActiveEventLoop,
@@ -125,7 +125,8 @@ impl VulkanContext {
             physical_device,
         )?);
 
-        let depth_image = image::create_depth_image(&memory_allocator, &device, swapchain_data.extent)?;
+        let depth_image =
+            image::create_depth_image(&memory_allocator, &device, swapchain_data.extent)?;
 
         // present_completed_sem is the acquire semaphore: it is indexed by current_frame and only
         // needs to outlive one frame, so it gets FRAMES_IN_FLIGHT entries. render_finished_sem is

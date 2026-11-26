@@ -5,7 +5,7 @@ use winit::event::DeviceId;
 use crate::{
     app::SurgeApp,
     proxy::CanvasProxy,
-    wire::{read_message, write_message, InputEvent, Request, Response, WIRE_VERSION},
+    wire::{InputEvent, Request, Response, WIRE_VERSION, read_message, write_message},
 };
 
 /// The module-side entry point in dev mode: connect to the player's TCP loopback socket (port

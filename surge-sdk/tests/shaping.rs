@@ -68,15 +68,21 @@ fn metrics_scale_linearly_with_px_size() {
 fn selects_typo_when_the_font_requests_it() {
     // typo and hhea both present; USE_TYPO_METRICS set -> typo wins. Descender sign is normalized
     // to a non-negative magnitude.
-    let (asc, desc, gap) =
-        select_vertical_metrics(true, Some((800.0, -200.0, 90.0)), Some((750.0, -250.0, 0.0)));
+    let (asc, desc, gap) = select_vertical_metrics(
+        true,
+        Some((800.0, -200.0, 90.0)),
+        Some((750.0, -250.0, 0.0)),
+    );
     assert_eq!((asc, desc, gap), (800.0, 200.0, 90.0));
 }
 
 #[test]
 fn selects_hhea_when_typo_is_not_requested() {
-    let (asc, desc, gap) =
-        select_vertical_metrics(false, Some((800.0, -200.0, 90.0)), Some((750.0, -250.0, 10.0)));
+    let (asc, desc, gap) = select_vertical_metrics(
+        false,
+        Some((800.0, -200.0, 90.0)),
+        Some((750.0, -250.0, 10.0)),
+    );
     assert_eq!((asc, desc, gap), (750.0, 250.0, 10.0));
 }
 
@@ -143,7 +149,10 @@ fn anchor_offsets_resolve_against_the_box() {
     // Horizontal: left keeps the origin, center shifts by -W/2, right by -W.
     assert_eq!(anchor_offset(TextAnchor::BaselineLeft, w, asc, desc).0, 0.0);
     assert_eq!(anchor_offset(TextAnchor::Center, w, asc, desc).0, -50.0);
-    assert_eq!(anchor_offset(TextAnchor::BaselineRight, w, asc, desc).0, -100.0);
+    assert_eq!(
+        anchor_offset(TextAnchor::BaselineRight, w, asc, desc).0,
+        -100.0
+    );
 
     // Vertical (y-down): top drops the baseline by +ascent, baseline is 0, bottom lifts by -descent.
     assert_eq!(anchor_offset(TextAnchor::TopLeft, w, asc, desc).1, 24.0);
@@ -173,7 +182,10 @@ fn draw_text_emits_a_run_anchored_at_the_origin() {
 
     // Center anchor + baseline: first glyph lands at origin.x - W/2 (+ its local x), origin.y.
     let g0 = run.glyphs[0];
-    assert!((g0.x - (origin.x - w / 2.0 + first_local_x)).abs() < 1e-3, "{g0:?}");
+    assert!(
+        (g0.x - (origin.x - w / 2.0 + first_local_x)).abs() < 1e-3,
+        "{g0:?}"
+    );
     assert_eq!(g0.y, origin.y);
     // Glyph spacing is preserved end to end.
     let last = *run.glyphs.last().unwrap();

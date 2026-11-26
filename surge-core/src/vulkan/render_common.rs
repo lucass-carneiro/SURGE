@@ -82,7 +82,11 @@ pub(crate) fn subtexture_uv_transform(
 
 /// Largest rectangle with the design resolution's aspect ratio that fits in `target`, centered.
 /// Returns `(x, y, width, height)` in target pixels; the leftover bars keep the clear color.
-pub(crate) fn letterbox(design_w: f32, design_h: f32, target: vk::Extent2D) -> (i32, i32, u32, u32) {
+pub(crate) fn letterbox(
+    design_w: f32,
+    design_h: f32,
+    target: vk::Extent2D,
+) -> (i32, i32, u32, u32) {
     let scale = (target.width as f32 / design_w).min(target.height as f32 / design_h);
     let width = ((design_w * scale).round() as u32).clamp(1, target.width.max(1));
     let height = ((design_h * scale).round() as u32).clamp(1, target.height.max(1));

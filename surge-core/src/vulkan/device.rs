@@ -209,12 +209,8 @@ fn is_device_suitable(
 
     let queue_families =
         unsafe { instance.get_physical_device_queue_family_properties(physical_device) };
-    let graphics_family = find_graphics_present_family(
-        &queue_families,
-        physical_device,
-        surface_loader,
-        surface,
-    );
+    let graphics_family =
+        find_graphics_present_family(&queue_families, physical_device, surface_loader, surface);
     let can_present = graphics_family.is_some()
         && device_has_surface_formats_and_present_modes(physical_device, surface_loader, surface);
 
@@ -255,7 +251,8 @@ pub(super) fn select_physical_device(
     let physical_devices = get_available_physical_devices(instance)?;
 
     for physical_device in physical_devices {
-        if let Some(indices) = is_device_suitable(instance, physical_device, surface_loader, surface)
+        if let Some(indices) =
+            is_device_suitable(instance, physical_device, surface_loader, surface)
         {
             return Ok((physical_device, indices));
         }

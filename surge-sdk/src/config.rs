@@ -117,7 +117,11 @@ pub fn parse_config(config_file_path: &str) -> Result<EngineConfig, ConfigError>
     };
 
     if let Err(reason) = config.validate() {
-        log::error!("Invalid engine config file {}: {}", config_file_path, reason);
+        log::error!(
+            "Invalid engine config file {}: {}",
+            config_file_path,
+            reason
+        );
 
         return Err(ConfigError::InvalidValue {
             name: config_file_path.to_string(),

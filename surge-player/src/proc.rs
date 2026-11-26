@@ -98,11 +98,11 @@ mod imp {
 
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
     use windows_sys::Win32::System::JobObjects::{
-        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
-        SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
-        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectExtendedLimitInformation,
+        SetInformationJobObject,
     };
-    use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_TERMINATE, TerminateProcess};
 
     pub struct DeathGuardImpl {
         job: HANDLE,
@@ -148,8 +148,7 @@ mod imp {
         pub fn attach(&self, child: &Child) -> io::Result<()> {
             // SAFETY: `self.job` is a live job handle owned by `self`, and `child` is a live
             // process handle owned by `child`.
-            let ok =
-                unsafe { AssignProcessToJobObject(self.job, child.as_raw_handle() as HANDLE) };
+            let ok = unsafe { AssignProcessToJobObject(self.job, child.as_raw_handle() as HANDLE) };
             if ok == 0 {
                 Err(io::Error::last_os_error())
             } else {

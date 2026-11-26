@@ -1,6 +1,6 @@
 use super::{
-    image::{is_srgb_format, srgb_to_linear},
     SwpcLayoutTransitionInfo, VulkanContext,
+    image::{is_srgb_format, srgb_to_linear},
 };
 use crate::{config::EngineConfig, errors::VulkanError};
 use ash::vk;

@@ -108,7 +108,8 @@ fn an_empty_rasterization_caches_a_draw_nothing_entry() {
     assert!(upload.is_none());
 
     // A second reference is a hit that rasterizes nothing.
-    let (entry2, upload2) = cache.get_or_insert(key, || panic!("empty glyph must not re-rasterize"));
+    let (entry2, upload2) =
+        cache.get_or_insert(key, || panic!("empty glyph must not re-rasterize"));
     assert!(entry2.draws_nothing());
     assert!(upload2.is_none());
 }
@@ -157,7 +158,8 @@ fn mark_dropped_turns_a_packed_glyph_into_a_cache_hit_sentinel() {
 
     // Simulate a failed GPU upload: the entry is replaced with a sentinel.
     cache.mark_dropped(key);
-    let (entry2, upload2) = cache.get_or_insert(key, || panic!("a dropped glyph must not re-rasterize"));
+    let (entry2, upload2) =
+        cache.get_or_insert(key, || panic!("a dropped glyph must not re-rasterize"));
     assert!(entry2.draws_nothing());
     assert!(upload2.is_none());
 }

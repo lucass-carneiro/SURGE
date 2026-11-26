@@ -1,5 +1,6 @@
 use super::{
-    DEPTH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext, buffer::Buffer,
+    DEPTH_FORMAT, FRAMES_IN_FLIGHT, VulkanContext,
+    buffer::Buffer,
     ctx_graphics_pipeline::GraphicsPipelineBuilder,
     render_common::{letterbox, make_model_matrix, make_ortho_projection, make_view},
 };
@@ -237,7 +238,12 @@ impl FontDatabase {
                 .subresource_range(atlas_srr)];
             let dep_info = vk::DependencyInfo::default().image_memory_barriers(&barrier);
             let cmd = context.borrow().immediate_command_buffer;
-            unsafe { context.borrow().device.cmd_pipeline_barrier2(cmd, &dep_info) };
+            unsafe {
+                context
+                    .borrow()
+                    .device
+                    .cmd_pipeline_barrier2(cmd, &dep_info)
+            };
             context.borrow().cmd_immediate_end()?;
             context.borrow().cmd_immediate_submit()?;
         }
@@ -444,8 +450,10 @@ impl FontDatabase {
         }?;
 
         let pipeline = {
-            static FONT_VERT_SPV: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/font_vert.spv"));
-            static FONT_FRAG_SPV: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/font_frag.spv"));
+            static FONT_VERT_SPV: &[u8] =
+                include_bytes!(concat!(env!("OUT_DIR"), "/font_vert.spv"));
+            static FONT_FRAG_SPV: &[u8] =
+                include_bytes!(concat!(env!("OUT_DIR"), "/font_frag.spv"));
 
             let vert_shader = context.borrow().load_shader_module(FONT_VERT_SPV)?;
             let frag_shader = context.borrow().load_shader_module(FONT_FRAG_SPV)?;
@@ -549,9 +557,9 @@ impl FontDatabase {
             // Split borrow: the rasterize closure reads `self.fonts`, `get_or_insert` mutates
             // `self.glyph_cache` — disjoint fields, so the closure runs only on a cache miss.
             let fonts = &self.fonts;
-            let (entry, upload) = self
-                .glyph_cache
-                .get_or_insert(key, || rasterize_glyph(&fonts[run.font_id].bytes, glyph.glyph_id, px as f32));
+            let (entry, upload) = self.glyph_cache.get_or_insert(key, || {
+                rasterize_glyph(&fonts[run.font_id].bytes, glyph.glyph_id, px as f32)
+            });
 
             if entry.draws_nothing() {
                 continue;
@@ -562,7 +570,10 @@ impl FontDatabase {
             {
                 // Staging the bitmap failed (e.g. OOM): drop the glyph so its reserved but
                 // never-written cell is never sampled, and never re-rasterize it.
-                log::error!("failed to stage glyph upload: {e}; dropping glyph {}", glyph.glyph_id);
+                log::error!(
+                    "failed to stage glyph upload: {e}; dropping glyph {}",
+                    glyph.glyph_id
+                );
                 self.glyph_cache.mark_dropped(key);
                 continue;
             }

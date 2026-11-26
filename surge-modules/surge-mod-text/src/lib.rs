@@ -61,22 +61,52 @@ impl SurgeApp for AppText {
 
         // Title, horizontally centered near the top.
         let title = font.shape("SURGE text", 64.0);
-        canvas.draw_text(&title, Vector2::new(400.0, 70.0), TextAnchor::TopCenter, WHITE, 0.5);
+        canvas.draw_text(
+            &title,
+            Vector2::new(400.0, 70.0),
+            TextAnchor::TopCenter,
+            WHITE,
+            0.5,
+        );
 
         // Left- and right-anchored lines against the window edges, to show the anchor math.
         let left = font.shape("anchored left", 28.0);
-        canvas.draw_text(&left, Vector2::new(20.0, 200.0), TextAnchor::TopLeft, WHITE, 0.5);
+        canvas.draw_text(
+            &left,
+            Vector2::new(20.0, 200.0),
+            TextAnchor::TopLeft,
+            WHITE,
+            0.5,
+        );
 
         let right = font.shape("anchored right", 28.0);
-        canvas.draw_text(&right, Vector2::new(780.0, 200.0), TextAnchor::TopRight, WHITE, 0.5);
+        canvas.draw_text(
+            &right,
+            Vector2::new(780.0, 200.0),
+            TextAnchor::TopRight,
+            WHITE,
+            0.5,
+        );
 
         // A colored line in a different size.
         let colored = font.shape("colored glyphs", 40.0);
-        canvas.draw_text(&colored, Vector2::new(400.0, 300.0), TextAnchor::TopCenter, TEAL, 0.5);
+        canvas.draw_text(
+            &colored,
+            Vector2::new(400.0, 300.0),
+            TextAnchor::TopCenter,
+            TEAL,
+            0.5,
+        );
 
         // A live counter: its changing digits keep producing cache hits (and a few early misses)
         // in the glyph atlas while the demo runs.
         let counter = font.shape(&format!("frame: {}", self.frame_counter), 32.0);
-        canvas.draw_text(&counter, Vector2::new(400.0, 420.0), TextAnchor::TopCenter, AMBER, 0.5);
+        canvas.draw_text(
+            &counter,
+            Vector2::new(400.0, 420.0),
+            TextAnchor::TopCenter,
+            AMBER,
+            0.5,
+        );
     }
 }

@@ -1,7 +1,7 @@
 use crate::errors::VulkanError;
-use ash::{self, vk};
 #[cfg(feature = "validation_layers")]
 use ash::ext;
+use ash::{self, vk};
 use std::ffi::CString;
 #[cfg(feature = "validation_layers")]
 use std::ffi::{CStr, c_void};
@@ -91,7 +91,10 @@ fn message_type_name(message_type: vk::DebugUtilsMessageTypeFlagsEXT) -> String 
     let names: Vec<&str> = [
         (vk::DebugUtilsMessageTypeFlagsEXT::GENERAL, "General"),
         (vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION, "Validation"),
-        (vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE, "Performance"),
+        (
+            vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+            "Performance",
+        ),
     ]
     .into_iter()
     .filter(|(flag, _)| message_type.contains(*flag))
@@ -188,7 +191,10 @@ mod tests {
     #[test]
     fn message_type_name_handles_combined_flags() {
         assert_eq!(message_type_name(T::VALIDATION), "Validation");
-        assert_eq!(message_type_name(T::GENERAL | T::VALIDATION), "General|Validation");
+        assert_eq!(
+            message_type_name(T::GENERAL | T::VALIDATION),
+            "General|Validation"
+        );
         assert_eq!(message_type_name(T::empty()), "Unknown");
     }
 }

@@ -78,7 +78,5 @@ pub(super) fn create_memory_allocator(
     ci.flags = vk_mem::AllocatorCreateFlags::BUFFER_DEVICE_ADDRESS;
     // Must match the instance's `api_version`; left at 0 VMA assumes 1.0 and skips 1.1+ paths.
     ci.vulkan_api_version = vk::API_VERSION_1_3;
-    Ok(unsafe {
-        vk_mem::Allocator::new(ci).map_err(VulkanError::MemoryAllocatorCreationError)
-    })?
+    Ok(unsafe { vk_mem::Allocator::new(ci).map_err(VulkanError::MemoryAllocatorCreationError) })?
 }

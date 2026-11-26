@@ -13,10 +13,10 @@ use std::{
 
 use surge_sdk::config::StartupAppConfig;
 use surge_sdk::{
+    CanvasOps, InputEvent, KeyEvent, Request, Response, SpriteCanvas, SurgeApp, WIRE_VERSION,
     read_message,
     winit::event::{DeviceId, ElementState, MouseButton, MouseScrollDelta, TouchPhase},
-    write_message, CanvasOps, InputEvent, KeyEvent, Request, Response, SpriteCanvas, SurgeApp,
-    WIRE_VERSION,
+    write_message,
 };
 
 use crate::proc;
@@ -439,8 +439,9 @@ fn stop_child(child: &mut Child) {
 mod tests {
     use super::*;
     use surge_sdk::{
-        BlendingMode, CanvasError, CanvasProxy, CreateInfo, InstanceInfo, PositionedGlyph, Response,
-        TextRun, TextureFilteringLevel, TextureFilteringMode, nalgebra::Vector4, write_message,
+        BlendingMode, CanvasError, CanvasProxy, CreateInfo, InstanceInfo, PositionedGlyph,
+        Response, TextRun, TextureFilteringLevel, TextureFilteringMode, nalgebra::Vector4,
+        write_message,
     };
 
     /// Counts what the module asks of the canvas, without a GPU.

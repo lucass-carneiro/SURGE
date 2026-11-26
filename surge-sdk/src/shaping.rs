@@ -200,12 +200,20 @@ impl Font {
         let metrics = face.metrics();
         let (ascent_units, descent_units, line_gap_units) = select_vertical_metrics(
             metrics.use_typo_metrics,
-            metrics
-                .typo_line
-                .map(|lb| (lb.ascender.to_f32(), lb.descender.to_f32(), lb.line_gap.to_f32())),
-            metrics
-                .hhea_line
-                .map(|lb| (lb.ascender.to_f32(), lb.descender.to_f32(), lb.line_gap.to_f32())),
+            metrics.typo_line.map(|lb| {
+                (
+                    lb.ascender.to_f32(),
+                    lb.descender.to_f32(),
+                    lb.line_gap.to_f32(),
+                )
+            }),
+            metrics.hhea_line.map(|lb| {
+                (
+                    lb.ascender.to_f32(),
+                    lb.descender.to_f32(),
+                    lb.line_gap.to_f32(),
+                )
+            }),
         );
 
         Ok(Font {

@@ -1,6 +1,6 @@
 use std::io::{self, Read, Write};
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, TouchPhase};
 
 use crate::{

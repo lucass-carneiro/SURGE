@@ -34,7 +34,10 @@ fn letterbox_identity_when_extent_matches_design() {
 #[test]
 fn letterbox_pillarboxes_portrait_design_on_landscape_monitor() {
     // 500x800 into 1920x1080: height-bound, scale 1.35 -> 675x1080, centered horizontally.
-    assert_eq!(letterbox(500.0, 800.0, ext(1920, 1080)), (622, 0, 675, 1080));
+    assert_eq!(
+        letterbox(500.0, 800.0, ext(1920, 1080)),
+        (622, 0, 675, 1080)
+    );
 }
 
 #[test]

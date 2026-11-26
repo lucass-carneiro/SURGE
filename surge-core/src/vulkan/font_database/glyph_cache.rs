@@ -134,8 +134,15 @@ pub(super) fn px_bucket(px_size: f32) -> u32 {
 /// Top-left corner (design px) and size of a glyph quad, from the baseline pen position and the
 /// cached bearings. The pen is snapped to integer design-px first (v1 snapping, §3.5); the quad's
 /// size is the bitmap size held in the atlas cell.
-pub(super) fn glyph_quad(pen_x: f32, pen_y: f32, entry: &GlyphEntry) -> (Vector2<f32>, Vector2<f32>) {
-    let position = Vector2::new(pen_x.round() + entry.left as f32, pen_y.round() + entry.top as f32);
+pub(super) fn glyph_quad(
+    pen_x: f32,
+    pen_y: f32,
+    entry: &GlyphEntry,
+) -> (Vector2<f32>, Vector2<f32>) {
+    let position = Vector2::new(
+        pen_x.round() + entry.left as f32,
+        pen_y.round() + entry.top as f32,
+    );
     let scale = Vector2::new(entry.cell.width as f32, entry.cell.height as f32);
     (position, scale)
 }
