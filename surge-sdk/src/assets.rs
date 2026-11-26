@@ -20,12 +20,12 @@ use std::path::{Path, PathBuf};
 /// `module_name` is the module's directory name under `surge-modules/` (e.g.
 /// `"surge-mod-2048"`), used only for the dev fallback.
 pub fn resolve_asset_path(module_name: &str, relative_path: &str) -> PathBuf {
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            let staged_path = exe_dir.join("assets").join(relative_path);
-            if staged_path.exists() {
-                return staged_path;
-            }
+    if let Ok(exe_path) = std::env::current_exe()
+        && let Some(exe_dir) = exe_path.parent()
+    {
+        let staged_path = exe_dir.join("assets").join(relative_path);
+        if staged_path.exists() {
+            return staged_path;
         }
     }
 

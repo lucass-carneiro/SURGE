@@ -1,7 +1,7 @@
 use super::QueueFamilyIndices;
 use crate::errors::VulkanError;
 use ash::{khr, vk};
-use std::ffi::{CStr, c_void};
+use std::ffi::CStr;
 
 fn get_available_physical_devices(
     instance: &ash::Instance,
@@ -9,7 +9,7 @@ fn get_available_physical_devices(
     unsafe {
         instance
             .enumerate_physical_devices()
-            .map_err(|e| VulkanError::PhysicalDeviceListError(e))
+            .map_err(VulkanError::PhysicalDeviceListError)
     }
 }
 
@@ -21,17 +21,22 @@ fn device_has_required_features(
     let mut features13 = vk::PhysicalDeviceVulkan13Features::default();
     let mut features12 = vk::PhysicalDeviceVulkan12Features::default();
 
-    features12.p_next = &mut features13 as *mut _ as *mut c_void;
+    // `features2` holds mutable borrows of the two chained structs, so it has to go out of scope
+    // before they can be read back.
+    let features = {
+        let mut features2 = vk::PhysicalDeviceFeatures2::default()
+            .push_next(&mut features13)
+            .push_next(&mut features12);
 
-    let mut features2 = vk::PhysicalDeviceFeatures2::default();
-    features2.p_next = &mut features12 as *mut _ as *mut c_void;
+        unsafe {
+            instance.get_physical_device_features2(physical_device, &mut features2);
+        }
 
-    unsafe {
-        instance.get_physical_device_features2(physical_device, &mut features2);
-    }
+        features2.features
+    };
 
-    features2.features.sampler_anisotropy == vk::TRUE
-        && features2.features.shader_int64 == vk::TRUE
+    features.sampler_anisotropy == vk::TRUE
+        && features.shader_int64 == vk::TRUE
         && features12.buffer_device_address == vk::TRUE
         && features12.descriptor_indexing == vk::TRUE
         && features12.shader_sampled_image_array_non_uniform_indexing == vk::TRUE
@@ -319,7 +324,7 @@ pub(super) fn create_logical_device(
     let device = unsafe {
         instance
             .create_device(physical_device, &device_create_info, None)
-            .map_err(|e| VulkanError::LogicalDeviceCreationError(e))?
+            .map_err(VulkanError::LogicalDeviceCreationError)?
     };
 
     let graphics_queue = unsafe { device.get_device_queue(indices.graphics, 0) };

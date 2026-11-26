@@ -10,7 +10,7 @@ use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
 use nalgebra;
 use png;
-use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, slice, sync::Arc};
+use std::{cell::RefCell, fs::File, io::BufReader, mem::size_of, rc::Rc, slice};
 use vk_mem;
 
 pub use surge_sdk::{
@@ -63,7 +63,7 @@ const PUSH_CONSTANTS_STRUCT_SIZE: u32 = size_of::<PushConstants>() as u32;
 
 pub struct SpriteDatabase {
     /// The vulkan context that created this database
-    context: Arc<RefCell<VulkanContext>>,
+    context: Rc<RefCell<VulkanContext>>,
 
     /// Creation info
     ci: CreateInfo,
@@ -116,7 +116,7 @@ pub struct SpriteDatabase {
 }
 
 impl SpriteDatabase {
-    pub fn new(context: Arc<RefCell<VulkanContext>>, ci: CreateInfo) -> Result<Self, VulkanError> {
+    pub fn new(context: Rc<RefCell<VulkanContext>>, ci: CreateInfo) -> Result<Self, VulkanError> {
         log::info!("Creating sprite database");
 
         //Frame globals UBO
@@ -198,7 +198,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .create_sampler(&sci, None)
-                    .map_err(|e| VulkanError::SamplerCreationError(e))
+                    .map_err(VulkanError::SamplerCreationError)
             }
         }?;
 
@@ -225,7 +225,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .create_descriptor_pool(&dpci, None)
-                    .map_err(|e| VulkanError::DescriptorPoolCreationError(e))
+                    .map_err(VulkanError::DescriptorPoolCreationError)
             }
         }?;
 
@@ -246,7 +246,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .create_descriptor_set_layout(&dslci, None)
-                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
+                    .map_err(VulkanError::DescriptorSetLayoutCreationError)
             }
         }?;
 
@@ -286,7 +286,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .create_descriptor_set_layout(&dslci, None)
-                    .map_err(|e| VulkanError::DescriptorSetLayoutCreationError(e))
+                    .map_err(VulkanError::DescriptorSetLayoutCreationError)
             }
         }?;
 
@@ -303,7 +303,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .allocate_descriptor_sets(&ai)
-                    .map_err(|e| VulkanError::DescriptorSetAllocationError(e))
+                    .map_err(VulkanError::DescriptorSetAllocationError)
             }
         }?[0];
 
@@ -325,7 +325,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .allocate_descriptor_sets(&ai)
-                    .map_err(|e| VulkanError::DescriptorSetAllocationError(e))
+                    .map_err(VulkanError::DescriptorSetAllocationError)
             }
         }?[0];
 
@@ -391,7 +391,7 @@ impl SpriteDatabase {
                     .borrow()
                     .device
                     .create_pipeline_layout(&pci, None)
-                    .map_err(|e| VulkanError::GraphicsPipelineCreationError(e))
+                    .map_err(VulkanError::GraphicsPipelineCreationError)
             }
         }?;
 
@@ -517,7 +517,7 @@ impl SpriteDatabase {
     /// `upload_decoded_texture`) should decode once and cache the result, rather than
     /// calling this again on every recreate.
     pub fn decode_texture_file(texture_file: &str) -> Result<DecodedTexture, VulkanError> {
-        let file = File::open(texture_file).map_err(|e| VulkanError::TextureIOError(e))?;
+        let file = File::open(texture_file).map_err(VulkanError::TextureIOError)?;
         let buf_reader = BufReader::new(file);
 
         let mut decoder = png::Decoder::new(buf_reader);
@@ -525,7 +525,7 @@ impl SpriteDatabase {
         decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::ALPHA);
         let mut reader = decoder
             .read_info()
-            .map_err(|e| VulkanError::TextureDecodingError(e))?;
+            .map_err(VulkanError::TextureDecodingError)?;
 
         // EXPAND only expands palette and sub-8-bit images; grayscale (with or without alpha)
         // is not expanded to RGB(A), so the decoded output would be narrower than the RGBA
@@ -544,7 +544,7 @@ impl SpriteDatabase {
 
         let read_info = reader
             .next_frame(&mut rgba)
-            .map_err(|e| VulkanError::TextureDecodingError(e))?;
+            .map_err(VulkanError::TextureDecodingError)?;
 
         assert!(read_info.buffer_size() == image_size);
 

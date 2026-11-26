@@ -125,7 +125,7 @@ pub fn parse_config(config_file_path: &str) -> Result<EngineConfig, ConfigError>
         });
     }
 
-    return Ok(config);
+    Ok(config)
 }
 
 #[cfg(test)]

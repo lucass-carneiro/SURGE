@@ -5,6 +5,7 @@ use std::{
     error::Error,
     fmt::Display,
     process::ExitCode,
+    rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -25,7 +26,7 @@ type PlayerError = Box<dyn Error>;
 
 struct SurgeContext {
     window: Option<Arc<Window>>,
-    vulkan_context: Option<Arc<RefCell<VulkanContext>>>,
+    vulkan_context: Option<Rc<RefCell<VulkanContext>>>,
     sprite_database: Option<spd::SpriteDatabase>,
     font_database: Option<FontDatabase>,
     engine_config: EngineConfig,
@@ -68,7 +69,7 @@ impl SurgeContext {
         event_loop: &ActiveEventLoop,
         window: &Arc<Window>,
     ) -> Result<(), PlayerError> {
-        let context = Arc::new(RefCell::new(sc::vulkan::VulkanContext::new(
+        let context = Rc::new(RefCell::new(sc::vulkan::VulkanContext::new(
             event_loop,
             window,
             &self.engine_config,
@@ -330,10 +331,10 @@ impl ApplicationHandler for SurgeContext {
         // drops the surface before we have a chance to drop the Vulkan context.
         // We can't have this, so we must destroy the swapchain before Winit drops
         // the window surface. There is no context to tear down if start-up failed.
-        if let Some(context) = &self.vulkan_context {
-            if let Err(e) = context.borrow_mut().destroy_swapchain() {
-                self.error.get_or_insert_with(|| e.into());
-            }
+        if let Some(context) = &self.vulkan_context
+            && let Err(e) = context.borrow_mut().destroy_swapchain()
+        {
+            self.error.get_or_insert_with(|| e.into());
         }
     }
 

@@ -1,11 +1,11 @@
 use super::{VulkanContext, buffer::Buffer};
 use crate::errors::VulkanError;
 use ash::{self, vk};
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 use vk_mem::Alloc;
 
 pub struct Texture {
-    context: Arc<RefCell<VulkanContext>>,
+    context: Rc<RefCell<VulkanContext>>,
     image: vk::Image,
     image_view: vk::ImageView,
     image_memory: vk_mem::Allocation,
@@ -15,7 +15,7 @@ pub struct Texture {
 
 impl Texture {
     pub fn new(
-        context: Arc<RefCell<VulkanContext>>,
+        context: Rc<RefCell<VulkanContext>>,
         width: u32,
         height: u32,
         format: vk::Format,
@@ -28,7 +28,7 @@ impl Texture {
 
         let image_ci = vk::ImageCreateInfo {
             image_type: vk::ImageType::TYPE_2D,
-            format: format,
+            format,
             extent: image_extent,
             mip_levels: 1,
             array_layers: 1,
@@ -49,7 +49,7 @@ impl Texture {
                 .borrow()
                 .memory_allocator
                 .create_image(&image_ci, &alloc_ci)
-                .map_err(|e| VulkanError::ImageCreationError(e))
+                .map_err(VulkanError::ImageCreationError)
         }?;
 
         let image_srr = vk::ImageSubresourceRange {
@@ -58,14 +58,13 @@ impl Texture {
             level_count: 1,
             base_array_layer: 0,
             layer_count: 1,
-            ..Default::default()
         };
 
         let ivci = vk::ImageViewCreateInfo {
             view_type: vk::ImageViewType::TYPE_2D,
-            format: format,
+            format,
             subresource_range: image_srr,
-            image: image,
+            image,
             ..Default::default()
         };
 
@@ -74,7 +73,7 @@ impl Texture {
                 .borrow()
                 .device
                 .create_image_view(&ivci, None)
-                .map_err(|e| VulkanError::ImageViewCreationError(e))
+                .map_err(VulkanError::ImageViewCreationError)
         }?;
 
         Ok(Self {

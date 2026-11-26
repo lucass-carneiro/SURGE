@@ -14,7 +14,7 @@ pub(super) fn create_command_pool(
     unsafe {
         device
             .create_command_pool(&create_info, None)
-            .map_err(|e| VulkanError::CommandPoolCreation(e))
+            .map_err(VulkanError::CommandPoolCreation)
     }
 }
 
@@ -30,7 +30,7 @@ pub(super) fn create_command_buffers(
     unsafe {
         device
             .allocate_command_buffers(&allocate_info)
-            .map_err(|e| VulkanError::CommandBufferAllocation(e))
+            .map_err(VulkanError::CommandBufferAllocation)
     }
 }
 
@@ -45,7 +45,7 @@ pub(super) fn create_semaphores(
         let semaphore = unsafe {
             device
                 .create_semaphore(&create_info, None)
-                .map_err(|e| VulkanError::SemaphoreCreationError(e))?
+                .map_err(VulkanError::SemaphoreCreationError)?
         };
         semaphores.push(semaphore);
     }
@@ -61,7 +61,7 @@ pub(super) fn create_fences(device: &ash::Device) -> Result<Vec<vk::Fence>, Vulk
         let fence = unsafe {
             device
                 .create_fence(&create_info, None)
-                .map_err(|e| VulkanError::FenceCreationError(e))?
+                .map_err(VulkanError::FenceCreationError)?
         };
         fences.push(fence);
     }
@@ -79,6 +79,6 @@ pub(super) fn create_memory_allocator(
     // Must match the instance's `api_version`; left at 0 VMA assumes 1.0 and skips 1.1+ paths.
     ci.vulkan_api_version = vk::API_VERSION_1_3;
     Ok(unsafe {
-        vk_mem::Allocator::new(ci).map_err(|e| VulkanError::MemoryAllocatorCreationError(e))
+        vk_mem::Allocator::new(ci).map_err(VulkanError::MemoryAllocatorCreationError)
     })?
 }

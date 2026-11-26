@@ -1,4 +1,3 @@
-use nalgebra;
 use serde::{Deserialize, Serialize};
 
 /// One glyph placed on the baseline by the shaper, in design-resolution pixels (y-down).

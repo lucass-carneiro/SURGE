@@ -35,7 +35,7 @@ pub(super) fn get_required_validation_layers(
     let available_layers = unsafe {
         entry
             .enumerate_instance_layer_properties()
-            .map_err(|e| VulkanError::ValidationLayerQueryError(e))?
+            .map_err(VulkanError::ValidationLayerQueryError)?
     };
 
     let required_layer = CString::new("VK_LAYER_KHRONOS_validation").unwrap();
@@ -148,7 +148,7 @@ pub(super) fn build_instance(
     unsafe {
         entry
             .create_instance(&create_info, None)
-            .map_err(|e| VulkanError::InstanceCreationError(e))
+            .map_err(VulkanError::InstanceCreationError)
     }
 }
 
@@ -176,7 +176,7 @@ pub(super) fn build_instance(
     unsafe {
         entry
             .create_instance(&create_info, None)
-            .map_err(|e| VulkanError::InstanceCreationError(e))
+            .map_err(VulkanError::InstanceCreationError)
     }
 }
 

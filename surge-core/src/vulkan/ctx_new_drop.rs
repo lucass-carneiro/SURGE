@@ -18,12 +18,12 @@ impl VulkanContext {
     ) -> Result<Self, VulkanError> {
         log::info!("Initializing Vulkan");
 
-        let entry = unsafe { ash::Entry::load().map_err(|e| VulkanError::LibraryLoadingError(e))? };
+        let entry = unsafe { ash::Entry::load().map_err(VulkanError::LibraryLoadingError)? };
 
         let api_version = unsafe {
             entry
                 .try_enumerate_instance_version()
-                .map_err(|e| VulkanError::InstanceCreationError(e))?
+                .map_err(VulkanError::InstanceCreationError)?
                 .unwrap_or(vk::API_VERSION_1_0)
         };
 
@@ -65,7 +65,7 @@ impl VulkanContext {
             let messenger = unsafe {
                 debug_utils
                     .create_debug_utils_messenger(&debug_create_info, None)
-                    .map_err(|e| VulkanError::DebugMessengerCreationError(e))?
+                    .map_err(VulkanError::DebugMessengerCreationError)?
             };
 
             (debug_utils, messenger)
@@ -82,7 +82,7 @@ impl VulkanContext {
                 window.window_handle().unwrap().as_raw(),
                 None,
             )
-            .map_err(|e| VulkanError::SurfaceCreationError(e))?
+            .map_err(VulkanError::SurfaceCreationError)?
         };
 
         let (physical_device, indices) =
@@ -91,17 +91,17 @@ impl VulkanContext {
         let (device, graphics_queue, _compute_queue, _transfer_queue) =
             device::create_logical_device(&instance, physical_device, &indices)?;
 
-        let swapchain_data = image::create_swapchain(
-            &instance,
+        let swapchain_data = image::create_swapchain(image::SwapchainParams {
+            instance: &instance,
             physical_device,
-            &device,
-            &surface_loader,
-            surface_khr,
-            config.resolution.width,
-            config.resolution.height,
-            config.renderer.vsync,
-            vk::SwapchainKHR::null(),
-        )?;
+            device: &device,
+            surface_loader: &surface_loader,
+            surface: surface_khr,
+            width: config.resolution.width,
+            height: config.resolution.height,
+            vsync: config.renderer.vsync,
+            old_swapchain: vk::SwapchainKHR::null(),
+        })?;
 
         let command_pool = command::create_command_pool(&device, indices.graphics)?;
         let command_buffers = command::create_command_buffers(&device, command_pool)?;
@@ -115,7 +115,7 @@ impl VulkanContext {
             unsafe {
                 device
                     .allocate_command_buffers(&allocate_info)
-                    .map_err(|e| VulkanError::CommandBufferAllocation(e))
+                    .map_err(VulkanError::CommandBufferAllocation)
             }
         }?[0];
 
@@ -178,7 +178,7 @@ impl VulkanContext {
             if self.swapchain_data.swapchain != vk::SwapchainKHR::null() {
                 self.device
                     .device_wait_idle()
-                    .map_err(|e| VulkanError::SwapchainDestructionError(e))?;
+                    .map_err(VulkanError::SwapchainDestructionError)?;
 
                 for image_view in &self.swapchain_data.image_views {
                     self.device.destroy_image_view(*image_view, None);

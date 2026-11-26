@@ -1,4 +1,3 @@
-use nalgebra;
 use serde::{Deserialize, Serialize};
 
 /// Database blending mode

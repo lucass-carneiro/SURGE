@@ -1,18 +1,18 @@
 use super::VulkanContext;
 use crate::errors::VulkanError;
 use ash::vk;
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 use vk_mem::{self, Alloc};
 
 pub struct Buffer {
-    context: Arc<RefCell<VulkanContext>>,
+    context: Rc<RefCell<VulkanContext>>,
     buffer: vk::Buffer,
     allocation: vk_mem::Allocation,
 }
 
 impl Buffer {
     pub fn new(
-        context: Arc<RefCell<VulkanContext>>,
+        context: Rc<RefCell<VulkanContext>>,
         ci: &vk::BufferCreateInfo,
         ai: &vk_mem::AllocationCreateInfo,
     ) -> Result<Self, VulkanError> {
@@ -21,7 +21,7 @@ impl Buffer {
                 .borrow()
                 .memory_allocator
                 .create_buffer(ci, ai)
-                .map_err(|e| VulkanError::BufferAllocationError(e))
+                .map_err(VulkanError::BufferAllocationError)
         }?;
 
         let buf = Buffer {
@@ -63,7 +63,7 @@ impl Buffer {
             .borrow()
             .memory_allocator
             .flush_allocation(&self.allocation, 0, vk::WHOLE_SIZE)
-            .map_err(|e| VulkanError::BufferFlushError(e))
+            .map_err(VulkanError::BufferFlushError)
     }
 }
 

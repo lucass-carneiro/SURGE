@@ -1,4 +1,3 @@
-use log;
 use surge_sdk::{
     InstanceInfo, KeyEvent, SpriteCanvas, SubTextureInfo, SurgeApp,
     nalgebra::{Vector2, Vector4},

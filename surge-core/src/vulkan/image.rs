@@ -3,23 +3,42 @@ use crate::errors::VulkanError;
 use ash::{self, khr, vk};
 use vk_mem::Alloc;
 
-pub(super) fn create_swapchain(
-    instance: &ash::Instance,
-    physical_device: vk::PhysicalDevice,
-    device: &ash::Device,
-    surface_loader: &khr::surface::Instance,
-    surface: vk::SurfaceKHR,
-    width: u32,
-    height: u32,
-    vsync: bool,
-    old_swapchain: vk::SwapchainKHR,
-) -> Result<SwapchainData, VulkanError> {
+/// Inputs for [`create_swapchain`].
+///
+/// `width`/`height` are only a request: the surface's own extent wins when it reports one.
+/// `old_swapchain` is [`vk::SwapchainKHR::null`] on first creation and the retiring swapchain on a
+/// recreate.
+pub(super) struct SwapchainParams<'a> {
+    pub instance: &'a ash::Instance,
+    pub physical_device: vk::PhysicalDevice,
+    pub device: &'a ash::Device,
+    pub surface_loader: &'a khr::surface::Instance,
+    pub surface: vk::SurfaceKHR,
+    pub width: u32,
+    pub height: u32,
+    pub vsync: bool,
+    pub old_swapchain: vk::SwapchainKHR,
+}
+
+pub(super) fn create_swapchain(params: SwapchainParams) -> Result<SwapchainData, VulkanError> {
+    let SwapchainParams {
+        instance,
+        physical_device,
+        device,
+        surface_loader,
+        surface,
+        width,
+        height,
+        vsync,
+        old_swapchain,
+    } = params;
+
     log::info!("Creating swapchain");
 
     let surface_capabilities = unsafe {
         surface_loader
             .get_physical_device_surface_capabilities(physical_device, surface)
-            .map_err(|e| VulkanError::SurfaceCapabilityQueryError(e))?
+            .map_err(VulkanError::SurfaceCapabilityQueryError)?
     };
 
     // A `current_extent` of `u32::MAX` is the spec's "the surface size is up to you" sentinel;
@@ -42,7 +61,7 @@ pub(super) fn create_swapchain(
     let surface_formats = unsafe {
         surface_loader
             .get_physical_device_surface_formats(physical_device, surface)
-            .map_err(|e| VulkanError::SurfaceFormatQueryError(e))?
+            .map_err(VulkanError::SurfaceFormatQueryError)?
     };
 
     // Device selection guarantees at least one format. The renderer's colour pipeline is linear:
@@ -78,7 +97,7 @@ pub(super) fn create_swapchain(
     let present_modes = unsafe {
         surface_loader
             .get_physical_device_surface_present_modes(physical_device, surface)
-            .map_err(|e| VulkanError::SurfacePresentModeQueryError(e))?
+            .map_err(VulkanError::SurfacePresentModeQueryError)?
     };
 
     // FIFO is the only mode the spec guarantees.
@@ -113,13 +132,13 @@ pub(super) fn create_swapchain(
     let swapchain = unsafe {
         swapchain_loader
             .create_swapchain(&swapchain_create_info, None)
-            .map_err(|e| VulkanError::SwapchainCreationError(e))?
+            .map_err(VulkanError::SwapchainCreationError)?
     };
 
     let images = unsafe {
         swapchain_loader
             .get_swapchain_images(swapchain)
-            .map_err(|e| VulkanError::SwapchainCreationError(e))?
+            .map_err(VulkanError::SwapchainCreationError)?
     };
 
     let mut image_views = Vec::new();
@@ -131,12 +150,11 @@ pub(super) fn create_swapchain(
             level_count: 1,
             base_array_layer: 0,
             layer_count: 1,
-            ..Default::default()
         };
 
         let ivci = vk::ImageViewCreateInfo {
             view_type: vk::ImageViewType::TYPE_2D,
-            format: format,
+            format,
             subresource_range: sr,
             image: *image,
             ..Default::default()
@@ -145,7 +163,7 @@ pub(super) fn create_swapchain(
         image_views.push(unsafe {
             device
                 .create_image_view(&ivci, None)
-                .map_err(|e| VulkanError::ImageViewCreationError(e))
+                .map_err(VulkanError::ImageViewCreationError)
         }?);
     }
 
@@ -175,7 +193,7 @@ pub(super) fn create_depth_image(
     let image_ci = vk::ImageCreateInfo {
         image_type: vk::ImageType::TYPE_2D,
         format: DEPTH_FORMAT,
-        extent: extent,
+        extent,
         mip_levels: 1,
         array_layers: 1,
         samples: vk::SampleCountFlags::TYPE_1,
@@ -192,7 +210,7 @@ pub(super) fn create_depth_image(
     let (depth_image, depth_image_allocation) = unsafe {
         memory_allocator
             .create_image(&image_ci, &alloc_ci)
-            .map_err(|e| VulkanError::DepthImageCreationError(e))
+            .map_err(VulkanError::DepthImageCreationError)
     }?;
 
     let sr = vk::ImageSubresourceRange {
@@ -201,7 +219,6 @@ pub(super) fn create_depth_image(
         level_count: 1,
         base_array_layer: 0,
         layer_count: 1,
-        ..Default::default()
     };
 
     let ivci = vk::ImageViewCreateInfo {
@@ -215,7 +232,7 @@ pub(super) fn create_depth_image(
     let depth_image_view = unsafe {
         device
             .create_image_view(&ivci, None)
-            .map_err(|e| VulkanError::ImageViewCreationError(e))
+            .map_err(VulkanError::ImageViewCreationError)
     }?;
 
     Ok(AllocatedImage {

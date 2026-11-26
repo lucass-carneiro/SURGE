@@ -18,7 +18,7 @@ impl VulkanContext {
         unsafe {
             self.device
                 .wait_for_fences(&[self.frame_fences[self.current_frame]], true, timeout)
-                .map_err(|e| VulkanError::FenceWaitError(e))?;
+                .map_err(VulkanError::FenceWaitError)?;
         }
 
         // Acquire next image
@@ -45,7 +45,7 @@ impl VulkanContext {
         unsafe {
             self.device
                 .reset_fences(&[self.frame_fences[self.current_frame]])
-                .map_err(|e| VulkanError::FenceResetError(e))
+                .map_err(VulkanError::FenceResetError)
         }?;
 
         Ok(Some(swpc_img_data))
@@ -94,7 +94,7 @@ impl VulkanContext {
         unsafe {
             self.device
                 .device_wait_idle()
-                .map_err(|e| VulkanError::SwapchainRecreationError(e))
+                .map_err(VulkanError::SwapchainRecreationError)
         }?;
 
         self.destroy_depth_image();
@@ -122,17 +122,17 @@ impl VulkanContext {
         }
 
         // Create swapchain first to know the image count for semaphores
-        let new_swapchain_data = image::create_swapchain(
-            &self.instance,
-            self.physical_device,
-            &self.device,
-            &self.surface,
-            self.surface_khr,
-            config.resolution.width,
-            config.resolution.height,
-            config.renderer.vsync,
-            self.swapchain_data.swapchain,
-        )?;
+        let new_swapchain_data = image::create_swapchain(image::SwapchainParams {
+            instance: &self.instance,
+            physical_device: self.physical_device,
+            device: &self.device,
+            surface_loader: &self.surface,
+            surface: self.surface_khr,
+            width: config.resolution.width,
+            height: config.resolution.height,
+            vsync: config.renderer.vsync,
+            old_swapchain: self.swapchain_data.swapchain,
+        })?;
 
         let old_swapchain_data = std::mem::replace(&mut self.swapchain_data, new_swapchain_data);
         unsafe {

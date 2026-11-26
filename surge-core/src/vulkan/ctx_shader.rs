@@ -19,7 +19,7 @@ impl VulkanContext {
         let sm = unsafe {
             self.device
                 .create_shader_module(&ci, None)
-                .map_err(|e| VulkanError::ShaderModuleCreateError(e))
+                .map_err(VulkanError::ShaderModuleCreateError)
         }?;
 
         log::info!("Created shader module {:#x}", sm.as_raw());
@@ -45,7 +45,7 @@ const SPIRV_MAGIC: u32 = 0x0723_0203;
 fn spirv_words(spirv_bytes: &[u8]) -> Result<Vec<u32>, VulkanError> {
     let byte_size = spirv_bytes.len();
 
-    if byte_size % size_of::<u32>() != 0 {
+    if !byte_size.is_multiple_of(size_of::<u32>()) {
         return Err(VulkanError::ShaderModuleInvalidSizeError(byte_size));
     }
 

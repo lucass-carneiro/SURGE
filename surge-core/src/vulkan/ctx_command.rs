@@ -13,7 +13,6 @@ impl VulkanContext {
             level_count: 1,
             base_array_layer: 0,
             layer_count: 1,
-            ..Default::default()
         };
 
         let barrier = vk::ImageMemoryBarrier2 {
@@ -26,7 +25,7 @@ impl VulkanContext {
             old_layout: vk::ImageLayout::UNDEFINED,
             new_layout: vk::ImageLayout::DEPTH_ATTACHMENT_OPTIMAL,
             image: self.depth_image.image,
-            subresource_range: subresource_range,
+            subresource_range,
             ..Default::default()
         };
 
@@ -49,7 +48,6 @@ impl VulkanContext {
             level_count: 1,
             base_array_layer: 0,
             layer_count: 1,
-            ..Default::default()
         };
 
         let barrier = vk::ImageMemoryBarrier2 {
@@ -60,7 +58,7 @@ impl VulkanContext {
             old_layout: ti.old_layout,
             new_layout: ti.new_layout,
             image: self.swapchain_data.images[ti.image_index as usize],
-            subresource_range: subresource_range,
+            subresource_range,
             ..Default::default()
         };
 
@@ -348,7 +346,7 @@ impl VulkanContext {
             unsafe {
                 self.device
                     .create_fence(&ci, None)
-                    .map_err(|e| VulkanError::FenceCreationError(e))
+                    .map_err(VulkanError::FenceCreationError)
             }
         }?;
 
@@ -365,7 +363,7 @@ impl VulkanContext {
                 .and_then(|()| {
                     self.device
                         .wait_for_fences(&[fence], true, 1000000000)
-                        .map_err(|e| VulkanError::FenceWaitError(e))
+                        .map_err(VulkanError::FenceWaitError)
                 })
         };
 

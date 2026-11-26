@@ -6,7 +6,7 @@ use super::{
 use crate::errors::VulkanError;
 use ash::vk::{self, DescriptorType};
 use skrifa::FontRef;
-use std::{cell::RefCell, mem::size_of, slice, sync::Arc};
+use std::{cell::RefCell, mem::size_of, rc::Rc, slice};
 use vk_mem::{self, Alloc};
 
 use surge_sdk::{CreateInfo, TextRun};
@@ -75,7 +75,7 @@ struct LoadedFont {
 /// This is the Step 4 skeleton: it builds all GPU objects and draws zero instances. Rasterization,
 /// the glyph cache, atlas uploads and `add_text_run` arrive in Step 5.
 pub struct FontDatabase {
-    context: Arc<RefCell<VulkanContext>>,
+    context: Rc<RefCell<VulkanContext>>,
 
     ci: CreateInfo,
 
@@ -114,7 +114,7 @@ pub struct FontDatabase {
 }
 
 impl FontDatabase {
-    pub fn new(context: Arc<RefCell<VulkanContext>>, ci: CreateInfo) -> Result<Self, VulkanError> {
+    pub fn new(context: Rc<RefCell<VulkanContext>>, ci: CreateInfo) -> Result<Self, VulkanError> {
         log::info!("Creating font database");
 
         // Frame globals UBO
